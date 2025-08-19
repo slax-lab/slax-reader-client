@@ -8,6 +8,6 @@ fun main() = application {
         onCloseRequest = ::exitApplication,
         title = "slax-reader-client",
     ) {
-        App()
+        SlaxNavigation()
     }
 }

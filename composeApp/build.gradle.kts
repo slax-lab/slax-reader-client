@@ -10,6 +10,12 @@ plugins {
     alias(libs.plugins.composeHotReload)
 }
 
+repositories {
+    mavenCentral()
+    google()
+    maven("https://jogamp.org/deployment/maven")
+}
+
 kotlin {
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
@@ -17,7 +23,7 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_11)
         }
     }
-    
+
     listOf(
         iosX64(),
         iosArm64(),
@@ -26,15 +32,21 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "ComposeApp"
             isStatic = true
+
+            freeCompilerArgs += listOf("-Xbinary=bundleId=com.slax.reader")
         }
     }
-    
+
     jvm()
-    
+
     sourceSets {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+            implementation("io.ktor:ktor-client-okhttp:2.3.12")
+        }
+        iosMain.dependencies {
+            implementation("io.ktor:ktor-client-darwin:2.3.12")
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -45,6 +57,27 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            // navigation
+            implementation(libs.navigation.compose)
+
+            // webview
+            api(libs.compose.webview.multiplatform)
+
+            // hyper
+            implementation("com.fleeksoft.ksoup:ksoup-kotlinx:0.2.5")
+            implementation("com.fleeksoft.ksoup:ksoup:0.2.5")
+
+            implementation("io.coil-kt.coil3:coil-compose:3.0.0-alpha08")
+            implementation("io.coil-kt.coil3:coil-network-ktor:3.0.0-alpha08")
+
+            // log
+            implementation("io.github.aakira:napier:2.7.1")
+
+            // htmlconverter
+            implementation("be.digitalia.compose.htmlconverter:htmlconverter:1.1.0")
+
+            // rich editor
+            implementation("com.mohamedrejeb.richeditor:richeditor-compose:1.0.0-rc13")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
