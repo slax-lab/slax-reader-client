@@ -28,15 +28,12 @@ fun App(navController: NavController) {
         var showContent by remember { mutableStateOf(false) }
 
         Column(
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .safeContentPadding()
+            modifier = Modifier.background(MaterialTheme.colorScheme.primaryContainer).safeContentPadding()
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Button(
-                onClick = { showContent = !showContent },
-                colors = ButtonDefaults.buttonColors(
+                onClick = { showContent = !showContent }, colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF4CAF50)
                 )
             ) {
@@ -46,8 +43,7 @@ fun App(navController: NavController) {
             Button(
                 onClick = {
                     navController.navigate("chrome")
-                },
-                colors = ButtonDefaults.buttonColors(
+                }, colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF4CAF50)
                 )
             ) {
@@ -57,8 +53,7 @@ fun App(navController: NavController) {
             Button(
                 onClick = {
                     navController.navigate("hyper")
-                },
-                colors = ButtonDefaults.buttonColors(
+                }, colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF4CAF50)
                 )
             ) {
@@ -68,13 +63,23 @@ fun App(navController: NavController) {
             Button(
                 onClick = {
                     navController.navigate("rich")
-                },
-                colors = ButtonDefaults.buttonColors(
+                }, colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF4CAF50)
                 )
             ) {
                 Text("Rich Render")
             }
+
+            Button(
+                onClick = {
+                    navController.navigate("raw_webview")
+                }, colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF4CAF50)
+                )
+            ) {
+                Text("Raw WebView")
+            }
+
 
             AnimatedVisibility(showContent) {
                 val greeting = remember { Greeting().greet() }
