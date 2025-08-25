@@ -8,6 +8,8 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.androidx.room)
 }
 
 repositories {
@@ -32,7 +34,7 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "ComposeApp"
             isStatic = true
-
+            linkerOpts.add("-lsqlite3")
             freeCompilerArgs += listOf("-Xbinary=bundleId=com.slax.reader")
         }
     }
@@ -78,6 +80,11 @@ kotlin {
 
             // rich editor
             implementation("com.mohamedrejeb.richeditor:richeditor-compose:1.0.0-rc13")
+
+            // Room and DataStore for all platforms (without room-ktx)
+            implementation(libs.androidx.room.runtime)
+            implementation(libs.androidx.sqlite.bundled)
+            implementation(libs.datastore.preferences)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -116,8 +123,18 @@ android {
     }
 }
 
+room {
+    schemaDirectory("$projectDir/schemas")
+}
+
 dependencies {
     debugImplementation(compose.uiTooling)
+    add("kspCommonMainMetadata", libs.androidx.room.compiler)
+    add("kspAndroid", libs.androidx.room.compiler)
+    add("kspIosSimulatorArm64", libs.androidx.room.compiler)
+    add("kspIosX64", libs.androidx.room.compiler)
+    add("kspIosArm64", libs.androidx.room.compiler)
+
 }
 
 compose.desktop {
@@ -128,6 +145,23 @@ compose.desktop {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "com.slax.reader"
             packageVersion = "1.0.0"
+
+            includeAllModules = true
+        }
+
+        jvmArgs += listOf(
+            "-Dkcef.bundles.dir=./kcef-bundle",
+            "-Dkcef.cache.dir=./kcef-bundle/cache",
+            "-Djcef.bundle.dir=./kcef-bundle",
+            "--add-opens=java.desktop/sun.awt=ALL-UNNAMED",
+            "--add-opens=java.desktop/java.awt.peer=ALL-UNNAMED",
+            "--add-opens=java.desktop/java.awt=ALL-UNNAMED",
+            "--add-opens=java.base/java.lang=ALL-UNNAMED",
+            "-Xmx2048m"
+        )
+
+        buildTypes.release.proguard {
+            isEnabled = false
         }
     }
 }
