@@ -19,7 +19,7 @@ actual fun onButtonClicked(buttonTitle: String, route: String) {
 
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 @Composable
-actual fun HomeScreen(navController: NavController) {
+actual fun HomeScreens(navController: NavController) {
     UIKitView(
         modifier = Modifier.fillMaxSize(),
         factory = {

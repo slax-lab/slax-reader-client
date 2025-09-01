@@ -1,7 +1,6 @@
 package com.slax.reader.ui
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavController
 import java.time.LocalDateTime
@@ -14,8 +13,6 @@ actual fun onButtonClicked(buttonTitle: String, route: String) {
 
 @Composable
 @Preview
-actual fun HomeScreen(navController: NavController) {
-    MaterialTheme {
-        CommonHomeScreen(navController)
-    }
+actual fun HomeScreens(navController: NavController) {
+    HomeScreen(navController)
 }

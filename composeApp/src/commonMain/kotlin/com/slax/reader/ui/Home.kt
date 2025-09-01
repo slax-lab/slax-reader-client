@@ -15,41 +15,44 @@ import androidx.navigation.NavController
 expect fun onButtonClicked(buttonTitle: String, route: String)
 
 @Composable
-fun CommonHomeScreen(navController: NavController) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text("Slax Reader", style = MaterialTheme.typography.headlineMedium)
-        Spacer(modifier = Modifier.height(16.dp))
+fun HomeScreen(navController: NavController) {
+    MaterialTheme {
 
-        val routes = listOf(
-            "Chrome Reader" to "chrome",
-            "Hybrid Reader" to "hyper",
-            "Rich Render" to "rich",
-            "Raw WebView" to "raw_webview",
-            "About" to "about"
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text("Slax Reader", style = MaterialTheme.typography.headlineMedium)
+            Spacer(modifier = Modifier.height(16.dp))
 
-        routes.forEach { (title, route) ->
-            Button(
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                onClick = {
-                    onButtonClicked(title, route)
-                    navController.navigate(route)
-                },
-                modifier = Modifier
-                    .fillMaxWidth(0.8f)
-                    .padding(vertical = 4.dp)
-            ) {
-                Text(title, color = Color.White)
+            val routes = listOf(
+                "Chrome Reader" to "chrome",
+                "Hybrid Reader" to "hyper",
+                "Rich Render" to "rich",
+                "Raw WebView" to "raw_webview",
+                "About" to "about"
+            )
+
+            routes.forEach { (title, route) ->
+                Button(
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                    onClick = {
+                        onButtonClicked(title, route)
+                        navController.navigate(route)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth(0.8f)
+                        .padding(vertical = 4.dp)
+                ) {
+                    Text(title, color = Color.White)
+                }
             }
         }
     }
 }
 
 @Composable
-expect fun HomeScreen(navController: NavController)
+expect fun HomeScreens(navController: NavController)
