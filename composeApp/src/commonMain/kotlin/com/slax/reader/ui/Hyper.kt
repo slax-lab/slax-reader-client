@@ -1,4 +1,4 @@
-package com.slax.reader
+package com.slax.reader.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.navigation.NavController
 import com.fleeksoft.ksoup.Ksoup
+import com.fleeksoft.ksoup.nodes.Element
 import com.multiplatform.webview.setting.PlatformWebSettings
 import com.multiplatform.webview.web.WebView
 import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
@@ -108,7 +109,7 @@ fun HybridReaderView(nav: NavController) {
     }
 }
 
-private fun getImageSrc(imgElement: com.fleeksoft.ksoup.nodes.Element): String {
+private fun getImageSrc(imgElement: Element): String {
     return when {
         imgElement.attr("src").isNotEmpty() -> imgElement.attr("src")
         imgElement.attr("data-src").isNotEmpty() -> imgElement.attr("data-src")

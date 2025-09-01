@@ -1,4 +1,4 @@
-package com.slax.reader
+package com.slax.reader.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column

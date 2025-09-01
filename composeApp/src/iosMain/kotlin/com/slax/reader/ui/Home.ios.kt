@@ -1,4 +1,4 @@
-package com.slax.reader
+package com.slax.reader.ui
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable

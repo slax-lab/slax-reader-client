@@ -1,12 +1,14 @@
-package com.slax.reader
+package com.slax.reader.core
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.multiplatform.webview.web.rememberWebViewState
 import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
+import com.slax.reader.ui.*
 
 
 @Composable
@@ -16,7 +18,7 @@ fun SlaxNavigation() {
     NavHost(
         navController = navCtrl,
         startDestination = "home",
-        modifier = androidx.compose.ui.Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize()
     ) {
         composable("chrome") {
             val webState = rememberWebViewStateWithHTMLData(optimizedHtml)

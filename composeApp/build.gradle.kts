@@ -65,6 +65,7 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation("io.ktor:ktor-client-okhttp:2.3.12")
+            implementation("io.insert-koin:koin-android:4.1.0")
         }
         iosMain.dependencies {
             implementation("io.ktor:ktor-client-darwin:2.3.12")

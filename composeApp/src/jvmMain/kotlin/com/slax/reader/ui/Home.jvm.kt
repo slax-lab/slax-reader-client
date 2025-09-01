@@ -1,4 +1,4 @@
-package com.slax.reader
+package com.slax.reader.ui
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.material3.MaterialTheme
