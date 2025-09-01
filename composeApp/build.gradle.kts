@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.composeHotReload)
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.room)
+    id("org.jetbrains.kotlin.native.cocoapods")
 }
 
 repositories {
@@ -19,6 +20,24 @@ repositories {
 }
 
 kotlin {
+    cocoapods {
+        version = "1.0"
+        summary = "Slax Reader Client"
+        homepage = "https://github.com/slax-lab/slax-reader-client"
+        ios.deploymentTarget = "14.1"
+        source = "https://cdn.cocoapods.org"
+
+        pod("powersync-sqlite-core") {
+            linkOnly = true
+        }
+
+        framework {
+            baseName = "ComposeApp"
+            isStatic = true
+            export("com.powersync:core")
+        }
+    }
+
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
         compilerOptions {
@@ -85,6 +104,12 @@ kotlin {
             implementation(libs.androidx.room.runtime)
             implementation(libs.androidx.sqlite.bundled)
             implementation(libs.datastore.preferences)
+
+            // PowerSync
+            api("com.powersync:core:1.5.0")
+
+            // DI
+            implementation("io.insert-koin:koin-core:4.1.0")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

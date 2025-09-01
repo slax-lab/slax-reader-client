@@ -1,95 +1,55 @@
 package com.slax.reader
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.ui.tooling.preview.Preview
-import slax_reader_client.composeapp.generated.resources.Res
-import slax_reader_client.composeapp.generated.resources.compose_multiplatform
+
+expect fun onButtonClicked(buttonTitle: String, route: String)
 
 @Composable
-@Preview
-fun App(navController: NavController) {
-    MaterialTheme {
-        var showContent by remember { mutableStateOf(false) }
+fun CommonHomeScreen(navController: NavController) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text("Slax Reader", style = MaterialTheme.typography.headlineMedium)
+        Spacer(modifier = Modifier.height(16.dp))
 
-        Column(
-            modifier = Modifier.background(MaterialTheme.colorScheme.primaryContainer).safeContentPadding()
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Button(
-                onClick = { showContent = !showContent }, colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF4CAF50)
-                )
-            ) {
-                Text("Click me!")
-            }
+        val routes = listOf(
+            "Chrome Reader" to "chrome",
+            "Hybrid Reader" to "hyper",
+            "Rich Render" to "rich",
+            "Raw WebView" to "raw_webview",
+            "About" to "about"
+        )
 
+        routes.forEach { (title, route) ->
             Button(
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
                 onClick = {
-                    navController.navigate("chrome")
-                }, colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF4CAF50)
-                )
+                    onButtonClicked(title, route)
+                    navController.navigate(route)
+                },
+                modifier = Modifier
+                    .fillMaxWidth(0.8f)
+                    .padding(vertical = 4.dp)
             ) {
-                Text("Chrome Reader")
-            }
-
-            Button(
-                onClick = {
-                    navController.navigate("hyper")
-                }, colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF4CAF50)
-                )
-            ) {
-                Text("Hybrid Reader")
-            }
-
-            Button(
-                onClick = {
-                    navController.navigate("rich")
-                }, colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF4CAF50)
-                )
-            ) {
-                Text("Rich Render")
-            }
-
-            Button(
-                onClick = {
-                    navController.navigate("raw_webview")
-                }, colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF4CAF50)
-                )
-            ) {
-                Text("Raw WebView")
-            }
-
-
-            AnimatedVisibility(showContent) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Image(painterResource(Res.drawable.compose_multiplatform), null)
-                    Text("Compose Multiplatform")
-                }
+                Text(title, color = Color.White)
             }
         }
     }
 }
+
+@Composable
+expect fun HomeScreen(navController: NavController)
