@@ -25,7 +25,7 @@ fun SlaxNavigation() {
             ChromeReaderView(navCtrl, webState)
         }
         composable("home") {
-            HomeScreen(navCtrl)
+            HomeScreens(navCtrl)
         }
         composable("hyper") {
             HybridReaderView(navCtrl)
