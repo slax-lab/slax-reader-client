@@ -8,8 +8,6 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.androidx.room)
     id("org.jetbrains.kotlin.native.cocoapods")
 }
 
@@ -44,6 +42,13 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_11)
         }
     }
+
+    listOf(
+        macosArm64(),
+        macosX64(),
+        linuxX64(),
+        mingwX64()
+    ).forEach { }
 
     listOf(
         iosX64(),
@@ -101,9 +106,6 @@ kotlin {
             // rich editor
             implementation("com.mohamedrejeb.richeditor:richeditor-compose:1.0.0-rc13")
 
-            // Room and DataStore for all platforms (without room-ktx)
-            implementation(libs.androidx.room.runtime)
-            implementation(libs.androidx.sqlite.bundled)
             implementation(libs.datastore.preferences)
 
             // PowerSync
@@ -111,6 +113,10 @@ kotlin {
 
             // DI
             implementation("io.insert-koin:koin-core:4.1.0")
+            implementation("io.insert-koin:koin-compose:4.1.0")
+
+            // HTTP client (for endpoint reachability checks)
+            implementation("io.ktor:ktor-client-core:2.3.12")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -118,6 +124,8 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
+            // Ktor engine for Desktop
+            implementation("io.ktor:ktor-client-java:2.3.12")
         }
     }
 }
@@ -149,17 +157,9 @@ android {
     }
 }
 
-room {
-    schemaDirectory("$projectDir/schemas")
-}
 
 dependencies {
     debugImplementation(compose.uiTooling)
-    add("kspCommonMainMetadata", libs.androidx.room.compiler)
-    add("kspAndroid", libs.androidx.room.compiler)
-    add("kspIosSimulatorArm64", libs.androidx.room.compiler)
-    add("kspIosX64", libs.androidx.room.compiler)
-    add("kspIosArm64", libs.androidx.room.compiler)
 
 }
 

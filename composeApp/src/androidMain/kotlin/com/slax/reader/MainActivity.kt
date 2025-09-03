@@ -9,6 +9,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.slax.reader.core.SlaxNavigation
 import com.slax.reader.di.appModule
 import org.koin.android.ext.koin.androidContext
+import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
 
 class MainActivity : ComponentActivity() {
@@ -16,10 +17,17 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge()
-        startKoin {
-            androidContext(this@MainActivity)
-            modules(appModule)
+        
+        // 检查Koin是否已经启动，避免重复启动
+        if (GlobalContext.getOrNull() == null) {
+            startKoin {
+                androidContext(this@MainActivity)
+                modules(appModule)
+            }
+        } else {
+            println("Koin application already started, skipping initialization...")
         }
+        
         setContent {
             SlaxNavigation()
         }
