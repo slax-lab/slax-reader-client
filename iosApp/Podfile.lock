@@ -1,0 +1,23 @@
+PODS:
+  - ComposeApp (1.0):
+    - powersync-sqlite-core
+  - powersync-sqlite-core (0.4.4)
+
+DEPENDENCIES:
+  - ComposeApp (from `../composeApp`)
+
+SPEC REPOS:
+  trunk:
+    - powersync-sqlite-core
+
+EXTERNAL SOURCES:
+  ComposeApp:
+    :path: "../composeApp"
+
+SPEC CHECKSUMS:
+  ComposeApp: f5f35bca2caeefc3f8227361845bb1301ab23d1a
+  powersync-sqlite-core: 954b7c4f068e21e6e759a7f487f0d7da4062e858
+
+PODFILE CHECKSUM: 7bb60734cd3a2b0553fbc3fbe47dc0794c466177
+
+COCOAPODS: 1.16.2

@@ -8,7 +8,8 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
-    id("org.jetbrains.kotlin.native.cocoapods")
+    alias(libs.plugins.kotlinx.serialization)
+    kotlin("native.cocoapods")
 }
 
 repositories {
@@ -19,11 +20,13 @@ repositories {
 
 kotlin {
     cocoapods {
+        name = "ComposeApp"
         version = "1.0"
         summary = "Slax Reader Client"
         homepage = "https://github.com/slax-lab/slax-reader-client"
         ios.deploymentTarget = "14.1"
-        source = "https://cdn.cocoapods.org"
+
+        podfile = project.file("../iosApp/Podfile")
 
         pod("powersync-sqlite-core") {
             linkOnly = true
@@ -43,37 +46,35 @@ kotlin {
         }
     }
 
-    listOf(
-        macosArm64(),
-        macosX64(),
-        linuxX64(),
-        mingwX64()
-    ).forEach { }
-
-    listOf(
-        iosX64(),
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
-            baseName = "ComposeApp"
-            isStatic = true
-            linkerOpts.add("-lsqlite3")
-            freeCompilerArgs += listOf("-Xbinary=bundleId=com.slax.reader")
-        }
-    }
-
     jvm()
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
+
+    // TODO
+//    val macosX64 = macosX64()
+//    val macosArm64 = macosArm64()
+//    val xcf = XCFramework("SharedKit")
+//    listOf(macosX64, macosArm64).forEach { target ->
+//        target.binaries {
+//            framework {
+//                baseName = "SharedKit"
+//                xcf.add(this)
+//                export("io.ktor:ktor-client-core:2.3.0")
+//                export("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0")
+//            }
+//        }
+//    }
 
     sourceSets {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
-            implementation("io.ktor:ktor-client-okhttp:2.3.12")
-            implementation("io.insert-koin:koin-android:4.1.0")
+            implementation(libs.ktor.client.okhttp)
+            implementation(libs.koin.android)
         }
         iosMain.dependencies {
-            implementation("io.ktor:ktor-client-darwin:2.3.12")
+            implementation(libs.ktor.client.darwin)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -91,32 +92,37 @@ kotlin {
             api(libs.compose.webview.multiplatform)
 
             // hyper
-            implementation("com.fleeksoft.ksoup:ksoup-kotlinx:0.2.5")
-            implementation("com.fleeksoft.ksoup:ksoup:0.2.5")
+            implementation(libs.ksoup.kotlinx)
+            implementation(libs.ksoup)
 
-            implementation("io.coil-kt.coil3:coil-compose:3.0.0-alpha08")
-            implementation("io.coil-kt.coil3:coil-network-ktor:3.0.0-alpha08")
+            implementation(libs.coil3.coil.compose)
+            implementation(libs.coil.network.ktor)
 
             // log
-            implementation("io.github.aakira:napier:2.7.1")
+            implementation(libs.napier)
 
             // htmlconverter
-            implementation("be.digitalia.compose.htmlconverter:htmlconverter:1.1.0")
+            implementation(libs.htmlconverter)
 
             // rich editor
-            implementation("com.mohamedrejeb.richeditor:richeditor-compose:1.0.0-rc13")
+            implementation(libs.richeditor.compose)
 
             implementation(libs.datastore.preferences)
 
             // PowerSync
-            api("com.powersync:core:1.5.0")
+            implementation("com.powersync:core:1.5.1")
 
             // DI
-            implementation("io.insert-koin:koin-core:4.1.0")
-            implementation("io.insert-koin:koin-compose:4.1.0")
+            implementation(libs.koin.core)
+            implementation(libs.koin.compose)
 
             // HTTP client (for endpoint reachability checks)
-            implementation("io.ktor:ktor-client-core:2.3.12")
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
+
+            // Serialization
+            implementation(libs.kotlinx.serialization.json)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -125,7 +131,10 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
             // Ktor engine for Desktop
-            implementation("io.ktor:ktor-client-java:2.3.12")
+            implementation(libs.ktor.client.java)
+        }
+        macosMain.dependencies {
+            implementation("io.ktor:ktor-client-darwin:2.3.0")
         }
     }
 }
@@ -147,8 +156,11 @@ android {
         }
     }
     buildTypes {
-        getByName("release") {
+        getByName("debug") {
             isMinifyEnabled = false
+        }
+        getByName("release") {
+            isMinifyEnabled = true
         }
     }
     compileOptions {
@@ -160,7 +172,6 @@ android {
 
 dependencies {
     debugImplementation(compose.uiTooling)
-
 }
 
 compose.desktop {

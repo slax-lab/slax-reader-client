@@ -1,6 +1,6 @@
 TEAM_ID=
 
-PRODUCT_NAME=slax-reader-client
+PRODUCT_NAME=Slax Reader
 PRODUCT_BUNDLE_IDENTIFIER=com.slax.reader.slax-reader-client$(TEAM_ID)
 
 CURRENT_PROJECT_VERSION=1

@@ -16,3 +16,7 @@ captures
 !*.xcodeproj/project.xcworkspace/
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
+iosApp/*.xcworkspace
+iosApp/*.xcodeproj
+iosApp/Pods/
+iosApp/Podfile.lock

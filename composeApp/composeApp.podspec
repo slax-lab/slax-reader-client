@@ -1,5 +1,5 @@
 Pod::Spec.new do |spec|
-    spec.name                     = 'composeApp'
+    spec.name                     = 'ComposeApp'
     spec.version                  = '1.0'
     spec.homepage                 = 'https://github.com/slax-lab/slax-reader-client'
     spec.source                   = { :http=> ''}
@@ -33,7 +33,7 @@ Pod::Spec.new do |spec|
                 
     spec.script_phases = [
         {
-            :name => 'Build composeApp',
+            :name => 'Build ComposeApp',
             :execution_position => :before_compile,
             :shell_path => '/bin/sh',
             :script => <<-SCRIPT
