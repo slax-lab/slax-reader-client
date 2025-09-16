@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -17,6 +18,7 @@ import com.powersync.connectors.PowerSyncBackendConnector
 import com.powersync.connectors.PowerSyncCredentials
 import com.powersync.db.crud.CrudEntry
 import com.powersync.db.crud.CrudTransaction
+import com.powersync.db.crud.SqliteRow
 import com.powersync.db.getString
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -31,15 +33,18 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 // ==================== 数据模型 ====================
-
 @Immutable
 @Serializable
-data class BookmarkMetadata<T>(
+data class BookmarkMetadata(
     val tags: List<String>,
     val share: ShareSettings?,
-    val bookmark: T
+    val bookmark: BookmarkDetails
 )
 
 @Immutable
@@ -95,7 +100,7 @@ data class UserBookmark(
     val deletedAt: String?,
     val metadata: String?,
 
-    var metadataObj: BookmarkMetadata<BookmarkDetails>?,
+    var metadataObj: BookmarkMetadata?,
     var metadataTitle: String?
 ) {
     val displayTitle: String
@@ -105,14 +110,14 @@ data class UserBookmark(
         return metadataObj?.bookmark?.title ?: id.take(5)
     }
 
-    fun parsedMetadata(): BookmarkMetadata<BookmarkDetails>? {
+    fun parsedMetadata(): BookmarkMetadata? {
         return metadataObj ?: getTypedMetadata()
     }
 
-    fun getTypedMetadata(): BookmarkMetadata<BookmarkDetails>? {
+    fun getTypedMetadata(): BookmarkMetadata? {
         return metadata?.let { json ->
             try {
-                val obj = Json.decodeFromString<BookmarkMetadata<BookmarkDetails>>(json)
+                val obj = Json.decodeFromString<BookmarkMetadata>(json)
                 metadataObj = obj
                 obj
             } catch (e: Exception) {
@@ -143,7 +148,8 @@ data class ChangesItem(
     val table: String = "",
     val id: String = "",
     val op: String = "",
-    val data: String? = null
+    val data: Map<String, String?>? = null,
+    val preData: Map<String, String?>? = null
 )
 
 // HTTP 客户端单例
@@ -179,44 +185,147 @@ class Connector : PowerSyncBackendConnector() {
         )
     }
 
-    override suspend fun uploadData(database: PowerSyncDatabase) {
-        val batch = mutableListOf<CrudEntry>()
-        var lastTx: CrudTransaction? = null
+    fun diffChanges(data: SqliteRow?, preData: SqliteRow?): Pair<Map<String, String?>?, Map<String, String?>?> {
+        if (data == null) return Pair(null, null)
 
-        database.getCrudTransactions().takeWhile { batch.size < 100 }.collect {
-            batch.addAll(it.crud)
-            lastTx = it
+        val dataMap = data.toMap()
+        val preDataMap = preData?.toMap() ?: return Pair(dataMap, null)
+
+        val changes = mutableMapOf<String, String?>()
+        val preChanges = mutableMapOf<String, String?>()
+
+        for ((key, value) in dataMap) {
+            val oldValue = preDataMap[key]
+            if (value != oldValue) {
+                if (key == "metadata") {
+                    try {
+                        val newMetadataObj = Json.decodeFromString<BookmarkMetadata>(value ?: "")
+                        val oldMetadataObj = Json.decodeFromString<BookmarkMetadata>(oldValue ?: "")
+
+                        if (newMetadataObj.tags != oldMetadataObj.tags) {
+                            changes["metadata.tags"] = Json.encodeToString(newMetadataObj.tags)
+                            preChanges["metadata.tags"] = Json.encodeToString(oldMetadataObj.tags)
+                        }
+
+                        val newShare = newMetadataObj.share
+                        val oldShare = oldMetadataObj.share
+
+                        if (newShare != null && oldShare != null) {
+                            compareShareSettings(newShare, oldShare, changes, preChanges)
+                        } else if (newShare != oldShare) {
+                            changes["metadata.share"] = Json.encodeToString(newShare)
+                            preChanges["metadata.share"] = Json.encodeToString(oldShare)
+                        }
+
+                    } catch (e: Exception) {
+                        println("Error comparing metadata JSON: ${e.message}")
+                        changes["metadata"] = value
+                        preChanges["metadata"] = oldValue
+                    }
+                } else {
+                    changes[key] = value
+                    preChanges[key] = oldValue
+                }
+            }
         }
+
+        return Pair(
+            changes.ifEmpty { null },
+            preChanges.ifEmpty { null }
+        )
+    }
+
+    private fun compareShareSettings(
+        newShare: ShareSettings,
+        oldShare: ShareSettings,
+        changes: MutableMap<String, String?>,
+        preChanges: MutableMap<String, String?>
+    ) {
+        if (newShare.is_enable != oldShare.is_enable) {
+            changes["metadata.share.is_enable"] = newShare.is_enable.toString()
+            preChanges["metadata.share.is_enable"] = oldShare.is_enable.toString()
+        }
+        if (newShare.show_line != oldShare.show_line) {
+            changes["metadata.share.show_line"] = newShare.show_line.toString()
+            preChanges["metadata.share.show_line"] = oldShare.show_line.toString()
+        }
+        if (newShare.allow_line != oldShare.allow_line) {
+            changes["metadata.share.allow_line"] = newShare.allow_line.toString()
+            preChanges["metadata.share.allow_line"] = oldShare.allow_line.toString()
+        }
+        if (newShare.show_comment != oldShare.show_comment) {
+            changes["metadata.share.show_comment"] = newShare.show_comment.toString()
+            preChanges["metadata.share.show_comment"] = oldShare.show_comment.toString()
+        }
+        if (newShare.allow_comment != oldShare.allow_comment) {
+            changes["metadata.share.allow_comment"] = newShare.allow_comment.toString()
+            preChanges["metadata.share.allow_comment"] = oldShare.allow_comment.toString()
+        }
+        if (newShare.show_userinfo != oldShare.show_userinfo) {
+            changes["metadata.share.show_userinfo"] = newShare.show_userinfo.toString()
+            preChanges["metadata.share.show_userinfo"] = oldShare.show_userinfo.toString()
+        }
+        if (newShare.share_code != oldShare.share_code) {
+            changes["metadata.share.share_code"] = newShare.share_code
+            preChanges["metadata.share.share_code"] = oldShare.share_code
+        }
+        if (newShare.created_at != oldShare.created_at) {
+            changes["metadata.share.created_at"] = newShare.created_at
+            preChanges["metadata.share.created_at"] = oldShare.created_at
+        }
+    }
+
+    override suspend fun uploadData(database: PowerSyncDatabase) {
+        val transactions = mutableListOf<CrudTransaction>()
+        val batch = mutableListOf<CrudEntry>()
+
+        database.getCrudTransactions()
+            .take(100)
+            .collect { tx ->
+                batch.addAll(tx.crud)
+                transactions.add(tx)
+            }
 
         if (batch.isEmpty()) return
 
-        val postData = batch.map { entry ->
-            ChangesItem(
-                table = entry.table,
-                id = entry.id,
-                op = entry.op.toString(),
-                data = entry.opData?.toString()
-            )
-        }
-
-        val resp = httpClient.post("https://reader-api.slax.dev/v1/sync/changes") {
-            headers {
-                append(HttpHeaders.Authorization, "Bearer $AUTH_TOKEN")
-                append(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+        try {
+            val postData = batch.map { entry ->
+                val (changes, preChanges) = diffChanges(entry.opData, entry.previousValues)
+                ChangesItem(
+                    table = entry.table,
+                    id = entry.id,
+                    op = entry.op.toString(),
+                    data = changes,
+                    preData = preChanges
+                )
             }
-            setBody(postData)
-        }
 
-        if (resp.status != HttpStatusCode.OK) {
-            throw Exception("Error uploading data: ${resp.status}")
-        }
+            val resp = httpClient.post("https://reader-api.slax.dev/v1/sync/changes") {
+                headers {
+                    append(HttpHeaders.Authorization, "Bearer $AUTH_TOKEN")
+                    append(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                }
+                setBody(postData)
+            }
 
-        val responseData = resp.body<HttpData<String>>()
-        if (responseData.code != 200 || responseData.message != "ok") {
-            throw Exception("Server error: ${responseData.code}")
-        }
+            if (resp.status != HttpStatusCode.OK) {
+                val error = Exception("Error uploading data: ${resp.status}")
+                transactions.forEach { it.complete(null) }
+                throw error
+            }
 
-        lastTx?.complete(null)
+            if (resp.status != HttpStatusCode.OK) {
+                val error = Exception("Error uploading data: ${resp.status}")
+                throw error
+            }
+
+            transactions.forEach { it.complete(null) }
+
+            println("Successfully uploaded ${transactions.size} transactions with ${batch.size} operations")
+
+        } catch (e: Exception) {
+            throw e
+        }
     }
 }
 
@@ -273,7 +382,12 @@ class BookmarkViewModel(
                     !status.connected -> SyncStatus.Disconnected
                     status.downloading -> SyncStatus.Syncing(
                         progress = status.downloadProgress?.let {
-                            it.downloadedOperations.toFloat() / it.totalOperations.toFloat()
+                            if (it.totalOperations > 0) {
+                                val progress = it.downloadedOperations.toFloat() / it.totalOperations.toFloat()
+                                progress.coerceIn(0f, 1f)
+                            } else {
+                                0f
+                            }
                         } ?: 0f
                     )
 
@@ -318,6 +432,112 @@ class BookmarkViewModel(
                     }
                 } catch (e: Exception) {
                     println("Error toggling archive: ${e.message}")
+                }
+            }
+        }
+    }
+
+    fun updateBookmarkTags(bookmarkId: String, newTagIds: List<String>) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                try {
+                    updateMetadataField(bookmarkId, "tags", Json.encodeToString(newTagIds))
+                } catch (e: Exception) {
+                    println("Error updating bookmark tags: ${e.message}")
+                }
+            }
+        }
+    }
+
+    fun disableBookmarkShare(bookmarkId: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                try {
+                    updateMetadataField(bookmarkId, "share.is_enable", Json.encodeToString(false))
+                } catch (e: Exception) {
+                    println("Error disabling bookmark share: ${e.message}")
+                }
+            }
+        }
+    }
+
+    private suspend fun updateMetadataField(bookmarkId: String, fieldPath: String, jsonValue: String) {
+        database.writeTransaction { tx ->
+            tx.execute(
+                "UPDATE sr_user_bookmark SET metadata = JSON_SET(COALESCE(metadata, '{}'), '$.$fieldPath', JSON(?)) WHERE id = ?",
+                listOf(jsonValue, bookmarkId)
+            )
+        }
+    }
+
+    @OptIn(ExperimentalTime::class)
+    fun deleteBookmark(bookmarkId: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                try {
+                    val now = Clock.System.now().toString()
+                    database.writeTransaction { tx ->
+                        tx.execute(
+                            "UPDATE sr_user_bookmark SET deleted_at = ? WHERE id = ?",
+                            listOf(now, bookmarkId)
+                        )
+                    }
+                } catch (e: Exception) {
+                    println("Error deleting bookmark: ${e.message}")
+                }
+            }
+        }
+    }
+
+    @OptIn(ExperimentalUuidApi::class, ExperimentalTime::class)
+    fun createBookmark(url: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                try {
+                    val bookmarkId = Uuid.random().toString()
+                    val now = Clock.System.now().toString()
+
+                    database.writeTransaction { tx ->
+                        tx.execute(
+                            """INSERT INTO sr_user_bookmark 
+                            (id, is_read, archive_status, is_starred, created_at, updated_at, 
+                             alias_title, type, deleted_at, metadata) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                            listOf(
+                                bookmarkId,
+                                0, // is_read
+                                0, // archive_status
+                                0, // is_starred
+                                now, // created_at
+                                now, // updated_at
+                                "", // alias_title
+                                0, // type
+                                null, // deleted_at
+                                Json.encodeToString(
+                                    BookmarkMetadata(
+                                        tags = emptyList(),
+                                        share = null,
+                                        bookmark = BookmarkDetails(
+                                            uuid = bookmarkId,
+                                            title = "New Bookmark",
+                                            byline = "",
+                                            status = "pending",
+                                            host_url = url,
+                                            site_name = "",
+                                            target_url = url,
+                                            description = "",
+                                            content_icon = "",
+                                            published_at = now,
+                                            content_cover = "",
+                                            content_word_count = 0
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    }
+                } catch (e: Exception) {
+                    println("Error creating bookmark: ${e.message}")
                 }
             }
         }
@@ -386,27 +606,46 @@ fun getUserTags(database: PowerSyncDatabase): Flow<Map<String, UserTag>> {
 fun UserBookmarksScreen(viewModel: BookmarkViewModel) {
     val bookmarks by viewModel.bookmarks.collectAsState()
     val syncStatus = viewModel.syncStatus
+    var showCreateDialog by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        BookmarksHeader()
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            BookmarksHeader()
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        StatusCard(syncStatus = syncStatus)
+            StatusCard(syncStatus = syncStatus)
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        BookmarksListHeader(count = bookmarks.size)
+            BookmarksListHeader(count = bookmarks.size)
 
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-        BookmarksList(
-            bookmarks = bookmarks,
-            viewModel = viewModel
+            BookmarksList(
+                bookmarks = bookmarks,
+                viewModel = viewModel
+            )
+        }
+
+        FloatingActionButton(
+            onClick = { showCreateDialog = true },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
+            Text("+", fontSize = 24.sp)
+        }
+    }
+
+    if (showCreateDialog) {
+        CreateBookmarkDialog(
+            viewModel = viewModel,
+            onDismiss = { showCreateDialog = false }
         )
     }
 }
@@ -501,6 +740,7 @@ private fun BookmarksList(
                 tagNames = remember(bookmark.metadataObj?.tags) {
                     viewModel.getTagNames(bookmark.metadataObj?.tags ?: emptyList())
                 },
+                viewModel = viewModel,
                 onToggleStar = { onToggleStar(bookmark.id, bookmark.isStarred) },
                 onToggleArchive = { onToggleArchive(bookmark.id, bookmark.archiveStatus) }
             )
@@ -512,9 +752,12 @@ private fun BookmarksList(
 private fun BookmarkCard(
     bookmark: UserBookmark,
     tagNames: List<String>,
+    viewModel: BookmarkViewModel,
     onToggleStar: () -> Unit,
     onToggleArchive: () -> Unit
 ) {
+    var showTagDialog by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -531,7 +774,15 @@ private fun BookmarkCard(
 
             if (tagNames.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
-                TagsRow(tagNames)
+                TagsRow(tagNames) { showTagDialog = true }
+            } else {
+                Spacer(modifier = Modifier.height(8.dp))
+                TextButton(
+                    onClick = { showTagDialog = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("+ 添加标签", fontSize = 12.sp)
+                }
             }
 
             Spacer(modifier = Modifier.height(6.dp))
@@ -550,24 +801,38 @@ private fun BookmarkCard(
 
             BookmarkActions(
                 bookmark = bookmark,
+                viewModel = viewModel,
                 onToggleStar = onToggleStar,
                 onToggleArchive = onToggleArchive
             )
         }
     }
+
+    if (showTagDialog) {
+        TagSelectionDialog(
+            bookmark = bookmark,
+            viewModel = viewModel,
+            onDismiss = { showTagDialog = false }
+        )
+    }
 }
 
 @Composable
-private fun TagsRow(tagNames: List<String>) {
+private fun TagsRow(tagNames: List<String>, onClick: () -> Unit = {}) {
     val tagsText = remember(tagNames) {
         tagNames.joinToString(" • ")
     }
 
-    Text(
-        text = tagsText,
-        fontSize = 12.sp,
-        color = MaterialTheme.colorScheme.primary
-    )
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = tagsText,
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
 }
 
 @Composable
@@ -606,9 +871,12 @@ private fun StatusText(text: String, isPrimary: Boolean) {
 @Composable
 private fun BookmarkActions(
     bookmark: UserBookmark,
+    viewModel: BookmarkViewModel,
     onToggleStar: () -> Unit,
     onToggleArchive: () -> Unit
 ) {
+    val isShared = bookmark.parsedMetadata()?.share?.is_enable == true
+
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         TextButton(
             onClick = onToggleStar,
@@ -623,5 +891,143 @@ private fun BookmarkActions(
         ) {
             Text(text = if (bookmark.archiveStatus == 1) "取消归档" else "归档")
         }
+
+        if (isShared) {
+            TextButton(
+                onClick = { viewModel.disableBookmarkShare(bookmark.id) },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text("取消分享")
+            }
+        }
+
+        TextButton(
+            onClick = { viewModel.deleteBookmark(bookmark.id) },
+            modifier = Modifier.weight(1f),
+            colors = ButtonDefaults.textButtonColors(
+                contentColor = MaterialTheme.colorScheme.error
+            )
+        ) {
+            Text("删除")
+        }
     }
+}
+
+@Composable
+private fun TagSelectionDialog(
+    bookmark: UserBookmark,
+    viewModel: BookmarkViewModel,
+    onDismiss: () -> Unit
+) {
+    val allTags by viewModel.tags.collectAsState()
+    val currentTagIds = bookmark.parsedMetadata()?.tags ?: emptyList()
+    val selectedTagIds = remember {
+        mutableStateMapOf<String, Boolean>().apply {
+            allTags.keys.forEach { tagId ->
+                this[tagId] = tagId in currentTagIds
+            }
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("编辑标签") },
+        text = {
+            LazyColumn(
+                modifier = Modifier.height(300.dp)
+            ) {
+                items(allTags.entries.toList()) { (tagId, tag) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = selectedTagIds[tagId] ?: false,
+                            onCheckedChange = { checked ->
+                                selectedTagIds[tagId] = checked
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(tag.tag_name)
+                        Spacer(modifier = Modifier.weight(1f))
+                        if (selectedTagIds[tagId] == true) {
+                            TextButton(
+                                onClick = {
+                                    selectedTagIds[tagId] = false
+                                }
+                            ) {
+                                Text("移除", color = MaterialTheme.colorScheme.error)
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val newTagIds = selectedTagIds.filter { it.value }.keys.toList()
+                    viewModel.updateBookmarkTags(bookmark.id, newTagIds)
+                    onDismiss()
+                }
+            ) {
+                Text("保存")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+}
+
+@Composable
+private fun CreateBookmarkDialog(
+    viewModel: BookmarkViewModel,
+    onDismiss: () -> Unit
+) {
+    var url by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("创建书签") },
+        text = {
+            Column {
+                Text("输入要收藏的网址:")
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = url,
+                    onValueChange = { url = it },
+                    label = { Text("URL") },
+                    placeholder = { Text("https://example.com") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (url.isNotBlank()) {
+                        viewModel.createBookmark(url.trim())
+                        onDismiss()
+                    }
+                },
+                enabled = url.isNotBlank()
+            ) {
+                Text("创建")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
 }

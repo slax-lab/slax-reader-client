@@ -8,7 +8,6 @@ import com.powersync.db.schema.TrackPreviousValuesOptions
 val srUserTable = Table(
     name = "sr_user",
     ignoreEmptyUpdates = true,
-    trackPreviousValues = TrackPreviousValuesOptions(columnFilter = null, onlyWhenChanged = true),
     columns = listOf(
         Column.text("email"),
         Column.text("name"),
@@ -26,6 +25,7 @@ val srUserTable = Table(
 
 val srUserTagTable = Table(
     name = "sr_user_tag",
+    trackPreviousValues = TrackPreviousValuesOptions(),
     columns = listOf(
         Column.text("user_id"),
         Column.text("tag_name"),
@@ -70,6 +70,7 @@ val srUserBookmarkOverviewTable = Table(
 
 val srUserBookmarkTable = Table(
     name = "sr_user_bookmark",
+    trackPreviousValues = TrackPreviousValuesOptions(onlyWhenChanged = true, columnFilter = null),
     columns = listOf(
         Column.text("user_id"),
         Column.integer("is_read"),
