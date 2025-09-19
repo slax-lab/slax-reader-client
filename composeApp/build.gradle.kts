@@ -91,26 +91,13 @@ kotlin {
             // webview
             api(libs.compose.webview.multiplatform)
 
-            // hyper
-            implementation(libs.ksoup.kotlinx)
-            implementation(libs.ksoup)
-
-            implementation(libs.coil3.coil.compose)
-            implementation(libs.coil.network.ktor)
-
             // log
             implementation(libs.napier)
-
-            // htmlconverter
-            implementation(libs.htmlconverter)
-
-            // rich editor
-            implementation(libs.richeditor.compose)
 
             implementation(libs.datastore.preferences)
 
             // PowerSync
-            implementation("com.powersync:core:1.5.1")
+            implementation(libs.powerSyncCore)
 
             // DI
             implementation(libs.koin.core)
