@@ -8,21 +8,28 @@ androidx-lifecycle = "2.9.4"
 composeHotReload = "1.0.0-beta07"
 composeMultiplatform = "1.9.0"
 composeWebviewMultiplatform = "2.0.3"
-powerSyncCore = "1.6.0"
+powerSyncCore = "1.6.1"
+powerSyncRoom = "1.6.1"
+room = "2.8.0"
+sqlite = "2.6.0"
+ksp = "2.2.20-2.0.3"
 koinCompose = "4.1.1"
 kotlin = "2.2.20"
 kotlinx-coroutines = "1.10.2"
 ktorClientOkhttp = "3.3.0"
 napier = "2.7.1"
 navigationCompose = "2.9.0"
-richeditorCompose = "1.0.0-rc13"
-coilCompose = "3.3.0"
 datastore = "1.1.7"
 kotlinx-serialization = "1.9.0"
 
 [libraries]
 compose-webview-multiplatform = { module = "io.github.kevinnzou:compose-webview-multiplatform", version.ref = "composeWebviewMultiplatform" }
 powerSyncCore = { module = "com.powersync:core", version.ref = "powerSyncCore" }
+powerSyncRoom = { module = "com.powersync:integration-room", version.ref = "powerSyncRoom" }
+androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
+room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
+room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koinCompose" }
 koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koinCompose" }
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koinCompose" }
@@ -50,3 +57,5 @@ composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMul
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+androidx-room = { id = "androidx.room", version.ref = "room" }

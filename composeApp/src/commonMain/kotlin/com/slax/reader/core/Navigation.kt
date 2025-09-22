@@ -67,12 +67,6 @@ fun SlaxNavigation() {
         composable("home") {
             HomeScreen().Screen(navCtrl)
         }
-        composable("hyper") {
-            HybridReaderView(navCtrl)
-        }
-        composable("rich") {
-            RichRender(navCtrl)
-        }
         composable("raw_webview") {
             val webState = rememberWebViewState(url = "https://r.slax.com/s/P1A0aa4387")
             ChromeReaderView(navCtrl, webState)

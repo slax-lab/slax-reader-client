@@ -23,11 +23,8 @@ interface HomeScreen {
         val routes: List<Pair<String, String>>
             get() = listOf(
                 "Chrome Reader" to "chrome",
-                "Hybrid Reader" to "hyper",
-                "Rich Render" to "rich",
                 "Raw WebView" to "raw_webview",
                 "Sync" to "Orders",
-                "About" to "about"
             )
     }
 
