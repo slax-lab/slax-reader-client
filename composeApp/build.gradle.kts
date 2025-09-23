@@ -1,4 +1,3 @@
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -46,25 +45,10 @@ kotlin {
         }
     }
 
-    jvm()
     iosX64()
     iosArm64()
     iosSimulatorArm64()
 
-    // TODO
-//    val macosX64 = macosX64()
-//    val macosArm64 = macosArm64()
-//    val xcf = XCFramework("SharedKit")
-//    listOf(macosX64, macosArm64).forEach { target ->
-//        target.binaries {
-//            framework {
-//                baseName = "SharedKit"
-//                xcf.add(this)
-//                export("io.ktor:ktor-client-core:2.3.0")
-//                export("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0")
-//            }
-//        }
-//    }
 
     sourceSets {
         androidMain.dependencies {
@@ -117,15 +101,6 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
-        jvmMain.dependencies {
-            implementation(compose.desktop.currentOs)
-            implementation(libs.kotlinx.coroutinesSwing)
-            // Ktor engine for Desktop
-            implementation(libs.ktor.client.java)
-        }
-        macosMain.dependencies {
-            implementation("io.ktor:ktor-client-darwin:2.3.0")
-        }
     }
 }
 
@@ -162,33 +137,4 @@ android {
 
 dependencies {
     debugImplementation(compose.uiTooling)
-}
-
-compose.desktop {
-    application {
-        mainClass = "com.slax.reader.MainKt"
-
-        nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.slax.reader"
-            packageVersion = "1.0.0"
-
-            includeAllModules = true
-        }
-
-        jvmArgs += listOf(
-            "-Dkcef.bundles.dir=./kcef-bundle",
-            "-Dkcef.cache.dir=./kcef-bundle/cache",
-            "-Djcef.bundle.dir=./kcef-bundle",
-            "--add-opens=java.desktop/sun.awt=ALL-UNNAMED",
-            "--add-opens=java.desktop/java.awt.peer=ALL-UNNAMED",
-            "--add-opens=java.desktop/java.awt=ALL-UNNAMED",
-            "--add-opens=java.base/java.lang=ALL-UNNAMED",
-            "-Xmx2048m"
-        )
-
-        buildTypes.release.proguard {
-            isEnabled = false
-        }
-    }
 }
