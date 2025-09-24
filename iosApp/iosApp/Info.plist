@@ -8,8 +8,6 @@
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
-		<key>NSExceptionDomains</key>
-		<dict/>
 	</dict>
 	<key>NSNetworkUsageDescription</key>
 	<string>This app needs network access to sync data with PowerSync service.</string>

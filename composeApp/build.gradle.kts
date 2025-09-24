@@ -49,7 +49,6 @@ kotlin {
     iosArm64()
     iosSimulatorArm64()
 
-
     sourceSets {
         androidMain.dependencies {
             implementation(compose.preview)
@@ -96,7 +95,7 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
 
             // time
-            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1")
+            implementation(libs.kotlinx.datetime)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
