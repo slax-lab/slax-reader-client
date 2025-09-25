@@ -8,6 +8,18 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <activity android:name=".shared.ShareActivity"
+                  android:exported="true"
+                  android:theme="@style/TransparentActivity"
+                  android:taskAffinity=""
+                  android:excludeFromRecents="true"
+                  android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="text/plain"/>
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

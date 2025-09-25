@@ -10,7 +10,7 @@
 	<true/>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.app.slax.notes</string>
+		<string>group.app.slax.reader</string>
 	</array>
 </dict>
 </plist>
