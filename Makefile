@@ -6,3 +6,6 @@ build-apk-release:
 
 pod-install:
 	./gradlew :composeApp:podInstall
+
+gen-privacy:
+	cd composeApp && python3 ../script/required_reason_finder.py

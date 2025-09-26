@@ -6,30 +6,30 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import com.slax.reader.core.SlaxNavigation
+import androidx.navigation.compose.rememberNavController
 import com.slax.reader.di.appModule
+import com.slax.reader.ui.SlaxNavigation
 import org.koin.android.ext.koin.androidContext
-import org.koin.core.context.GlobalContext
-import org.koin.core.context.startKoin
+import org.koin.android.ext.koin.androidLogger
+import org.koin.compose.KoinApplication
+import org.koin.core.logger.Level
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge()
-        
-        // 检查Koin是否已经启动，避免重复启动
-        if (GlobalContext.getOrNull() == null) {
-            startKoin {
-                androidContext(this@MainActivity)
-                modules(appModule)
-            }
-        } else {
-            println("Koin application already started, skipping initialization...")
-        }
-        
         setContent {
-            SlaxNavigation()
+            KoinApplication(
+                application = {
+                    androidLogger(Level.INFO)
+                    androidContext(androidContext = this@MainActivity)
+                    modules(appModule)
+                }
+            ) {
+                val ctrl = rememberNavController()
+                SlaxNavigation(ctrl)
+            }
         }
     }
 }
@@ -37,5 +37,6 @@ class MainActivity : ComponentActivity() {
 @Preview
 @Composable
 fun AppAndroidPreview() {
-    SlaxNavigation()
+    val ctrl = rememberNavController()
+    SlaxNavigation(ctrl)
 }

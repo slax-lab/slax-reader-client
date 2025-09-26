@@ -2,15 +2,19 @@ package com.slax.reader
 
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeUIViewController
-import com.slax.reader.core.SlaxNavigation
+import androidx.navigation.compose.rememberNavController
 import com.slax.reader.di.appModule
-import org.koin.core.context.startKoin
-
+import com.slax.reader.ui.SlaxNavigation
+import org.koin.compose.KoinApplication
 
 @OptIn(ExperimentalComposeUiApi::class)
-fun MainViewController() = ComposeUIViewController(configure = { parallelRendering = true }) {
-    startKoin {
-        modules(appModule)
+fun MainViewController() = ComposeUIViewController {
+    KoinApplication(
+        application = {
+            modules(appModule)
+        }
+    ) {
+        val navController = rememberNavController()
+        SlaxNavigation(navController)
     }
-    SlaxNavigation()
 }

@@ -8,7 +8,7 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <activity android:name=".shared.ShareActivity"
+        <activity android:name=".extension.ShareActivity"
                   android:exported="true"
                   android:theme="@style/TransparentActivity"
                   android:taskAffinity=""
