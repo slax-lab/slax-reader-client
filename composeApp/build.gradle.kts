@@ -146,11 +146,11 @@ kotlin {
 }
 
 android {
-    namespace = "app.slax.reader"
+    namespace = "com.slax.reader"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "app.slax.reader"
+        applicationId = "com.slax.reader"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = appVersionCode.toInt()

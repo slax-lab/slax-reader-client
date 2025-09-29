@@ -1,3 +1,9 @@
+project 'iosApp', {
+  'Debug' => :debug,
+  'Beta' => :release,
+  'Release' => :release
+}
+
 target 'iosApp' do
   use_frameworks!
   platform :ios, '14.1'
