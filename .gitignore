@@ -19,3 +19,4 @@ captures
 Pods/
 Podfile.lock
 *.xcworkspace
+.env

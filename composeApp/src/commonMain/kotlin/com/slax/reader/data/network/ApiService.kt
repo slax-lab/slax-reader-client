@@ -1,5 +1,6 @@
 package com.slax.reader.data.network
 
+import app.slax.reader.SlaxConfig
 import com.slax.reader.const.AppError
 import com.slax.reader.data.network.dto.ChangesItem
 import com.slax.reader.data.network.dto.CredentialsData
@@ -22,14 +23,17 @@ class ApiService(
 
     private fun buildUrl(pathName: String, query: Map<String, String>?): String {
         val builder = URLBuilder()
-        // TODO: using config inject
-        builder.takeFrom("https://reader-api.slax.dev")
+        builder.takeFrom(SlaxConfig.API_BASE_URL)
         builder.path(pathName)
         query?.map { (k, v) -> builder.parameters.append(k, v) }
         return builder.toString()
     }
 
-    private suspend inline fun <reified T> get(pathName: String, query: Map<String, String>?, options: Options?): HttpData<T> {
+    private suspend inline fun <reified T> get(
+        pathName: String,
+        query: Map<String, String>?,
+        options: Options?
+    ): HttpData<T> {
         return preferences.getAuthToken().first().let { token ->
             if (token.isEmpty() && options?.notAuthorized != true) {
                 throw AppError.AuthException.TokenNotFound("No auth token found")

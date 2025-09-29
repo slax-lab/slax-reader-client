@@ -1,5 +1,21 @@
+import com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING
+import io.github.cdimascio.dotenv.dotenv
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.*
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    dependencies {
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0")
+        classpath("com.codingfeline.buildkonfig:buildkonfig-gradle-plugin:0.17.1")
+        classpath("io.github.cdimascio:dotenv-kotlin:6.5.1")
+    }
+}
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -9,6 +25,7 @@ plugins {
     alias(libs.plugins.composeHotReload)
     alias(libs.plugins.kotlinx.serialization)
     kotlin("native.cocoapods")
+    id("com.codingfeline.buildkonfig") version "0.17.1"
 }
 
 repositories {
@@ -17,10 +34,35 @@ repositories {
     maven("https://jogamp.org/deployment/maven")
 }
 
+fun incrementVersionCode(): String {
+    val propsFile = File(rootProject.projectDir, "gradle.properties")
+    val props = Properties()
+    props.load(propsFile.inputStream())
+
+    val currentVersionCode = props.getProperty("appVersionCode")?.toInt()!!
+    val newVersionCode = currentVersionCode + 1
+
+    props.setProperty("appVersionCode", newVersionCode.toString())
+    props.store(propsFile.outputStream(), null)
+
+    return newVersionCode.toString()
+}
+
+// Only increment version code when building (assemble or build task), otherwise use existing version code
+val appVersionCode =
+    if (gradle.startParameter.taskNames.any { it.contains("assemble") || it.contains("build") || it.contains("embedAndSign") }) {
+        incrementVersionCode()
+    } else {
+        project.findProperty("appVersionCode")?.toString()!!
+    }
+
+val appVersionName = project.findProperty("appVersionName")?.toString()!!
+val appVersion = "$appVersionName+$appVersionCode"
+
 kotlin {
     cocoapods {
         name = "ComposeApp"
-        version = "1.0"
+        version = appVersion
         summary = "Slax Reader Client"
         homepage = "https://github.com/slax-lab/slax-reader-client"
         ios.deploymentTarget = "14.1"
@@ -104,15 +146,15 @@ kotlin {
 }
 
 android {
-    namespace = "com.slax.reader"
+    namespace = "app.slax.reader"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.slax.reader"
+        applicationId = "app.slax.reader"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = appVersionCode.toInt()
+        versionName = appVersionName
     }
     packaging {
         resources {
@@ -136,4 +178,37 @@ android {
 
 dependencies {
     debugImplementation(compose.uiTooling)
+}
+
+buildkonfig {
+    packageName = "app.slax.reader"
+    objectName = "SlaxConfig"
+
+    val dotenv = dotenv {
+        directory = rootProject.projectDir.absolutePath
+    }
+
+    defaultConfigs {
+        buildConfigField(STRING, "APP_NAME", "Slax Reader")
+        buildConfigField(STRING, "APP_VERSION_NAME", appVersionName)
+        buildConfigField(STRING, "APP_VERSION_CODE", appVersionCode)
+    }
+
+    defaultConfigs("dev") {
+        buildConfigField(STRING, "API_BASE_URL", "https://reader-api.slax.dev")
+        buildConfigField(STRING, "LOG_LEVEL", "DEBUG")
+        buildConfigField(STRING, "SECRET", dotenv?.get("SECRET") ?: "test")
+    }
+
+    defaultConfigs("beta") {
+        buildConfigField(STRING, "API_BASE_URL", "https://reader-api-beta.slax.com")
+        buildConfigField(STRING, "LOG_LEVEL", "INFO")
+        buildConfigField(STRING, "SECRET", dotenv?.get("SECRET") ?: "test")
+    }
+
+    defaultConfigs("release") {
+        buildConfigField(STRING, "API_BASE_URL", "https://reader-api.slax.com")
+        buildConfigField(STRING, "LOG_LEVEL", "ERROR")
+        buildConfigField(STRING, "SECRET", dotenv?.get("SECRET") ?: "test")
+    }
 }

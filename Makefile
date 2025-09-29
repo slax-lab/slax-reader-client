@@ -1,11 +1,14 @@
-build-apk-test:
+apk-test:
 	./gradlew assembleDebug
 
-build-apk-release:
+apk-beta:
 	./gradlew assembleRelease
 
-pod-install:
-	./gradlew :composeApp:podInstall
+apk-release:
+	./gradlew assembleRelease
 
 gen-privacy:
 	cd composeApp && python3 ../script/required_reason_finder.py
+
+config:
+	./gradlew generateBuildKonfig
