@@ -14,10 +14,8 @@ captures
 !*.xcodeproj/project.pbxproj
 !*.xcodeproj/xcshareddata/
 !*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
-iosApp/*.xcodeproj
-iosApp/Pods/
-iosApp/Podfile.lock
+Pods/
+Podfile.lock
 *.xcworkspace
-*.xcworkspace/xcuserdata
-.swiftpm/xcode/package.xcworkspace

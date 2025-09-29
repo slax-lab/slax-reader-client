@@ -10,7 +10,7 @@ import org.koin.dsl.module
 actual val preferencesPlatformModule = module {
     single<DataStore<Preferences>> {
         PreferenceDataStoreFactory.createWithPath(
-            produceFile = { androidContext().filesDir.resolve("preferences.pb").absolutePath.toPath() }
+            produceFile = { androidContext().filesDir.resolve("user.preferences_pb").absolutePath.toPath() }
         )
     }
     single<AppPreferences> { AppPreferences(get()) }
