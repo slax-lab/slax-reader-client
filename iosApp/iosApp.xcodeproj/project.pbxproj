@@ -7,10 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		8A9D0BAC2E8A987300FFDE17 /* Pods_iosApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E1B94AA7944F4B89899B752 /* Pods_iosApp.framework */; };
 		8A9D0BAD2E8A989900FFDE17 /* share.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8AD22C002E83ED490035EA6E /* share.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8A9D0BB02E8A9A7000FFDE17 /* Pods_iosApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E1B94AA7944F4B89899B752 /* Pods_iosApp.framework */; };
 		8AC258C62E83C6AF00FE5645 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8AC258C52E83C6AF00FE5645 /* StoreKit.framework */; };
+		DFEF50AD2D810D4E5C9B12AD /* Pods_iosApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8A9D0BAA2E8A985300FFDE17 /* Pods_iosApp.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -87,6 +87,8 @@
 		};
 		B9DA98002DC14AA900A4DA20 /* Configuration */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = Configuration;
 			sourceTree = "<group>";
 		};
@@ -97,7 +99,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8A9D0BAC2E8A987300FFDE17 /* Pods_iosApp.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -107,6 +108,7 @@
 			files = (
 				8A9D0BB02E8A9A7000FFDE17 /* Pods_iosApp.framework in Frameworks */,
 				8AC258C62E83C6AF00FE5645 /* StoreKit.framework in Frameworks */,
+				DFEF50AD2D810D4E5C9B12AD /* Pods_iosApp.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -186,6 +188,7 @@
 			buildPhases = (
 				4FC02AD3DC82B120B07FB8EF /* [CP] Check Pods Manifest.lock */,
 				B9DA97F42DC1497100A4DA20 /* Compile Kotlin Framework */,
+				8A0D8C002E8BD3230021AA96 /* Sync Kotlin Framework Version */,
 				B9DA97AD2DC1472C00A4DA20 /* Sources */,
 				B9DA97AE2DC1472C00A4DA20 /* Frameworks */,
 				B9DA97AF2DC1472C00A4DA20 /* Resources */,
@@ -292,18 +295,33 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-resources.sh\"\n";
 			showEnvVarsInLog = 0;
+		};
+		8A0D8C002E8BD3230021AA96 /* Sync Kotlin Framework Version */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Sync Kotlin Framework Version";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"$SRCROOT/..\"\n./gradlew :composeApp:syncXcodeVersionConfig\n";
 		};
 		9C75A494926E4236F2EC267B /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -313,13 +331,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -576,7 +590,7 @@
 				CODE_SIGN_ENTITLEMENTS = iosApp/iosAppDebug.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = "$(BUNDLE_VERSION)";
 				DEVELOPMENT_ASSET_PATHS = "\"iosApp/Preview Content\"";
 				DEVELOPMENT_TEAM = 8G3A932HJG;
 				ENABLE_PREVIEWS = YES;
@@ -594,7 +608,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = "$(BUNDLE_SHORT_VERSION_STRING)";
 				PRODUCT_BUNDLE_IDENTIFIER = app.slax.reader;
 				PRODUCT_NAME = "Slax Reader";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -612,7 +626,7 @@
 				CODE_SIGN_ENTITLEMENTS = iosApp/iosApp.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = "$(BUNDLE_VERSION)";
 				DEVELOPMENT_ASSET_PATHS = "\"iosApp/Preview Content\"";
 				DEVELOPMENT_TEAM = 8G3A932HJG;
 				ENABLE_PREVIEWS = YES;
@@ -630,7 +644,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = "$(BUNDLE_SHORT_VERSION_STRING)";
 				PRODUCT_BUNDLE_IDENTIFIER = app.slax.reader;
 				PRODUCT_NAME = "Slax Reader";
 				SWIFT_EMIT_LOC_STRINGS = YES;

@@ -1,8 +1,5 @@
-@file:OptIn(ExperimentalKotlinGradlePluginApi::class)
-
 import com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING
 import io.github.cdimascio.dotenv.dotenv
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
 import java.util.*
@@ -53,14 +50,14 @@ fun incrementVersionCode(): String {
 
 // Only increment version code when building (assemble or build task), otherwise use existing version code
 val appVersionCode =
-    if (gradle.startParameter.taskNames.any { it.contains("assemble") || it.contains("build") || it.contains("embedAndSign") }) {
+    if (gradle.startParameter.taskNames.any { it.contains("assemble") || it.contains("build") }) {
         incrementVersionCode()
     } else {
         project.findProperty("appVersionCode")?.toString()!!
     }
 
 val appVersionName = project.findProperty("appVersionName")?.toString()!!
-val appVersion = "$appVersionName+$appVersionCode"
+val buildFlavor = project.findProperty("buildkonfig.flavor") as? String ?: "dev"
 
 kotlin {
     cocoapods {
@@ -87,7 +84,6 @@ kotlin {
     }
 
     androidTarget {
-        @OptIn(ExperimentalKotlinGradlePluginApi::class)
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
         }
@@ -173,6 +169,10 @@ android {
         }
         getByName("release") {
             isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
     compileOptions {
@@ -180,7 +180,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 }
-
 
 dependencies {
     debugImplementation(compose.uiTooling)
@@ -201,20 +200,34 @@ buildkonfig {
     }
 
     defaultConfigs("dev") {
+        buildConfigField(STRING, "BUILD_ENV", buildFlavor)
         buildConfigField(STRING, "API_BASE_URL", "https://reader-api.slax.dev")
         buildConfigField(STRING, "LOG_LEVEL", "DEBUG")
-        buildConfigField(STRING, "SECRET", dotenv.get("SECRET")!!)
+//        buildConfigField(STRING, "SECRET", dotenv.get("SECRET")!!)
     }
 
     defaultConfigs("beta") {
+        buildConfigField(STRING, "BUILD_ENV", buildFlavor)
         buildConfigField(STRING, "API_BASE_URL", "https://reader-api-beta.slax.com")
         buildConfigField(STRING, "LOG_LEVEL", "INFO")
-        buildConfigField(STRING, "SECRET", dotenv.get("SECRET")!!)
+//        buildConfigField(STRING, "SECRET", dotenv.get("SECRET")!!)
     }
 
     defaultConfigs("release") {
+        buildConfigField(STRING, "BUILD_ENV", buildFlavor)
         buildConfigField(STRING, "API_BASE_URL", "https://reader-api.slax.com")
         buildConfigField(STRING, "LOG_LEVEL", "ERROR")
-        buildConfigField(STRING, "SECRET", dotenv.get("SECRET")!!)
+//        buildConfigField(STRING, "SECRET", dotenv.get("SECRET")!!)
     }
+}
+
+tasks.register<Exec>("syncXcodeVersionConfig") {
+    workingDir(layout.projectDirectory.dir("../iosApp"))
+
+    val xconfigContent = """
+        BUNDLE_SHORT_VERSION_STRING = $appVersionName
+        BUNDLE_VERSION = $appVersionCode
+    """.trimIndent()
+
+    commandLine("sh", "-c", "echo '$xconfigContent' > Versions.xcconfig")
 }

@@ -25,6 +25,7 @@ interface HomeScreen {
                 "Chrome Reader" to "chrome",
                 "Raw WebView" to "raw_webview",
                 "Sync" to "Orders",
+                "Debug" to "debug"
             )
     }
 

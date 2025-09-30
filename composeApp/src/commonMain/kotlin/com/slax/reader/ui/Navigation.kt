@@ -17,6 +17,7 @@ import com.slax.reader.ui.bookmark.ChromeReaderView
 import com.slax.reader.ui.bookmark.optimizedHtml
 import com.slax.reader.ui.bookmarks.BookmarkViewModel
 import com.slax.reader.ui.bookmarks.UserBookmarksScreen
+import com.slax.reader.ui.debug.DebugScreen
 import com.slax.reader.ui.home.HomeScreen
 import com.slax.reader.utils.Connector
 import org.koin.compose.koinInject
@@ -62,6 +63,9 @@ fun SlaxNavigation(
         composable("orders") {
             val viewModel: BookmarkViewModel = koinInject()
             UserBookmarksScreen(viewModel)
+        }
+        composable("debug") {
+            DebugScreen()
         }
     }
 }

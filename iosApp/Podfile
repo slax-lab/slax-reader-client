@@ -7,6 +7,19 @@ project 'iosApp', {
 target 'iosApp' do
   use_frameworks!
   platform :ios, '14.1'
-  
+
   pod 'ComposeApp', :path => '../composeApp'
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      xcconfig_path = config.base_configuration_reference.real_path
+      xcconfig = File.read(xcconfig_path)
+      unless xcconfig.include?('#include "../../../Versions.xcconfig"')
+        new_xcconfig = "#include \"../../../Versions.xcconfig\"\n\n" + xcconfig
+        File.write(xcconfig_path, new_xcconfig)
+      end
+    end
+  end
 end

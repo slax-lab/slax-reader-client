@@ -1,5 +1,5 @@
 PODS:
-  - "ComposeApp (1.0.1+24)":
+  - ComposeApp (1.0.1):
     - powersync-sqlite-core
   - powersync-sqlite-core (0.4.6)
 
@@ -15,9 +15,9 @@ EXTERNAL SOURCES:
     :path: "../composeApp"
 
 SPEC CHECKSUMS:
-  ComposeApp: 0ff77cb609c3757357f62a3de7a89fe90c41b2c7
+  ComposeApp: 304df8b0d2f7140e485db6e32d3ff04d9c4f9409
   powersync-sqlite-core: 42c4a42a692b3b770a5488778789430d67a39b49
 
-PODFILE CHECKSUM: c436493df0607f767bd84d870a85b0bd828e392d
+PODFILE CHECKSUM: 32641aa8695aa15e245ce8362c0adafa36ee6403
 
 COCOAPODS: 1.16.2
