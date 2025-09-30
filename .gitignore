@@ -20,3 +20,4 @@ Pods/
 Podfile.lock
 *.xcworkspace
 .env
+Versions.xcconfig
