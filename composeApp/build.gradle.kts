@@ -1,7 +1,10 @@
+@file:OptIn(ExperimentalKotlinGradlePluginApi::class)
+
 import com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING
 import io.github.cdimascio.dotenv.dotenv
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
 import java.util.*
 
 buildscript {
@@ -62,12 +65,14 @@ val appVersion = "$appVersionName+$appVersionCode"
 kotlin {
     cocoapods {
         name = "ComposeApp"
-        version = appVersion
+        version = appVersionName
         summary = "Slax Reader Client"
         homepage = "https://github.com/slax-lab/slax-reader-client"
         ios.deploymentTarget = "14.1"
 
         podfile = project.file("../iosApp/Podfile")
+        xcodeConfigurationToNativeBuildType["Release"] = NativeBuildType.RELEASE
+        xcodeConfigurationToNativeBuildType["Debug"] = NativeBuildType.DEBUG
 
         pod("powersync-sqlite-core") {
             linkOnly = true
@@ -77,6 +82,7 @@ kotlin {
             baseName = "ComposeApp"
             isStatic = true
             export("com.powersync:core")
+            binaryOption("bundleId", "com.slax.reader.composeapp")
         }
     }
 
@@ -197,18 +203,18 @@ buildkonfig {
     defaultConfigs("dev") {
         buildConfigField(STRING, "API_BASE_URL", "https://reader-api.slax.dev")
         buildConfigField(STRING, "LOG_LEVEL", "DEBUG")
-        buildConfigField(STRING, "SECRET", dotenv?.get("SECRET") ?: "test")
+        buildConfigField(STRING, "SECRET", dotenv.get("SECRET")!!)
     }
 
     defaultConfigs("beta") {
         buildConfigField(STRING, "API_BASE_URL", "https://reader-api-beta.slax.com")
         buildConfigField(STRING, "LOG_LEVEL", "INFO")
-        buildConfigField(STRING, "SECRET", dotenv?.get("SECRET") ?: "test")
+        buildConfigField(STRING, "SECRET", dotenv.get("SECRET")!!)
     }
 
     defaultConfigs("release") {
         buildConfigField(STRING, "API_BASE_URL", "https://reader-api.slax.com")
         buildConfigField(STRING, "LOG_LEVEL", "ERROR")
-        buildConfigField(STRING, "SECRET", dotenv?.get("SECRET") ?: "test")
+        buildConfigField(STRING, "SECRET", dotenv.get("SECRET")!!)
     }
 }

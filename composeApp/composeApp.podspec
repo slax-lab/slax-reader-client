@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
     spec.name                     = 'ComposeApp'
-    spec.version                  = '1.0.1+12'
+    spec.version                  = '1.0.1+24'
     spec.homepage                 = 'https://github.com/slax-lab/slax-reader-client'
     spec.source                   = { :http=> ''}
     spec.authors                  = ''
@@ -42,6 +42,7 @@ Pod::Spec.new do |spec|
                   exit 0
                 fi
                 set -ev
+                JAVA_HOME=$(/usr/libexec/java_home -v 17)
                 REPO_ROOT="$PODS_TARGET_SRCROOT"
                 "$REPO_ROOT/../gradlew" -p "$REPO_ROOT" $KOTLIN_PROJECT_PATH:syncFramework \
                     -Pkotlin.native.cocoapods.platform=$PLATFORM_NAME \
