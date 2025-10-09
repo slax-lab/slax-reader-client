@@ -1,22 +1,21 @@
-<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-        android:width="48dp"
-        android:height="48dp"
-        android:viewportWidth="48"
-        android:viewportHeight="48">
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
     <group
-            android:translateX="-230"
-            android:translateY="-1329">
+        android:translateX="-233"
+        android:translateY="-1329">
         <group
-                android:translateX="80"
-                android:translateY="1303">
+            android:translateX="80"
+            android:translateY="1303">
             <group
-                    android:translateX="157"
-                    android:translateY="28">
+                android:translateX="162"
+                android:translateY="31">
                 <path
-                        android:fillColor="#FF000000"
-                        android:strokeWidth="1"
-                        android:pathData="M29.26 21.67c-0.02-3.36 1.53-5.9 4.65-7.76-1.74-2.47-4.39-3.82-7.87-4.08-3.3-0.26-6.91 1.89-8.23 1.89-1.4 0-4.6-1.8-7.11-1.8C5.51 9.98 0 13.97 0 22.1c0 2.4 0.45 4.87 1.34 7.43C2.53 32.9 6.82 41.14 11.3 41c2.34-0.06 4-1.64 7.05-1.64 2.96 0 4.49 1.64 7.1 1.64 4.52-0.07 8.4-7.55 9.54-10.92-6.06-2.82-5.74-8.24-5.74-8.41ZM24 6.64c2.54-2.97 2.3-5.67 2.23-6.64C24 0.13 21.4 1.5 19.92 3.2c-1.63 1.8-2.59 4.05-2.38 6.58 2.42 0.18 4.64-1.05 6.46-3.14Z"/>
+                    android:fillColor="#FF000000"
+                    android:strokeWidth="1"
+                    android:pathData="M25.92 19.02C25.9 16.07 27.27 13.85 30.04 12.21 28.49 10.05 26.15 8.86 23.06 8.63 20.14 8.4 16.94 10.29 15.77 10.29 14.53 10.29 11.7 8.71 9.48 8.71 4.88 8.77 0 12.28 0 19.41 0 21.52 0.39 23.69 1.18 25.93 2.24 28.89 6.04 36.12 10.01 36 12.09 35.95 13.56 34.56 16.26 34.56 18.88 34.56 20.24 36 22.55 36 26.56 35.94 30 29.37 31 26.41 25.63 23.94 25.92 19.18 25.92 19.02ZM21.26 5.83C23.51 3.22 23.3 0.85 23.23 0 21.25 0.11 18.95 1.32 17.64 2.8 16.2 4.4 15.35 6.36 15.54 8.58 17.68 8.74 19.64 7.67 21.26 5.83L21.26 5.83Z"/>
             </group>
         </group>
     </group>
