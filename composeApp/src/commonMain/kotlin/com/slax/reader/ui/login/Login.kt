@@ -1,36 +1,56 @@
 package com.slax.reader.ui.login
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
@@ -38,8 +58,14 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.multiplatform.webview.setting.PlatformWebSettings
+import com.multiplatform.webview.util.KLogSeverity
+import com.multiplatform.webview.web.WebView
+import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
+import com.slax.reader.ui.bookmark.optimizedHtml
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
@@ -48,9 +74,15 @@ import slax_reader_client.composeapp.generated.resources.ic_google
 import slax_reader_client.composeapp.generated.resources.ic_apple
 import slax_reader_client.composeapp.generated.resources.ic_radio_disabled
 import slax_reader_client.composeapp.generated.resources.ic_radio_enabled
+import kotlin.math.roundToInt
+
+@OptIn(ExperimentalMaterial3Api::class)
 
 @Composable
 fun LoginView() {
+    var isAgreed by remember { mutableStateOf(false) }
+    var showBottomSheet by remember { mutableStateOf(false) }
+
     Column(modifier = Modifier.fillMaxSize().background(Color.White), verticalArrangement = Arrangement.SpaceBetween) {
         Column {
             Text(text = "欢迎来到 \nSlax Reader", style = TextStyle(
@@ -102,10 +134,105 @@ fun LoginView() {
             )
 
             AgreementText(
+                agreed = isAgreed,
                 modifier = Modifier.padding(top = 30.dp),
-                onPrivacyPolicyClick = {},
-                onUserAgreementClick = {}
+                onAgreedClick = {
+                    isAgreed = !it
+                },
+                onPrivacyPolicyClick = { showBottomSheet = true },
+                onUserAgreementClick = { showBottomSheet = true }
             )
+        }
+    }
+
+
+    CustomModalBottomSheet(
+        visible = showBottomSheet,
+        onDismissRequest = { showBottomSheet = false },
+        enableDrag = false // 禁用拖拽
+    ) {
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp).padding(top = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                "用户协议与隐私政策",
+                style = TextStyle(
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    lineHeight = 20.sp,
+                    color = Color(0xFF0F1419)
+                )
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 20.dp)
+                    .height(1.dp)
+                    .background(Color(0x14333333))
+            )
+
+            val webState = rememberWebViewStateWithHTMLData(optimizedHtml)
+            webState.webSettings.apply {
+                isJavaScriptEnabled = true
+                supportZoom = false
+                allowFileAccessFromFileURLs = false
+                allowUniversalAccessFromFileURLs = false
+                logSeverity = KLogSeverity.Error
+
+                androidWebSettings.apply {
+                    domStorageEnabled = true
+                    safeBrowsingEnabled = true
+                    allowFileAccess = false
+                    layerType = PlatformWebSettings.AndroidWebSettings.LayerType.HARDWARE
+                }
+            }
+
+            WebView(modifier = Modifier.padding(vertical = 8.dp).heightIn(max = 470.dp), state = webState)
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 0.dp)
+                    .height(1.dp)
+                    .background(Color(0x14333333))
+            )
+
+            Button(
+                onClick = { showBottomSheet = false; isAgreed = true },
+                shape = RoundedCornerShape(25.dp),
+                modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth().padding(top = 20.dp).height(50.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = Color(0xff16B998)
+                )
+            ) {
+                Text("同意", style = TextStyle(
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    lineHeight = 22.5.sp,
+                    fontWeight = FontWeight.Medium
+                ))
+            }
+
+
+            Button(
+                onClick = { showBottomSheet = false; isAgreed = false },
+                shape = RoundedCornerShape(25.dp),
+                modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth().padding(top = 8.dp).height(50.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = Color.Transparent
+                )
+            ) {
+                Text("不同意", style = TextStyle(
+                    color = Color(0xff999999),
+                    fontSize = 15.sp,
+                    lineHeight = 21.sp,
+                ))
+            }
         }
     }
 }
@@ -163,7 +290,9 @@ fun MyRoundedButton(
 
 @Composable
 fun AgreementText(
+    agreed: Boolean,
     modifier: Modifier = Modifier,
+    onAgreedClick: (agree: Boolean) -> Unit,
     onUserAgreementClick: () -> Unit,
     onPrivacyPolicyClick: () -> Unit
 ) {
@@ -206,15 +335,13 @@ fun AgreementText(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier.then(Modifier.fillMaxWidth())
     ) {
-        val selected = remember { mutableStateOf(false) }
-
         IconButton(
-            onClick = { selected.value = !selected.value },
+            onClick = { onAgreedClick(agreed) },
             modifier = Modifier.size(12.dp)
         ) {
             Icon(
                 painter = painterResource(
-                    if (selected.value) Res.drawable.ic_radio_enabled else Res.drawable.ic_radio_disabled
+                    if (agreed) Res.drawable.ic_radio_enabled else Res.drawable.ic_radio_disabled
                 ),
                 contentDescription = null,
                 tint = Color.Unspecified,
@@ -252,5 +379,96 @@ fun AgreementText(
                     }
                 }
         )
+    }
+}
+
+
+@Composable
+fun CustomModalBottomSheet(
+    visible: Boolean,
+    onDismissRequest: () -> Unit,
+    enableDrag: Boolean = false,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val density = LocalDensity.current
+    var offsetY by remember { mutableStateOf(0f) }
+
+    // 背景淡入淡出
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(
+            animationSpec = tween(300)
+        ),
+        exit = fadeOut(
+            animationSpec = tween(300)
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) {
+                    onDismissRequest()
+                }
+        )
+    }
+
+    // 内容从底部滑入
+    AnimatedVisibility(
+        visible = visible,
+        enter = slideInVertically(
+            initialOffsetY = { it },
+            animationSpec = tween(300)
+        ),
+        exit = slideOutVertically(
+            targetOffsetY = { it },
+            animationSpec = tween(300)
+        )
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            Surface(
+                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                color = Color.White,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .offset { IntOffset(0, offsetY.roundToInt()) }
+                    .then(
+                        if (enableDrag) {
+                            Modifier
+                                .draggable(
+                                orientation = Orientation.Vertical,
+                                state = rememberDraggableState { delta ->
+                                    offsetY = (offsetY + delta).coerceAtLeast(0f)
+                                },
+                                onDragStopped = {
+                                    if (offsetY > with(density) { 100.dp.toPx() }) {
+                                        onDismissRequest()
+                                    } else {
+                                        offsetY = 0f
+                                    }
+                                }
+                            )
+                        } else {
+                            Modifier
+                                .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) {}
+                        }
+                    ),
+                shadowElevation = 8.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(0.dp),
+                    content = content
+                )
+            }
+        }
     }
 }
