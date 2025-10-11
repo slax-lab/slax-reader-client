@@ -5,12 +5,13 @@ android-minSdk = "24"
 android-targetSdk = "36"
 androidx-activity = "1.11.0"
 androidx-lifecycle = "2.9.4"
+coilCompose = "3.3.0"
 composeHotReload = "1.0.0-beta07"
 composeMultiplatform = "1.9.0"
 composeWebviewMultiplatform = "2.0.3"
 kotlinxDatetime = "0.7.1"
-powerSyncCore = "1.6.1"
-powerSyncRoom = "1.6.1"
+powerSyncCore = "1.7.0"
+powerSyncRoom = "1.7.0"
 room = "2.8.0"
 sqlite = "2.6.0"
 ksp = "2.2.20-2.0.3"
@@ -24,6 +25,9 @@ datastore = "1.1.7"
 kotlinx-serialization = "1.9.0"
 
 [libraries]
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" }
+coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coilCompose" }
+coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coilCompose" }
 compose-webview-multiplatform = { module = "io.github.kevinnzou:compose-webview-multiplatform", version.ref = "composeWebviewMultiplatform" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
 powerSyncCore = { module = "com.powersync:core", version.ref = "powerSyncCore" }
