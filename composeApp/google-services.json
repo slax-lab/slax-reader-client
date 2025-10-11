@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "479150885213",
+    "project_id": "test-88aa1",
+    "storage_bucket": "test-88aa1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:479150885213:android:b379d72a36dfca951cc0b4",
+        "android_client_info": {
+          "package_name": "com.slax.reader"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2bo0ZA5nZtDikwm9WmpfthBv0-d7icus"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
