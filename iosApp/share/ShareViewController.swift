@@ -8,7 +8,7 @@ final class ShareViewController: UIViewController {
     // MARK: - UI Components
     private lazy var backgroundView: UIView = {
         let view = UIView()
-        view.backgroundColor = .black.withAlphaComponent(0.5)
+        view.backgroundColor = .clear
         view.translatesAutoresizingMaskIntoConstraints = false
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissExtension))
         view.addGestureRecognizer(tapGesture)
