@@ -1,5 +1,8 @@
+@file:OptIn(ExperimentalKotlinGradlePluginApi::class)
+
 import com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING
 import io.github.cdimascio.dotenv.dotenv
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
 import java.util.*
@@ -78,6 +81,7 @@ kotlin {
         framework {
             baseName = "ComposeApp"
             isStatic = true
+            transitiveExport = false
             export("com.powersync:core")
             binaryOption("bundleId", "com.slax.reader.composeapp")
         }
@@ -99,11 +103,16 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.koin.android)
+            implementation(libs.coil.network.okhttp)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
+
+            // Coil network engine for iOS
+            implementation(libs.coil.network.ktor)
         }
         commonMain.dependencies {
+            api(libs.powerSyncCore)
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
@@ -140,6 +149,9 @@ kotlin {
 
             // time
             implementation(libs.kotlinx.datetime)
+
+            // image
+            implementation(libs.coil.compose)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
