@@ -15,10 +15,8 @@ import com.powersync.sync.SyncOptions
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.ui.bookmark.ChromeReaderView
 import com.slax.reader.ui.bookmark.optimizedHtml
-import com.slax.reader.ui.bookmarks.BookmarkViewModel
-import com.slax.reader.ui.bookmarks.UserBookmarksScreen
 import com.slax.reader.ui.debug.DebugScreen
-import com.slax.reader.ui.home.HomeScreen
+import com.slax.reader.ui.inbox.InboxListScreen
 import com.slax.reader.utils.Connector
 import org.koin.compose.koinInject
 
@@ -38,15 +36,12 @@ fun SlaxNavigation(
 
     NavHost(
         navController = navCtrl,
-        startDestination = "home",
+        startDestination = "inbox",
         modifier = Modifier.fillMaxSize()
     ) {
         composable("chrome") {
             val webState = rememberWebViewStateWithHTMLData(optimizedHtml)
             ChromeReaderView(navCtrl, webState)
-        }
-        composable("home") {
-            HomeScreen().Screen(navCtrl)
         }
         composable("raw_webview") {
             val webState = rememberWebViewState(url = "https://r.slax.com/s/P1A0aa4387")
@@ -60,12 +55,11 @@ fun SlaxNavigation(
                 }
             }
         }
-        composable("orders") {
-            val viewModel: BookmarkViewModel = koinInject()
-            UserBookmarksScreen(viewModel)
-        }
         composable("debug") {
             DebugScreen()
+        }
+        composable("inbox") {
+            InboxListScreen()
         }
     }
 }

@@ -2,7 +2,6 @@ package com.slax.reader.data.database.model
 
 import androidx.compose.runtime.Immutable
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 @Immutable
 @Serializable
@@ -66,29 +65,16 @@ data class UserBookmark(
     val metadata: String?,
 
     var metadataObj: BookmarkMetadata?,
-    var metadataTitle: String?
+    var metadataTitle: String?,
+    var metadataUrl: String?
 ) {
-    val displayTitle: String
-        get() = aliasTitle.ifEmpty { displayTitle() }
 
     fun displayTitle(): String {
-        return metadataObj?.bookmark?.title ?: id.take(5)
-    }
-
-    fun parsedMetadata(): BookmarkMetadata? {
-        return metadataObj ?: getTypedMetadata()
-    }
-
-    fun getTypedMetadata(): BookmarkMetadata? {
-        return metadata?.let { json ->
-            try {
-                val obj = Json.decodeFromString<BookmarkMetadata>(json)
-                metadataObj = obj
-                obj
-            } catch (e: Exception) {
-                println("Error parsing metadata: ${e.message}")
-                null
-            }
+        return when {
+            aliasTitle.isNotEmpty() -> aliasTitle
+            !metadataTitle.isNullOrEmpty() -> metadataTitle!!
+            !metadataUrl.isNullOrEmpty() -> metadataUrl!!
+            else -> id.take(5)
         }
     }
 }

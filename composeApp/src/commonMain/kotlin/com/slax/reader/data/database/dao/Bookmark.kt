@@ -21,10 +21,25 @@ import kotlin.uuid.Uuid
 class BookmarkDao(
     private val database: PowerSyncDatabase
 ) {
-
     fun getUserBookmarkList(): Flow<List<UserBookmark>> {
         return database.watch(
-            "SELECT is_read, archive_status, is_starred, created_at, updated_at, alias_title, type, deleted_at, metadata, id FROM sr_user_bookmark ORDER BY created_at DESC"
+            """
+            SELECT
+                id,
+                is_read,
+                archive_status,
+                is_starred,
+                created_at,
+                updated_at,
+                alias_title,
+                type,
+                deleted_at,
+                metadata,
+                JSON_EXTRACT(metadata, '$.bookmark.title') as metadata_title,
+                JSON_EXTRACT(metadata, '$.bookmark.target_url') as metadata_url
+            FROM sr_user_bookmark
+            ORDER BY created_at DESC
+            """.trimIndent()
         ) { cursor ->
             UserBookmark(
                 id = cursor.getString("id"),
@@ -41,7 +56,8 @@ class BookmarkDao(
                     null
                 },
                 metadataObj = null,
-                metadataTitle = null,
+                metadataTitle = cursor.getString("metadata_title"),
+                metadataUrl = cursor.getString("metadata_url"),
                 metadata = cursor.getString("metadata"),
             )
         }.flowOn(Dispatchers.IO)

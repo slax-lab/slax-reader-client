@@ -2,6 +2,7 @@ package com.slax.reader
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
@@ -11,25 +12,35 @@ import com.slax.reader.di.appModule
 import com.slax.reader.ui.SlaxNavigation
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
-import org.koin.compose.KoinApplication
+import org.koin.core.context.GlobalContext.startKoin
 import org.koin.core.logger.Level
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        enableEdgeToEdge()
-        setContent {
-            KoinApplication(
-                application = {
-                    androidLogger(Level.INFO)
-                    androidContext(androidContext = this@MainActivity)
-                    modules(appModule)
-                }
-            ) {
-                val ctrl = rememberNavController()
-                SlaxNavigation(ctrl)
+        if (org.koin.core.context.GlobalContext.getOrNull() == null) {
+            startKoin {
+                androidLogger(Level.INFO)
+                androidContext(this@MainActivity.applicationContext)
+                modules(appModule)
             }
+        }
+
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(
+                scrim = android.graphics.Color.TRANSPARENT,
+                darkScrim = android.graphics.Color.TRANSPARENT
+            ),
+            navigationBarStyle = SystemBarStyle.light(
+                scrim = android.graphics.Color.TRANSPARENT,
+                darkScrim = android.graphics.Color.TRANSPARENT
+            )
+        )
+
+        setContent {
+            val ctrl = rememberNavController()
+            SlaxNavigation(ctrl)
         }
     }
 }
