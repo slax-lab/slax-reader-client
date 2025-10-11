@@ -30,7 +30,7 @@ fun SlaxNavigation(
     val connector = koinInject<Connector>()
     val preferences = koinInject<AppPreferences>()
     LaunchedEffect("App Start") {
-        preferences.setAuthToken("eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjE0NDEyIiwibGFuZyI6ImVuIiwiZW1haWwiOiJkYWd1YW5nODMwQGdtYWlsLmNvbSIsImV4cCI6MTc2MDE2MzUxMCwiaWF0IjoxNzU4ODY3NTEwLCJpc3MiOiJzbGF4LXJlYWRlci1wcm9kIn0.jIv4z6eAthvEyHFwa-yrijo9JNloP-CfUl4TlxT60YU")
+        preferences.setAuthToken("eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjE0NDEyIiwibGFuZyI6ImVuIiwiZW1haWwiOiJkYWd1YW5nODMwQGdtYWlsLmNvbSIsImV4cCI6MTc2MTQ2NTc1MCwiaWF0IjoxNzYwMTY5NzUwLCJpc3MiOiJzbGF4LXJlYWRlci1wcm9kIn0.dZyUzdfa_-yftJjk5J3A-SZ9ElJxgubOT2nLSIPG3pw")
         database.connect(connector, options = SyncOptions(newClientImplementation = true))
     }
 
