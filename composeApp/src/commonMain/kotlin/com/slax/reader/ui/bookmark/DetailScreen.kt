@@ -6,6 +6,11 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.ui.draw.blur
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -28,6 +33,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -71,6 +78,43 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
     var webViewHeight by remember { mutableStateOf(0) }
     val webState = rememberWebViewStateWithHTMLData(optimizedHtml)
     var showTagView by remember { mutableStateOf(false) }
+    var showOverviewDialog by remember { mutableStateOf(false) }
+    var showToolbar by remember { mutableStateOf(false) }
+
+    // 示例工具栏数据 - 3页，每页8个图标
+    val toolbarPages = remember {
+        listOf(
+            // 第1页
+            listOf(
+                ToolbarIcon("复制"),
+                ToolbarIcon("分享"),
+                ToolbarIcon("收藏"),
+                ToolbarIcon("删除"),
+                ToolbarIcon("编辑"),
+                ToolbarIcon("导出"),
+                ToolbarIcon("打印"),
+                ToolbarIcon("更多")
+            ),
+            // 第2页
+            listOf(
+                ToolbarIcon("标签"),
+                ToolbarIcon("笔记"),
+                ToolbarIcon("归档"),
+                ToolbarIcon("移动"),
+                ToolbarIcon("重命名"),
+                ToolbarIcon("属性"),
+                ToolbarIcon("历史"),
+                ToolbarIcon("帮助")
+            ),
+            // 第3页
+            listOf(
+                ToolbarIcon("设置"),
+                ToolbarIcon("主题"),
+                ToolbarIcon("字体"),
+                ToolbarIcon("缩放")
+            )
+        )
+    }
 
     webState.webSettings.apply {
         isJavaScriptEnabled = true
@@ -120,44 +164,10 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                     onTagClick = { showTagView = true }
                 )
 
-                Surface(
+                OverviewView(
                     modifier = Modifier.padding(top = 20.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    color = Color(0xFFF5F5F3)
-                ) {
-                    Column() {
-                        Text("全文概要", modifier = Modifier.padding(12.dp), style = TextStyle())
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp)
-                                .height(1.dp)
-                                .background(Color(0x14333333))
-                        )
-
-                        Surface(
-                            onClick = { /* 你的点击逻辑 */ },
-                            color = Color.Transparent,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(45.dp),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center,
-                                ) {
-                                    Text("展开全部", style = TextStyle(fontSize = 12.sp, lineHeight = 16.5.sp, color = Color(0xFF5490C2)))
-                                }
-                            }
-                        }
-                    }
-                }
-
+                    onExpand = { showOverviewDialog = true }
+                )
 
                 AdaptiveWebView(modifier = Modifier.fillMaxWidth().padding(top = 20.dp))
             }
@@ -167,11 +177,12 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
         FloatingActionBar(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 58.dp)
+                .padding(bottom = 58.dp),
+            onMoreClick = { showToolbar = true }
         )
 
         // BottomSheet 放在最外层，确保浮在所有内容之上
-        CustomModalBottomSheet(
+        TagsManageBottomSheet(
             visible = showTagView,
             onDismissRequest = { showTagView = false },
             enableDrag = false
@@ -201,11 +212,75 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                 )
             }
         }
+
+        // 居中白色弹窗
+        CenterWhiteDialog(
+            visible = showOverviewDialog,
+            onDismissRequest = { showOverviewDialog = false }
+        )
+
+        // 底部工具栏
+        BottomToolbarSheet(
+            visible = showToolbar,
+            onDismissRequest = { showToolbar = false },
+            pages = toolbarPages,
+            onIconClick = { pageIndex, iconIndex ->
+                println("点击了第 ${pageIndex + 1} 页的第 ${iconIndex + 1} 个图标")
+                showToolbar = false
+            }
+        )
     }
 }
 
 @Composable
-private fun FloatingActionBar(modifier: Modifier = Modifier) {
+private fun OverviewView(
+    modifier: Modifier = Modifier,
+    onExpand: () -> Unit = {}
+) {
+    Surface(
+        modifier = modifier.then(Modifier.fillMaxWidth()),
+        shape = RoundedCornerShape(8.dp),
+        color = Color(0xFFF5F5F3)
+    ) {
+        Column() {
+            Text("全文概要", modifier = Modifier.padding(12.dp), style = TextStyle())
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp)
+                    .height(1.dp)
+                    .background(Color(0x14333333))
+            )
+
+            Surface(
+                onClick = onExpand,
+                color = Color.Transparent,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(45.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        Text("展开全部", style = TextStyle(fontSize = 12.sp, lineHeight = 16.5.sp, color = Color(0xFF5490C2)))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FloatingActionBar(
+    modifier: Modifier = Modifier,
+    onMoreClick: () -> Unit = {}
+) {
     Box(
         modifier = modifier
     ) {
@@ -273,9 +348,9 @@ private fun FloatingActionBar(modifier: Modifier = Modifier) {
         // 12dp 间距
         Box(modifier = Modifier.width(12.dp))
 
-        // 第三个按钮
+        // 第三个按钮 - 更多操作
         Surface(
-            onClick = { /* 按钮3点击事件 */ },
+            onClick = onMoreClick,
             modifier = Modifier
                 .size(50.dp),
             color = Color(0xFFF5F5F5),
@@ -341,21 +416,22 @@ private fun TagItem(
             .clip(RoundedCornerShape(3.dp)) // 圆角裁剪，确保点击波纹也有圆角
             .border(
                 width = 1.dp,
-                color = Color(0xFFFFD600),
+                color = Color(0xFFE4D6BA),
                 shape = RoundedCornerShape(3.dp)
             )
             .clickable(
                 onClick = onClick,
                 interactionSource = remember { MutableInteractionSource() }
             )
-            .padding(horizontal = 12.dp), // 只保留水平padding
+            .padding(horizontal = 4.dp), // 只保留水平padding
         contentAlignment = Alignment.Center // 文字垂直居中
     ) {
         Text(
             text = tag,
             style = TextStyle(
-                color = Color(0xFF0f1419),
-                fontSize = 13.sp
+                color = Color(0xFFA28D64),
+                fontSize = 12.sp,
+                lineHeight = 15.sp
             ),
             maxLines = 1, // 防止文字换行
             overflow = TextOverflow.Ellipsis // 文字过长显示省略号
@@ -431,7 +507,7 @@ fun AdaptiveWebView(modifier: Modifier = Modifier) {
 
 
 @Composable
-fun CustomModalBottomSheet(
+fun TagsManageBottomSheet(
     visible: Boolean,
     onDismissRequest: () -> Unit,
     enableDrag: Boolean = false,
@@ -517,6 +593,327 @@ fun CustomModalBottomSheet(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * 居中白色弹窗组件
+ * 带有高斯模糊背景和从中间"鼓出来"的动画效果
+ */
+@Composable
+fun CenterWhiteDialog(
+    visible: Boolean,
+    onDismissRequest: () -> Unit
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(animationSpec = tween(300)),
+        exit = fadeOut(animationSpec = tween(300))
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            // 磨砂玻璃效果背景 - 多层叠加实现更明显的效果
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xCCF5F5F3)) // 更高透明度的白色背景
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        onDismissRequest()
+                    }
+            )
+
+            // 居中的白色弹窗,带有从中间鼓出来的动画
+            AnimatedVisibility(
+                visible = visible,
+                enter = scaleIn(
+                    initialScale = 0.3f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                ) + fadeIn(animationSpec = tween(200)),
+                exit = scaleOut(
+                    targetScale = 0.3f,
+                    animationSpec = tween(200)
+                ) + fadeOut(animationSpec = tween(200))
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .padding(horizontal = 40.dp)
+                        .fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White,
+                    shadowElevation = 8.dp
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "全文概要",
+                            style = TextStyle(
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF0F1419)
+                            )
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp)
+                                .height(1.dp)
+                                .background(Color(0x14333333))
+                        )
+
+                        Text(
+                            "这里是全文概要的内容...",
+                            style = TextStyle(
+                                fontSize = 14.sp,
+                                lineHeight = 20.sp,
+                                color = Color(0xFF666666)
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 分页指示器组件
+ * @param pageCount 总页数，只有一页时不显示
+ * @param currentPage 当前页索引
+ */
+@Composable
+private fun PageIndicator(
+    pageCount: Int,
+    currentPage: Int,
+    modifier: Modifier = Modifier
+) {
+    if (pageCount <= 1) return
+
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        repeat(pageCount) { index ->
+            val isActive = index == currentPage
+            Box(
+                modifier = Modifier
+                    .width(if (isActive) 16.dp else 6.dp)
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(if (isActive) Color.Black else Color.Gray)
+            )
+        }
+    }
+}
+
+/**
+ * 工具栏图标数据类
+ */
+data class ToolbarIcon(
+    val label: String,
+    val iconRes: String? = null
+)
+
+/**
+ * 单个图标按钮
+ */
+@Composable
+private fun IconButton(
+    icon: ToolbarIcon,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            ),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color(0xFFF5F5F5)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = icon.label.first().toString(),
+                style = TextStyle(
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF0F1419)
+                )
+            )
+        }
+
+        Text(
+            text = icon.label,
+            style = TextStyle(
+                fontSize = 12.sp,
+                color = Color(0xFF666666)
+            )
+        )
+    }
+}
+
+/**
+ * 工具栏单页布局组件 - 显示8个icon按钮（上4下4）
+ * @param icons 图标列表（最多8个）
+ * @param onIconClick 图标点击回调
+ */
+@Composable
+private fun IconGridPage(
+    icons: List<ToolbarIcon>,
+    onIconClick: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.padding(horizontal = 24.dp, vertical = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // 上面一行4个icon
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            icons.take(4).forEachIndexed { index, icon ->
+                IconButton(
+                    icon = icon,
+                    onClick = { onIconClick(index) }
+                )
+            }
+        }
+
+        // 下面一行4个icon
+        if (icons.size > 4) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                icons.drop(4).take(4).forEachIndexed { index, icon ->
+                    IconButton(
+                        icon = icon,
+                        onClick = { onIconClick(index + 4) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 支持左右滑动分页的工具栏容器
+ */
+@Composable
+private fun PagerToolbar(
+    pages: List<List<ToolbarIcon>>,
+    onIconClick: (pageIndex: Int, iconIndex: Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val pagerState = rememberPagerState(pageCount = { pages.size })
+
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // 页面内容
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxWidth()
+        ) { page ->
+            IconGridPage(
+                icons = pages[page],
+                onIconClick = { iconIndex -> onIconClick(page, iconIndex) }
+            )
+        }
+
+        // 分页指示器
+        PageIndicator(
+            pageCount = pages.size,
+            currentPage = pagerState.currentPage,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+    }
+}
+
+/**
+ * 底部弹出工具栏
+ * 带显示/隐藏动画，点击外部区域隐藏
+ */
+@Composable
+fun BottomToolbarSheet(
+    visible: Boolean,
+    onDismissRequest: () -> Unit,
+    pages: List<List<ToolbarIcon>>,
+    onIconClick: (pageIndex: Int, iconIndex: Int) -> Unit
+) {
+    // 背景层 - 淡入淡出
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(animationSpec = tween(300)),
+        exit = fadeOut(animationSpec = tween(300))
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.3f))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) {
+                    onDismissRequest()
+                }
+        )
+    }
+
+    // 底部内容层 - 从下往上滑入
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        AnimatedVisibility(
+            visible = visible,
+            enter = slideInVertically(
+                initialOffsetY = { it }, // 从底部开始（完整高度的偏移）
+                animationSpec = tween(300)
+            ),
+            exit = slideOutVertically(
+                targetOffsetY = { it }, // 滑出到底部（完整高度的偏移）
+                animationSpec = tween(300)
+            )
+        ) {
+            Surface(
+                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                color = Color.White,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { /* 阻止点击事件穿透 */ },
+                shadowElevation = 8.dp
+            ) {
+                PagerToolbar(
+                    pages = pages,
+                    onIconClick = onIconClick,
+                    modifier = Modifier.padding(top = 16.dp)
+                )
             }
         }
     }
