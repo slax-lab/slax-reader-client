@@ -1,23 +1,28 @@
 package com.slax.reader.ui
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.multiplatform.webview.web.rememberWebViewState
-import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
 import com.powersync.ExperimentalPowerSyncAPI
 import com.powersync.PowerSyncDatabase
 import com.powersync.sync.SyncOptions
-import com.slax.reader.data.preferences.AppPreferences
-import com.slax.reader.ui.bookmark.ChromeReaderView
-import com.slax.reader.ui.bookmark.optimizedHtml
+import com.slax.reader.domain.auth.AuthDomain
+import com.slax.reader.domain.auth.AuthState
 import com.slax.reader.ui.debug.DebugScreen
 import com.slax.reader.ui.inbox.InboxListScreen
+import com.slax.reader.ui.login.LoginScreen
 import com.slax.reader.utils.Connector
+import dev.gitlive.firebase.Firebase
+import dev.gitlive.firebase.analytics.analytics
+import dev.gitlive.firebase.crashlytics.crashlytics
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalPowerSyncAPI::class)
@@ -25,41 +30,61 @@ import org.koin.compose.koinInject
 fun SlaxNavigation(
     navCtrl: NavHostController
 ) {
+    val authDomain: AuthDomain = koinInject()
+    val authState by authDomain.authState.collectAsState()
 
-    val database: PowerSyncDatabase = koinInject<PowerSyncDatabase>()
+    val database: PowerSyncDatabase = koinInject()
     val connector = koinInject<Connector>()
-    val preferences = koinInject<AppPreferences>()
-    LaunchedEffect("App Start") {
-        preferences.setAuthToken("eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjE0NDEyIiwibGFuZyI6ImVuIiwiZW1haWwiOiJkYWd1YW5nODMwQGdtYWlsLmNvbSIsImV4cCI6MTc2MTQ2NTc1MCwiaWF0IjoxNzYwMTY5NzUwLCJpc3MiOiJzbGF4LXJlYWRlci1wcm9kIn0.dZyUzdfa_-yftJjk5J3A-SZ9ElJxgubOT2nLSIPG3pw")
-        database.connect(connector, options = SyncOptions(newClientImplementation = true))
+
+    LaunchedEffect(authState) {
+        when (authState) {
+            is AuthState.Authenticated -> {
+                database.connect(connector, options = SyncOptions(newClientImplementation = true))
+                Firebase.crashlytics.setCrashlyticsCollectionEnabled(true)
+                Firebase.analytics.setAnalyticsCollectionEnabled(true)
+                Firebase.analytics.setUserId((authState as AuthState.Authenticated).userId)
+                Firebase.crashlytics.setUserId((authState as AuthState.Authenticated).userId)
+                navCtrl.navigate("inbox") {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+
+            AuthState.Unauthenticated -> {
+                database.disconnectAndClear()
+                navCtrl.navigate("login") {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+
+            AuthState.Loading -> {
+            }
+        }
     }
 
     NavHost(
         navController = navCtrl,
         startDestination = "inbox",
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        enterTransition = { EnterTransition.None },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { ExitTransition.None }
     ) {
-        composable("chrome") {
-            val webState = rememberWebViewStateWithHTMLData(optimizedHtml)
-            ChromeReaderView(navCtrl, webState)
-        }
-        composable("raw_webview") {
-            val webState = rememberWebViewState(url = "https://r.slax.com/s/P1A0aa4387")
-            ChromeReaderView(navCtrl, webState)
-        }
-        composable("bookmark/{bookmark_id}") { backStackEntry ->
-            backStackEntry.let { entry ->
-                entry.arguments?.toString()?.let {
-                    val webState = rememberWebViewState(url = "https://r.slax.com/s/$it")
-                    ChromeReaderView(navCtrl, webState)
+        composable("login") {
+            LoginScreen(
+                onLoginSuccess = {
+                    navCtrl.navigate("inbox") {
+                        popUpTo(0) { inclusive = true }
+                    }
                 }
-            }
-        }
-        composable("debug") {
-            DebugScreen()
+            )
         }
         composable("inbox") {
             InboxListScreen()
         }
+        composable("debug") {
+            DebugScreen()
+        }
     }
 }
+

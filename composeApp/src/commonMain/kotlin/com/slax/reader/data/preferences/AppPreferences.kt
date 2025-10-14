@@ -13,6 +13,7 @@ import kotlinx.coroutines.withContext
 class AppPreferences(private val dataStore: DataStore<Preferences>) {
     companion object {
         private val AUTH_TOKEN_KEY = stringPreferencesKey("auth_token")
+        private val USER_ID_KEY = stringPreferencesKey("user_id")
     }
 
     fun getAuthToken(): Flow<String> {
@@ -26,6 +27,20 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
             dataStore.edit { preferences ->
                 preferences[AUTH_TOKEN_KEY] = token
             }
+        }
+    }
+
+    suspend fun setUserId(userId: String) {
+        withContext(Dispatchers.IO) {
+            dataStore.edit { preferences ->
+                preferences[stringPreferencesKey("user_id")] = userId
+            }
+        }
+    }
+
+    fun getUserId(): Flow<String> {
+        return dataStore.data.map { preferences ->
+            preferences[USER_ID_KEY] ?: ""
         }
     }
 

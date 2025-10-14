@@ -10,6 +10,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
 import com.slax.reader.di.appModule
 import com.slax.reader.ui.SlaxNavigation
+import dev.gitlive.firebase.Firebase
+import dev.gitlive.firebase.initialize
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.GlobalContext.startKoin
@@ -20,6 +22,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         if (org.koin.core.context.GlobalContext.getOrNull() == null) {
+            Firebase.initialize(this@MainActivity.applicationContext)
             startKoin {
                 androidLogger(Level.INFO)
                 androidContext(this@MainActivity.applicationContext)

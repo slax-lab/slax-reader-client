@@ -2,9 +2,7 @@ package com.slax.reader.data.network
 
 import app.slax.reader.SlaxConfig
 import com.slax.reader.const.AppError
-import com.slax.reader.data.network.dto.ChangesItem
-import com.slax.reader.data.network.dto.CredentialsData
-import com.slax.reader.data.network.dto.HttpData
+import com.slax.reader.data.network.dto.*
 import com.slax.reader.data.preferences.AppPreferences
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -30,9 +28,7 @@ class ApiService(
     }
 
     private suspend inline fun <reified T> get(
-        pathName: String,
-        query: Map<String, String>?,
-        options: Options?
+        pathName: String, query: Map<String, String>?, options: Options?
     ): HttpData<T> {
         return preferences.getAuthToken().first().let { token ->
             if (token.isEmpty() && options?.notAuthorized != true) {
@@ -46,9 +42,15 @@ class ApiService(
                 }
             }
             if (response.status != HttpStatusCode.OK) {
+                val errorMessage = try {
+                    val errorBody = response.body<ErrorResponse>()
+                    errorBody.message
+                } catch (e: Exception) {
+                    "Error: ${response.status}"
+                }
                 throw AppError.ApiException.HttpError(
                     code = response.status.value,
-                    message = "Error fetching credentials: ${response.status}"
+                    message = errorMessage
                 )
             }
 
@@ -57,10 +59,7 @@ class ApiService(
     }
 
     private suspend inline fun <reified T> post(
-        pathName: String,
-        query: Map<String, String>?,
-        body: Any?,
-        options: Options = Options()
+        pathName: String, query: Map<String, String>?, body: Any?, options: Options = Options()
     ): HttpData<T> {
         return preferences.getAuthToken().first().let { token ->
             if (token.isEmpty() && !options.notAuthorized) {
@@ -77,9 +76,15 @@ class ApiService(
                 }
             }
             if (response.status != HttpStatusCode.OK) {
+                val errorMessage = try {
+                    val errorBody = response.body<ErrorResponse>()
+                    errorBody.message
+                } catch (e: Exception) {
+                    "Error: ${response.status}"
+                }
                 throw AppError.ApiException.HttpError(
                     code = response.status.value,
-                    message = "Error fetching credentials: ${response.status}"
+                    message = errorMessage
                 )
             }
 
@@ -93,5 +98,9 @@ class ApiService(
 
     suspend fun uploadChanges(changes: List<ChangesItem>): HttpData<Any> {
         return post("/v1/sync/changes", query = null, changes, Options(notAuthorized = false))
+    }
+
+    suspend fun login(params: AuthParams): HttpData<AuthResult> {
+        return post("/v1/user/login", query = null, body = params, Options(notAuthorized = true))
     }
 }

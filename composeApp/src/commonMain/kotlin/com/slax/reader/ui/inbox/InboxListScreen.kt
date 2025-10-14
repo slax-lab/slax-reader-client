@@ -24,7 +24,6 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.ViewConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -32,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.rememberAsyncImagePainter
 import com.slax.reader.data.database.model.UserBookmark
+import com.slax.reader.domain.auth.AuthDomain
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.*
@@ -58,6 +58,7 @@ fun InboxListScreen() {
 private fun UserAvatar() {
     val viewModel = koinInject<InboxListViewModel>()
     val userInfo by viewModel.userInfo.collectAsState()
+    val authDomain: AuthDomain = koinInject()
 
     val avatarPainter = rememberAsyncImagePainter(
         model = userInfo?.picture,
@@ -66,7 +67,10 @@ private fun UserAvatar() {
     )
 
     Box(
-        modifier = Modifier.size(32.dp),
+        modifier = Modifier.size(32.dp)
+            .clickable(onClick = {
+                authDomain.signOut()
+            }),
         contentAlignment = Alignment.Center
     ) {
         Image(
@@ -321,15 +325,6 @@ private fun ArticleList() {
         }
     }
 }
-
-class CustomViewConfiguration(
-    private val defaultViewConfiguration: ViewConfiguration //传入默认配置
-) : ViewConfiguration by defaultViewConfiguration {
-
-    // 自定义长按超时3000ms
-    override val longPressTimeoutMillis: Long = 3000
-}
-
 
 @Composable
 private fun BookmarkItemRow(bookmark: UserBookmark, iconPainter: Painter, morePainter: Painter) {
