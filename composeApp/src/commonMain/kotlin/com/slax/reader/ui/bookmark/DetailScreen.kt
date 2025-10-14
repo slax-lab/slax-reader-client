@@ -10,6 +10,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.draw.blur
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -50,12 +51,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
@@ -72,6 +75,8 @@ import com.multiplatform.webview.web.WebView
 import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
 import com.multiplatform.webview.web.*
 import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun DetailScreen(nav: NavController, bookmarkId: String) {
@@ -186,32 +191,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
             visible = showTagView,
             onDismissRequest = { showTagView = false },
             enableDrag = false
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp).padding(top = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    "用户协议与隐私政策",
-                    style = TextStyle(
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        lineHeight = 20.sp,
-                        color = Color(0xFF0F1419)
-                    )
-                )
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 20.dp)
-                        .height(1.dp)
-                        .background(Color(0x14333333))
-                )
-            }
-        }
+        )
 
         // 居中白色弹窗
         CenterWhiteDialog(
@@ -511,7 +491,6 @@ fun TagsManageBottomSheet(
     visible: Boolean,
     onDismissRequest: () -> Unit,
     enableDrag: Boolean = false,
-    content: @Composable ColumnScope.() -> Unit
 ) {
     val density = LocalDensity.current
     var offsetY by remember { mutableStateOf(0f) }
@@ -589,8 +568,32 @@ fun TagsManageBottomSheet(
                     ) {
                         Column(
                             modifier = Modifier.padding(0.dp),
-                            content = content
-                        )
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 24.dp).padding(top = 24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Text(
+                                    "标签",
+                                    style = TextStyle(
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        lineHeight = 20.sp,
+                                        color = Color(0xFF0F1419)
+                                    )
+                                )
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 20.dp)
+                                        .height(1.dp)
+                                        .background(Color(0x14333333))
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -710,10 +713,10 @@ private fun PageIndicator(
             val isActive = index == currentPage
             Box(
                 modifier = Modifier
-                    .width(if (isActive) 16.dp else 6.dp)
+                    .width(if (isActive) 12.dp else 6.dp)
                     .height(6.dp)
                     .clip(RoundedCornerShape(3.dp))
-                    .background(if (isActive) Color.Black else Color.Gray)
+                    .background(if (isActive) Color(0xFF333333) else Color(0xCC333333))
             )
         }
     }
@@ -735,21 +738,46 @@ private fun IconButton(
     icon: ToolbarIcon,
     onClick: () -> Unit
 ) {
+    // 记录按下状态
+    var isPressed by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+
+    // 缩放动画：按下时缩小到0.85，松开时恢复到1.0
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.85f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        )
+    )
+
     Column(
         modifier = Modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
-                onClick = onClick
+                onClick = {
+                    isPressed = true
+                    // 延迟恢复状态，让动画播放完整
+                    coroutineScope.launch {
+                        delay(150)
+                        isPressed = false
+                    }
+                    onClick()
+                }
             ),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Box(
             modifier = Modifier
-                .size(48.dp)
+                .size(56.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFFF5F5F5)),
+                .background(Color(0xCCFFFFFF)),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -766,7 +794,8 @@ private fun IconButton(
             text = icon.label,
             style = TextStyle(
                 fontSize = 12.sp,
-                color = Color(0xFF666666)
+                lineHeight = 16.5.sp,
+                color = Color(0xCC333333)
             )
         )
     }
@@ -784,8 +813,8 @@ private fun IconGridPage(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.padding(horizontal = 24.dp, vertical = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = modifier.padding(horizontal = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // 上面一行4个icon
         Row(
@@ -830,12 +859,14 @@ private fun PagerToolbar(
 
     Column(
         modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         // 页面内容
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().height(173.dp),
+            verticalAlignment = Alignment.Top
         ) { page ->
             IconGridPage(
                 icons = pages[page],
@@ -847,7 +878,7 @@ private fun PagerToolbar(
         PageIndicator(
             pageCount = pages.size,
             currentPage = pagerState.currentPage,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 34.dp)
         )
     }
 }
@@ -872,7 +903,7 @@ fun BottomToolbarSheet(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.3f))
+                .background(Color.Black.copy(alpha = 0.0f))
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
@@ -899,8 +930,8 @@ fun BottomToolbarSheet(
             )
         ) {
             Surface(
-                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-                color = Color.White,
+                color = Color(0xF2F5F5F3),
+                border = BorderStroke(0.5.dp, Color(0x140F1419)),
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(
@@ -912,7 +943,7 @@ fun BottomToolbarSheet(
                 PagerToolbar(
                     pages = pages,
                     onIconClick = onIconClick,
-                    modifier = Modifier.padding(top = 16.dp)
+                    modifier = Modifier.padding(top = 30.dp)
                 )
             }
         }
