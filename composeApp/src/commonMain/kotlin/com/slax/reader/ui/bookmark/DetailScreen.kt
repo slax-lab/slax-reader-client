@@ -86,6 +86,15 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
     var showOverviewDialog by remember { mutableStateOf(false) }
     var showToolbar by remember { mutableStateOf(false) }
 
+    // 标签数据管理
+    var currentTags by remember {
+        mutableStateOf(listOf("AI", "大模型", "ChatGPT", "智能手机", "AGI", "刘知远", "科技", "访谈", "前沿技术"))
+    }
+    val allAvailableTags = remember {
+        listOf("AI", "大模型", "ChatGPT", "智能手机", "AGI", "刘知远", "科技", "访谈", "前沿技术",
+               "机器学习", "深度学习", "神经网络", "自然语言处理", "计算机视觉")
+    }
+
     // 示例工具栏数据 - 3页，每页8个图标
     val toolbarPages = remember {
         listOf(
@@ -165,7 +174,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
 
                 TagsView(
                     modifier = Modifier.padding(top = 16.dp),
-                    tags = listOf("AI", "大模型", "ChatGPT", "智能手机", "AGI", "刘知远", "科技", "访谈", "前沿技术"),
+                    tags = currentTags,
                     onTagClick = { showTagView = true }
                 )
 
@@ -190,7 +199,12 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
         TagsManageBottomSheet(
             visible = showTagView,
             onDismissRequest = { showTagView = false },
-            enableDrag = false
+            enableDrag = false,
+            addedTags = currentTags,
+            availableTags = allAvailableTags,
+            onConfirm = { selectedTags ->
+                currentTags = selectedTags
+            }
         )
 
         // 居中白色弹窗
@@ -388,34 +402,104 @@ private fun TagsView(
 @Composable
 private fun TagItem(
     tag: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    showDeleteButton: Boolean = false,
+    onDelete: (() -> Unit)? = null,
+    isLargeStyle: Boolean = false  // 是否使用大尺寸样式（用于BottomSheet）
 ) {
+    // 根据样式选择不同的尺寸参数
+    val height = if (isLargeStyle) 30.dp else 21.dp
+    val fontSize = if (isLargeStyle) 15.sp else 12.sp
+    val lineHeight = if (isLargeStyle) 21.sp else 15.sp
+    val horizontalPadding = if (isLargeStyle) 6.dp else 4.dp
+    val endPadding = if (isLargeStyle && showDeleteButton) 4.dp else if (showDeleteButton) 2.dp else horizontalPadding
+
     Box(
         modifier = Modifier
-            .height(21.dp) // 固定高度
+            .height(height) // 动态高度
             .clip(RoundedCornerShape(3.dp)) // 圆角裁剪，确保点击波纹也有圆角
             .border(
                 width = 1.dp,
                 color = Color(0xFFE4D6BA),
                 shape = RoundedCornerShape(3.dp)
             )
-            .clickable(
-                onClick = onClick,
-                interactionSource = remember { MutableInteractionSource() }
-            )
-            .padding(horizontal = 4.dp), // 只保留水平padding
-        contentAlignment = Alignment.Center // 文字垂直居中
-    ) {
-        Text(
-            text = tag,
-            style = TextStyle(
-                color = Color(0xFFA28D64),
-                fontSize = 12.sp,
-                lineHeight = 15.sp
+            .then(
+                if (showDeleteButton) {
+                    // 有删除按钮时不需要整体可点击
+                    Modifier.padding(start = horizontalPadding, end = endPadding)
+                } else {
+                    // 没有删除按钮时整体可点击
+                    Modifier
+                        .clickable(
+                            onClick = onClick,
+                            interactionSource = remember { MutableInteractionSource() }
+                        )
+                        .padding(horizontal = horizontalPadding)
+                }
             ),
-            maxLines = 1, // 防止文字换行
-            overflow = TextOverflow.Ellipsis // 文字过长显示省略号
-        )
+        contentAlignment = if (showDeleteButton) Alignment.CenterStart else Alignment.Center
+    ) {
+        if (showDeleteButton && onDelete != null) {
+            // 带删除按钮的布局
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = tag,
+                    style = TextStyle(
+                        color = Color(0xFFA28D64),
+                        fontSize = fontSize,
+                        lineHeight = lineHeight
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                // 分割线
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(12.dp)
+                        .background(Color(0x140F1419))
+                )
+
+                // 删除按钮
+                Box(
+                    modifier = Modifier
+                        .size(14.dp)
+                        .clip(RoundedCornerShape(7.dp))
+                        .clickable(
+                            onClick = onDelete,
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "×",
+                        style = TextStyle(
+                            color = Color(0xFFA28D64),
+                            fontSize = 14.sp,
+                            lineHeight = 14.sp,
+                            fontWeight = FontWeight.Normal
+                        )
+                    )
+                }
+            }
+        } else {
+            // 普通标签布局
+            Text(
+                text = tag,
+                style = TextStyle(
+                    color = Color(0xFFA28D64),
+                    fontSize = fontSize,
+                    lineHeight = lineHeight
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 
@@ -491,9 +575,20 @@ fun TagsManageBottomSheet(
     visible: Boolean,
     onDismissRequest: () -> Unit,
     enableDrag: Boolean = false,
+    addedTags: List<String> = emptyList(),
+    availableTags: List<String> = emptyList(),
+    onConfirm: (List<String>) -> Unit = {}
 ) {
     val density = LocalDensity.current
     var offsetY by remember { mutableStateOf(0f) }
+    var currentSelectedTags by remember { mutableStateOf(addedTags) }
+
+    // 当visible变化时，重置选中的标签
+    LaunchedEffect(visible) {
+        if (visible) {
+            currentSelectedTags = addedTags
+        }
+    }
 
     // 整个底部弹窗容器，包含背景和内容
     AnimatedVisibility(
@@ -567,16 +662,37 @@ fun TagsManageBottomSheet(
                         shadowElevation = 8.dp
                     ) {
                         Column(
-                            modifier = Modifier.padding(0.dp),
+                            modifier = Modifier.padding(0.dp)
                         ) {
-                            Column(
+                            // Header 栏
+                            Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 24.dp).padding(top = 24.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
+                                    .height(60.dp)
+                                    .padding(horizontal = 24.dp)
                             ) {
+                                // 取消按钮
                                 Text(
-                                    "标签",
+                                    text = "取消",
+                                    modifier = Modifier
+                                        .align(Alignment.CenterStart)
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null
+                                        ) {
+                                            onDismissRequest()
+                                        },
+                                    style = TextStyle(
+                                        fontSize = 16.sp,
+                                        lineHeight = 20.sp,
+                                        color = Color(0xFF5490C2)
+                                    )
+                                )
+
+                                // 标题
+                                Text(
+                                    text = "标签",
+                                    modifier = Modifier.align(Alignment.Center),
                                     style = TextStyle(
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.SemiBold,
@@ -585,13 +701,109 @@ fun TagsManageBottomSheet(
                                     )
                                 )
 
-                                Box(
+                                // 确定按钮
+                                Text(
+                                    text = "确定",
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 20.dp)
-                                        .height(1.dp)
-                                        .background(Color(0x14333333))
+                                        .align(Alignment.CenterEnd)
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null
+                                        ) {
+                                            onConfirm(currentSelectedTags)
+                                            onDismissRequest()
+                                        },
+                                    style = TextStyle(
+                                        fontSize = 16.sp,
+                                        lineHeight = 20.sp,
+                                        color = Color(0xFF5490C2)
+                                    )
                                 )
+                            }
+
+                            // 分割线
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 24.dp)
+                                    .height(0.5.dp)
+                                    .background(Color(0x33333314))
+                            )
+
+                            // 内容栏 - 使用 ScrollView
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 24.dp)
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(bottom = 28.dp)
+                            ) {
+                                // 已添加标签区域
+                                if (currentSelectedTags.isNotEmpty()) {
+                                    Text(
+                                        text = "已添加",
+                                        modifier = Modifier.padding(top = 20.dp, bottom = 12.dp),
+                                        style = TextStyle(
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            lineHeight = 20.sp,
+                                            color = Color(0xFF0F1419)
+                                        )
+                                    )
+
+                                    FlowRow(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        currentSelectedTags.forEach { tag ->
+                                            TagItem(
+                                                tag = tag,
+                                                onClick = { /* 不需要 */ },
+                                                showDeleteButton = true,
+                                                onDelete = {
+                                                    // 点击删除按钮移除标签
+                                                    currentSelectedTags = currentSelectedTags - tag
+                                                },
+                                                isLargeStyle = true
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // 可添加标签区域
+                                val unselectedTags = availableTags.filter { it !in currentSelectedTags }
+                                if (unselectedTags.isNotEmpty()) {
+                                    Text(
+                                        text = "可添加",
+                                        modifier = Modifier.padding(
+                                            top = if (currentSelectedTags.isNotEmpty()) 20.dp else 20.dp,
+                                            bottom = 12.dp
+                                        ),
+                                        style = TextStyle(
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            lineHeight = 20.sp,
+                                            color = Color(0xFF0F1419)
+                                        )
+                                    )
+
+                                    FlowRow(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.padding(bottom = 28.dp)
+                                    ) {
+                                        unselectedTags.forEach { tag ->
+                                            TagItem(
+                                                tag = tag,
+                                                onClick = {
+                                                    // 点击添加标签
+                                                    currentSelectedTags = currentSelectedTags + tag
+                                                },
+                                                isLargeStyle = true
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
