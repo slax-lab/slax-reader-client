@@ -25,6 +25,11 @@ data class AuthResult(
 )
 
 @Serializable
+data class RefreshResult(
+    val token: String = ""
+)
+
+@Serializable
 data class AuthParams(
     val code: String,
     val redirect_uri: String,

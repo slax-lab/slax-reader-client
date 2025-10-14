@@ -9,10 +9,8 @@ import com.powersync.PowerSyncDatabase
 import com.powersync.sync.SyncStatusData
 import com.slax.reader.data.database.dao.BookmarkDao
 import com.slax.reader.data.database.dao.UserDao
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -24,21 +22,16 @@ class InboxListViewModel(
     var syncStatusData by mutableStateOf<SyncStatusData?>(null)
         private set
 
-    var syncCompleted by mutableStateOf(false)
-        private set
-
     init {
         viewModelScope.launch {
             database.currentStatus.asFlow().collect { status ->
                 syncStatusData = status
-                syncCompleted = status.connected && !status.downloading
             }
         }
     }
 
     val bookmarks = bookmarkDao.getUserBookmarkList()
         .distinctUntilChanged()
-        .flowOn(Dispatchers.Default)
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -47,7 +40,6 @@ class InboxListViewModel(
 
     val userInfo = userDao.getUserInfo()
         .distinctUntilChanged()
-        .flowOn(Dispatchers.Default)
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),

@@ -14,6 +14,7 @@ import androidx.navigation.compose.composable
 import com.powersync.ExperimentalPowerSyncAPI
 import com.powersync.PowerSyncDatabase
 import com.powersync.sync.SyncOptions
+import com.powersync.utils.JsonParam
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.auth.AuthState
 import com.slax.reader.ui.debug.DebugScreen
@@ -23,6 +24,7 @@ import com.slax.reader.utils.Connector
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.analytics.analytics
 import dev.gitlive.firebase.crashlytics.crashlytics
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalPowerSyncAPI::class)
@@ -33,13 +35,24 @@ fun SlaxNavigation(
     val authDomain: AuthDomain = koinInject()
     val authState by authDomain.authState.collectAsState()
 
-    val database: PowerSyncDatabase = koinInject()
-    val connector = koinInject<Connector>()
+    val database: PowerSyncDatabase? = if (authState is AuthState.Authenticated) {
+        koinInject()
+    } else null
+    val connector: Connector? = if (authState is AuthState.Authenticated) {
+        koinInject()
+    } else null
 
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Authenticated -> {
-                database.connect(connector, options = SyncOptions(newClientImplementation = true))
+                launch {
+                    database!!.connect(
+                        connector!!,
+                        params = mapOf("schema_version" to JsonParam.String("1")),
+                        options = SyncOptions(newClientImplementation = true)
+                    )
+                    authDomain.refreshToken()
+                }
                 Firebase.crashlytics.setCrashlyticsCollectionEnabled(true)
                 Firebase.analytics.setAnalyticsCollectionEnabled(true)
                 Firebase.analytics.setUserId((authState as AuthState.Authenticated).userId)
@@ -50,7 +63,7 @@ fun SlaxNavigation(
             }
 
             AuthState.Unauthenticated -> {
-                database.disconnectAndClear()
+                database?.disconnectAndClear()
                 navCtrl.navigate("login") {
                     popUpTo(0) { inclusive = true }
                 }

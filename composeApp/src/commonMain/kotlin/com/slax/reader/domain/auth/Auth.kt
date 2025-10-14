@@ -6,6 +6,8 @@ import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.network.dto.AuthParams
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.utils.platform
+import com.slax.reader.utils.timeUnix
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,10 +36,9 @@ class AuthDomain(
 
     private fun checkAuthStatus() {
         viewModelScope.launch {
-            val token = appPreferences.getAuthToken().firstOrNull()
-            val userId = appPreferences.getUserId().firstOrNull()
-            _authState.value = if (!token.isNullOrEmpty()) {
-                AuthState.Authenticated(token = token, userId = userId!!)
+            val authInfo = appPreferences.getAuthInfo().firstOrNull()
+            _authState.value = if (authInfo != null) {
+                AuthState.Authenticated(token = authInfo.token, userId = authInfo.userId)
             } else {
                 AuthState.Unauthenticated
             }
@@ -54,14 +55,9 @@ class AuthDomain(
                     type = "google"
                 )
             )
-            if (result.code != 200) {
-                Result.failure(Exception("Login failed: ${result.message}"))
-            } else {
-                appPreferences.setAuthToken(result.data!!.token)
-                appPreferences.setUserId(result.data.user_id)
-                _authState.value = AuthState.Authenticated(token, result.data.user_id)
-                Result.success(Unit)
-            }
+            appPreferences.setAuthInfo(result.data!!.token, result.data.user_id)
+            _authState.value = AuthState.Authenticated(token, result.data.user_id)
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -71,6 +67,17 @@ class AuthDomain(
         viewModelScope.launch {
             appPreferences.clearAuthToken()
             _authState.value = AuthState.Unauthenticated
+        }
+    }
+
+    suspend fun refreshToken() {
+        coroutineScope {
+            val lastRefreshTime = appPreferences.getLastRefreshTime()
+            val currentTime = timeUnix()
+            if (lastRefreshTime != null && (currentTime - lastRefreshTime) > 24 * 60 * 60) {
+                val res = apiService.refresh()
+                appPreferences.setAuthInfo(res.data!!.token, null)
+            }
         }
     }
 }

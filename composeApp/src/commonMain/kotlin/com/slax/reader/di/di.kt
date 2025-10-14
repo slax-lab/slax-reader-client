@@ -15,7 +15,7 @@ import io.ktor.client.*
 import org.koin.dsl.module
 
 val networkModule = module {
-    single<HttpClient> { getHttpClient() }
+    single<HttpClient> { getHttpClient(get()) }
     single<Connector> { Connector(get()) }
     single<ApiService> { ApiService(get(), get()) }
 }
