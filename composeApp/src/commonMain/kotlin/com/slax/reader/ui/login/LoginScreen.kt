@@ -24,33 +24,40 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
+import androidx.compose.material3.AlertDialog
 
 // Compose Material3
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 
 // Compose Runtime
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 
 // Compose UI
@@ -70,17 +77,26 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
+import app.slax.reader.SlaxConfig
+import com.mmk.kmpauth.google.GoogleAuthCredentials
+import com.mmk.kmpauth.google.GoogleAuthProvider
+import com.mmk.kmpauth.google.GoogleButtonUiContainer
 
 // WebView
 import com.multiplatform.webview.setting.PlatformWebSettings
 import com.multiplatform.webview.util.KLogSeverity
 import com.multiplatform.webview.web.WebView
 import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
+import com.slax.reader.const.AppError
+import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.ui.bookmark.optimizedHtml
+import kotlinx.coroutines.launch
 
 // Resources
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
+import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.bg_login
 import slax_reader_client.composeapp.generated.resources.ic_sm_apple
@@ -92,17 +108,39 @@ import slax_reader_client.composeapp.generated.resources.ic_radio_enabled
 import kotlin.math.roundToInt
 
 // ================================================================================================
-// 主屏幕组件
+// 登录页面
 // ================================================================================================
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen() {
+fun LoginScreen(navController: NavHostController) {
+    val authDomain: AuthDomain = koinInject()
+    val scope = rememberCoroutineScope()
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
     var isAgreed by remember { mutableStateOf(false) }
-    var showBottomSheet by remember { mutableStateOf(false) }
+    var showAgreement by remember { mutableStateOf(false) }
+
+    GoogleAuthProvider.create(
+        credentials = GoogleAuthCredentials(serverId = SlaxConfig.GOOGLE_AUTH_SERVER_ID)
+    )
+
+    errorMessage?.let { message ->
+        AlertDialog(
+            onDismissRequest = { errorMessage = null },
+            title = { Text("Login Failed") },
+            text = { Text(message) },
+            confirmButton = {
+                TextButton(onClick = { errorMessage = null }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
 
     Column(
-        modifier = Modifier.fillMaxSize().background(Color.White),
+        modifier = Modifier.fillMaxSize().background(Color.White).windowInsetsPadding(WindowInsets.navigationBars),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         // 顶部内容区域
@@ -143,51 +181,97 @@ fun LoginScreen() {
 
         // 底部登录按钮区域
         Column(modifier = Modifier.padding(bottom = 30.dp)) {
-            LoginButton(
-                text = "Google 登录",
-                drawableResource = Res.drawable.ic_sm_google,
-                onClick = { }
-            )
+            GoogleButtonUiContainer(onGoogleSignInResult = { googleUser ->
+                val idToken = googleUser?.idToken
+                println("id token: $idToken =============")
 
-            LoginButton(
-                modifier = Modifier.padding(top = 10.dp),
-                text = "通过 Apple 登录",
-                drawableResource = Res.drawable.ic_sm_apple,
-                onClick = { }
-            )
+                if (idToken != null) {
+                    isLoading = true
+                    scope.launch {
+                        val result = authDomain.signIn(idToken)
+                        isLoading = false
+
+                        result.onSuccess {
+                            navController.navigate("inbox") {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }.onFailure { exception ->
+                            // Extract proper error message
+                            val message = when (exception) {
+                                is AppError.ApiException.HttpError -> {
+                                    "Login failed (${exception.code}): ${exception.message}"
+                                }
+
+                                is AppError.AuthException -> {
+                                    "Auth error: ${exception.message}"
+                                }
+
+                                else -> {
+                                    exception.message ?: "Unknown error occurred"
+                                }
+                            }
+                            errorMessage = message
+                            println("Login error: $message")
+                        }
+                    }
+                } else {
+                    errorMessage = "Failed to get Google ID token"
+                }
+            }) {
+                LoginButton(
+                    text = "Google 登录",
+                    isLoading = isLoading,
+                    drawableResource = Res.drawable.ic_sm_google,
+                    onClick = {
+                        if (!isAgreed) {
+                            showAgreement = true
+                        } else {
+                            this.onClick()
+                        }
+                    }
+                )
+            }
+
+//            LoginButton(
+//                modifier = Modifier.padding(top = 10.dp),
+//                text = "通过 Apple 登录",
+//                drawableResource = Res.drawable.ic_sm_apple,
+//                onClick = { }
+//            )
 
             AgreementText(
                 agreed = isAgreed,
                 modifier = Modifier.padding(top = 30.dp),
                 onAgreedClick = { isAgreed = !it },
-                onPrivacyPolicyClick = { showBottomSheet = true },
-                onUserAgreementClick = { showBottomSheet = true }
+                onPrivacyPolicyClick = { showAgreement = true },
+                onUserAgreementClick = { showAgreement = true }
             )
         }
     }
 
     // 用户协议弹窗
     AgreementBottomSheet(
-        visible = showBottomSheet,
-        onDismiss = { showBottomSheet = false },
+        visible = showAgreement,
+        onDismiss = { showAgreement = false },
         onAgree = {
-            showBottomSheet = false
+            showAgreement = false
             isAgreed = true
         },
         onDisagree = {
-            showBottomSheet = false
+            showAgreement = false
             isAgreed = false
         }
     )
 }
 
 // ================================================================================================
-// UI组件 - 登录按钮
+// 登录按钮
 // ================================================================================================
 
 @Composable
 private fun LoginButton(
     text: String,
+    isLoading: Boolean = false,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     horizontalMargin: Dp = 40.dp,
@@ -203,6 +287,7 @@ private fun LoginButton(
     ) {
         OutlinedButton(
             onClick = onClick,
+            enabled = !isLoading,
             modifier = Modifier.fillMaxSize(),
             shape = RoundedCornerShape(25.dp),
             border = BorderStroke(0.5.dp, Color(0x336A6E83)),
@@ -216,6 +301,15 @@ private fun LoginButton(
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxSize()
             ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color(0x336A6E83)
+                    )
+
+                    return@Row
+                }
+
                 drawableResource?.let {
                     Icon(
                         painter = painterResource(it),
@@ -241,7 +335,7 @@ private fun LoginButton(
 }
 
 // ================================================================================================
-// UI组件 - 用户协议
+// 用户协议和隐私政策文案
 // ================================================================================================
 
 @Composable
@@ -336,7 +430,7 @@ private fun AgreementText(
 }
 
 // ================================================================================================
-// UI组件 - 底部弹窗
+// 隐私政策与用户协议
 // ================================================================================================
 
 @Composable
@@ -451,6 +545,11 @@ private fun AgreementBottomSheet(
                     )
                 )
             }
+
+            Box(
+                modifier = Modifier
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+            )
         }
     }
 }

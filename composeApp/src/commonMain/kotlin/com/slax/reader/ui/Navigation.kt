@@ -91,11 +91,7 @@ fun SlaxNavigation(
     ) {
         composable("login") {
             LoginScreen(
-                onLoginSuccess = {
-                    navCtrl.navigate("inbox") {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
+                navController = navCtrl
             )
         }
         composable("inbox") {
