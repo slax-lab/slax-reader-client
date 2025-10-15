@@ -110,6 +110,8 @@ data class ToolbarIcon(
 
 @Composable
 fun DetailScreen(nav: NavController, bookmarkId: String) {
+
+    print(bookmarkId)
     var showTagView by remember { mutableStateOf(false) }
     var showOverviewDialog by remember { mutableStateOf(false) }
     var showToolbar by remember { mutableStateOf(false) }

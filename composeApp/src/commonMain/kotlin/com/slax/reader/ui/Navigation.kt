@@ -106,7 +106,7 @@ fun SlaxNavigation(
         }
 
         composable("inbox") {
-            InboxListScreen()
+            InboxListScreen(navCtrl)
         }
         composable("debug") {
             DebugScreen()
