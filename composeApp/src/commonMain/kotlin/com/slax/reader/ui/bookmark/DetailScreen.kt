@@ -83,6 +83,17 @@ import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.DrawableResource
+import slax_reader_client.composeapp.generated.resources.Res
+import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_archieve
+import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_chatbot
+import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_comment
+import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_delete
+import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_feedback
+import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_share
+import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_star
+import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_summary
+import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_underline
 
 // ================================================================================================
 // 数据类
@@ -90,11 +101,11 @@ import kotlinx.coroutines.launch
 
 data class ToolbarIcon(
     val label: String,
-    val iconRes: String? = null
+    val iconRes: DrawableResource? = null
 )
 
 // ================================================================================================
-// 主屏幕组件
+// 详情页页面
 // ================================================================================================
 
 @Composable
@@ -103,7 +114,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
     var showOverviewDialog by remember { mutableStateOf(false) }
     var showToolbar by remember { mutableStateOf(false) }
 
-    // 标签数据管理
+    // 标签数据管理假数据
     var currentTags by remember {
         mutableStateOf(listOf("AI", "大模型", "ChatGPT", "智能手机", "AGI", "刘知远", "科技", "访谈", "前沿技术"))
     }
@@ -112,37 +123,21 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                "机器学习", "深度学习", "神经网络", "自然语言处理", "计算机视觉")
     }
 
-    // 工具栏数据 - 3页，每页8个图标
     val toolbarPages = remember {
         listOf(
-            // 第1页
             listOf(
-                ToolbarIcon("复制"),
-                ToolbarIcon("分享"),
-                ToolbarIcon("收藏"),
-                ToolbarIcon("删除"),
-                ToolbarIcon("编辑"),
-                ToolbarIcon("导出"),
-                ToolbarIcon("打印"),
-                ToolbarIcon("更多")
+                ToolbarIcon("Chat", Res.drawable.ic_bottom_panel_chatbot),
+                ToolbarIcon("总结全文", Res.drawable.ic_bottom_panel_summary),
+                ToolbarIcon("加星", Res.drawable.ic_bottom_panel_star),
+                ToolbarIcon("归档", Res.drawable.ic_bottom_panel_archieve),
+                ToolbarIcon("划线", Res.drawable.ic_bottom_panel_underline),
+                ToolbarIcon("评论", Res.drawable.ic_bottom_panel_comment),
+                ToolbarIcon("改标题", Res.drawable.ic_bottom_panel_comment),
+                ToolbarIcon("分享", Res.drawable.ic_bottom_panel_share)
             ),
-            // 第2页
             listOf(
-                ToolbarIcon("标签"),
-                ToolbarIcon("笔记"),
-                ToolbarIcon("归档"),
-                ToolbarIcon("移动"),
-                ToolbarIcon("重命名"),
-                ToolbarIcon("属性"),
-                ToolbarIcon("历史"),
-                ToolbarIcon("帮助")
-            ),
-            // 第3页
-            listOf(
-                ToolbarIcon("设置"),
-                ToolbarIcon("主题"),
-                ToolbarIcon("字体"),
-                ToolbarIcon("缩放")
+                ToolbarIcon("反馈", Res.drawable.ic_bottom_panel_feedback),
+                ToolbarIcon("删除", Res.drawable.ic_bottom_panel_delete),
             )
         )
     }
