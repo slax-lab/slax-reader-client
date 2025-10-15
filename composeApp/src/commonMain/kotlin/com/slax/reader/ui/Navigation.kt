@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.multiplatform.webview.web.rememberWebViewState
 import com.powersync.ExperimentalPowerSyncAPI
 import com.powersync.PowerSyncDatabase
 import com.powersync.sync.SyncOptions
@@ -15,6 +16,8 @@ import com.powersync.utils.JsonParam
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.auth.AuthState
 import com.slax.reader.domain.sync.BackgroundDomain
+import com.slax.reader.ui.bookmark.ChromeReaderView
+import com.slax.reader.ui.bookmark.DetailScreen
 import com.slax.reader.ui.debug.DebugScreen
 import com.slax.reader.ui.inbox.InboxListScreen
 import com.slax.reader.ui.login.LoginScreen
@@ -94,6 +97,14 @@ fun SlaxNavigation(
                 navController = navCtrl
             )
         }
+        composable("bookmark/{id}") { backStackEntry ->
+            backStackEntry.let { entry ->
+                entry.arguments?.toString()?.let {
+                    DetailScreen(navCtrl, it)
+                }
+            }
+        }
+
         composable("inbox") {
             InboxListScreen()
         }
