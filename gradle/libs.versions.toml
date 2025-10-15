@@ -19,7 +19,6 @@ sqlite = "2.6.0"
 ksp = "2.2.20-2.0.3"
 koinCompose = "4.1.1"
 kotlin = "2.2.20"
-kotlinx-coroutines = "1.10.2"
 ktorClientOkhttp = "3.3.1"
 napier = "2.7.1"
 navigationCompose = "2.9.0"
@@ -41,7 +40,6 @@ kmpauth-firebase = { module = "io.github.mirzemehdi:kmpauth-firebase", version.r
 kmpauth-google = { module = "io.github.mirzemehdi:kmpauth-google", version.ref = "kmpauthGoogle" }
 kmpauth-uihelper = { module = "io.github.mirzemehdi:kmpauth-uihelper", version.ref = "kmpauthGoogle" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
-ktor-client-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktorClientOkhttp" }
 powerSyncCore = { module = "com.powersync:core", version.ref = "powerSyncCore" }
 powerSyncRoom = { module = "com.powersync:integration-room", version.ref = "powerSyncRoom" }
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
@@ -56,11 +54,9 @@ kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotl
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
 androidx-lifecycle-viewmodelCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
-kotlinx-coroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktorClientOkhttp" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktorClientOkhttp" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktorClientOkhttp" }
-ktor-client-java = { module = "io.ktor:ktor-client-java", version.ref = "ktorClientOkhttp" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktorClientOkhttp" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktorClientOkhttp" }
 napier = { module = "io.github.aakira:napier", version.ref = "napier" }
