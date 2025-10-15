@@ -1,65 +1,36 @@
 package com.slax.reader.ui.inbox
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.powersync.PowerSyncDatabase
-import com.powersync.sync.SyncStatusData
 import com.slax.reader.data.database.dao.BookmarkDao
+import com.slax.reader.data.database.dao.PowerSyncDao
 import com.slax.reader.data.database.dao.UserDao
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 
 class InboxListViewModel(
     bookmarkDao: BookmarkDao,
     userDao: UserDao,
-    database: PowerSyncDatabase,
+    powerSyncDao: PowerSyncDao,
 ) : ViewModel() {
-    var syncStatusData by mutableStateOf<SyncStatusData?>(null)
-        private set
 
-    init {
-        viewModelScope.launch {
-            database.currentStatus.asFlow().collect { status ->
-                syncStatusData = status
-            }
-        }
-    }
+    val bookmarks = bookmarkDao.watchUserBookmarkList()
 
-    val bookmarks = bookmarkDao.getUserBookmarkList()
-        .distinctUntilChanged()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+    val userInfo = userDao.watchUserInfo()
 
-    val userInfo = userDao.getUserInfo()
-        .distinctUntilChanged()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = null
-        )
+    val syncStatusData = powerSyncDao.watchPowerSyncStatus()
 
     val isConnecting: Boolean
-        get() = syncStatusData?.connecting == true
+        get() = syncStatusData.value?.connecting == true
 
     val isUploading: Boolean
-        get() = syncStatusData?.uploading == true
+        get() = syncStatusData.value?.uploading == true
 
     val hasError: Boolean
-        get() = syncStatusData?.anyError != null
+        get() = syncStatusData.value?.anyError != null
 
     val isDownloading: Boolean
-        get() = syncStatusData?.downloading == true
+        get() = syncStatusData.value?.downloading == true
 
     val downloadProgress: Float
-        get() = syncStatusData?.downloadProgress?.let { progress ->
+        get() = syncStatusData.value?.downloadProgress?.let { progress ->
             if (progress.totalOperations > 0) {
                 (progress.downloadedOperations.toFloat() / progress.totalOperations.toFloat()).coerceIn(0f, 1f)
             } else {

@@ -17,6 +17,7 @@ import com.powersync.sync.SyncOptions
 import com.powersync.utils.JsonParam
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.auth.AuthState
+import com.slax.reader.domain.sync.BackgroundDomain
 import com.slax.reader.ui.debug.DebugScreen
 import com.slax.reader.ui.inbox.InboxListScreen
 import com.slax.reader.ui.login.LoginScreen
@@ -33,6 +34,7 @@ fun SlaxNavigation(
     navCtrl: NavHostController
 ) {
     val authDomain: AuthDomain = koinInject()
+    val backgroundDomain: BackgroundDomain = koinInject()
     val authState by authDomain.authState.collectAsState()
 
     val database: PowerSyncDatabase? = if (authState is AuthState.Authenticated) {

@@ -21,9 +21,6 @@ val srUserTable = Table(
         Column.text("last_read_at"),
         Column.text("invite_code")
     ),
-//    indexes = listOf(
-//        Index("id")
-//    ),
 )
 
 val srUserTagTable = Table(
@@ -88,22 +85,42 @@ val srUserBookmarkTable = Table(
     )
 )
 
-val localFileManager = Table(
-    name = "local_file_manager",
-    localOnly = true,
-    columns = listOf(
-        // e.g. xxx.html
-        Column.text("name"),
-        // e.g. /bookmarks/xxx.html
-        Column.text("path"),
-        Column.integer("size"),
-        // image / video / audio / document
-        Column.text("type"),
-        // document's media source, e.g. bookmark id
-        Column.text("source_id"),
-        Column.text("created_at"),
-    )
-)
+//val localWorkerTaskTable = Table(
+//    name = "local_worker_task",
+//    localOnly = true,
+//    columns = listOf(
+//        Column.text("type"),
+//        Column.text("status"),
+//        Column.text("params"),
+//        Column.text("result"),
+//        Column.text("created_at"),
+//        Column.text("updated_at"),
+//    )
+//)
+//
+//val localFileManager = Table(
+//    name = "local_file_manager",
+//    localOnly = true,
+//    columns = listOf(
+//        // e.g. xxx.html
+//        Column.text("type"),
+//        // e.g. /bookmarks/xxx.html
+//        Column.text("path"),
+//        Column.integer("size"),
+//        // image / video / audio / document
+//        Column.text("type"),
+//        // document's media source, e.g. bookmark id
+//        Column.text("source_id"),
+//        Column.text("created_at"),
+//    ),
+//    indexes = listOf(
+//        Index(
+//            "", listOf(
+//                IndexedColumn("")
+//            )
+//        )
+//    )
+//)
 
 val AppSchema = Schema(
     listOf(
@@ -114,6 +131,8 @@ val AppSchema = Schema(
         srUserBookmarkOverviewTable,
         srUserBookmarkTable,
 
-        localFileManager
+        // local only, not sync to server
+//        localWorkerTaskTable,
+//        localFileManager
     )
 )

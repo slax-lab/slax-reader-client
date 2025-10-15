@@ -3,15 +3,18 @@ package com.slax.reader.data.database.dao
 import com.powersync.PowerSyncDatabase
 import com.powersync.db.getString
 import com.slax.reader.data.database.model.UserInfo
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.*
 
 class UserDao(
     private val database: PowerSyncDatabase
 ) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    private val _userInfoFlow by lazy {
+    private val _userInfoFlow: StateFlow<UserInfo?> by lazy {
         database.watch(
             """SELECT email, name, picture, given_name, family_name,
                            lang, ai_lang, timezone, account,
@@ -35,10 +38,13 @@ class UserDao(
                     invite_code = cursor.getString("invite_code"),
                 )
             }
-        ).onEach { userList ->
-            userList.firstOrNull()
-        }.map { it.firstOrNull() }
+        ).map { it.firstOrNull() }
+            .catch { e ->
+                println("Error watching user info: ${e.message}")
+            }
+            .distinctUntilChanged()
+            .stateIn(scope, SharingStarted.WhileSubscribed(5000), null)
     }
 
-    fun getUserInfo(): Flow<UserInfo?> = _userInfoFlow
+    fun watchUserInfo(): StateFlow<UserInfo?> = _userInfoFlow
 }
