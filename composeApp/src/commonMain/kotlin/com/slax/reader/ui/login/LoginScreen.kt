@@ -70,8 +70,8 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.bg_login
-import slax_reader_client.composeapp.generated.resources.ic_google
-import slax_reader_client.composeapp.generated.resources.ic_apple
+import slax_reader_client.composeapp.generated.resources.ic_sm_google
+import slax_reader_client.composeapp.generated.resources.ic_sm_apple
 import slax_reader_client.composeapp.generated.resources.ic_radio_disabled
 import slax_reader_client.composeapp.generated.resources.ic_radio_enabled
 import kotlin.math.roundToInt
@@ -119,7 +119,7 @@ fun LoginView() {
         Column(modifier = Modifier.padding(bottom = 30.dp)) {
             MyRoundedButton(
                 text = "Google 登录",
-                drawableResource = Res.drawable.ic_google,
+                drawableResource = Res.drawable.ic_sm_google,
                 onClick = {
 
                 },
@@ -127,7 +127,7 @@ fun LoginView() {
             MyRoundedButton(
                 modifier = Modifier.padding(top = 10.dp),
                 text = "通过 Apple 登录",
-                drawableResource = Res.drawable.ic_apple,
+                drawableResource = Res.drawable.ic_sm_apple,
                 onClick = {
 
                 },
