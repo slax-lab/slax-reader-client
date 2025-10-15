@@ -1,19 +1,20 @@
 package com.slax.reader.ui.bookmark
 
+// Compose Animation
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.ui.draw.blur
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+
+// Compose Foundation
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,7 +25,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,13 +39,12 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+
+// Compose Material3
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+
+// Compose Runtime
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -53,35 +52,53 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+
+// Compose UI
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
+// Navigation
 import androidx.navigation.NavController
+
+// WebView
 import com.multiplatform.webview.setting.PlatformWebSettings
 import com.multiplatform.webview.util.KLogSeverity
+import com.multiplatform.webview.web.LoadingState
 import com.multiplatform.webview.web.WebView
+import com.multiplatform.webview.web.rememberWebViewNavigator
 import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
-import com.multiplatform.webview.web.*
+
+// Kotlin
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+// ================================================================================================
+// 数据类
+// ================================================================================================
+
+data class ToolbarIcon(
+    val label: String,
+    val iconRes: String? = null
+)
+
+// ================================================================================================
+// 主屏幕组件
+// ================================================================================================
+
 @Composable
 fun DetailScreen(nav: NavController, bookmarkId: String) {
-    var webViewHeight by remember { mutableStateOf(0) }
-    val webState = rememberWebViewStateWithHTMLData(optimizedHtml)
     var showTagView by remember { mutableStateOf(false) }
     var showOverviewDialog by remember { mutableStateOf(false) }
     var showToolbar by remember { mutableStateOf(false) }
@@ -95,7 +112,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                "机器学习", "深度学习", "神经网络", "自然语言处理", "计算机视觉")
     }
 
-    // 示例工具栏数据 - 3页，每页8个图标
+    // 工具栏数据 - 3页，每页8个图标
     val toolbarPages = remember {
         listOf(
             // 第1页
@@ -130,34 +147,18 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
         )
     }
 
-    webState.webSettings.apply {
-        isJavaScriptEnabled = true
-        supportZoom = false
-        allowFileAccessFromFileURLs = false
-        allowUniversalAccessFromFileURLs = false
-        logSeverity = KLogSeverity.Error
-
-        androidWebSettings.apply {
-            domStorageEnabled = true
-            safeBrowsingEnabled = true
-            allowFileAccess = false
-            layerType = PlatformWebSettings.AndroidWebSettings.LayerType.HARDWARE
-        }
-    }
-
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
-                .padding(bottom = 58.dp) // 底部留出58dp间距
+                .padding(bottom = 58.dp)
                 .background(Color(0xFFFCFCFC))
         ) {
-            NavigationBar()
-            Column(
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            Box(modifier = Modifier.height(48.dp))
+
+            Column(modifier = Modifier.fillMaxWidth()) {
                 Text("对话面壁智能首席科学家刘知远：大模型将有新的「摩尔定律」，AGI 时代的智能终端未必是手机", style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.SemiBold, lineHeight = 30.sp, color = Color(0xFF0f1419)))
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
@@ -187,7 +188,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
             }
         }
 
-        // 悬浮操作栏
+        // 底部悬浮操作栏
         FloatingActionBar(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -195,7 +196,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
             onMoreClick = { showToolbar = true }
         )
 
-        // BottomSheet 放在最外层，确保浮在所有内容之上
+        // 标签管理界面
         TagsManageBottomSheet(
             visible = showTagView,
             onDismissRequest = { showTagView = false },
@@ -207,8 +208,8 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
             }
         )
 
-        // 居中白色弹窗
-        CenterWhiteDialog(
+        // Overview 弹窗
+        OverviewDialog(
             visible = showOverviewDialog,
             onDismissRequest = { showOverviewDialog = false }
         )
@@ -278,7 +279,6 @@ private fun FloatingActionBar(
     Box(
         modifier = modifier
     ) {
-        // 阴影层
         Box(
             modifier = Modifier
                 .matchParentSize()
@@ -291,12 +291,10 @@ private fun FloatingActionBar(
                 )
         )
 
-        // 内容层
         Row(
             horizontalArrangement = Arrangement.spacedBy(0.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-        // 左边两个按钮（连在一起）
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(25.dp))
@@ -308,9 +306,8 @@ private fun FloatingActionBar(
                 .background(Color(0xFFF5F5F5))
 
         ) {
-            // 按钮1
             Surface(
-                onClick = { /* 按钮1点击事件 */ },
+                onClick = { /* 点击事件 */ },
                 modifier = Modifier
                     .size(50.dp),
                 color = Color.Transparent,
@@ -323,9 +320,8 @@ private fun FloatingActionBar(
                 }
             }
 
-            // 按钮2
             Surface(
-                onClick = { /* 按钮2点击事件 */ },
+                onClick = { /* 点击事件 */ },
                 modifier = Modifier
                     .size(50.dp),
                 color = Color.Transparent,
@@ -339,10 +335,8 @@ private fun FloatingActionBar(
             }
         }
 
-        // 12dp 间距
         Box(modifier = Modifier.width(12.dp))
 
-        // 第三个按钮 - 更多操作
         Surface(
             onClick = onMoreClick,
             modifier = Modifier
@@ -361,23 +355,9 @@ private fun FloatingActionBar(
     }
 }
 
-@Composable
-private fun NavigationBar() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 16.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .width(70.dp)
-                .align(Alignment.CenterStart),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-        }
-    }
-}
+// ================================================================================================
+// UI组件 - 标签
+// ================================================================================================
 
 @Composable
 private fun TagsView(
@@ -405,7 +385,7 @@ private fun TagItem(
     onClick: () -> Unit,
     showDeleteButton: Boolean = false,
     onDelete: (() -> Unit)? = null,
-    isLargeStyle: Boolean = false  // 是否使用大尺寸样式（用于BottomSheet）
+    isLargeStyle: Boolean = false  // 是否使用大尺寸样式
 ) {
     // 根据样式选择不同的尺寸参数
     val height = if (isLargeStyle) 30.dp else 21.dp
@@ -417,7 +397,7 @@ private fun TagItem(
     Box(
         modifier = Modifier
             .height(height) // 动态高度
-            .clip(RoundedCornerShape(3.dp)) // 圆角裁剪，确保点击波纹也有圆角
+            .clip(RoundedCornerShape(3.dp))
             .border(
                 width = 1.dp,
                 color = Color(0xFFE4D6BA),
@@ -440,7 +420,6 @@ private fun TagItem(
         contentAlignment = if (showDeleteButton) Alignment.CenterStart else Alignment.Center
     ) {
         if (showDeleteButton && onDelete != null) {
-            // 带删除按钮的布局
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -456,7 +435,6 @@ private fun TagItem(
                     overflow = TextOverflow.Ellipsis
                 )
 
-                // 分割线
                 Box(
                     modifier = Modifier
                         .width(1.dp)
@@ -464,7 +442,6 @@ private fun TagItem(
                         .background(Color(0x140F1419))
                 )
 
-                // 删除按钮
                 Box(
                     modifier = Modifier
                         .size(14.dp)
@@ -590,219 +567,204 @@ fun TagsManageBottomSheet(
         }
     }
 
-    // 整个底部弹窗容器，包含背景和内容
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn(animationSpec = tween(300)),
         exit = fadeOut(animationSpec = tween(300))
     ) {
         Box(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            // 半透明背景
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) {
-                        onDismissRequest()
-                    }
-            )
-
-            // 底部弹窗内容，带滑入动画
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .offset { IntOffset(0, offsetY.roundToInt()) },
-                contentAlignment = Alignment.BottomCenter
-            ) {
-                AnimatedVisibility(
-                    visible = visible,
-                    enter = slideInVertically(
-                        initialOffsetY = { it },
-                        animationSpec = tween(300)
-                    ),
-                    exit = slideOutVertically(
-                        targetOffsetY = { it },
-                        animationSpec = tween(300)
-                    )
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
                 ) {
-                    Surface(
-                        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-                        color = Color.White,
+                    onDismissRequest()
+                }
+        )
+    }
+
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        AnimatedVisibility(
+            visible = visible,
+            enter = slideInVertically(
+                initialOffsetY = { it },
+                animationSpec = tween(300)
+            ),
+            exit = slideOutVertically(
+                targetOffsetY = { it },
+                animationSpec = tween(300)
+            )
+        ) {
+            Surface(
+                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                color = Color.White,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .offset { IntOffset(0, offsetY.roundToInt()) }
+                    .then(
+                        if (enableDrag) {
+                            Modifier
+                                .draggable(
+                                    orientation = Orientation.Vertical,
+                                    state = rememberDraggableState { delta ->
+                                        offsetY = (offsetY + delta).coerceAtLeast(0f)
+                                    },
+                                    onDragStopped = {
+                                        if (offsetY > with(density) { 100.dp.toPx() }) {
+                                            onDismissRequest()
+                                        } else {
+                                            offsetY = 0f
+                                        }
+                                    }
+                                )
+                        } else {
+                            Modifier
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) {}
+                        }
+                    ),
+                shadowElevation = 8.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(0.dp)
+                ) {
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .then(
-                                if (enableDrag) {
-                                    Modifier
-                                        .draggable(
-                                            orientation = Orientation.Vertical,
-                                            state = rememberDraggableState { delta ->
-                                                offsetY = (offsetY + delta).coerceAtLeast(0f)
-                                            },
-                                            onDragStopped = {
-                                                if (offsetY > with(density) { 100.dp.toPx() }) {
-                                                    onDismissRequest()
-                                                } else {
-                                                    offsetY = 0f
-                                                }
-                                            }
-                                        )
-                                } else {
-                                    Modifier
-                                        .clickable(
-                                            interactionSource = remember { MutableInteractionSource() },
-                                            indication = null
-                                        ) {}
-                                }
-                            ),
-                        shadowElevation = 8.dp
+                            .height(60.dp)
+                            .padding(horizontal = 24.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(0.dp)
-                        ) {
-                            // Header 栏
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(60.dp)
-                                    .padding(horizontal = 24.dp)
-                            ) {
-                                // 取消按钮
-                                Text(
-                                    text = "取消",
-                                    modifier = Modifier
-                                        .align(Alignment.CenterStart)
-                                        .clickable(
-                                            interactionSource = remember { MutableInteractionSource() },
-                                            indication = null
-                                        ) {
-                                            onDismissRequest()
-                                        },
-                                    style = TextStyle(
-                                        fontSize = 16.sp,
-                                        lineHeight = 20.sp,
-                                        color = Color(0xFF5490C2)
-                                    )
-                                )
+                        Text(
+                            text = "取消",
+                            modifier = Modifier
+                                .align(Alignment.CenterStart)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) {
+                                    onDismissRequest()
+                                },
+                            style = TextStyle(
+                                fontSize = 15.sp,
+                                lineHeight = 20.sp,
+                                color = Color(0xFF333333)
+                            )
+                        )
 
-                                // 标题
-                                Text(
-                                    text = "标签",
-                                    modifier = Modifier.align(Alignment.Center),
-                                    style = TextStyle(
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        lineHeight = 20.sp,
-                                        color = Color(0xFF0F1419)
-                                    )
-                                )
+                        Text(
+                            text = "标签",
+                            modifier = Modifier.align(Alignment.Center),
+                            style = TextStyle(
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                lineHeight = 20.sp,
+                                color = Color(0xFF0F1419)
+                            )
+                        )
 
-                                // 确定按钮
-                                Text(
-                                    text = "确定",
-                                    modifier = Modifier
-                                        .align(Alignment.CenterEnd)
-                                        .clickable(
-                                            interactionSource = remember { MutableInteractionSource() },
-                                            indication = null
-                                        ) {
-                                            onConfirm(currentSelectedTags)
-                                            onDismissRequest()
-                                        },
-                                    style = TextStyle(
-                                        fontSize = 16.sp,
-                                        lineHeight = 20.sp,
-                                        color = Color(0xFF5490C2)
-                                    )
-                                )
-                            }
+                        Text(
+                            text = "确定",
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) {
+                                    onConfirm(currentSelectedTags)
+                                    onDismissRequest()
+                                },
+                            style = TextStyle(
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Medium,
+                                lineHeight = 20.sp,
+                                color = Color(0xFF16b998)
+                            )
+                        )
+                    }
 
-                            // 分割线
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 24.dp)
-                                    .height(0.5.dp)
-                                    .background(Color(0x33333314))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp)
+                            .height(0.5.dp)
+                            .background(Color(0x14333333))
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp)
+                            .verticalScroll(rememberScrollState())
+                            .padding(bottom = 28.dp)
+                    ) {
+                        // 已添加标签区域
+                        if (currentSelectedTags.isNotEmpty()) {
+                            Text(
+                                text = "已添加",
+                                modifier = Modifier.padding(top = 20.dp, bottom = 12.dp),
+                                style = TextStyle(
+                                    fontSize = 14.sp,
+                                    lineHeight = 20.sp,
+                                    color = Color(0xFF999999)
+                                )
                             )
 
-                            // 内容栏 - 使用 ScrollView
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 24.dp)
-                                    .verticalScroll(rememberScrollState())
-                                    .padding(bottom = 28.dp)
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
-                                // 已添加标签区域
-                                if (currentSelectedTags.isNotEmpty()) {
-                                    Text(
-                                        text = "已添加",
-                                        modifier = Modifier.padding(top = 20.dp, bottom = 12.dp),
-                                        style = TextStyle(
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            lineHeight = 20.sp,
-                                            color = Color(0xFF0F1419)
-                                        )
+                                currentSelectedTags.forEach { tag ->
+                                    TagItem(
+                                        tag = tag,
+                                        onClick = { /* 不需要 */ },
+                                        showDeleteButton = true,
+                                        onDelete = {
+                                            // 点击删除按钮移除标签
+                                            currentSelectedTags = currentSelectedTags - tag
+                                        },
+                                        isLargeStyle = true
                                     )
-
-                                    FlowRow(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        currentSelectedTags.forEach { tag ->
-                                            TagItem(
-                                                tag = tag,
-                                                onClick = { /* 不需要 */ },
-                                                showDeleteButton = true,
-                                                onDelete = {
-                                                    // 点击删除按钮移除标签
-                                                    currentSelectedTags = currentSelectedTags - tag
-                                                },
-                                                isLargeStyle = true
-                                            )
-                                        }
-                                    }
                                 }
+                            }
+                        }
 
-                                // 可添加标签区域
-                                val unselectedTags = availableTags.filter { it !in currentSelectedTags }
-                                if (unselectedTags.isNotEmpty()) {
-                                    Text(
-                                        text = "可添加",
-                                        modifier = Modifier.padding(
-                                            top = if (currentSelectedTags.isNotEmpty()) 20.dp else 20.dp,
-                                            bottom = 12.dp
-                                        ),
-                                        style = TextStyle(
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            lineHeight = 20.sp,
-                                            color = Color(0xFF0F1419)
-                                        )
+                        // 可添加标签区域
+                        val unselectedTags = availableTags.filter { it !in currentSelectedTags }
+                        if (unselectedTags.isNotEmpty()) {
+                            Text(
+                                text = "可添加",
+                                modifier = Modifier.padding(
+                                    top = if (currentSelectedTags.isNotEmpty()) 30.dp else 30.dp,
+                                    bottom = 12.dp
+                                ),
+                                style = TextStyle(
+                                    fontSize = 14.sp,
+                                    lineHeight = 20.sp,
+                                    color = Color(0xFF999999)
+                                )
+                            )
+
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp),
+                                modifier = Modifier.padding(bottom = 28.dp)
+                            ) {
+                                unselectedTags.forEach { tag ->
+                                    TagItem(
+                                        tag = tag,
+                                        onClick = {
+                                            // 点击添加标签
+                                            currentSelectedTags = currentSelectedTags + tag
+                                        },
+                                        isLargeStyle = true
                                     )
-
-                                    FlowRow(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                                        modifier = Modifier.padding(bottom = 28.dp)
-                                    ) {
-                                        unselectedTags.forEach { tag ->
-                                            TagItem(
-                                                tag = tag,
-                                                onClick = {
-                                                    // 点击添加标签
-                                                    currentSelectedTags = currentSelectedTags + tag
-                                                },
-                                                isLargeStyle = true
-                                            )
-                                        }
-                                    }
                                 }
                             }
                         }
@@ -814,11 +776,10 @@ fun TagsManageBottomSheet(
 }
 
 /**
- * 居中白色弹窗组件
- * 带有高斯模糊背景和从中间"鼓出来"的动画效果
+ * Overview 弹窗组件
  */
 @Composable
-fun CenterWhiteDialog(
+fun OverviewDialog(
     visible: Boolean,
     onDismissRequest: () -> Unit
 ) {
@@ -831,11 +792,10 @@ fun CenterWhiteDialog(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            // 磨砂玻璃效果背景 - 多层叠加实现更明显的效果
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xCCF5F5F3)) // 更高透明度的白色背景
+                    .background(Color(0xCCF5F5F3))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
@@ -844,7 +804,6 @@ fun CenterWhiteDialog(
                     }
             )
 
-            // 居中的白色弹窗,带有从中间鼓出来的动画
             AnimatedVisibility(
                 visible = visible,
                 enter = scaleIn(
@@ -903,6 +862,10 @@ fun CenterWhiteDialog(
     }
 }
 
+// ================================================================================================
+// UI组件 - 工具栏
+// ================================================================================================
+
 /**
  * 分页指示器组件
  * @param pageCount 总页数，只有一页时不显示
@@ -933,14 +896,6 @@ private fun PageIndicator(
         }
     }
 }
-
-/**
- * 工具栏图标数据类
- */
-data class ToolbarIcon(
-    val label: String,
-    val iconRes: String? = null
-)
 
 /**
  * 单个图标按钮
@@ -1014,7 +969,7 @@ private fun IconButton(
 }
 
 /**
- * 工具栏单页布局组件 - 显示8个icon按钮（上4下4）
+ * 工具栏单页布局组件
  * @param icons 图标列表（最多8个）
  * @param onIconClick 图标点击回调
  */
@@ -1106,7 +1061,6 @@ fun BottomToolbarSheet(
     pages: List<List<ToolbarIcon>>,
     onIconClick: (pageIndex: Int, iconIndex: Int) -> Unit
 ) {
-    // 背景层 - 淡入淡出
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn(animationSpec = tween(300)),
@@ -1125,7 +1079,6 @@ fun BottomToolbarSheet(
         )
     }
 
-    // 底部内容层 - 从下往上滑入
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.BottomCenter
@@ -1133,11 +1086,11 @@ fun BottomToolbarSheet(
         AnimatedVisibility(
             visible = visible,
             enter = slideInVertically(
-                initialOffsetY = { it }, // 从底部开始（完整高度的偏移）
+                initialOffsetY = { it },
                 animationSpec = tween(300)
             ),
             exit = slideOutVertically(
-                targetOffsetY = { it }, // 滑出到底部（完整高度的偏移）
+                targetOffsetY = { it },
                 animationSpec = tween(300)
             )
         ) {
