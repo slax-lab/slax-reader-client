@@ -3,10 +3,7 @@ package com.slax.reader.ui
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -39,12 +36,13 @@ fun SlaxNavigation(
     val backgroundDomain: BackgroundDomain = koinInject()
     val authState by authDomain.authState.collectAsState()
 
-    val database: PowerSyncDatabase? = if (authState is AuthState.Authenticated) {
-        koinInject()
-    } else null
-    val connector: Connector? = if (authState is AuthState.Authenticated) {
-        koinInject()
-    } else null
+    var database by remember { mutableStateOf<PowerSyncDatabase?>(null) }
+    var connector by remember { mutableStateOf<Connector?>(null) }
+
+    if (authState is AuthState.Authenticated && database == null) {
+        database = koinInject()
+        connector = koinInject()
+    }
 
     LaunchedEffect(authState) {
         when (authState) {

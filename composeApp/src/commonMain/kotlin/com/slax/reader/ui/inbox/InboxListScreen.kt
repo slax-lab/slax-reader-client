@@ -59,6 +59,9 @@ private fun UserAvatar() {
     val viewModel = koinInject<InboxListViewModel>()
     val userInfo by viewModel.userInfo.collectAsState()
     val authDomain: AuthDomain = koinInject()
+    // NOTE: DO NOT REMOVE!!!
+    // Keep observing sync status to make sure sync works
+    val syncStatus by viewModel.syncStatusData.collectAsState()
 
     val avatarPainter = rememberAsyncImagePainter(
         model = userInfo?.picture,
@@ -164,13 +167,25 @@ private fun UserAvatar() {
 
             // 正在下载 - 实线进度条和下箭头
             viewModel.isDownloading -> {
-                CircularProgressIndicator(
-                    progress = { viewModel.downloadProgress },
-                    modifier = Modifier.size(36.dp),
-                    color = Color(0xFF1DA1F2),
-                    strokeWidth = 2.dp,
-                    trackColor = Color(0x33333333)
-                )
+                val progress = viewModel.downloadProgress
+                val hasProgress = syncStatus?.downloadProgress?.let { it.totalOperations > 0 } ?: false
+
+                if (hasProgress) {
+                    CircularProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier.size(36.dp),
+                        color = Color(0xFF1DA1F2),
+                        strokeWidth = 2.dp,
+                        trackColor = Color(0x33333333)
+                    )
+                } else {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(36.dp),
+                        color = Color(0xFF1DA1F2),
+                        strokeWidth = 2.dp,
+                        trackColor = Color(0x33333333)
+                    )
+                }
 
                 Box(
                     modifier = Modifier
