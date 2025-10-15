@@ -1,23 +1,31 @@
 package com.slax.reader.ui
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.multiplatform.webview.web.rememberWebViewState
-import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
 import com.powersync.ExperimentalPowerSyncAPI
 import com.powersync.PowerSyncDatabase
 import com.powersync.sync.SyncOptions
-import com.slax.reader.data.preferences.AppPreferences
-import com.slax.reader.ui.bookmark.ChromeReaderView
-import com.slax.reader.ui.bookmark.optimizedHtml
+import com.powersync.utils.JsonParam
+import com.slax.reader.domain.auth.AuthDomain
+import com.slax.reader.domain.auth.AuthState
+import com.slax.reader.domain.sync.BackgroundDomain
 import com.slax.reader.ui.debug.DebugScreen
 import com.slax.reader.ui.inbox.InboxListScreen
+import com.slax.reader.ui.login.LoginScreen
 import com.slax.reader.utils.Connector
+import dev.gitlive.firebase.Firebase
+import dev.gitlive.firebase.analytics.analytics
+import dev.gitlive.firebase.crashlytics.crashlytics
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalPowerSyncAPI::class)
@@ -25,41 +33,73 @@ import org.koin.compose.koinInject
 fun SlaxNavigation(
     navCtrl: NavHostController
 ) {
+    val authDomain: AuthDomain = koinInject()
+    val backgroundDomain: BackgroundDomain = koinInject()
+    val authState by authDomain.authState.collectAsState()
 
-    val database: PowerSyncDatabase = koinInject<PowerSyncDatabase>()
-    val connector = koinInject<Connector>()
-    val preferences = koinInject<AppPreferences>()
-    LaunchedEffect("App Start") {
-        preferences.setAuthToken("eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjE0NDEyIiwibGFuZyI6ImVuIiwiZW1haWwiOiJkYWd1YW5nODMwQGdtYWlsLmNvbSIsImV4cCI6MTc2MDE2MzUxMCwiaWF0IjoxNzU4ODY3NTEwLCJpc3MiOiJzbGF4LXJlYWRlci1wcm9kIn0.jIv4z6eAthvEyHFwa-yrijo9JNloP-CfUl4TlxT60YU")
-        database.connect(connector, options = SyncOptions(newClientImplementation = true))
+    val database: PowerSyncDatabase? = if (authState is AuthState.Authenticated) {
+        koinInject()
+    } else null
+    val connector: Connector? = if (authState is AuthState.Authenticated) {
+        koinInject()
+    } else null
+
+    LaunchedEffect(authState) {
+        when (authState) {
+            is AuthState.Authenticated -> {
+                launch {
+                    database!!.connect(
+                        connector!!,
+                        params = mapOf("schema_version" to JsonParam.String("1")),
+                        options = SyncOptions(newClientImplementation = true)
+                    )
+                    authDomain.refreshToken()
+                }
+                Firebase.crashlytics.setCrashlyticsCollectionEnabled(true)
+                Firebase.analytics.setAnalyticsCollectionEnabled(true)
+                Firebase.analytics.setUserId((authState as AuthState.Authenticated).userId)
+                Firebase.crashlytics.setUserId((authState as AuthState.Authenticated).userId)
+                navCtrl.navigate("inbox") {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+
+            AuthState.Unauthenticated -> {
+                database?.disconnectAndClear()
+                navCtrl.navigate("login") {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+
+            AuthState.Loading -> {
+            }
+        }
     }
 
     NavHost(
         navController = navCtrl,
         startDestination = "inbox",
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        enterTransition = { EnterTransition.None },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { ExitTransition.None }
     ) {
-        composable("chrome") {
-            val webState = rememberWebViewStateWithHTMLData(optimizedHtml)
-            ChromeReaderView(navCtrl, webState)
-        }
-        composable("raw_webview") {
-            val webState = rememberWebViewState(url = "https://r.slax.com/s/P1A0aa4387")
-            ChromeReaderView(navCtrl, webState)
-        }
-        composable("bookmark/{bookmark_id}") { backStackEntry ->
-            backStackEntry.let { entry ->
-                entry.arguments?.toString()?.let {
-                    val webState = rememberWebViewState(url = "https://r.slax.com/s/$it")
-                    ChromeReaderView(navCtrl, webState)
+        composable("login") {
+            LoginScreen(
+                onLoginSuccess = {
+                    navCtrl.navigate("inbox") {
+                        popUpTo(0) { inclusive = true }
+                    }
                 }
-            }
-        }
-        composable("debug") {
-            DebugScreen()
+            )
         }
         composable("inbox") {
             InboxListScreen()
         }
+        composable("debug") {
+            DebugScreen()
+        }
     }
 }
+

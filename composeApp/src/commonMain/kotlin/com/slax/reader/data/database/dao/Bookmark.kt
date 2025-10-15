@@ -6,12 +6,11 @@ import com.slax.reader.data.database.model.BookmarkDetails
 import com.slax.reader.data.database.model.BookmarkMetadata
 import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.data.database.model.UserTag
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.*
 import kotlinx.serialization.json.Json
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -21,8 +20,10 @@ import kotlin.uuid.Uuid
 class BookmarkDao(
     private val database: PowerSyncDatabase
 ) {
-    fun getUserBookmarkList(): Flow<List<UserBookmark>> {
-        return database.watch(
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private val _userBookmarkListFlow: StateFlow<List<UserBookmark>> by lazy {
+        database.watch(
             """
             SELECT
                 id,
@@ -60,11 +61,14 @@ class BookmarkDao(
                 metadataUrl = cursor.getString("metadata_url"),
                 metadata = cursor.getString("metadata"),
             )
-        }.flowOn(Dispatchers.IO)
-            .catch { e ->
-                println("Error watching user bookmarks: ${e.message}")
-            }
+        }.catch { e ->
+            println("Error watching user bookmarks: ${e.message}")
+        }
+            .distinctUntilChanged()
+            .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
     }
+
+    fun watchUserBookmarkList(): StateFlow<List<UserBookmark>> = _userBookmarkListFlow
 
     fun getUserTags(): Flow<Map<String, UserTag>> {
         return database.watch(

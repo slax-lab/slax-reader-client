@@ -1,5 +1,6 @@
 package com.slax.reader.data.network.dto
 
+import io.ktor.util.StringValues
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -15,4 +16,23 @@ data class ChangesItem(
     val op: String = "",
     val data: Map<String, String?>? = null,
     val preData: Map<String, String?>? = null
+)
+
+@Serializable
+data class AuthResult(
+    val token: String = "",
+    val user_id: String = "",
+)
+
+@Serializable
+data class RefreshResult(
+    val token: String = ""
+)
+
+@Serializable
+data class AuthParams(
+    val code: String,
+    val redirect_uri: String,
+    val platform: String,
+    val type: String
 )

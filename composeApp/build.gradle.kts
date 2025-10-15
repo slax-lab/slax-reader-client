@@ -27,6 +27,8 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
     alias(libs.plugins.kotlinx.serialization)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
     kotlin("native.cocoapods")
     id("com.codingfeline.buildkonfig") version "0.17.1"
 }
@@ -81,7 +83,6 @@ kotlin {
         framework {
             baseName = "ComposeApp"
             isStatic = true
-            transitiveExport = false
             export("com.powersync:core")
             binaryOption("bundleId", "com.slax.reader.composeapp")
         }
@@ -93,7 +94,7 @@ kotlin {
         }
     }
 
-    iosX64()
+//    iosX64()
     iosArm64()
     iosSimulatorArm64()
 
@@ -138,11 +139,13 @@ kotlin {
             // DI
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
+            implementation(libs.koin.viewmodel)
 
             // HTTP client (for endpoint reachability checks)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
+            implementation(libs.ktor.client.auth)
 
             // Serialization
             implementation(libs.kotlinx.serialization.json)
@@ -152,6 +155,17 @@ kotlin {
 
             // image
             implementation(libs.coil.compose)
+
+            // firebase
+            implementation(libs.firebase.app)
+            implementation(libs.firebase.analytics)
+            implementation(libs.firebase.crashlytics)
+            implementation(libs.firebase.auth)
+
+            // auth
+            implementation(libs.kmpauth.google)
+            implementation(libs.kmpauth.firebase)
+            implementation(libs.kmpauth.uihelper)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -215,21 +229,22 @@ buildkonfig {
         buildConfigField(STRING, "BUILD_ENV", buildFlavor)
         buildConfigField(STRING, "API_BASE_URL", "https://reader-api.slax.dev")
         buildConfigField(STRING, "LOG_LEVEL", "DEBUG")
-//        buildConfigField(STRING, "SECRET", dotenv.get("SECRET")!!)
-    }
-
-    defaultConfigs("beta") {
-        buildConfigField(STRING, "BUILD_ENV", buildFlavor)
-        buildConfigField(STRING, "API_BASE_URL", "https://reader-api-beta.slax.com")
-        buildConfigField(STRING, "LOG_LEVEL", "INFO")
-//        buildConfigField(STRING, "SECRET", dotenv.get("SECRET")!!)
+        buildConfigField(
+            STRING,
+            "GOOGLE_AUTH_SERVER_ID",
+            dotenv.get("GOOGLE_AUTH_SERVER_ID")!!
+        )
     }
 
     defaultConfigs("release") {
         buildConfigField(STRING, "BUILD_ENV", buildFlavor)
         buildConfigField(STRING, "API_BASE_URL", "https://reader-api.slax.com")
         buildConfigField(STRING, "LOG_LEVEL", "ERROR")
-//        buildConfigField(STRING, "SECRET", dotenv.get("SECRET")!!)
+        buildConfigField(
+            STRING,
+            "GOOGLE_AUTH_SERVER_ID",
+            dotenv.get("GOOGLE_AUTH_SERVER_ID")!!
+        )
     }
 }
 

@@ -9,6 +9,8 @@ coilCompose = "3.3.0"
 composeHotReload = "1.0.0-beta07"
 composeMultiplatform = "1.9.0"
 composeWebviewMultiplatform = "2.0.3"
+firebaseAnalytics = "2.3.0"
+kmpauthGoogle = "2.3.1"
 kotlinxDatetime = "0.7.1"
 powerSyncCore = "1.7.0"
 powerSyncRoom = "1.7.0"
@@ -18,18 +20,28 @@ ksp = "2.2.20-2.0.3"
 koinCompose = "4.1.1"
 kotlin = "2.2.20"
 kotlinx-coroutines = "1.10.2"
-ktorClientOkhttp = "3.3.0"
+ktorClientOkhttp = "3.3.1"
 napier = "2.7.1"
 navigationCompose = "2.9.0"
 datastore = "1.1.7"
 kotlinx-serialization = "1.9.0"
+googleServices = "4.4.4"
+firebaseCrashlytics = "3.0.6"
 
 [libraries]
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coilCompose" }
 coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coilCompose" }
 compose-webview-multiplatform = { module = "io.github.kevinnzou:compose-webview-multiplatform", version.ref = "composeWebviewMultiplatform" }
+firebase-analytics = { module = "dev.gitlive:firebase-analytics", version.ref = "firebaseAnalytics" }
+firebase-app = { module = "dev.gitlive:firebase-app", version.ref = "firebaseAnalytics" }
+firebase-auth = { module = "dev.gitlive:firebase-auth", version.ref = "firebaseAnalytics" }
+firebase-crashlytics = { module = "dev.gitlive:firebase-crashlytics", version.ref = "firebaseAnalytics" }
+kmpauth-firebase = { module = "io.github.mirzemehdi:kmpauth-firebase", version.ref = "kmpauthGoogle" }
+kmpauth-google = { module = "io.github.mirzemehdi:kmpauth-google", version.ref = "kmpauthGoogle" }
+kmpauth-uihelper = { module = "io.github.mirzemehdi:kmpauth-uihelper", version.ref = "kmpauthGoogle" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
+ktor-client-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktorClientOkhttp" }
 powerSyncCore = { module = "com.powersync:core", version.ref = "powerSyncCore" }
 powerSyncRoom = { module = "com.powersync:integration-room", version.ref = "powerSyncRoom" }
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
@@ -38,6 +50,7 @@ room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koinCompose" }
 koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koinCompose" }
+koin-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koinCompose" }
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koinCompose" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
@@ -65,3 +78,5 @@ kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref =
 kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 androidx-room = { id = "androidx.room", version.ref = "room" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
+firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebaseCrashlytics" }

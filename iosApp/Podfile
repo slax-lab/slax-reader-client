@@ -5,7 +5,7 @@ project 'iosApp', {
 }
 
 target 'iosApp' do
-  use_frameworks!
+  use_frameworks! :linkage => :static
   platform :ios, '14.1'
 
   pod 'ComposeApp', :path => '../composeApp'

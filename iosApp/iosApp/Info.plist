@@ -1,19 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-    <dict>
-        <key>CADisableMinimumFrameDurationOnPhone</key>
-        <true/>
-        <key>NSAppTransportSecurity</key>
-        <dict>
-            <key>NSAllowsArbitraryLoads</key>
-            <true/>
-        </dict>
-        <key>CFBundleShortVersionString</key>
-        <string>$(BUNDLE_SHORT_VERSION_STRING)</string>
-        <key>CFBundleVersion</key>
-        <string>$(BUNDLE_VERSION)</string>
-        <key>NSNetworkUsageDescription</key>
-        <string>This app needs network access to sync data with PowerSync service.</string>
-    </dict>
+<dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	<key>CFBundleShortVersionString</key>
+	<string>$(BUNDLE_SHORT_VERSION_STRING)</string>
+	<key>GIDClientID</key>
+	<string>506971027225-oi61lhg08hn3o6p66nem2llsr2a2bn5k.apps.googleusercontent.com</string>
+	<key>GIDServerClientID</key>
+	<string>506971027225-v6fqn0nembrn3vrpf6f48bj73migk1qe.apps.googleusercontent.com</string>
+	<key>CFBundleVersion</key>
+	<string>$(BUNDLE_VERSION)</string>
+	<key>NSNetworkUsageDescription</key>
+	<string>This app needs network access to sync data with PowerSync service.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>app.slax.reader</string>
+				<string>com.googleusercontent.apps.506971027225-oi61lhg08hn3o6p66nem2llsr2a2bn5k</string>
+			</array>
+		</dict>
+	</array>
+</dict>
 </plist>
