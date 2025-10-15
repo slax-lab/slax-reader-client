@@ -25,6 +25,8 @@ import com.slax.reader.utils.Connector
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.analytics.analytics
 import dev.gitlive.firebase.crashlytics.crashlytics
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
@@ -47,13 +49,14 @@ fun SlaxNavigation(
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Authenticated -> {
-                launch {
+                launch(Dispatchers.IO) {
+                    authDomain.refreshToken()
                     database!!.connect(
                         connector!!,
                         params = mapOf("schema_version" to JsonParam.String("1")),
                         options = SyncOptions(newClientImplementation = true)
                     )
-                    authDomain.refreshToken()
+                    backgroundDomain.startup()
                 }
                 Firebase.crashlytics.setCrashlyticsCollectionEnabled(true)
                 Firebase.analytics.setAnalyticsCollectionEnabled(true)
@@ -65,7 +68,10 @@ fun SlaxNavigation(
             }
 
             AuthState.Unauthenticated -> {
-                database?.disconnectAndClear()
+                launch(Dispatchers.IO) {
+                    database?.disconnectAndClear()
+                    backgroundDomain.cleanup()
+                }
                 navCtrl.navigate("login") {
                     popUpTo(0) { inclusive = true }
                 }

@@ -4,11 +4,10 @@ import app.slax.reader.SlaxConfig
 import com.slax.reader.data.preferences.AppPreferences
 import io.ktor.client.*
 import io.ktor.client.plugins.*
-import io.ktor.client.plugins.auth.*
-import io.ktor.client.plugins.auth.providers.*
 import io.ktor.client.plugins.cache.*
 import io.ktor.client.plugins.cache.storage.*
 import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.CoroutineScope
@@ -39,11 +38,9 @@ fun getHttpClient(appPreferences: AppPreferences): HttpClient {
                 ignoreUnknownKeys = true
             })
         }
-        install(Auth) {
-            bearer {
-                refreshTokens {
-                    token.value?.let { BearerTokens(it, "") }
-                }
+        defaultRequest {
+            token.value?.let {
+                bearerAuth(it)
             }
         }
         HttpResponseValidator {

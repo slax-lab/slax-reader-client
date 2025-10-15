@@ -43,7 +43,7 @@ val viewModelModule = module {
 
 val domainModule = module {
     single { AuthDomain(get(), get()) }
-    single { BackgroundDomain() }
+    single { BackgroundDomain(get()) }
 }
 
 val appModule = module {
