@@ -65,7 +65,7 @@ data class ToolbarIcon(
 @Composable
 fun DetailScreen(nav: NavController, bookmarkId: String) {
     val detailView = koinViewModel<BookmarkDetailViewModel>()
-    
+
     LaunchedEffect(bookmarkId) {
         detailView.setBookmarkId(bookmarkId)
     }
@@ -153,7 +153,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                 TagsView(
                     modifier = Modifier.padding(top = 16.dp),
                     tags = currentTags,
-                    onTagClick = { showTagView = true }
+                    onAddTagClick = { showTagView = true }
                 )
 
                 OverviewView(
@@ -236,13 +236,19 @@ private fun OverviewView(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
+                    Row(
+                        horizontalArrangement =Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             "展开全部",
                             style = TextStyle(fontSize = 12.sp, lineHeight = 16.5.sp, color = Color(0xFF5490C2))
+                        )
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_xs_blue_down_arrow),
+                            contentDescription = null,
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(8.dp)
                         )
                     }
                 }
@@ -291,12 +297,16 @@ private fun FloatingActionBar(
                     modifier = Modifier
                         .size(50.dp),
                     color = Color.Transparent,
-//                shape = RoundedCornerShape(25.dp)
                 ) {
                     Box(
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("1", style = TextStyle(fontSize = 16.sp, color = Color(0xFF0F1419)))
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_floating_panel_star),
+                            contentDescription = null,
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
                 }
 
@@ -309,7 +319,12 @@ private fun FloatingActionBar(
                     Box(
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("2", style = TextStyle(fontSize = 16.sp, color = Color(0xFF0F1419)))
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_floating_panel_archieve),
+                            contentDescription = null,
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
                 }
             }
@@ -327,7 +342,12 @@ private fun FloatingActionBar(
                 Box(
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("3", style = TextStyle(fontSize = 16.sp, color = Color(0xFF0F1419)))
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_floating_panel_more),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         }
@@ -342,7 +362,7 @@ private fun FloatingActionBar(
 private fun TagsView(
     tags: List<UserTag>,
     modifier: Modifier = Modifier,
-    onTagClick: () -> Unit
+    onAddTagClick: () -> Unit
 ) {
     FlowRow(
         modifier = modifier,
@@ -352,7 +372,32 @@ private fun TagsView(
         tags.forEach { tag ->
             TagItem(
                 tag = tag.tag_name,
-                onClick = onTagClick
+                onClick = {  }
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .size(21.dp) // 动态高度
+                .clip(RoundedCornerShape(3.dp))
+                .border(
+                    width = 1.dp,
+                    color = Color(0xFFE4D6BA),
+                    shape = RoundedCornerShape(3.dp)
+                ).then(
+                    Modifier
+                        .clickable(
+                            onClick = onAddTagClick,
+                            interactionSource = remember { MutableInteractionSource() }
+                        )
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                painter = painterResource(Res.drawable.ic_xs_yellow_plus),
+                contentDescription = null,
+                tint = Color.Unspecified,
+                modifier = Modifier.size(8.dp)
             )
         }
     }
