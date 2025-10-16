@@ -75,7 +75,7 @@ fun SharePopup(
     onDismiss: () -> Unit,
     onProcess: suspend () -> Boolean
 ) {
-    var state by remember { mutableStateOf(0) } // 0:加载中 1:成功 2:失败
+    var state by remember { mutableStateOf(0) }
     var isVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -89,7 +89,6 @@ fun SharePopup(
         onDismiss()
     }
 
-    // 全屏背景遮罩 - 立即显示，无动画
     if (isVisible) {
         Box(
             modifier = Modifier

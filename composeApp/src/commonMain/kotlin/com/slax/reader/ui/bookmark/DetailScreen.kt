@@ -1,61 +1,23 @@
 package com.slax.reader.ui.bookmark
 
-// Compose Animation
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.*
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-
-// Compose Foundation
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
-
-// Compose Material3
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-
-// Compose Runtime
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-
-// Compose UI
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -69,38 +31,23 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewModelScope
-
-// Navigation
 import androidx.navigation.NavController
-
-// WebView
 import com.multiplatform.webview.setting.PlatformWebSettings
 import com.multiplatform.webview.util.KLogSeverity
 import com.multiplatform.webview.web.LoadingState
 import com.multiplatform.webview.web.WebView
 import com.multiplatform.webview.web.rememberWebViewNavigator
 import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
-
-// Kotlin
-import kotlin.math.roundToInt
+import com.slax.reader.data.database.model.UserTag
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
-import org.koin.compose.koinInject
-import slax_reader_client.composeapp.generated.resources.Res
-import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_archieve
-import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_chatbot
-import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_comment
-import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_delete
-import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_feedback
-import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_share
-import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_star
-import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_summary
-import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_underline
+import org.koin.compose.viewmodel.koinViewModel
+import slax_reader_client.composeapp.generated.resources.*
+import kotlin.math.roundToInt
 
 // ================================================================================================
 // 数据类
@@ -117,21 +64,30 @@ data class ToolbarIcon(
 
 @Composable
 fun DetailScreen(nav: NavController, bookmarkId: String) {
-    val detailView = koinInject<BookmarkViewModel>()
-    val detail = detailView.getBookmarkDetail(bookmarkId).stateIn(detailView.viewModelScope, WhileSubscribed(5000), emptyList()).collectAsState().value.firstOrNull()
+    val detailView = koinViewModel<BookmarkDetailViewModel>()
+    
+    LaunchedEffect(bookmarkId) {
+        detailView.setBookmarkId(bookmarkId)
+    }
+
+    val details by detailView.bookmarkDetail.collectAsState()
+    val detail = details.firstOrNull()
+
+    var currentTags: List<UserTag> by remember { mutableStateOf(emptyList()) }
+    LaunchedEffect(detail?.metadataObj?.tags) {
+        println("metadata object ====== ${detail?.metadataObj}")
+        launch(Dispatchers.IO) {
+            if (detail?.metadataObj?.tags != null) {
+                currentTags = detailView.getTagNames(detail.metadataObj!!.tags)
+            }
+        }
+    }
+
+    val allAvailableTags by detailView.userTagList.collectAsState(emptyList())
 
     var showTagView by remember { mutableStateOf(false) }
     var showOverviewDialog by remember { mutableStateOf(false) }
     var showToolbar by remember { mutableStateOf(false) }
-
-    // 标签数据管理假数据
-    var currentTags by remember {
-        mutableStateOf(listOf("AI", "大模型", "ChatGPT", "智能手机", "AGI", "刘知远", "科技", "访谈", "前沿技术"))
-    }
-    val allAvailableTags = remember {
-        listOf("AI", "大模型", "ChatGPT", "智能手机", "AGI", "刘知远", "科技", "访谈", "前沿技术",
-               "机器学习", "深度学习", "神经网络", "自然语言处理", "计算机视觉")
-    }
 
     val toolbarPages = remember {
         listOf(
@@ -164,13 +120,29 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
             Box(modifier = Modifier.height(48.dp))
 
             Column(modifier = Modifier.fillMaxWidth()) {
-                detail?.displayTitle()?.let { Text(it, style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.SemiBold, lineHeight = 30.sp, color = Color(0xFF0f1419))) }
+                detail?.displayTitle?.let {
+                    Text(
+                        it,
+                        style = TextStyle(
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            lineHeight = 30.sp,
+                            color = Color(0xFF0f1419)
+                        )
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    detail?.displayCreatedAt?.let { Text(it, style = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, color = Color(0xFF999999))) }
-                    Text("查看原网页",
+                    detail?.createdAt?.let {
+                        Text(
+                            it,
+                            style = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, color = Color(0xFF999999))
+                        )
+                    }
+                    Text(
+                        "查看原网页",
                         modifier = Modifier.padding(start = 16.dp).clickable() {
                             println("被点击了")
                         },
@@ -268,7 +240,10 @@ private fun OverviewView(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
-                        Text("展开全部", style = TextStyle(fontSize = 12.sp, lineHeight = 16.5.sp, color = Color(0xFF5490C2)))
+                        Text(
+                            "展开全部",
+                            style = TextStyle(fontSize = 12.sp, lineHeight = 16.5.sp, color = Color(0xFF5490C2))
+                        )
                     }
                 }
             }
@@ -300,62 +275,62 @@ private fun FloatingActionBar(
             horizontalArrangement = Arrangement.spacedBy(0.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-        Row(
-            modifier = Modifier
-                .clip(RoundedCornerShape(25.dp))
-                .border(
-                    width = 1.dp,
-                    color = Color.White,
-                    shape = RoundedCornerShape(25.dp)
-                )
-                .background(Color(0xFFF5F5F5))
-
-        ) {
-            Surface(
-                onClick = { /* 点击事件 */ },
+            Row(
                 modifier = Modifier
-                    .size(50.dp),
-                color = Color.Transparent,
+                    .clip(RoundedCornerShape(25.dp))
+                    .border(
+                        width = 1.dp,
+                        color = Color.White,
+                        shape = RoundedCornerShape(25.dp)
+                    )
+                    .background(Color(0xFFF5F5F5))
+
+            ) {
+                Surface(
+                    onClick = { /* 点击事件 */ },
+                    modifier = Modifier
+                        .size(50.dp),
+                    color = Color.Transparent,
 //                shape = RoundedCornerShape(25.dp)
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center
                 ) {
-                    Text("1", style = TextStyle(fontSize = 16.sp, color = Color(0xFF0F1419)))
+                    Box(
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("1", style = TextStyle(fontSize = 16.sp, color = Color(0xFF0F1419)))
+                    }
+                }
+
+                Surface(
+                    onClick = { /* 点击事件 */ },
+                    modifier = Modifier
+                        .size(50.dp),
+                    color = Color.Transparent,
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("2", style = TextStyle(fontSize = 16.sp, color = Color(0xFF0F1419)))
+                    }
                 }
             }
+
+            Box(modifier = Modifier.width(12.dp))
 
             Surface(
-                onClick = { /* 点击事件 */ },
+                onClick = onMoreClick,
                 modifier = Modifier
                     .size(50.dp),
-                color = Color.Transparent,
+                color = Color(0xFFF5F5F5),
+                shape = RoundedCornerShape(25.dp),
+                border = BorderStroke(1.dp, Color.White)
             ) {
                 Box(
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("2", style = TextStyle(fontSize = 16.sp, color = Color(0xFF0F1419)))
+                    Text("3", style = TextStyle(fontSize = 16.sp, color = Color(0xFF0F1419)))
                 }
             }
         }
-
-        Box(modifier = Modifier.width(12.dp))
-
-        Surface(
-            onClick = onMoreClick,
-            modifier = Modifier
-                .size(50.dp),
-            color = Color(0xFFF5F5F5),
-            shape = RoundedCornerShape(25.dp),
-            border = BorderStroke(1.dp, Color.White)
-        ) {
-            Box(
-                contentAlignment = Alignment.Center
-            ) {
-                Text("3", style = TextStyle(fontSize = 16.sp, color = Color(0xFF0F1419)))
-            }
-        }
-    }
     }
 }
 
@@ -365,7 +340,7 @@ private fun FloatingActionBar(
 
 @Composable
 private fun TagsView(
-    tags: List<String>,
+    tags: List<UserTag>,
     modifier: Modifier = Modifier,
     onTagClick: () -> Unit
 ) {
@@ -376,7 +351,7 @@ private fun TagsView(
     ) {
         tags.forEach { tag ->
             TagItem(
-                tag = tag,
+                tag = tag.tag_name,
                 onClick = onTagClick
             )
         }
@@ -556,9 +531,9 @@ fun TagsManageBottomSheet(
     visible: Boolean,
     onDismissRequest: () -> Unit,
     enableDrag: Boolean = false,
-    addedTags: List<String> = emptyList(),
-    availableTags: List<String> = emptyList(),
-    onConfirm: (List<String>) -> Unit = {}
+    addedTags: List<UserTag> = emptyList(),
+    availableTags: List<UserTag> = emptyList(),
+    onConfirm: (List<UserTag>) -> Unit = {}
 ) {
     val density = LocalDensity.current
     var offsetY by remember { mutableStateOf(0f) }
@@ -726,7 +701,7 @@ fun TagsManageBottomSheet(
                             ) {
                                 currentSelectedTags.forEach { tag ->
                                     TagItem(
-                                        tag = tag,
+                                        tag = tag.tag_name,
                                         onClick = { /* 不需要 */ },
                                         showDeleteButton = true,
                                         onDelete = {
@@ -762,7 +737,7 @@ fun TagsManageBottomSheet(
                             ) {
                                 unselectedTags.forEach { tag ->
                                     TagItem(
-                                        tag = tag,
+                                        tag = tag.tag_name,
                                         onClick = {
                                             // 点击添加标签
                                             currentSelectedTags = currentSelectedTags + tag

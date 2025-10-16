@@ -31,15 +31,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil3.compose.rememberAsyncImagePainter
-import com.slax.reader.data.database.model.UserBookmark
+import com.slax.reader.const.BookmarkRoutes
+import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.domain.auth.AuthDomain
-import com.slax.reader.ui.bookmark.DetailScreen
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.*
 
 @Composable
-fun InboxListScreen(navController: NavController) {
+fun InboxListScreen(navCtrl: NavController) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -51,7 +51,7 @@ fun InboxListScreen(navController: NavController) {
         ) {
             NavigationBar()
             Spacer(modifier = Modifier.height(8.dp))
-            ContentSection(navController)
+            ContentSection(navCtrl)
         }
     }
 }
@@ -59,10 +59,9 @@ fun InboxListScreen(navController: NavController) {
 @Composable
 private fun UserAvatar() {
     val viewModel = koinInject<InboxListViewModel>()
-    val userInfo by viewModel.userInfo.collectAsState()
     val authDomain: AuthDomain = koinInject()
-    // NOTE: DO NOT REMOVE!!!
-    // Keep observing sync status to make sure sync works
+
+    val userInfo by viewModel.userInfo.collectAsState()
     val syncStatus by viewModel.syncStatusData.collectAsState()
 
     val avatarPainter = rememberAsyncImagePainter(
@@ -70,6 +69,17 @@ private fun UserAvatar() {
         error = painterResource(Res.drawable.global_default_avatar),
         placeholder = painterResource(Res.drawable.global_default_avatar)
     )
+
+    // release 后可以删掉这个日志了
+    LaunchedEffect(syncStatus) {
+        println("==== Sync Status ====")
+        println("==== connecting: ${syncStatus?.connecting}")
+        println("==== connected: ${syncStatus?.connected}")
+        println("==== uploading: ${syncStatus?.uploading}")
+        println("==== downloading: ${syncStatus?.downloading}")
+        println("==== anyError: ${syncStatus?.anyError}")
+        println("==== Sync Status ====")
+    }
 
     Box(
         modifier = Modifier.size(32.dp)
@@ -120,16 +130,6 @@ private fun UserAvatar() {
                         )
                     }
                 }
-            }
-
-            // 正在连接 - 虚线进度环
-            viewModel.isConnecting -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(36.dp),
-                    color = Color(0xFF1DA1F2),
-                    strokeWidth = 2.dp,
-                    trackColor = Color(0x33333333)
-                )
             }
 
             // 正在上传 - 实线进度条和上箭头
@@ -213,6 +213,18 @@ private fun UserAvatar() {
                     }
                 }
             }
+
+            viewModel.connected -> {}
+
+            // 正在连接 - 虚线进度环
+            viewModel.isConnecting && !viewModel.connected -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(36.dp),
+                    color = Color(0xFF1DA1F2),
+                    strokeWidth = 2.dp,
+                    trackColor = Color(0x33333333)
+                )
+            }
         }
     }
 }
@@ -252,7 +264,7 @@ private fun NavigationBar() {
 }
 
 @Composable
-private fun ContentSection(navController: NavController) {
+private fun ContentSection(navCtrl: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -265,7 +277,7 @@ private fun ContentSection(navController: NavController) {
         Spacer(modifier = Modifier.height(17.dp))
         InboxTitleRow()
         Spacer(modifier = Modifier.height(16.dp))
-        ArticleList(navController)
+        ArticleList(navCtrl)
     }
 }
 
@@ -312,7 +324,7 @@ private fun InboxTitleRow() {
 }
 
 @Composable
-private fun ArticleList(navController: NavController) {
+private fun ArticleList(navCtrl: NavController) {
     val viewModel: InboxListViewModel = koinInject()
     val bookmarks by viewModel.bookmarks.collectAsState()
     val iconResource = painterResource(Res.drawable.inbox_internet)
@@ -334,7 +346,7 @@ private fun ArticleList(navController: NavController) {
             key = { _, bookmark -> bookmark.id },
             contentType = { _, _ -> "bookmark" }
         ) { index, bookmark ->
-            BookmarkItemRow(bookmark, iconPainter, morePainter, navController )
+            BookmarkItemRow(navCtrl, bookmark, iconPainter, morePainter)
 
             if (index < bookmarks.lastIndex) {
                 DividerLine()
@@ -344,7 +356,12 @@ private fun ArticleList(navController: NavController) {
 }
 
 @Composable
-private fun BookmarkItemRow(bookmark: UserBookmark, iconPainter: Painter, morePainter: Painter, navController: NavController) {
+private fun BookmarkItemRow(
+    navCtrl: NavController,
+    bookmark: InboxListBookmarkItem,
+    iconPainter: Painter,
+    morePainter: Painter,
+) {
     val haptics = LocalHapticFeedback.current
 
     Row(
@@ -353,10 +370,7 @@ private fun BookmarkItemRow(bookmark: UserBookmark, iconPainter: Painter, morePa
             .padding(vertical = 8.dp)
             .combinedClickable(
                 onClick = {
-                    // jump to detail screen
-                    navController
-                    navController.navigate("bookmark/${bookmark.id}")
-
+                    navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmark.id))
                 },
                 onLongClick = {
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)

@@ -3,14 +3,16 @@ package com.slax.reader.const
 import kotlinx.serialization.Serializable
 
 @Serializable
-object InboxListRoute
+object DebugRoutes
 
 @Serializable
-object LoginRoute
+object InboxRoutes
 
 @Serializable
-data class BookmarkDetailRoute(val id: String)
-
+object LoginRoutes
 
 @Serializable
-object DebugRoute
+object SpaceManagerRoutes
+
+@Serializable
+data class BookmarkRoutes(val bookmarkId: String)

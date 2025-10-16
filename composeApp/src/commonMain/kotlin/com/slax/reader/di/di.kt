@@ -3,18 +3,27 @@ package com.slax.reader.di
 import com.powersync.PowerSyncDatabase
 import com.slax.reader.data.database.AppSchema
 import com.slax.reader.data.database.dao.BookmarkDao
+import com.slax.reader.data.database.dao.FileManagerDao
 import com.slax.reader.data.database.dao.PowerSyncDao
 import com.slax.reader.data.database.dao.UserDao
 import com.slax.reader.data.database.databasePlatformModule
+import com.slax.reader.data.file.FileManager
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.preferences.preferencesPlatformModule
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.sync.BackgroundDomain
-import com.slax.reader.ui.bookmark.BookmarkViewModel
+import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.utils.Connector
 import com.slax.reader.utils.getHttpClient
+import com.slax.reader.utils.platformFileSystem
+import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
+
+val fileModule = module {
+    single { platformFileSystem() }
+    single { FileManager(get()) }
+}
 
 val networkModule = module {
     single { getHttpClient(get()) }
@@ -36,20 +45,22 @@ val repositoryModule = module {
         UserDao(get())
     }
     single { PowerSyncDao(get()) }
+    single { FileManagerDao(get()) }
 }
 
 val viewModelModule = module {
-    single { InboxListViewModel(get(), get(), get()) }
-    single { BookmarkViewModel(get()) }
+    viewModelOf(::InboxListViewModel)
+    viewModelOf(::BookmarkDetailViewModel)
 }
 
 val domainModule = module {
     single { AuthDomain(get(), get()) }
-    single { BackgroundDomain(get()) }
+    single { BackgroundDomain(get(), get(), get()) }
 }
 
 val appModule = module {
     includes(
+        fileModule,
         databasePlatformModule,
         preferencesPlatformModule,
         networkModule,
