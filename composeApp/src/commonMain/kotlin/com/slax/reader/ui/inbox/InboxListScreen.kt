@@ -29,15 +29,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import coil3.compose.rememberAsyncImagePainter
 import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.domain.auth.AuthDomain
+import com.slax.reader.ui.bookmark.DetailScreen
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.*
 
 @Composable
-fun InboxListScreen() {
+fun InboxListScreen(navController: NavController) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -49,7 +51,7 @@ fun InboxListScreen() {
         ) {
             NavigationBar()
             Spacer(modifier = Modifier.height(8.dp))
-            ContentSection()
+            ContentSection(navController)
         }
     }
 }
@@ -250,7 +252,7 @@ private fun NavigationBar() {
 }
 
 @Composable
-private fun ContentSection() {
+private fun ContentSection(navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -263,7 +265,7 @@ private fun ContentSection() {
         Spacer(modifier = Modifier.height(17.dp))
         InboxTitleRow()
         Spacer(modifier = Modifier.height(16.dp))
-        ArticleList()
+        ArticleList(navController)
     }
 }
 
@@ -310,7 +312,7 @@ private fun InboxTitleRow() {
 }
 
 @Composable
-private fun ArticleList() {
+private fun ArticleList(navController: NavController) {
     val viewModel: InboxListViewModel = koinInject()
     val bookmarks by viewModel.bookmarks.collectAsState()
     val iconResource = painterResource(Res.drawable.inbox_internet)
@@ -332,7 +334,7 @@ private fun ArticleList() {
             key = { _, bookmark -> bookmark.id },
             contentType = { _, _ -> "bookmark" }
         ) { index, bookmark ->
-            BookmarkItemRow(bookmark, iconPainter, morePainter)
+            BookmarkItemRow(bookmark, iconPainter, morePainter, navController )
 
             if (index < bookmarks.lastIndex) {
                 DividerLine()
@@ -342,7 +344,7 @@ private fun ArticleList() {
 }
 
 @Composable
-private fun BookmarkItemRow(bookmark: UserBookmark, iconPainter: Painter, morePainter: Painter) {
+private fun BookmarkItemRow(bookmark: UserBookmark, iconPainter: Painter, morePainter: Painter, navController: NavController) {
     val haptics = LocalHapticFeedback.current
 
     Row(
@@ -350,7 +352,12 @@ private fun BookmarkItemRow(bookmark: UserBookmark, iconPainter: Painter, morePa
             .fillMaxWidth()
             .padding(vertical = 8.dp)
             .combinedClickable(
-                onClick = { /** **/ },
+                onClick = {
+                    // jump to detail screen
+                    navController
+                    navController.navigate("bookmark/${bookmark.id}")
+
+                },
                 onLongClick = {
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
 //                    contextMenuPhotoId = photo.id

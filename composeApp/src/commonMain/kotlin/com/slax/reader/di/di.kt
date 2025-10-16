@@ -10,6 +10,7 @@ import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.preferences.preferencesPlatformModule
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.sync.BackgroundDomain
+import com.slax.reader.ui.bookmark.BookmarkViewModel
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.utils.Connector
 import com.slax.reader.utils.getHttpClient
@@ -39,6 +40,7 @@ val repositoryModule = module {
 
 val viewModelModule = module {
     single { InboxListViewModel(get(), get(), get()) }
+    single { BookmarkViewModel(get()) }
 }
 
 val domainModule = module {
