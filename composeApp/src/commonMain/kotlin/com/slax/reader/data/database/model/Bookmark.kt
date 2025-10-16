@@ -2,6 +2,7 @@ package com.slax.reader.data.database.model
 
 import androidx.compose.runtime.Immutable
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 @Immutable
 @Serializable
@@ -52,6 +53,24 @@ data class UserTag(
 )
 
 @Immutable
+data class InboxListBookmarkItem(
+    val id: String,
+    val aliasTitle: String,
+    val createdAt: String,
+    var metadataTitle: String?,
+    var metadataUrl: String?
+) {
+    fun displayTitle(): String {
+        return when {
+            aliasTitle.isNotEmpty() -> aliasTitle
+            !metadataTitle.isNullOrEmpty() -> metadataTitle!!
+            !metadataUrl.isNullOrEmpty() -> metadataUrl!!
+            else -> id.take(5)
+        }
+    }
+}
+
+@Immutable
 data class UserBookmark(
     val id: String,
     val isRead: Int,
@@ -64,13 +83,15 @@ data class UserBookmark(
     val deletedAt: String?,
     val metadata: String?,
 
-    var metadataObj: BookmarkMetadata?,
     var metadataTitle: String?,
     var metadataUrl: String?
 ) {
+    val metadataObj: BookmarkMetadata? by lazy {
+        metadata?.let { Json.decodeFromString<BookmarkMetadata>(it) }
+    }
 
-    fun displayTitle(): String {
-        return when {
+    val displayTitle: String by lazy {
+        when {
             aliasTitle.isNotEmpty() -> aliasTitle
             !metadataTitle.isNullOrEmpty() -> metadataTitle!!
             !metadataUrl.isNullOrEmpty() -> metadataUrl!!

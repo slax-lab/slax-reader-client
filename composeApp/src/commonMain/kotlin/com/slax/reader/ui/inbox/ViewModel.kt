@@ -6,9 +6,9 @@ import com.slax.reader.data.database.dao.PowerSyncDao
 import com.slax.reader.data.database.dao.UserDao
 
 class InboxListViewModel(
-    bookmarkDao: BookmarkDao,
-    userDao: UserDao,
-    powerSyncDao: PowerSyncDao,
+    private val bookmarkDao: BookmarkDao,
+    private val userDao: UserDao,
+    private val powerSyncDao: PowerSyncDao,
 ) : ViewModel() {
 
     val bookmarks = bookmarkDao.watchUserBookmarkList()
@@ -28,6 +28,9 @@ class InboxListViewModel(
 
     val isDownloading: Boolean
         get() = syncStatusData.value?.downloading == true
+
+    val connected: Boolean
+        get() = syncStatusData.value?.connected == true
 
     val downloadProgress: Float
         get() = syncStatusData.value?.downloadProgress?.let { progress ->

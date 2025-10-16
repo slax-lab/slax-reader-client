@@ -12,6 +12,7 @@ composeWebviewMultiplatform = "2.0.3"
 firebaseAnalytics = "2.3.0"
 kmpauthGoogle = "2.3.1"
 kotlinxDatetime = "0.7.1"
+okio = "3.16.2"
 powerSyncCore = "1.7.0"
 powerSyncRoom = "1.7.0"
 room = "2.8.0"
@@ -40,6 +41,7 @@ kmpauth-firebase = { module = "io.github.mirzemehdi:kmpauth-firebase", version.r
 kmpauth-google = { module = "io.github.mirzemehdi:kmpauth-google", version.ref = "kmpauthGoogle" }
 kmpauth-uihelper = { module = "io.github.mirzemehdi:kmpauth-uihelper", version.ref = "kmpauthGoogle" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
+okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
 powerSyncCore = { module = "com.powersync:core", version.ref = "powerSyncCore" }
 powerSyncRoom = { module = "com.powersync:integration-room", version.ref = "powerSyncRoom" }
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }

@@ -1,11 +1,9 @@
 package com.slax.reader.data.database.dao
 
 import com.powersync.PowerSyncDatabase
+import com.powersync.db.SqlCursor
 import com.powersync.db.getString
-import com.slax.reader.data.database.model.BookmarkDetails
-import com.slax.reader.data.database.model.BookmarkMetadata
-import com.slax.reader.data.database.model.UserBookmark
-import com.slax.reader.data.database.model.UserTag
+import com.slax.reader.data.database.model.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -22,8 +20,72 @@ class BookmarkDao(
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    private val _userBookmarkListFlow: StateFlow<List<UserBookmark>> by lazy {
+    private fun mapperToUserTag(cursor: SqlCursor): UserTag {
+        return UserTag(
+            id = cursor.getString("id"),
+            tag_name = cursor.getString("tag_name"),
+            display = cursor.getString("display"),
+            created_at = cursor.getString("created_at"),
+        )
+    }
+
+    private fun mapperToBookmark(cursor: SqlCursor): UserBookmark {
+        return UserBookmark(
+            id = cursor.getString("id"),
+            isRead = cursor.getString("is_read").toIntOrNull() ?: 0,
+            archiveStatus = cursor.getString("archive_status").toIntOrNull() ?: 0,
+            isStarred = cursor.getString("is_starred").toIntOrNull() ?: 0,
+            createdAt = cursor.getString("created_at"),
+            updatedAt = cursor.getString("updated_at"),
+            aliasTitle = cursor.getString("alias_title"),
+            type = cursor.getString("type").toIntOrNull() ?: 0,
+            deletedAt = try {
+                cursor.getString("deleted_at")
+            } catch (_: Exception) {
+                null
+            },
+            metadataTitle = cursor.getString("metadata_title"),
+            metadataUrl = cursor.getString("metadata_url"),
+            metadata = cursor.getString("metadata"),
+        )
+    }
+
+    private fun mapperToInboxListBookmarkItem(cursor: SqlCursor): InboxListBookmarkItem {
+        return InboxListBookmarkItem(
+            id = cursor.getString("id"),
+            aliasTitle = cursor.getString("alias_title"),
+            createdAt = cursor.getString("created_at"),
+            metadataTitle = cursor.getString("metadata_title"),
+            metadataUrl = cursor.getString("metadata_url"),
+        )
+    }
+
+    private val _userBookmarkListFlow: StateFlow<List<InboxListBookmarkItem>> by lazy {
         database.watch(
+            """
+            SELECT
+                id,
+                created_at,
+                alias_title,
+                JSON_EXTRACT(metadata, '$.bookmark.title') as metadata_title,
+                JSON_EXTRACT(metadata, '$.bookmark.target_url') as metadata_url
+            FROM sr_user_bookmark
+            ORDER BY created_at DESC
+            """.trimIndent()
+        ) { cursor ->
+            mapperToInboxListBookmarkItem(cursor)
+        }.catch { e ->
+            println("Error watching user bookmarks: ${e.message}")
+        }
+            .distinctUntilChanged()
+            .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }
+
+    fun watchUserBookmarkList(): StateFlow<List<InboxListBookmarkItem>> = _userBookmarkListFlow
+
+    fun watchBookmarkDetail(bookmarkId: String): Flow<List<UserBookmark>> {
+        println("[data] watch bookmark detail")
+        return database.watch(
             """
             SELECT
                 id,
@@ -38,55 +100,47 @@ class BookmarkDao(
                 metadata,
                 JSON_EXTRACT(metadata, '$.bookmark.title') as metadata_title,
                 JSON_EXTRACT(metadata, '$.bookmark.target_url') as metadata_url
-            FROM sr_user_bookmark
-            ORDER BY created_at DESC
-            """.trimIndent()
+            FROM sr_user_bookmark WHERE id = ?
+            """.trimIndent(), listOf(bookmarkId)
         ) { cursor ->
-            UserBookmark(
-                id = cursor.getString("id"),
-                isRead = cursor.getString("is_read").toIntOrNull() ?: 0,
-                archiveStatus = cursor.getString("archive_status").toIntOrNull() ?: 0,
-                isStarred = cursor.getString("is_starred").toIntOrNull() ?: 0,
-                createdAt = cursor.getString("created_at"),
-                updatedAt = cursor.getString("updated_at"),
-                aliasTitle = cursor.getString("alias_title"),
-                type = cursor.getString("type").toIntOrNull() ?: 0,
-                deletedAt = try {
-                    cursor.getString("deleted_at")
-                } catch (_: Exception) {
-                    null
-                },
-                metadataObj = null,
-                metadataTitle = cursor.getString("metadata_title"),
-                metadataUrl = cursor.getString("metadata_url"),
-                metadata = cursor.getString("metadata"),
-            )
+            mapperToBookmark(cursor)
         }.catch { e ->
             println("Error watching user bookmarks: ${e.message}")
         }
             .distinctUntilChanged()
-            .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
     }
 
-    fun watchUserBookmarkList(): StateFlow<List<UserBookmark>> = _userBookmarkListFlow
-
-    fun getUserTags(): Flow<Map<String, UserTag>> {
+    fun watchUserTag(): Flow<List<UserTag>> {
+        println("[data] watch user tag =======")
         return database.watch(
-            "SELECT id, user_id, tag_name, display, created_at FROM sr_user_tag"
-        ) { cursor ->
-            UserTag(
-                id = cursor.getString("id"),
-                tag_name = cursor.getString("tag_name"),
-                display = cursor.getString("display"),
-                created_at = cursor.getString("created_at")
-            )
-        }.flowOn(Dispatchers.IO)
-            .catch { e ->
-                println("Error watching user tags: ${e.message}")
+            """
+            SELECT * FROM sr_user_tag
+        """.trimIndent(), parameters = listOf(), mapper = { cursor ->
+                mapperToUserTag(cursor)
             }
-            .map { tagsList ->
-                tagsList.associateBy { it.id }
+        )
+    }
+
+    suspend fun getTagsByIds(tagIds: List<String>): List<UserTag> {
+        println("[data] get tags by ids")
+        if (tagIds.isEmpty()) return emptyList()
+
+        val placeholders = tagIds.joinToString(",") { "?" }
+
+        return database.getAll(
+            """
+            SELECT * FROM sr_user_tag WHERE id IN ($placeholders)
+        """.trimIndent(),
+            parameters = tagIds,
+            mapper = { cursor ->
+                UserTag(
+                    id = cursor.getString("id"),
+                    tag_name = cursor.getString("tag_name"),
+                    display = cursor.getString("display"),
+                    created_at = cursor.getString("created_at"),
+                )
             }
+        )
     }
 
     suspend fun updateMetadataField(

@@ -8,19 +8,20 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.multiplatform.webview.web.rememberWebViewState
+import androidx.navigation.toRoute
 import com.powersync.ExperimentalPowerSyncAPI
 import com.powersync.PowerSyncDatabase
 import com.powersync.sync.SyncOptions
 import com.powersync.utils.JsonParam
+import com.slax.reader.const.*
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.auth.AuthState
 import com.slax.reader.domain.sync.BackgroundDomain
-import com.slax.reader.ui.bookmark.ChromeReaderView
 import com.slax.reader.ui.bookmark.DetailScreen
 import com.slax.reader.ui.debug.DebugScreen
 import com.slax.reader.ui.inbox.InboxListScreen
 import com.slax.reader.ui.login.LoginScreen
+import com.slax.reader.ui.space.SpaceManager
 import com.slax.reader.utils.Connector
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.analytics.analytics
@@ -63,7 +64,7 @@ fun SlaxNavigation(
                 Firebase.analytics.setAnalyticsCollectionEnabled(true)
                 Firebase.analytics.setUserId((authState as AuthState.Authenticated).userId)
                 Firebase.crashlytics.setUserId((authState as AuthState.Authenticated).userId)
-                navCtrl.navigate("inbox") {
+                navCtrl.navigate(InboxRoutes) {
                     popUpTo(0) { inclusive = true }
                 }
             }
@@ -73,7 +74,7 @@ fun SlaxNavigation(
                     database?.disconnectAndClear()
                     backgroundDomain.cleanup()
                 }
-                navCtrl.navigate("login") {
+                navCtrl.navigate(LoginRoutes) {
                     popUpTo(0) { inclusive = true }
                 }
             }
@@ -85,31 +86,33 @@ fun SlaxNavigation(
 
     NavHost(
         navController = navCtrl,
-        startDestination = "inbox",
+        startDestination = InboxRoutes,
         modifier = Modifier.fillMaxSize(),
         enterTransition = { EnterTransition.None },
         exitTransition = { ExitTransition.None },
         popEnterTransition = { EnterTransition.None },
         popExitTransition = { ExitTransition.None }
     ) {
-        composable("login") {
+        composable<LoginRoutes> {
             LoginScreen(
                 navController = navCtrl
             )
         }
-        composable("bookmark/{id}") { backStackEntry ->
-            backStackEntry.let { entry ->
-                entry.arguments?.toString()?.let {
-                    DetailScreen(navCtrl, it)
-                }
-            }
+        composable<BookmarkRoutes> { backStackEntry ->
+            val params: BookmarkRoutes = backStackEntry.toRoute()
+            DetailScreen(
+                bookmarkId = params.bookmarkId,
+                nav = navCtrl
+            )
         }
-
-        composable("inbox") {
+        composable<InboxRoutes> {
             InboxListScreen(navCtrl)
         }
-        composable("debug") {
+        composable<DebugRoutes> {
             DebugScreen()
+        }
+        composable<SpaceManagerRoutes> {
+            SpaceManager()
         }
     }
 }

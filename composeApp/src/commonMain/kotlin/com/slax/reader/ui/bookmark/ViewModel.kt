@@ -1,19 +1,36 @@
 package com.slax.reader.ui.bookmark
 
-import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.slax.reader.data.database.dao.BookmarkDao
 import com.slax.reader.data.database.model.UserBookmark
-import kotlinx.coroutines.flow.Flow
+import com.slax.reader.data.database.model.UserTag
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.*
 
-class BookmarkViewModel(
-    private val bookmarkDao: BookmarkDao
+class BookmarkDetailViewModel(
+    private val bookmarkDao: BookmarkDao,
 ) : ViewModel() {
-    fun getTagNames(uuids: List<String>) {
+    private var _bookmarkId = MutableStateFlow<String?>(null)
 
+    fun setBookmarkId(id: String) {
+        _bookmarkId.value = id
     }
 
-    fun getBookmarkDetail(bookmarkId: String): Flow<List<UserBookmark>> {
-        return bookmarkDao.getBookmarkDetail(bookmarkId)
+    suspend fun getTagNames(uuids: List<String>): List<UserTag> {
+        return bookmarkDao.getTagsByIds(uuids)
     }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val userTagList: Flow<List<UserTag>> = bookmarkDao.watchUserTag()
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val bookmarkDetail: StateFlow<List<UserBookmark>> = _bookmarkId
+        .filterNotNull()
+        .distinctUntilChanged()
+        .flatMapLatest { id ->
+            bookmarkDao.watchBookmarkDetail(id)
+        }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 }
