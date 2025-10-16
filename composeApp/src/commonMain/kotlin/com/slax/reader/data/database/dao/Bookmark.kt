@@ -78,7 +78,7 @@ class BookmarkDao(
             println("Error watching user bookmarks: ${e.message}")
         }
             .distinctUntilChanged()
-            .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
+            .stateIn(scope, SharingStarted.Eagerly, emptyList())
     }
 
     fun watchUserBookmarkList(): StateFlow<List<InboxListBookmarkItem>> = _userBookmarkListFlow
