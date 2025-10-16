@@ -39,6 +39,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 
 // Compose Material3
 import androidx.compose.material3.Surface
@@ -47,6 +48,7 @@ import androidx.compose.material3.Text
 // Compose Runtime
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,6 +69,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewModelScope
 
 // Navigation
 import androidx.navigation.NavController
@@ -82,8 +85,12 @@ import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
 // Kotlin
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.painterResource
+import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_archieve
 import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_chatbot
@@ -110,8 +117,9 @@ data class ToolbarIcon(
 
 @Composable
 fun DetailScreen(nav: NavController, bookmarkId: String) {
+    val detailView = koinInject<BookmarkViewModel>()
+    val detail = detailView.getBookmarkDetail(bookmarkId).stateIn(detailView.viewModelScope, WhileSubscribed(5000), emptyList()).collectAsState().value.firstOrNull()
 
-    print(bookmarkId)
     var showTagView by remember { mutableStateOf(false) }
     var showOverviewDialog by remember { mutableStateOf(false) }
     var showToolbar by remember { mutableStateOf(false) }
@@ -156,12 +164,12 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
             Box(modifier = Modifier.height(48.dp))
 
             Column(modifier = Modifier.fillMaxWidth()) {
-                Text("对话面壁智能首席科学家刘知远：大模型将有新的「摩尔定律」，AGI 时代的智能终端未必是手机", style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.SemiBold, lineHeight = 30.sp, color = Color(0xFF0f1419)))
+                detail?.displayTitle()?.let { Text(it, style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.SemiBold, lineHeight = 30.sp, color = Color(0xFF0f1419))) }
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("2024-07-13 11:29", style = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, color = Color(0xFF999999)))
+                    detail?.displayCreatedAt?.let { Text(it, style = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, color = Color(0xFF999999))) }
                     Text("查看原网页",
                         modifier = Modifier.padding(start = 16.dp).clickable() {
                             println("被点击了")
@@ -308,7 +316,7 @@ private fun FloatingActionBar(
                 modifier = Modifier
                     .size(50.dp),
                 color = Color.Transparent,
-                shape = RoundedCornerShape(25.dp)
+//                shape = RoundedCornerShape(25.dp)
             ) {
                 Box(
                     contentAlignment = Alignment.Center
@@ -322,7 +330,6 @@ private fun FloatingActionBar(
                 modifier = Modifier
                     .size(50.dp),
                 color = Color.Transparent,
-                shape = RoundedCornerShape(25.dp)
             ) {
                 Box(
                     contentAlignment = Alignment.Center
@@ -944,14 +951,16 @@ private fun IconButton(
                 .background(Color(0xCCFFFFFF)),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = icon.label.first().toString(),
-                style = TextStyle(
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF0F1419)
+
+            icon.iconRes?.let {
+                Icon(
+                    painter = painterResource(it),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(24.dp)
                 )
-            )
+            }
+
         }
 
         Text(
@@ -991,6 +1000,10 @@ private fun IconGridPage(
                     onClick = { onIconClick(index) }
                 )
             }
+
+            repeat(4 - icons.take(4).size) {
+                Box(modifier = Modifier.width(56.dp))
+            }
         }
 
         // 下面一行4个icon
@@ -1004,6 +1017,10 @@ private fun IconGridPage(
                         icon = icon,
                         onClick = { onIconClick(index + 4) }
                     )
+                }
+
+                repeat(4 - icons.drop(4).take(4).size) {
+                    Box(modifier = Modifier.width(56.dp))
                 }
             }
         }
