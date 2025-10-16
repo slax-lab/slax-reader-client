@@ -39,6 +39,8 @@ import com.multiplatform.webview.web.WebView
 import com.multiplatform.webview.web.rememberWebViewNavigator
 import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
 import com.slax.reader.data.database.model.UserTag
+import com.slax.reader.ui.components.NavigatorBar
+import com.slax.reader.ui.components.NavigatorBarSpacer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.delay
@@ -108,18 +110,23 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
         )
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+
+    Box(modifier = Modifier.fillMaxSize().background(Color(0xFFFCFCFC))) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 58.dp)
-                .background(Color(0xFFFCFCFC))
         ) {
-            Box(modifier = Modifier.height(48.dp))
+            // 页面内容从导航栏下方开始
+            NavigatorBarSpacer()
 
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 58.dp)
+            ) {
                 detail?.displayTitle?.let {
                     Text(
                         it,
@@ -200,6 +207,10 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                 println("点击了第 ${pageIndex + 1} 页的第 ${iconIndex + 1} 个图标")
                 showToolbar = false
             }
+        )
+
+        NavigatorBar(
+            navController = nav,
         )
     }
 }
@@ -531,6 +542,7 @@ fun AdaptiveWebView(modifier: Modifier = Modifier) {
         modifier = modifier
             .fillMaxWidth()
             .height(webViewHeight),
+        captureBackPresses = false,
         navigator = navigator,
         onCreated = { webView ->
             // WebView 创建时的配置
@@ -560,7 +572,7 @@ fun AdaptiveWebView(modifier: Modifier = Modifier) {
                 result?.let {
                     try {
                         val height = it.toDoubleOrNull() ?: 500.0
-                        webViewHeight = height.dp
+                        webViewHeight = (height.dp + 10.dp)
                     } catch (e: Exception) {
                         println("获取高度失败: ${e.message}")
                     }
@@ -939,7 +951,18 @@ private fun IconButton(
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMedium
-        )
+        ),
+        label = "scale"
+    )
+
+    // 透明度动画：按下时透明度降低到0.6，松开时恢复到1.0
+    val alpha by animateFloatAsState(
+        targetValue = if (isPressed) 0.6f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "alpha"
     )
 
     Column(
@@ -947,18 +970,20 @@ private fun IconButton(
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
+                this.alpha = alpha
             }
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = {
+                    // 点击时触发动画
                     isPressed = true
                     // 延迟恢复状态，让动画播放完整
                     coroutineScope.launch {
                         delay(150)
                         isPressed = false
                     }
-                    onClick()
+//                    onClick()
                 }
             ),
         horizontalAlignment = Alignment.CenterHorizontally,
