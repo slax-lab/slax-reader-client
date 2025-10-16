@@ -1,20 +1,5 @@
 package com.slax.reader.ui.login
 
-// Compose Animation
-
-// Compose Foundation
-
-// Compose Material3
-
-// Compose Runtime
-
-// Compose UI
-
-// WebView
-
-// Resources
-
-// Kotlin
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke

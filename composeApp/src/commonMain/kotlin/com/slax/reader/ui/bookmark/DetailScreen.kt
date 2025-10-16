@@ -1,20 +1,5 @@
 package com.slax.reader.ui.bookmark
 
-// Compose Animation
-
-// Compose Foundation
-
-// Compose Material3
-
-// Compose Runtime
-
-// Compose UI
-
-// Navigation
-
-// WebView
-
-// Kotlin
 import androidx.compose.animation.*
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -80,7 +65,7 @@ data class ToolbarIcon(
 @Composable
 fun DetailScreen(nav: NavController, bookmarkId: String) {
     val detailView = koinViewModel<BookmarkDetailViewModel>()
-    
+
     LaunchedEffect(bookmarkId) {
         detailView.setBookmarkId(bookmarkId)
     }
@@ -123,18 +108,23 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
         )
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+
+    Box(modifier = Modifier.fillMaxSize().background(Color(0xFFFCFCFC))) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 58.dp)
-                .background(Color(0xFFFCFCFC))
         ) {
-            Box(modifier = Modifier.height(48.dp))
+            // 页面内容从导航栏下方开始
+            NavigatorBarSpacer()
 
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 58.dp)
+            ) {
                 detail?.displayTitle?.let {
                     Text(
                         it,
@@ -168,7 +158,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                 TagsView(
                     modifier = Modifier.padding(top = 16.dp),
                     tags = currentTags,
-                    onTagClick = { showTagView = true }
+                    onAddTagClick = { showTagView = true }
                 )
 
                 OverviewView(
@@ -216,6 +206,10 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                 showToolbar = false
             }
         )
+
+        NavigatorBar(
+            navController = nav,
+        )
     }
 }
 
@@ -251,13 +245,19 @@ private fun OverviewView(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
+                    Row(
+                        horizontalArrangement =Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             "展开全部",
                             style = TextStyle(fontSize = 12.sp, lineHeight = 16.5.sp, color = Color(0xFF5490C2))
+                        )
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_xs_blue_down_arrow),
+                            contentDescription = null,
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(8.dp)
                         )
                     }
                 }
@@ -306,12 +306,16 @@ private fun FloatingActionBar(
                     modifier = Modifier
                         .size(50.dp),
                     color = Color.Transparent,
-//                shape = RoundedCornerShape(25.dp)
                 ) {
                     Box(
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("1", style = TextStyle(fontSize = 16.sp, color = Color(0xFF0F1419)))
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_floating_panel_star),
+                            contentDescription = null,
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
                 }
 
@@ -324,7 +328,12 @@ private fun FloatingActionBar(
                     Box(
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("2", style = TextStyle(fontSize = 16.sp, color = Color(0xFF0F1419)))
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_floating_panel_archieve),
+                            contentDescription = null,
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
                 }
             }
@@ -342,7 +351,12 @@ private fun FloatingActionBar(
                 Box(
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("3", style = TextStyle(fontSize = 16.sp, color = Color(0xFF0F1419)))
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_floating_panel_more),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         }
@@ -357,7 +371,7 @@ private fun FloatingActionBar(
 private fun TagsView(
     tags: List<UserTag>,
     modifier: Modifier = Modifier,
-    onTagClick: () -> Unit
+    onAddTagClick: () -> Unit
 ) {
     FlowRow(
         modifier = modifier,
@@ -367,7 +381,32 @@ private fun TagsView(
         tags.forEach { tag ->
             TagItem(
                 tag = tag.tag_name,
-                onClick = onTagClick
+                onClick = {  }
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .size(21.dp) // 动态高度
+                .clip(RoundedCornerShape(3.dp))
+                .border(
+                    width = 1.dp,
+                    color = Color(0xFFE4D6BA),
+                    shape = RoundedCornerShape(3.dp)
+                ).then(
+                    Modifier
+                        .clickable(
+                            onClick = onAddTagClick,
+                            interactionSource = remember { MutableInteractionSource() }
+                        )
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                painter = painterResource(Res.drawable.ic_xs_yellow_plus),
+                contentDescription = null,
+                tint = Color.Unspecified,
+                modifier = Modifier.size(8.dp)
             )
         }
     }
@@ -501,6 +540,7 @@ fun AdaptiveWebView(modifier: Modifier = Modifier) {
         modifier = modifier
             .fillMaxWidth()
             .height(webViewHeight),
+        captureBackPresses = false,
         navigator = navigator,
         onCreated = { webView ->
             // WebView 创建时的配置
@@ -530,7 +570,7 @@ fun AdaptiveWebView(modifier: Modifier = Modifier) {
                 result?.let {
                     try {
                         val height = it.toDoubleOrNull() ?: 500.0
-                        webViewHeight = height.dp
+                        webViewHeight = (height.dp + 10.dp)
                     } catch (e: Exception) {
                         println("获取高度失败: ${e.message}")
                     }
@@ -909,7 +949,18 @@ private fun IconButton(
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMedium
-        )
+        ),
+        label = "scale"
+    )
+
+    // 透明度动画：按下时透明度降低到0.6，松开时恢复到1.0
+    val alpha by animateFloatAsState(
+        targetValue = if (isPressed) 0.6f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "alpha"
     )
 
     Column(
@@ -917,18 +968,20 @@ private fun IconButton(
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
+                this.alpha = alpha
             }
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = {
+                    // 点击时触发动画
                     isPressed = true
                     // 延迟恢复状态，让动画播放完整
                     coroutineScope.launch {
                         delay(150)
                         isPressed = false
                     }
-                    onClick()
+//                    onClick()
                 }
             ),
         horizontalAlignment = Alignment.CenterHorizontally,
