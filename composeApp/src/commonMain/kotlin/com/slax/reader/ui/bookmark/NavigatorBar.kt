@@ -1,4 +1,4 @@
-package com.slax.reader.ui.components
+package com.slax.reader.ui.bookmark
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

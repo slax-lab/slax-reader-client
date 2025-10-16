@@ -39,8 +39,6 @@ import com.multiplatform.webview.web.WebView
 import com.multiplatform.webview.web.rememberWebViewNavigator
 import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
 import com.slax.reader.data.database.model.UserTag
-import com.slax.reader.ui.components.NavigatorBar
-import com.slax.reader.ui.components.NavigatorBarSpacer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.delay
