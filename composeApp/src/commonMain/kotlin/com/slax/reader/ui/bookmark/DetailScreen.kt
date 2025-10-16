@@ -60,7 +60,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import slax_reader_client.composeapp.generated.resources.*
 import kotlin.math.roundToInt
 
@@ -79,8 +79,8 @@ data class ToolbarIcon(
 
 @Composable
 fun DetailScreen(nav: NavController, bookmarkId: String) {
-    val detailView = koinInject<BookmarkDetailViewModel>()
-
+    val detailView = koinViewModel<BookmarkDetailViewModel>()
+    
     LaunchedEffect(bookmarkId) {
         detailView.setBookmarkId(bookmarkId)
     }

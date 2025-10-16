@@ -17,6 +17,7 @@ import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.utils.Connector
 import com.slax.reader.utils.getHttpClient
 import com.slax.reader.utils.platformFileSystem
+import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
 val fileModule = module {
@@ -48,8 +49,8 @@ val repositoryModule = module {
 }
 
 val viewModelModule = module {
-    single { InboxListViewModel(get(), get(), get()) }
-    single { BookmarkDetailViewModel(get()) }
+    viewModelOf(::InboxListViewModel)
+    viewModelOf(::BookmarkDetailViewModel)
 }
 
 val domainModule = module {
