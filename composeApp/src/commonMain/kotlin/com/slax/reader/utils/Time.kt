@@ -10,20 +10,24 @@ fun timeUnix(): Long {
 }
 
 @OptIn(ExperimentalTime::class)
-fun now(): Instant = kotlin.time.Clock.System.now()
-
-@OptIn(ExperimentalTime::class)
-fun parser(unixTime: Long = 0, strTime: String = ""): Instant {
-    if (unixTime > 0) {
-        return Instant.fromEpochMilliseconds(unixTime)
+fun parseInstant(dateString: String): Instant {
+    return try {
+        Instant.parse(dateString)
+    } catch (e: Exception) {
+        val normalized = dateString
+            .replace(" ", "T")  // 空格替换为 T
+            .let {
+                // 如果没有时区信息，添加 Z (UTC)
+                // 检查是否已有时区：以 Z 结尾，或在日期部分后有 + 或 -
+                val hasTimezone = it.endsWith("Z") ||
+                        it.substring(10).contains("+") ||
+                        it.substring(10).contains("-")
+                if (hasTimezone) {
+                    it
+                } else {
+                    "${it}Z"
+                }
+            }
+        Instant.parse(normalized)
     }
-    if (strTime != "") {
-        return Instant.parse(strTime)
-    }
-    throw Exception("Invalid time input")
-}
-
-@OptIn(ExperimentalTime::class)
-fun isBefore(aTime: Instant, bTime: Instant): Boolean {
-    return aTime < bTime
 }

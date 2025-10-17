@@ -1,6 +1,5 @@
 package com.slax.reader.data.network.dto
 
-import io.ktor.util.StringValues
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -35,4 +34,9 @@ data class AuthParams(
     val redirect_uri: String,
     val platform: String,
     val type: String
+)
+
+@Serializable
+data class BookmarkContentParam(
+    val bookmark_uid: String
 )

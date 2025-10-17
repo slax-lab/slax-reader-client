@@ -3,7 +3,6 @@ package com.slax.reader.di
 import com.powersync.PowerSyncDatabase
 import com.slax.reader.data.database.AppSchema
 import com.slax.reader.data.database.dao.BookmarkDao
-import com.slax.reader.data.database.dao.FileManagerDao
 import com.slax.reader.data.database.dao.PowerSyncDao
 import com.slax.reader.data.database.dao.UserDao
 import com.slax.reader.data.database.databasePlatformModule
@@ -28,7 +27,7 @@ val fileModule = module {
 val networkModule = module {
     single { getHttpClient(get()) }
     single { Connector(get()) }
-    single { ApiService(get(), get()) }
+    single { ApiService(get()) }
 }
 
 val powerSyncModule = module {
@@ -45,7 +44,6 @@ val repositoryModule = module {
         UserDao(get())
     }
     single { PowerSyncDao(get()) }
-    single { FileManagerDao(get()) }
 }
 
 val viewModelModule = module {
@@ -54,7 +52,7 @@ val viewModelModule = module {
 }
 
 val domainModule = module {
-    single { AuthDomain(get(), get()) }
+    single { AuthDomain(get(), get(), get()) }
     single { BackgroundDomain(get(), get(), get()) }
 }
 

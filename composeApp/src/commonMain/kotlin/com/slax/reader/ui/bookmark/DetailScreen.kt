@@ -35,19 +35,20 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.multiplatform.webview.setting.PlatformWebSettings
-import com.multiplatform.webview.util.KLogSeverity
 import com.multiplatform.webview.web.LoadingState
 import com.multiplatform.webview.web.WebView
 import com.multiplatform.webview.web.rememberWebViewNavigator
 import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
 import com.slax.reader.data.database.model.UserTag
+import com.slax.reader.domain.sync.BackgroundDomain
+import com.slax.reader.utils.webViewStateSetting
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import slax_reader_client.composeapp.generated.resources.*
 import kotlin.math.roundToInt
@@ -75,9 +76,25 @@ data class OverviewViewBounds(
 @Composable
 fun DetailScreen(nav: NavController, bookmarkId: String) {
     val detailView = koinViewModel<BookmarkDetailViewModel>()
+    val backgroundDomain: BackgroundDomain = koinInject()
+
+    var htmlContent by remember { mutableStateOf<String?>(null) }
+    var isLoadingContent by remember { mutableStateOf(true) }
+    var loadError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(bookmarkId) {
         detailView.setBookmarkId(bookmarkId)
+
+        isLoadingContent = true
+        loadError = null
+        try {
+            htmlContent = backgroundDomain.getBookmarkContent(bookmarkId)
+            isLoadingContent = false
+        } catch (e: Exception) {
+            loadError = e.message ?: "加载失败"
+            isLoadingContent = false
+            println("加载内容失败: ${e.message}")
+        }
     }
 
     val details by detailView.bookmarkDetail.collectAsState()
@@ -179,7 +196,35 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                     onBoundsChanged = { bounds -> overviewBounds = bounds }
                 )
 
-                AdaptiveWebView(modifier = Modifier.fillMaxWidth().padding(top = 20.dp))
+                when {
+                    isLoadingContent -> {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(top = 20.dp).height(200.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+
+                    loadError != null -> {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(top = 20.dp).height(200.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "加载失败: $loadError",
+                                color = Color.Red
+                            )
+                        }
+                    }
+
+                    htmlContent != null -> {
+                        AdaptiveWebView(
+                            modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                            htmlContent = htmlContent!!,
+                        )
+                    }
+                }
             }
         }
 
@@ -280,7 +325,7 @@ private fun OverviewView(
                     contentAlignment = Alignment.Center
                 ) {
                     Row(
-                        horizontalArrangement =Arrangement.spacedBy(6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
@@ -415,7 +460,7 @@ private fun TagsView(
         tags.forEach { tag ->
             TagItem(
                 tag = tag.tag_name,
-                onClick = {  }
+                onClick = { }
             )
         }
 
@@ -548,25 +593,11 @@ private fun TagItem(
 }
 
 @Composable
-fun AdaptiveWebView(modifier: Modifier = Modifier) {
+fun AdaptiveWebView(modifier: Modifier = Modifier, htmlContent: String) {
     var webViewHeight by remember { mutableStateOf(500.dp) }
-    val webViewState = rememberWebViewStateWithHTMLData(optimizedHtml)
-    webViewState.webSettings.apply {
-        isJavaScriptEnabled = true
-        supportZoom = false
-        allowFileAccessFromFileURLs = false
-        allowUniversalAccessFromFileURLs = false
-        logSeverity = KLogSeverity.Error
+    val webViewState = rememberWebViewStateWithHTMLData(htmlContent)
+    webViewStateSetting(webViewState)
 
-        androidWebSettings.apply {
-            domStorageEnabled = true
-            safeBrowsingEnabled = true
-            allowFileAccess = false
-            layerType = PlatformWebSettings.AndroidWebSettings.LayerType.HARDWARE
-        }
-    }
-
-    // 监听导航状态
     val navigator = rememberWebViewNavigator()
 
     WebView(

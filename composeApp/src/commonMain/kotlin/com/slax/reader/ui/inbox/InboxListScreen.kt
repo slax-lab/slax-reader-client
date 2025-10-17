@@ -363,6 +363,10 @@ private fun BookmarkItemRow(
     morePainter: Painter,
 ) {
     val haptics = LocalHapticFeedback.current
+    val viewModel: InboxListViewModel = koinInject()
+
+    val bookmarkStatusMap by viewModel.bookmarkStatusFlow.collectAsState()
+    val downloadStatus = bookmarkStatusMap[bookmark.id]
 
     Row(
         modifier = Modifier
@@ -386,12 +390,23 @@ private fun BookmarkItemRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painter = iconPainter,
-                contentDescription = "Article",
-                modifier = Modifier.size(24.dp),
-                contentScale = ContentScale.Fit
-            )
+            Box(modifier = Modifier.size(24.dp)) {
+                Image(
+                    painter = iconPainter,
+                    contentDescription = "Article",
+                    modifier = Modifier.size(24.dp),
+                    contentScale = ContentScale.Fit
+                )
+
+                if (downloadStatus?.status == com.slax.reader.domain.sync.DownloadStatus.DOWNLOADING) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = Color(0xFF1DA1F2),
+                        strokeWidth = 2.dp,
+                        trackColor = Color.Transparent
+                    )
+                }
+            }
 
             Text(
                 text = bookmark.displayTitle(),
