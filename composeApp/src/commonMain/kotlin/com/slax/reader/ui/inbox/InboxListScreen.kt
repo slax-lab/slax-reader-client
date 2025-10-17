@@ -40,6 +40,8 @@ import slax_reader_client.composeapp.generated.resources.*
 
 @Composable
 fun InboxListScreen(navCtrl: NavController) {
+    var isSidebarVisible by remember { mutableStateOf(false) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -49,11 +51,20 @@ fun InboxListScreen(navCtrl: NavController) {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            NavigationBar()
+            NavigationBar(onAvatarClick = { isSidebarVisible = true })
             Spacer(modifier = Modifier.height(8.dp))
             ContentSection(navCtrl)
         }
     }
+
+    Sidebar(
+        isVisible = isSidebarVisible,
+        onDismiss = { isSidebarVisible = false },
+        onSettingsClick = {
+        },
+        onAboutClick = {
+        }
+    )
 }
 
 @Composable
@@ -82,10 +93,9 @@ private fun UserAvatar() {
     }
 
     Box(
-        modifier = Modifier.size(32.dp)
-            .clickable(onClick = {
-                authDomain.signOut()
-            }),
+        modifier = Modifier.size(32.dp).clickable(onClick = {
+            authDomain.signOut()
+        }),
         contentAlignment = Alignment.Center
     ) {
         Image(
@@ -230,7 +240,7 @@ private fun UserAvatar() {
 }
 
 @Composable
-private fun NavigationBar() {
+private fun NavigationBar(onAvatarClick: () -> Unit = {}) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -246,7 +256,7 @@ private fun NavigationBar() {
             Image(
                 painter = painterResource(Res.drawable.inbox_tab),
                 contentDescription = "Menu",
-                modifier = Modifier.size(20.dp, 20.dp),
+                modifier = Modifier.size(20.dp, 20.dp).clickable(onClick = onAvatarClick),
                 contentScale = ContentScale.Fit
             )
             UserAvatar()
