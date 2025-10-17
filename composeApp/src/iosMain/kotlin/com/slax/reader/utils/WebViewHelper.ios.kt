@@ -9,24 +9,6 @@ import platform.WebKit.WKWebView
 import platform.darwin.NSObject
 
 /**
- * 自定义 UIScrollViewDelegate 用于拦截滚动事件
- */
-@OptIn(ExperimentalForeignApi::class)
-private class ScrollViewDelegateImpl : NSObject(), UIScrollViewDelegateProtocol {
-    override fun scrollViewWillBeginDragging(scrollView: UIScrollView) {
-        // 阻止滚动开始
-        NSLog("scrollViewWillBeginDragging - 阻止滚动")
-    }
-
-    override fun scrollViewDidScroll(scrollView: UIScrollView) {
-        // 滚动发生时重置回原位
-        if (scrollView.contentOffset.useContents { x != 0.0 || y != 0.0 }) {
-            scrollView.setContentOffset(CGPointMake(0.0, 0.0), false)
-        }
-    }
-}
-
-/**
  * iOS 平台的 WebView 配置实现
  */
 @OptIn(ExperimentalForeignApi::class)
