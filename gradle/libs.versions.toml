@@ -28,6 +28,7 @@ datastore = "1.1.7"
 kotlinx-serialization = "1.9.0"
 googleServices = "4.4.4"
 firebaseCrashlytics = "3.0.6"
+datastoreCore = "1.1.7"
 
 [libraries]
 atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu" }
@@ -67,6 +68,7 @@ napier = { module = "io.github.aakira:napier", version.ref = "napier" }
 navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+androidx-datastore-core = { group = "androidx.datastore", name = "datastore-core", version.ref = "datastoreCore" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

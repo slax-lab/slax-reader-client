@@ -120,4 +120,24 @@ class ApiService(
         return streamPost("/v1/bookmark/content", body = BookmarkContentParam(id))
     }
 
+    suspend fun addBookmarkUrl(url: String, title: String?): HttpData<CollectionBookmarkResult> {
+        return post(
+            "/v1/bookmark/add_url", body = CollectionBookmarkParam(
+                url, target_title = title
+            )
+        )
+    }
+
+    suspend fun addBookmarkWithContent(
+        url: String,
+        content: String?,
+        title: String?
+    ): HttpData<CollectionBookmarkResult> {
+        return post(
+            "/v1/bookmark/add_url", body = CollectionBookmarkParam(
+                target_url = url, content = content, target_title = title
+            )
+        )
+    }
+
 }

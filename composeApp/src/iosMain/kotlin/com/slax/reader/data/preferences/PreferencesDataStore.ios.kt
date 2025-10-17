@@ -25,3 +25,11 @@ actual val preferencesPlatformModule = module {
     }
     single<AppPreferences> { AppPreferences(get()) }
 }
+
+actual fun getPreferences(): AppPreferences {
+    return AppPreferences(
+        PreferenceDataStoreFactory.createWithPath(
+            produceFile = { getPreferencesPath().toPath() }
+        )
+    )
+}

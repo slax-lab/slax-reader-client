@@ -40,3 +40,15 @@ data class AuthParams(
 data class BookmarkContentParam(
     val bookmark_uid: String
 )
+
+@Serializable
+data class CollectionBookmarkParam(
+    val target_url: String,
+    val target_title: String? = null,
+    val content: String? = null
+)
+
+@Serializable
+data class CollectionBookmarkResult(
+    val bmId: String
+)
