@@ -29,6 +29,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -57,6 +59,13 @@ import kotlin.math.roundToInt
 data class ToolbarIcon(
     val label: String,
     val iconRes: DrawableResource? = null
+)
+
+data class OverviewViewBounds(
+    val x: Float = 0f,
+    val y: Float = 0f,
+    val width: Float = 0f,
+    val height: Float = 0f
 )
 
 // ================================================================================================
@@ -89,6 +98,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
     var showTagView by remember { mutableStateOf(false) }
     var showOverviewDialog by remember { mutableStateOf(false) }
     var showToolbar by remember { mutableStateOf(false) }
+    var overviewBounds by remember { mutableStateOf(OverviewViewBounds()) }
     val coroutineScope = rememberCoroutineScope()
 
     val toolbarPages = remember {
@@ -165,7 +175,8 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
 
                 OverviewView(
                     modifier = Modifier.padding(top = 20.dp),
-                    onExpand = { showOverviewDialog = true }
+                    onExpand = { showOverviewDialog = true },
+                    onBoundsChanged = { bounds -> overviewBounds = bounds }
                 )
 
                 AdaptiveWebView(modifier = Modifier.fillMaxWidth().padding(top = 20.dp))
@@ -198,7 +209,8 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
         // Overview 弹窗
         OverviewDialog(
             visible = showOverviewDialog,
-            onDismissRequest = { showOverviewDialog = false }
+            onDismissRequest = { showOverviewDialog = false },
+            sourceBounds = overviewBounds
         )
 
         // 底部工具栏
@@ -221,10 +233,27 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
 @Composable
 private fun OverviewView(
     modifier: Modifier = Modifier,
-    onExpand: () -> Unit = {}
+    onExpand: () -> Unit = {},
+    onBoundsChanged: (OverviewViewBounds) -> Unit = {}
 ) {
+    val density = LocalDensity.current
+
     Surface(
-        modifier = modifier.then(Modifier.fillMaxWidth()),
+        modifier = modifier
+            .then(Modifier.fillMaxWidth())
+            .onGloballyPositioned { coordinates ->
+                val position = coordinates.positionInRoot()
+                with(density) {
+                    onBoundsChanged(
+                        OverviewViewBounds(
+                            x = position.x,
+                            y = position.y,
+                            width = coordinates.size.width.toFloat(),
+                            height = coordinates.size.height.toFloat()
+                        )
+                    )
+                }
+            },
         shape = RoundedCornerShape(8.dp),
         color = Color(0xFFF5F5F3)
     ) {
@@ -820,16 +849,41 @@ fun TagsManageBottomSheet(
 @Composable
 fun OverviewDialog(
     visible: Boolean,
-    onDismissRequest: () -> Unit
+    onDismissRequest: () -> Unit,
+    sourceBounds: OverviewViewBounds
 ) {
+    val density = LocalDensity.current
+
+    // 计算屏幕中心位置和目标大小
+    var screenWidth by remember { mutableStateOf(0f) }
+    var screenHeight by remember { mutableStateOf(0f) }
+
+    // 动画进度 0 -> 1 (从源位置到目标位置)
+    val animationProgress by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = tween(durationMillis = 400, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+        label = "dialogAnimation"
+    )
+
+    // 透明度动画
+    val alpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = tween(durationMillis = 300),
+        label = "alphaAnimation"
+    )
+
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn(animationSpec = tween(300)),
         exit = fadeOut(animationSpec = tween(300))
     ) {
         Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+            modifier = Modifier
+                .fillMaxSize()
+                .onGloballyPositioned { coordinates ->
+                    screenWidth = coordinates.size.width.toFloat()
+                    screenHeight = coordinates.size.height.toFloat()
+                }
         ) {
             Box(
                 modifier = Modifier
@@ -843,24 +897,34 @@ fun OverviewDialog(
                     }
             )
 
-            AnimatedVisibility(
-                visible = visible,
-                enter = scaleIn(
-                    initialScale = 0.3f,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessLow
-                    )
-                ) + fadeIn(animationSpec = tween(200)),
-                exit = scaleOut(
-                    targetScale = 0.3f,
-                    animationSpec = tween(200)
-                ) + fadeOut(animationSpec = tween(200))
+            val targetWidth = with(density) { (screenWidth - 80.dp.toPx()) }
+            val targetHeight = 300f
+
+            val currentWidth = sourceBounds.width + (targetWidth - sourceBounds.width) * animationProgress
+            val currentHeight = sourceBounds.height + (targetHeight - sourceBounds.height) * animationProgress
+
+            val targetX = (screenWidth - targetWidth) / 2f
+            val targetY = (screenHeight - targetHeight) / 2f
+
+            val currentX = sourceBounds.x + (targetX - sourceBounds.x) * animationProgress
+            val currentY = sourceBounds.y + (targetY - sourceBounds.y) * animationProgress
+
+            Box(
+                modifier = Modifier.fillMaxSize()
             ) {
                 Surface(
                     modifier = Modifier
-                        .padding(horizontal = 40.dp)
-                        .fillMaxWidth(),
+                        .width(with(density) { currentWidth.toDp() })
+                        .height(with(density) { currentHeight.toDp() })
+                        .absoluteOffset {
+                            IntOffset(
+                                x = currentX.roundToInt(),
+                                y = currentY.roundToInt()
+                            )
+                        }
+                        .graphicsLayer {
+                            this.alpha = alpha
+                        },
                     shape = RoundedCornerShape(16.dp),
                     color = Color.White,
                     shadowElevation = 8.dp
