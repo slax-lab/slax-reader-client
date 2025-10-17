@@ -1,10 +1,11 @@
 import UIKit
 import Social
+import WebKit
 import ComposeApp
 
 @MainActor
 final class ShareViewController: UIViewController {
-    
+
     // MARK: - UI Components
     private lazy var backgroundView: UIView = {
         let view = UIView()
@@ -14,7 +15,7 @@ final class ShareViewController: UIViewController {
         view.addGestureRecognizer(tapGesture)
         return view
     }()
-    
+
     private lazy var containerView: UIView = {
         let view = UIView()
         view.backgroundColor = .systemBackground
@@ -26,14 +27,14 @@ final class ShareViewController: UIViewController {
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
     }()
-    
+
     private lazy var loadingIndicator: UIActivityIndicatorView = {
         let indicator = UIActivityIndicatorView(style: .medium)
         indicator.startAnimating()
         indicator.translatesAutoresizingMaskIntoConstraints = false
         return indicator
     }()
-    
+
     private lazy var statusLabel: UILabel = {
         let label = UILabel()
         label.text = ComposeApp.ShareKt.getShareLabelText(key: "collecting")
@@ -43,7 +44,7 @@ final class ShareViewController: UIViewController {
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
-    
+
     private lazy var successImageView: UIImageView = {
         let imageView = UIImageView()
         let config = UIImage.SymbolConfiguration(pointSize: 40, weight: .regular)
@@ -53,62 +54,62 @@ final class ShareViewController: UIViewController {
         imageView.translatesAutoresizingMaskIntoConstraints = false
         return imageView
     }()
-    
+
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        
+
         Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false) { _ in
             Task { @MainActor in
                 await self.processShareContent()
             }
         }
     }
-    
+
     // MARK: - Setup
     private func setupUI() {
         view.addSubview(backgroundView)
         view.addSubview(containerView)
-        
+
         [loadingIndicator, statusLabel, successImageView].forEach {
             containerView.addSubview($0)
         }
-        
+
         NSLayoutConstraint.activate([
-            // Background view
-            backgroundView.topAnchor.constraint(equalTo: view.topAnchor),
-            backgroundView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            backgroundView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            backgroundView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            
-            // Container view
-            containerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            containerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            containerView.heightAnchor.constraint(equalToConstant: 180),
-            
-            // Loading indicator
-            loadingIndicator.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
-            loadingIndicator.centerYAnchor.constraint(equalTo: containerView.centerYAnchor, constant: -20),
-            
-            // Status label
-            statusLabel.topAnchor.constraint(equalTo: loadingIndicator.bottomAnchor, constant: 16),
-            statusLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
-            statusLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20),
-            
-            // Success image view
-            successImageView.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
-            successImageView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor, constant: -20)
-        ])
-        
+                                        // Background view
+                                        backgroundView.topAnchor.constraint(equalTo: view.topAnchor),
+                                        backgroundView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                                        backgroundView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                                        backgroundView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+                                        // Container view
+                                        containerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                                        containerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                                        containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+                                        containerView.heightAnchor.constraint(equalToConstant: 180),
+
+                                        // Loading indicator
+                                        loadingIndicator.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
+                                        loadingIndicator.centerYAnchor.constraint(equalTo: containerView.centerYAnchor, constant: -20),
+
+                                        // Status label
+                                        statusLabel.topAnchor.constraint(equalTo: loadingIndicator.bottomAnchor, constant: 16),
+                                        statusLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
+                                        statusLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20),
+
+                                        // Success image view
+                                        successImageView.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
+                                        successImageView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor, constant: -20)
+                                    ])
+
         animatePresentation()
     }
-    
+
     private func animatePresentation() {
         containerView.transform = CGAffineTransform(translationX: 0, y: 200)
         backgroundView.alpha = 0
-        
+
         UIView.animate(
             withDuration: 0.3,
             delay: 0,
@@ -120,69 +121,77 @@ final class ShareViewController: UIViewController {
             self.backgroundView.alpha = 1
         }
     }
-    
+
     // MARK: - Content Processing
     private func processShareContent() async {
         guard let extensionItems = extensionContext?.inputItems as? [NSExtensionItem] else {
-            showError()
+            showError(message: nil)
             return
         }
-        
+
         do {
-            let sharedURL = try await extractSharedContent(from: extensionItems)
-            let state = try await ComposeApp.ShareKt.collectionShare()
-            
-            // Convert KotlinBoolean to Swift Bool
-            if state.boolValue {
+            var sharedContent: String? = nil
+            var title: String? = nil
+            var body: String? = nil
+
+            for item in extensionItems {
+                for attachment in item.attachments ?? [] {
+                    if let (pageTitle, pageBody) = try? await loadJavaScriptPreprocessingResults(from: attachment) {
+                        title = pageTitle
+                        body = pageBody
+                    }
+
+                    if attachment.hasItemConformingToTypeIdentifier("public.url") {
+                        if let url = try? await attachment.loadItem(forTypeIdentifier: "public.url") as? URL {
+                            sharedContent = url.absoluteString
+                        }
+                    }
+                }
+            }
+
+            guard let content = sharedContent else {
+                showError(message: "No content to share")
+                return
+            }
+
+            let result = try await ComposeApp.ShareKt.collectionShare(
+                content: content,
+                title: title,
+                body: body
+            )
+
+            if result == "ok" {
                 showSuccess()
             } else {
-                showError()
+                showError(message: result)
             }
         } catch {
             print("Share error: \(error)")
-            showError()
+            showError(message: error.localizedDescription)
         }
     }
-    
-    private func extractSharedContent(from items: [NSExtensionItem]) async throws -> String? {
-        for item in items {
-            guard let attachments = item.attachments else { continue }
-            
-            for attachment in attachments {
-                if let content = try await loadContent(from: attachment) {
-                    return content
-                }
-            }
+
+    private func loadJavaScriptPreprocessingResults(from attachment: NSItemProvider) async throws -> (title: String?, body: String?)? {
+        let propertyList = "public.property-list"
+
+        guard attachment.hasItemConformingToTypeIdentifier(propertyList) else {
+            return nil
         }
-        return nil
-    }
-    
-    private func loadContent(from attachment: NSItemProvider) async throws -> String? {
-        let typeIdentifiers = [
-            ("public.url", { (item: NSSecureCoding?) -> String? in
-                switch item {
-                case let url as URL: return url.absoluteString
-                case let urlString as String: return urlString
-                default: return nil
-                }
-            }),
-            ("public.text", { (item: NSSecureCoding?) -> String? in
-                item as? String
-            })
-        ]
-        
-        for (identifier, transform) in typeIdentifiers {
-            guard attachment.hasItemConformingToTypeIdentifier(identifier) else { continue }
-            
-            let item = try await attachment.loadItem(forTypeIdentifier: identifier)
-            if let result = transform(item) {
-                return result
-            }
+
+        let item = try await attachment.loadItem(forTypeIdentifier: propertyList)
+
+        guard let dictionary = item as? NSDictionary,
+              let results = dictionary[NSExtensionJavaScriptPreprocessingResultsKey] as? [String: Any]
+        else {
+            return nil
         }
-        
-        return nil
+
+        let title = results["title"] as? String
+        let body = results["content"] as? String
+
+        return (title: title, body: body)
     }
-    
+
     // MARK: - UI State Updates
     private func showSuccess() {
         UIView.animate(withDuration: 0.3, animations: {
@@ -194,10 +203,10 @@ final class ShareViewController: UIViewController {
             self.animateSuccessIcon()
         }
     }
-    
+
     private func animateSuccessIcon() {
         successImageView.transform = CGAffineTransform(scaleX: 0.1, y: 0.1)
-        
+
         UIView.animate(
             withDuration: 0.5,
             delay: 0,
@@ -214,17 +223,18 @@ final class ShareViewController: UIViewController {
             }
         }
     }
-    
-    private func showError() {
-        statusLabel.text = ComposeApp.ShareKt.getShareLabelText(key: "failed")
+
+    private func showError(message: String?) {
+        statusLabel.text = message ?? ComposeApp.ShareKt.getShareLabelText(key: "failed")
         statusLabel.textColor = .systemRed
+        statusLabel.numberOfLines = 0
         loadingIndicator.stopAnimating()
-        
-        Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { _ in
+
+        Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
             self.dismissExtension()
         }
     }
-    
+
     // MARK: - Dismissal
     @objc private func dismissExtension() {
         UIView.animate(withDuration: 0.3, animations: {
@@ -248,5 +258,27 @@ extension NSItemProvider {
                 }
             }
         }
+    }
+}
+
+// MARK: - NavigationDelegate
+private class NavigationDelegate: NSObject, WKNavigationDelegate {
+    private let completion: (Bool) -> Void
+
+    init(completion: @escaping (Bool) -> Void) {
+        self.completion = completion
+        super.init()
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        completion(true)
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        completion(false)
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        completion(false)
     }
 }

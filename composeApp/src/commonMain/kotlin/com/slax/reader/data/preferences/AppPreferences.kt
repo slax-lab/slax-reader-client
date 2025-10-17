@@ -8,6 +8,7 @@ import com.slax.reader.utils.timeUnix
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -36,6 +37,10 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
             val userId = preferences[USER_ID_KEY]
             if (token != null && userId != null) AuthInfo(token, userId) else null
         }
+    }
+
+    suspend fun getAuthInfoSuspend(): String? {
+        return dataStore.data.first()[AUTH_TOKEN_KEY]
     }
 
     suspend fun setAuthInfo(token: String, userId: String?) {
