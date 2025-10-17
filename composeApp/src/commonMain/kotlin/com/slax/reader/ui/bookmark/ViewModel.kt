@@ -7,6 +7,7 @@ import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.data.database.model.UserTag
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
+import kotlinx.serialization.json.Json
 
 class BookmarkDetailViewModel(
     private val bookmarkDao: BookmarkDao,
@@ -33,4 +34,16 @@ class BookmarkDetailViewModel(
         .flatMapLatest { id ->
             bookmarkDao.watchBookmarkDetail(id)
         }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    suspend fun toggleStar(bookmarkId: String, isStar: Boolean) {
+        bookmarkDao.updateBookmarkStar(bookmarkId, if (isStar) 1 else 0)
+    }
+
+    suspend fun toggleArchive(bookmarkId: String, isArchive: Boolean) {
+        bookmarkDao.updateBookmarkArchive(bookmarkId, if (isArchive) 1 else 0)
+    }
+
+    suspend fun updateBookmarkTags(bookmarkId: String, newTagIds: List<String>) {
+        bookmarkDao.updateMetadataField(bookmarkId, "tags", Json.encodeToString(newTagIds))
+    }
 }

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -88,6 +89,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
     var showTagView by remember { mutableStateOf(false) }
     var showOverviewDialog by remember { mutableStateOf(false) }
     var showToolbar by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
     val toolbarPages = remember {
         listOf(
@@ -187,6 +189,9 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
             availableTags = allAvailableTags,
             onConfirm = { selectedTags ->
                 currentTags = selectedTags
+                coroutineScope.launch {
+                    detailView.updateBookmarkTags(bookmarkId, selectedTags.map { it.id })
+                }
             }
         )
 
@@ -711,8 +716,8 @@ fun TagsManageBottomSheet(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
                                 ) {
-                                    onConfirm(currentSelectedTags)
-                                    onDismissRequest()
+                                        onConfirm(currentSelectedTags)
+                                        onDismissRequest()
                                 },
                             style = TextStyle(
                                 fontSize = 15.sp,
