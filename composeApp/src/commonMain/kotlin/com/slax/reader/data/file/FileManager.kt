@@ -2,8 +2,8 @@ package com.slax.reader.data.file
 
 import com.slax.reader.utils.cacheDirectoryPath
 import com.slax.reader.utils.dataDirectoryPath
-import okio.FileSystem
-import okio.Path
+import kotlinx.coroutines.flow.Flow
+import okio.*
 import okio.Path.Companion.toPath
 
 data class FileInfo(
@@ -50,7 +50,17 @@ class FileManager(val fileSystem: FileSystem) {
             null
         }
     }
-    
+
+    fun getDataFileInfo(fileName: String): FileMetadata? {
+        try {
+            val path = "$dataDirectoryPath/$fileName".toPath()
+            return fileSystem.metadata(path = path)
+        } catch (e: Exception) {
+            println("获取文件信息失败: ${e.message}")
+            return null
+        }
+    }
+
     fun writeDataFile(fileName: String, data: ByteArray) {
         val path = "$dataDirectoryPath/$fileName".toPath()
         fileSystem.write(path) {
@@ -58,9 +68,30 @@ class FileManager(val fileSystem: FileSystem) {
         }
     }
 
+    suspend fun writeDataFileStream(fileName: String, flow: Flow<String>) {
+        fileSystem.sink("$dataDirectoryPath/$fileName".toPath(), mustCreate = false)
+            .buffer()
+            .use { sink ->
+                flow.collect { text ->
+                    sink.writeUtf8(text)
+                }
+            }
+    }
+
     fun mkdir(dirPath: String) {
         val path = dirPath.toPath()
         fileSystem.createDirectories(path, false)
+    }
+
+    fun deleteDataDirectory(dirName: String): Boolean {
+        return try {
+            val path = "$dataDirectoryPath/$dirName".toPath()
+            deleteRecursively(path)
+            true
+        } catch (e: Exception) {
+            println("删除目录失败: ${e.message}")
+            false
+        }
     }
 
     fun scanDirectory(dirPath: String): List<FileInfo> {

@@ -4,11 +4,13 @@ import androidx.lifecycle.ViewModel
 import com.slax.reader.data.database.dao.BookmarkDao
 import com.slax.reader.data.database.dao.PowerSyncDao
 import com.slax.reader.data.database.dao.UserDao
+import com.slax.reader.domain.sync.BackgroundDomain
 
 class InboxListViewModel(
     private val bookmarkDao: BookmarkDao,
     private val userDao: UserDao,
     private val powerSyncDao: PowerSyncDao,
+    private val backgroundDomain: BackgroundDomain,
 ) : ViewModel() {
 
     val bookmarks = bookmarkDao.watchUserBookmarkList()
@@ -16,6 +18,8 @@ class InboxListViewModel(
     val userInfo = userDao.watchUserInfo()
 
     val syncStatusData = powerSyncDao.watchPowerSyncStatus()
+
+    val bookmarkStatusFlow = backgroundDomain.bookmarkStatusFlow
 
     val isConnecting: Boolean
         get() = syncStatusData.value?.connecting == true

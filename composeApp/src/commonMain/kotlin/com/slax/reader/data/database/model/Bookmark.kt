@@ -57,6 +57,9 @@ data class InboxListBookmarkItem(
     val id: String,
     val aliasTitle: String,
     val createdAt: String,
+    val updatedAt: String,
+    
+    val metadataStatus: String?,
     var metadataTitle: String?,
     var metadataUrl: String?
 ) {

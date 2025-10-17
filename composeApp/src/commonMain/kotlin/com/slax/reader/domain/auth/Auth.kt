@@ -2,6 +2,7 @@ package com.slax.reader.domain.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.slax.reader.data.file.FileManager
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.network.dto.AuthParams
 import com.slax.reader.data.preferences.AppPreferences
@@ -25,6 +26,7 @@ sealed class AuthState {
 class AuthDomain(
     private val appPreferences: AppPreferences,
     private val apiService: ApiService,
+    private val fileManager: FileManager,
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
@@ -66,6 +68,7 @@ class AuthDomain(
     fun signOut() {
         viewModelScope.launch {
             appPreferences.clearAuthToken()
+            fileManager.deleteDataDirectory("bookmark")
             _authState.value = AuthState.Unauthenticated
         }
     }

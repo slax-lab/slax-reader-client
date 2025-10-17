@@ -55,22 +55,27 @@ class BookmarkDao(
             id = cursor.getString("id"),
             aliasTitle = cursor.getString("alias_title"),
             createdAt = cursor.getString("created_at"),
+            updatedAt = cursor.getString("updated_at"),
             metadataTitle = cursor.getString("metadata_title"),
             metadataUrl = cursor.getString("metadata_url"),
+            metadataStatus = cursor.getString("metadata_status"),
         )
     }
 
     private val _userBookmarkListFlow: StateFlow<List<InboxListBookmarkItem>> by lazy {
+        println("[BookmarkDao] Initializing _userBookmarkListFlow")
         database.watch(
             """
             SELECT
                 id,
                 created_at,
+                updated_at,
                 alias_title,
                 JSON_EXTRACT(metadata, '$.bookmark.title') as metadata_title,
-                JSON_EXTRACT(metadata, '$.bookmark.target_url') as metadata_url
-            FROM sr_user_bookmark
-            ORDER BY created_at DESC
+                JSON_EXTRACT(metadata, '$.bookmark.target_url') as metadata_url,
+                JSON_EXTRACT(metadata, '$.bookmark.status') as metadata_status
+            FROM sr_user_bookmark WHERE archive_status = 0
+            ORDER BY updated_at DESC
             """.trimIndent()
         ) { cursor ->
             mapperToInboxListBookmarkItem(cursor)

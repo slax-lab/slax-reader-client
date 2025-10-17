@@ -33,14 +33,12 @@ import app.slax.reader.SlaxConfig
 import com.mmk.kmpauth.google.GoogleAuthCredentials
 import com.mmk.kmpauth.google.GoogleAuthProvider
 import com.mmk.kmpauth.google.GoogleButtonUiContainer
-import com.multiplatform.webview.setting.PlatformWebSettings
-import com.multiplatform.webview.util.KLogSeverity
 import com.multiplatform.webview.web.WebView
-import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
+import com.multiplatform.webview.web.rememberWebViewState
 import com.slax.reader.const.AppError
 import com.slax.reader.const.InboxRoutes
 import com.slax.reader.domain.auth.AuthDomain
-import com.slax.reader.ui.bookmark.optimizedHtml
+import com.slax.reader.utils.webViewStateSetting
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -124,8 +122,6 @@ fun LoginScreen(navController: NavHostController) {
         Column(modifier = Modifier.padding(bottom = 30.dp)) {
             GoogleButtonUiContainer(onGoogleSignInResult = { googleUser ->
                 val idToken = googleUser?.idToken
-                println("id token: $idToken =============")
-
                 if (idToken != null) {
                     isLoading = true
                     scope.launch {
@@ -411,22 +407,8 @@ private fun AgreementBottomSheet(
                     .background(Color(0x14333333))
             )
 
-            // WebView 内容
-            val webState = rememberWebViewStateWithHTMLData(optimizedHtml)
-            webState.webSettings.apply {
-                isJavaScriptEnabled = true
-                supportZoom = false
-                allowFileAccessFromFileURLs = false
-                allowUniversalAccessFromFileURLs = false
-                logSeverity = KLogSeverity.Error
-
-                androidWebSettings.apply {
-                    domStorageEnabled = true
-                    safeBrowsingEnabled = true
-                    allowFileAccess = false
-                    layerType = PlatformWebSettings.AndroidWebSettings.LayerType.HARDWARE
-                }
-            }
+            val webState = rememberWebViewState("https://baidu.com")
+            webViewStateSetting(webState)
 
             WebView(
                 modifier = Modifier

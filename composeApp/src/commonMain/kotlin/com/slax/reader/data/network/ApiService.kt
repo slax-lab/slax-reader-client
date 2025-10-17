@@ -3,20 +3,17 @@ package com.slax.reader.data.network
 import app.slax.reader.SlaxConfig
 import com.slax.reader.const.AppError
 import com.slax.reader.data.network.dto.*
-import com.slax.reader.data.preferences.AppPreferences
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-
-data class Options(
-    val notAuthorized: Boolean = false
-)
+import io.ktor.utils.io.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 
 class ApiService(
     private val httpClient: HttpClient,
-    private val preferences: AppPreferences,
 ) {
 
     private fun buildUrl(pathName: String, query: Map<String, String>?): String {
@@ -45,7 +42,7 @@ class ApiService(
     }
 
     private suspend inline fun <reified T> get(
-        pathName: String, query: Map<String, String>?, options: Options?
+        pathName: String, query: Map<String, String>?
     ): HttpData<T> {
         val url = buildUrl(pathName, query)
         val response = httpClient.get(url) {
@@ -57,7 +54,7 @@ class ApiService(
     }
 
     private suspend inline fun <reified T> post(
-        pathName: String, query: Map<String, String> = emptyMap(), body: Any? = null, options: Options = Options()
+        pathName: String, query: Map<String, String> = emptyMap(), body: Any? = null
     ): HttpData<T> {
         val url = buildUrl(pathName, query)
         val response = httpClient.post(url) {
@@ -71,19 +68,56 @@ class ApiService(
         return processResult(response)
     }
 
+    private fun streamPost(
+        pathName: String,
+        query: Map<String, String> = emptyMap(),
+        body: Any? = null
+    ): Flow<String> = flow {
+        val url = buildUrl(pathName, query)
+
+        httpClient.preparePost(url, {
+            headers {
+                append(HttpHeaders.ContentType, "application/json")
+                append(HttpHeaders.Accept, "text/event-stream")
+            }
+            setBody(body = body)
+        }).execute { resp ->
+            val channel = resp.bodyAsChannel()
+
+            while (!channel.isClosedForRead) {
+                val line = channel.readUTF8Line() ?: continue
+                emit(line)
+            }
+        }
+    }
+
     suspend fun getSyncToken(): HttpData<CredentialsData> {
         return post("/v1/sync/token")
     }
 
     suspend fun uploadChanges(changes: List<ChangesItem>): HttpData<Any> {
-        return post("/v1/sync/changes", body = changes, options = Options(notAuthorized = false))
+        return post("/v1/sync/changes", body = changes)
     }
 
     suspend fun login(params: AuthParams): HttpData<AuthResult> {
-        return post("/v1/user/login", body = params, options = Options(notAuthorized = true))
+        return post("/v1/user/login", body = params)
     }
 
     suspend fun refresh(): HttpData<RefreshResult> {
         return post("/v1/user/refresh")
     }
+
+    suspend fun getBookmarkContent(id: String): String {
+        val contentBuilder = StringBuilder()
+        val resp = streamBookmarkContent(id)
+        resp.collect { chunk ->
+            contentBuilder.append(chunk)
+        }
+        return contentBuilder.toString()
+    }
+
+    private fun streamBookmarkContent(id: String): Flow<String> {
+        return streamPost("/v1/bookmark/content", body = BookmarkContentParam(id))
+    }
+
 }

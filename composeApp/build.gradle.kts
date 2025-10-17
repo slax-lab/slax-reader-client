@@ -31,6 +31,7 @@ plugins {
     alias(libs.plugins.firebase.crashlytics)
     kotlin("native.cocoapods")
     id("com.codingfeline.buildkonfig") version "0.17.1"
+    id("org.jetbrains.kotlinx.atomicfu") version "0.29.0"
 }
 
 repositories {
@@ -168,6 +169,10 @@ kotlin {
 
             // IO/File
             implementation(libs.okio)
+
+            // AtomicFU - required for Android runtime
+            implementation(libs.atomicfu)
+
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
