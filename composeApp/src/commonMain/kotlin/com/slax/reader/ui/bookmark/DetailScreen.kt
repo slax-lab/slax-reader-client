@@ -41,7 +41,9 @@ import com.multiplatform.webview.web.rememberWebViewNavigator
 import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
 import com.slax.reader.data.database.model.UserTag
 import com.slax.reader.domain.sync.BackgroundDomain
+import com.slax.reader.utils.loadMultipleCSSFromResources
 import com.slax.reader.utils.webViewStateSetting
+import com.slax.reader.utils.wrapHtmlWithCSS
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.delay
@@ -594,8 +596,29 @@ private fun TagItem(
 
 @Composable
 fun AdaptiveWebView(modifier: Modifier = Modifier, htmlContent: String) {
-    var webViewHeight by remember { mutableStateOf(500.dp) }
-    val webViewState = rememberWebViewStateWithHTMLData(htmlContent)
+    var webViewHeight by remember { mutableStateOf(100.dp) }
+
+    // 加载多个 CSS 样式文件
+    var cssContent by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        cssContent = loadMultipleCSSFromResources(
+            "reset.css",
+            "article.css"
+        )
+        println("CSS 文件加载完成")
+    }
+
+    // 将 CSS 内联到 HTML 中
+    val htmlWithCSS = remember(htmlContent, cssContent) {
+        if (cssContent.isNotEmpty()) {
+            wrapHtmlWithCSS(htmlContent, cssContent)
+        } else {
+            htmlContent
+        }
+    }
+
+    val webViewState = rememberWebViewStateWithHTMLData(htmlWithCSS)
     webViewStateSetting(webViewState)
 
     val navigator = rememberWebViewNavigator()
@@ -609,9 +632,9 @@ fun AdaptiveWebView(modifier: Modifier = Modifier, htmlContent: String) {
         navigator = navigator,
         onCreated = { webView ->
             // WebView 创建时的配置
+            println("WebView 已创建")
         },
         onDispose = { webView ->
-            // 清理资源
         }
     )
 
@@ -636,6 +659,7 @@ fun AdaptiveWebView(modifier: Modifier = Modifier, htmlContent: String) {
                     try {
                         val height = it.toDoubleOrNull() ?: 500.0
                         webViewHeight = (height.dp + 10.dp)
+                        println("WebView 高度已更新: $webViewHeight")
                     } catch (e: Exception) {
                         println("获取高度失败: ${e.message}")
                     }
