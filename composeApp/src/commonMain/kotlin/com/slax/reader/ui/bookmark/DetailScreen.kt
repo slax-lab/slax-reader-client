@@ -41,6 +41,7 @@ import com.multiplatform.webview.web.rememberWebViewNavigator
 import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
 import com.slax.reader.data.database.model.UserTag
 import com.slax.reader.domain.sync.BackgroundDomain
+import com.slax.reader.utils.configureNativeWebView
 import com.slax.reader.utils.loadMultipleCSSFromResources
 import com.slax.reader.utils.webViewStateSetting
 import com.slax.reader.utils.wrapHtmlWithCSS
@@ -597,6 +598,7 @@ private fun TagItem(
 @Composable
 fun AdaptiveWebView(modifier: Modifier = Modifier, htmlContent: String) {
     var webViewHeight by remember { mutableStateOf(100.dp) }
+    var webViewInstance by remember { mutableStateOf<Any?>(null) }
 
     // 加载多个 CSS 样式文件
     var cssContent by remember { mutableStateOf("") }
@@ -627,12 +629,21 @@ fun AdaptiveWebView(modifier: Modifier = Modifier, htmlContent: String) {
         state = webViewState,
         modifier = modifier
             .fillMaxWidth()
+            .windowInsetsPadding(WindowInsets(0, 0, 0, 0))
             .height(webViewHeight),
         captureBackPresses = false,
         navigator = navigator,
         onCreated = { webView ->
             // WebView 创建时的配置
             println("WebView 已创建")
+            webViewInstance = webView
+
+            // 配置原生 WebView：禁止滚动和去除内部安全距离
+            configureNativeWebView(
+                webView = webView,
+                disableScrolling = true,
+                removeContentInsets = true
+            )
         },
         onDispose = { webView ->
         }
@@ -641,6 +652,16 @@ fun AdaptiveWebView(modifier: Modifier = Modifier, htmlContent: String) {
     // 监听页面加载完成，获取高度
     LaunchedEffect(webViewState.loadingState) {
         if (webViewState.loadingState is LoadingState.Finished) {
+            // 页面加载完成后，再次确保滚动禁用（解决 iOS 可能重置 scrollEnabled 的问题）
+            webViewInstance?.let { webView ->
+                configureNativeWebView(
+                    webView = webView,
+                    disableScrolling = true,
+                    removeContentInsets = true
+                )
+                println("页面加载完成后重新配置 WebView")
+            }
+
             // 注入 JavaScript 获取页面高度
             val script = """
                 (function() {
@@ -909,18 +930,15 @@ fun OverviewDialog(
 ) {
     val density = LocalDensity.current
 
-    // 计算屏幕中心位置和目标大小
     var screenWidth by remember { mutableStateOf(0f) }
     var screenHeight by remember { mutableStateOf(0f) }
 
-    // 动画进度 0 -> 1 (从源位置到目标位置)
     val animationProgress by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
         animationSpec = tween(durationMillis = 400, easing = androidx.compose.animation.core.FastOutSlowInEasing),
         label = "dialogAnimation"
     )
 
-    // 透明度动画
     val alpha by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
         animationSpec = tween(durationMillis = 300),

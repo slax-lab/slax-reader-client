@@ -1,27 +1,12 @@
-@font-face {
-  font-family: 'source-serif-pro';
-  src: url('/fonts/source-serif-pro-400-normal.woff') format('woff');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-  unicode-range: U+0-7F, U+A0, U+B7, U+200A, U+2014, U+2018, U+2019, U+201C, U+201D, U+2022, U+2026;
+/* 防止夜间模式影响 */
+html {
+  background-color: transparent !important;
+  color-scheme: light only;
+  -webkit-color-scheme: light;
 }
 
-@font-face {
-  font-family: 'source-serif-pro';
-  src: url('/fonts/source-serif-pro-700-normal.woff') format('woff');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-  unicode-range: U+0-7F, U+A0, U+B7, U+200A, U+2014, U+2018, U+2019, U+201C, U+201D, U+2022, U+2026;
-}
-
-@font-face {
-  font-family: 'PingFang SC';
-  src: url('/fonts/pingfang-sc-regular.woff') format('woff');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
+body {
+  background-color: transparent !important;
 }
 
 /* 块级元素重置 */

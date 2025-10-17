@@ -6,6 +6,18 @@ import com.multiplatform.webview.web.WebViewState
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import slax_reader_client.composeapp.generated.resources.Res
 
+/**
+ * 配置 WebView 的平台特定设置
+ * @param webView 平台原生的 WebView 实例
+ * @param disableScrolling 是否禁用滚动
+ * @param removeContentInsets 是否去除内容安全距离
+ */
+expect fun configureNativeWebView(
+    webView: Any,
+    disableScrolling: Boolean = true,
+    removeContentInsets: Boolean = true
+)
+
 
 fun webViewStateSetting(webViewState: WebViewState) {
     webViewState.webSettings.apply {
@@ -38,6 +50,7 @@ fun webViewStateSetting(webViewState: WebViewState) {
         }
 
         iOSWebSettings.apply {
+            isInspectable = true
         }
     }
 }
@@ -74,6 +87,8 @@ fun wrapHtmlWithCSS(htmlContent: String, cssContent: String): String {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <meta name="color-scheme" content="light only">
+            <meta name="supported-color-schemes" content="light">
             <style>
                 $cssContent
             </style>
