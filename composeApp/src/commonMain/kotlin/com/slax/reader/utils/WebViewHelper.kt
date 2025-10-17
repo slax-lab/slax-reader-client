@@ -51,6 +51,8 @@ fun webViewStateSetting(webViewState: WebViewState) {
 
         iOSWebSettings.apply {
             isInspectable = true
+            scrollEnabled = false
+            bounces = false
         }
     }
 }

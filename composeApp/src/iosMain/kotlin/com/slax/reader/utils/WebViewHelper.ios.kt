@@ -1,11 +1,30 @@
 package com.slax.reader.utils
 
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.useContents
+import platform.CoreGraphics.CGPointMake
 import platform.Foundation.NSLog
-import platform.UIKit.UIColor
-import platform.UIKit.UIEdgeInsetsMake
-import platform.UIKit.UIScrollView
+import platform.UIKit.*
 import platform.WebKit.WKWebView
+import platform.darwin.NSObject
+
+/**
+ * 自定义 UIScrollViewDelegate 用于拦截滚动事件
+ */
+@OptIn(ExperimentalForeignApi::class)
+private class ScrollViewDelegateImpl : NSObject(), UIScrollViewDelegateProtocol {
+    override fun scrollViewWillBeginDragging(scrollView: UIScrollView) {
+        // 阻止滚动开始
+        NSLog("scrollViewWillBeginDragging - 阻止滚动")
+    }
+
+    override fun scrollViewDidScroll(scrollView: UIScrollView) {
+        // 滚动发生时重置回原位
+        if (scrollView.contentOffset.useContents { x != 0.0 || y != 0.0 }) {
+            scrollView.setContentOffset(CGPointMake(0.0, 0.0), false)
+        }
+    }
+}
 
 /**
  * iOS 平台的 WebView 配置实现
@@ -35,7 +54,7 @@ actual fun configureNativeWebView(
         alpha = 1.0
     )
 
-    webView.opaque = false
+    webView.opaque = true
     webView.backgroundColor = customBackgroundColor
     scrollView.backgroundColor = customBackgroundColor
 
@@ -43,20 +62,6 @@ actual fun configureNativeWebView(
     webView.underPageBackgroundColor = customBackgroundColor
 
     NSLog("iOS WKWebView 背景色设置完成 背景色：0xfcfcfc")
-    // 禁用滚动
-    if (disableScrolling) {
-        // 禁用滚动
-        scrollView.scrollEnabled = false
-
-        // 禁用弹性滚动效果（bounce）
-        scrollView.bounces = false
-
-        // 禁用滚动指示器
-        scrollView.showsVerticalScrollIndicator = false
-        scrollView.showsHorizontalScrollIndicator = false
-
-        NSLog("滚动条状态： 是否可以滑动=${scrollView.scrollEnabled}, 是否有弹性滚动=${scrollView.bounces}, 显示垂直滚动指示器=${scrollView.showsVerticalScrollIndicator}, 显示水平滚动指示器=${scrollView.showsHorizontalScrollIndicator}")
-    }
 
     // 去除内部安全距离（Content Insets）
     if (removeContentInsets) {
@@ -69,7 +74,6 @@ actual fun configureNativeWebView(
         // 如果有 safe area insets，也去除它们
         scrollView.insetsLayoutMarginsFromSafeArea = false
     }
-
 
     println("iOS WebView 配置完成: disableScrolling=$disableScrolling, removeContentInsets=$removeContentInsets")
 }
