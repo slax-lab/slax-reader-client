@@ -24,7 +24,7 @@ suspend fun collectionShare(content: String, title: String?, body: String?): Str
     val regex = "^((https|http)?:\\/\\/)[^\\s]+".toRegex()
     val match = regex.find(content) ?: return "Not have URL content to collect."
     val url = match.value
-    println("match url find: ${url} \n title: ${title} \n body: ${body}")
+    println("match url find: ${url} \n title: ${title}")
 
     val preferences = getPreferences()
     val token = preferences.getAuthInfoSuspend()

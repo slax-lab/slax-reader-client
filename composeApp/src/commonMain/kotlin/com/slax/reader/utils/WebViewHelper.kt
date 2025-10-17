@@ -18,9 +18,5 @@ fun webViewStateSetting(webViewState: WebViewState) {
             allowFileAccess = false
             layerType = PlatformWebSettings.AndroidWebSettings.LayerType.HARDWARE
         }
-
-        iOSWebSettings.apply {
-
-        }
     }
 }

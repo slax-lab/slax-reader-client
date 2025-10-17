@@ -194,6 +194,9 @@ final class ShareViewController: UIViewController {
 
     // MARK: - UI State Updates
     private func showSuccess() {
+        let feedbackGenerator = UINotificationFeedbackGenerator()
+        feedbackGenerator.notificationOccurred(.success)
+
         UIView.animate(withDuration: 0.3, animations: {
             self.loadingIndicator.alpha = 0
             self.statusLabel.text = ComposeApp.ShareKt.getShareLabelText(key: "success")
@@ -201,6 +204,9 @@ final class ShareViewController: UIViewController {
             self.loadingIndicator.isHidden = true
             self.successImageView.isHidden = false
             self.animateSuccessIcon()
+            Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
+                self.dismissExtension()
+            }
         }
     }
 
@@ -225,14 +231,13 @@ final class ShareViewController: UIViewController {
     }
 
     private func showError(message: String?) {
+        let feedbackGenerator = UINotificationFeedbackGenerator()
+        feedbackGenerator.notificationOccurred(.error)
+
         statusLabel.text = message ?? ComposeApp.ShareKt.getShareLabelText(key: "failed")
         statusLabel.textColor = .systemRed
         statusLabel.numberOfLines = 0
         loadingIndicator.stopAnimating()
-
-        Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
-            self.dismissExtension()
-        }
     }
 
     // MARK: - Dismissal

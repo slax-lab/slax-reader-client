@@ -39,6 +39,7 @@ import com.multiplatform.webview.web.rememberWebViewNavigator
 import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
 import com.slax.reader.data.database.model.UserTag
 import com.slax.reader.domain.sync.BackgroundDomain
+import com.slax.reader.utils.platform
 import com.slax.reader.utils.webViewStateSetting
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -562,7 +563,7 @@ private fun TagItem(
 @Composable
 fun AdaptiveWebView(modifier: Modifier = Modifier, htmlContent: String) {
     var webViewHeight by remember { mutableStateOf(500.dp) }
-    val webViewState = rememberWebViewStateWithHTMLData(htmlContent)
+    val webViewState = rememberWebViewStateWithHTMLData(getOptimizedHtml(htmlContent))
     webViewStateSetting(webViewState)
 
     val navigator = rememberWebViewNavigator()
@@ -583,10 +584,11 @@ fun AdaptiveWebView(modifier: Modifier = Modifier, htmlContent: String) {
     )
 
     // 监听页面加载完成，获取高度
-    LaunchedEffect(webViewState.loadingState) {
-        if (webViewState.loadingState is LoadingState.Finished) {
-            // 注入 JavaScript 获取页面高度
-            val script = """
+    if (platform == "android") {
+        LaunchedEffect(webViewState.loadingState) {
+            if (webViewState.loadingState is LoadingState.Finished) {
+                // 注入 JavaScript 获取页面高度
+                val script = """
                 (function() {
                     return Math.max(
                         document.body.scrollHeight,
@@ -598,13 +600,14 @@ fun AdaptiveWebView(modifier: Modifier = Modifier, htmlContent: String) {
                 })();
             """.trimIndent()
 
-            navigator.evaluateJavaScript(script) { result ->
-                result?.let {
-                    try {
-                        val height = it.toDoubleOrNull() ?: 500.0
-                        webViewHeight = (height.dp + 10.dp)
-                    } catch (e: Exception) {
-                        println("获取高度失败: ${e.message}")
+                navigator.evaluateJavaScript(script) { result ->
+                    result?.let {
+                        try {
+                            val height = it.toDoubleOrNull() ?: 500.0
+                            webViewHeight = (height.dp + 10.dp)
+                        } catch (e: Exception) {
+                            println("获取高度失败: ${e.message}")
+                        }
                     }
                 }
             }

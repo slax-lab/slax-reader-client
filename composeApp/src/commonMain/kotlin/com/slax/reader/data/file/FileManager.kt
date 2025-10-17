@@ -24,8 +24,6 @@ class FileManager(val fileSystem: FileSystem) {
 
     init {
         mkdir("$dataDirectoryPath/bookmark")
-        mkdir("$dataDirectoryPath/image")
-        mkdir("$dataDirectoryPath/other")
     }
 
     fun deleteDataFile(fileName: String): Boolean {
@@ -66,16 +64,6 @@ class FileManager(val fileSystem: FileSystem) {
         fileSystem.write(path) {
             write(data)
         }
-    }
-
-    suspend fun writeDataFileStream(fileName: String, flow: Flow<String>) {
-        fileSystem.sink("$dataDirectoryPath/$fileName".toPath(), mustCreate = false)
-            .buffer()
-            .use { sink ->
-                flow.collect { text ->
-                    sink.writeUtf8(text)
-                }
-            }
     }
 
     fun mkdir(dirPath: String) {
