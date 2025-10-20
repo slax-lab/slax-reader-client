@@ -28,7 +28,7 @@ fun webViewStateSetting(webViewState: WebViewState) {
             isInspectable = true
             scrollEnabled = false
             bounces = false
-            opaque = true
+            opaque = false
             showHorizontalScrollIndicator = false
             showVerticalScrollIndicator = false
             backgroundColor = Color(0xFFFCFCFC)

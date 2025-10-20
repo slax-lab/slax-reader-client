@@ -9,7 +9,7 @@ actual fun configureIOSWebView(webView: Any) {
     if (webView !is WKWebView) return
 
     val scrollView: UIScrollView = webView.scrollView
-
+    webView.opaque = false
     removePanGestures(scrollView)
 }
 
