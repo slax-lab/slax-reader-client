@@ -126,9 +126,6 @@ kotlin {
             // navigation
             implementation(libs.navigation.compose)
 
-            // webview
-            api(libs.compose.webview.multiplatform)
-
             // log
             implementation(libs.napier)
 

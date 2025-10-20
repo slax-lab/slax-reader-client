@@ -46,15 +46,10 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
     var currentTags: List<UserTag> by remember { mutableStateOf(emptyList()) }
     LaunchedEffect(bookmarkId, detail?.metadataObj?.tags) {
         detailView.setBookmarkId(bookmarkId)
-
-        launch(Dispatchers.IO) {
-            if (detail?.metadataObj?.tags != null) {
-                currentTags = detailView.getTagNames(detail.metadataObj!!.tags)
-            }
+        if (detail?.metadataObj?.tags != null) {
+            currentTags = detailView.getTagNames(detail.metadataObj!!.tags)
         }
     }
-
-    val allAvailableTags by detailView.userTagList.collectAsState(emptyList())
 
     var showTagView by remember { mutableStateOf(false) }
     var showOverviewDialog by remember { mutableStateOf(false) }
@@ -158,7 +153,6 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
             onDismissRequest = { showTagView = false },
             enableDrag = false,
             addedTags = currentTags,
-            availableTags = allAvailableTags,
             onConfirm = { selectedTags ->
                 currentTags = selectedTags
                 coroutineScope.launch {

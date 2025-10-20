@@ -33,12 +33,10 @@ import app.slax.reader.SlaxConfig
 import com.mmk.kmpauth.google.GoogleAuthCredentials
 import com.mmk.kmpauth.google.GoogleAuthProvider
 import com.mmk.kmpauth.google.GoogleButtonUiContainer
-import com.multiplatform.webview.web.WebView
-import com.multiplatform.webview.web.rememberWebViewState
+import com.slax.reader.web.AppWebView
 import com.slax.reader.const.AppError
 import com.slax.reader.const.InboxRoutes
 import com.slax.reader.domain.auth.AuthDomain
-import com.slax.reader.utils.webViewStateSetting
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -407,14 +405,12 @@ private fun AgreementBottomSheet(
                     .background(Color(0x14333333))
             )
 
-            val webState = rememberWebViewState("https://baidu.com")
-            webViewStateSetting(webState)
-
-            WebView(
+            AppWebView(
+                url = "https://baidu.com",
+                updateKey = "baidu",
                 modifier = Modifier
                     .padding(vertical = 8.dp)
-                    .heightIn(max = 470.dp),
-                state = webState
+                    .heightIn(max = 470.dp)
             )
 
             Box(

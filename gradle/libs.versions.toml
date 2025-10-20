@@ -9,7 +9,6 @@ atomicfu = "0.29.0"
 coilCompose = "3.3.0"
 composeHotReload = "1.0.0-rc02"
 composeMultiplatform = "1.9.1"
-composeWebviewMultiplatform = "2.0.3"
 firebaseAnalytics = "2.3.0"
 kmpauthGoogle = "2.3.1"
 kotlinxDatetime = "0.7.1"
@@ -35,7 +34,6 @@ atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu"
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coilCompose" }
 coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coilCompose" }
-compose-webview-multiplatform = { module = "io.github.kevinnzou:compose-webview-multiplatform", version.ref = "composeWebviewMultiplatform" }
 firebase-analytics = { module = "dev.gitlive:firebase-analytics", version.ref = "firebaseAnalytics" }
 firebase-app = { module = "dev.gitlive:firebase-app", version.ref = "firebaseAnalytics" }
 firebase-auth = { module = "dev.gitlive:firebase-auth", version.ref = "firebaseAnalytics" }
