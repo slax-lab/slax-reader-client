@@ -170,6 +170,8 @@ kotlin {
             // AtomicFU - required for Android runtime
             implementation(libs.atomicfu)
 
+            // browser tabs
+            implementation(libs.androidx.browser)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

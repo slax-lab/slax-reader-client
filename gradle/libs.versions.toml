@@ -6,6 +6,7 @@ android-targetSdk = "36"
 androidx-activity = "1.11.0"
 androidx-lifecycle = "2.9.5"
 atomicfu = "0.29.0"
+browser = "1.9.0"
 coilCompose = "3.3.0"
 composeHotReload = "1.0.0-rc02"
 composeMultiplatform = "1.9.1"
@@ -30,6 +31,7 @@ firebaseCrashlytics = "3.0.6"
 datastoreCore = "1.1.7"
 
 [libraries]
+androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
 atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coilCompose" }

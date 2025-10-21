@@ -55,14 +55,13 @@ fun BookmarkContentView(bookmarkId: String) {
         htmlContent != null -> {
             AdaptiveWebView(
                 htmlContent = htmlContent!!,
-                bookmarkId = bookmarkId
             )
         }
     }
 }
 
 @Composable
-fun AdaptiveWebView(bookmarkId: String, htmlContent: String) {
+fun AdaptiveWebView(htmlContent: String) {
     var webViewHeight by remember { mutableStateOf(500.dp) }
 
     val webViewModifier by remember {
@@ -76,7 +75,6 @@ fun AdaptiveWebView(bookmarkId: String, htmlContent: String) {
 
     AppWebView(
         htmlContent = htmlContent,
-        updateKey = bookmarkId,
         modifier = webViewModifier,
         onHeightChange = { h -> webViewHeight = h.dp }
     )

@@ -6,8 +6,6 @@ import com.slax.reader.data.database.dao.BookmarkDao
 import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.data.database.model.UserTag
 import com.slax.reader.domain.sync.BackgroundDomain
-import com.slax.reader.ui.bookmark.components.articleStyle
-import com.slax.reader.ui.bookmark.components.resetStyle
 import com.slax.reader.utils.wrapHtmlWithCSS
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -57,7 +55,6 @@ class BookmarkDetailViewModel(
 
     suspend fun getBookmarkContent(bookmarkId: String): String = withContext(Dispatchers.IO) {
         val body = backgroundDomain.getBookmarkContent(bookmarkId)
-        val style = articleStyle + "\n" + resetStyle
-        return@withContext wrapHtmlWithCSS(body, style)
+        return@withContext wrapHtmlWithCSS(body)
     }
 }

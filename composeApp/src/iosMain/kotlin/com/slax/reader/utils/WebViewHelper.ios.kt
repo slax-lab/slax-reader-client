@@ -1,12 +1,17 @@
 package com.slax.reader.utils
 
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.uikit.LocalUIViewController
 import androidx.compose.ui.viewinterop.UIKitView
+import com.slax.reader.const.HEIGHT_MONITOR_SCRIPT
+import com.slax.reader.const.JS_BRIDGE_NAME
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.CoreGraphics.CGRectMake
 import platform.Foundation.NSURL
 import platform.Foundation.NSURLRequest
+import platform.SafariServices.SFSafariViewController
 import platform.UIKit.UIColor
 import platform.UIKit.UIScrollViewContentInsetAdjustmentBehavior
 import platform.UIKit.UIView
@@ -32,12 +37,10 @@ private class HeightMessageHandler(private val onHeight: (Double) -> Unit) : NSO
 actual fun AppWebView(
     url: String?,
     htmlContent: String?,
-    updateKey: String,
     modifier: Modifier,
     onHeightChange: ((Double) -> Unit)?,
 ) {
     val messageHandler = remember(onHeightChange) { HeightMessageHandler { h -> onHeightChange?.invoke(h) } }
-    var lastSignature by remember { mutableStateOf<String?>(null) }
 
     UIKitView(
         modifier = modifier,
@@ -78,22 +81,26 @@ actual fun AppWebView(
             } else if (htmlContent != null) {
                 view.loadHTMLString(htmlContent, baseURL = null)
             }
-            lastSignature = updateKey
             view as UIView
         },
         update = { uiView ->
-            val web = uiView as WKWebView
-            if (lastSignature != updateKey) {
-                if (url != null) {
-                    val current = web.URL?.absoluteString
-                    if (current != url) {
-                        web.loadRequest(NSURLRequest(uRL = NSURL(string = url)))
-                    }
-                } else if (htmlContent != null) {
-                    web.loadHTMLString(htmlContent, baseURL = null)
+            val webView = uiView as WKWebView
+            when {
+                url != null -> {
+                    webView.loadRequest(NSURLRequest(uRL = NSURL(string = url)))
                 }
-                lastSignature = updateKey
+
+                htmlContent != null -> {
+                    webView.loadHTMLString(htmlContent, baseURL = null)
+                }
             }
         }
     )
+}
+
+@Composable
+actual fun OpenInBrowserTab(url: String) {
+    val viewController = LocalUIViewController.current
+    val safariVC = SFSafariViewController(uRL = NSURL(string = url))
+    viewController.presentViewController(safariVC, animated = true, completion = null)
 }
