@@ -17,8 +17,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.slax.reader.data.database.model.UserTag
 import com.slax.reader.ui.bookmark.components.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -46,15 +44,10 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
     var currentTags: List<UserTag> by remember { mutableStateOf(emptyList()) }
     LaunchedEffect(bookmarkId, detail?.metadataObj?.tags) {
         detailView.setBookmarkId(bookmarkId)
-
-        launch(Dispatchers.IO) {
-            if (detail?.metadataObj?.tags != null) {
-                currentTags = detailView.getTagNames(detail.metadataObj!!.tags)
-            }
+        if (detail?.metadataObj?.tags != null) {
+            currentTags = detailView.getTagNames(detail.metadataObj!!.tags)
         }
     }
-
-    val allAvailableTags by detailView.userTagList.collectAsState(emptyList())
 
     var showTagView by remember { mutableStateOf(false) }
     var showOverviewDialog by remember { mutableStateOf(false) }
@@ -98,27 +91,23 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                     .padding(horizontal = 20.dp)
                     .padding(bottom = 58.dp)
             ) {
-                detail?.displayTitle?.let {
-                    Text(
-                        it,
-                        style = TextStyle(
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            lineHeight = 30.sp,
-                            color = Color(0xFF0f1419)
-                        )
+                Text(
+                    text = detail?.displayTitle ?: "",
+                    style = TextStyle(
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        lineHeight = 30.sp,
+                        color = Color(0xFF0f1419)
                     )
-                }
+                )
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    detail?.createdAt?.let {
-                        Text(
-                            it,
-                            style = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, color = Color(0xFF999999))
-                        )
-                    }
+                    Text(
+                        text = detail?.createdAt ?: "",
+                        style = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, color = Color(0xFF999999))
+                    )
                     Text(
                         "查看原网页",
                         modifier = Modifier.padding(start = 16.dp).clickable() {
@@ -158,7 +147,6 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
             onDismissRequest = { showTagView = false },
             enableDrag = false,
             addedTags = currentTags,
-            availableTags = allAvailableTags,
             onConfirm = { selectedTags ->
                 currentTags = selectedTags
                 coroutineScope.launch {

@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.data.database.model.UserTag
+import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
+import org.koin.compose.koinInject
 import kotlin.math.roundToInt
 
 @Composable
@@ -33,14 +35,15 @@ fun TagsManageBottomSheet(
     onDismissRequest: () -> Unit,
     enableDrag: Boolean = false,
     addedTags: List<UserTag> = emptyList(),
-    availableTags: List<UserTag> = emptyList(),
     onConfirm: (List<UserTag>) -> Unit = {}
 ) {
+    val detailView: BookmarkDetailViewModel = koinInject()
+    val availableTags by detailView.userTagList.collectAsState(emptyList())
+
     val density = LocalDensity.current
     var offsetY by remember { mutableStateOf(0f) }
     var currentSelectedTags by remember { mutableStateOf(addedTags) }
 
-    // 当visible变化时，重置选中的标签
     LaunchedEffect(visible) {
         if (visible) {
             currentSelectedTags = addedTags
@@ -184,7 +187,6 @@ fun TagsManageBottomSheet(
                             .verticalScroll(rememberScrollState())
                             .padding(bottom = 28.dp)
                     ) {
-                        // 已添加标签区域
                         if (currentSelectedTags.isNotEmpty()) {
                             Text(
                                 text = "已添加",
@@ -207,7 +209,6 @@ fun TagsManageBottomSheet(
                                             onClick = { /* 不需要 */ },
                                             showDeleteButton = true,
                                             onDelete = {
-                                                // 点击删除按钮移除标签
                                                 currentSelectedTags = currentSelectedTags - tag
                                             },
                                             isLargeStyle = true
@@ -217,7 +218,6 @@ fun TagsManageBottomSheet(
                             }
                         }
 
-                        // 可添加标签区域
                         val unselectedTags = availableTags.filter { it !in currentSelectedTags }
                         if (unselectedTags.isNotEmpty()) {
                             Text(
@@ -242,7 +242,6 @@ fun TagsManageBottomSheet(
                                     TagItem(
                                         tag = tag.tag_name,
                                         onClick = {
-                                            // 点击添加标签
                                             currentSelectedTags = currentSelectedTags + tag
                                         },
                                         isLargeStyle = true
