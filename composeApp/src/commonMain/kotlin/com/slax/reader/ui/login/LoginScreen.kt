@@ -406,8 +406,7 @@ private fun AgreementBottomSheet(
             )
 
             AppWebView(
-                url = "https://baidu.com",
-                updateKey = "baidu",
+                url = "https://slax.com/blog.html",
                 modifier = Modifier
                     .padding(vertical = 8.dp)
                     .heightIn(max = 470.dp)

@@ -3,10 +3,15 @@ package com.slax.reader.utils
 import android.annotation.SuppressLint
 import android.graphics.Color
 import android.webkit.*
-import androidx.compose.runtime.*
+import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
-
+import androidx.core.net.toUri
+import com.slax.reader.const.HEIGHT_MONITOR_SCRIPT
+import com.slax.reader.const.JS_BRIDGE_NAME
 
 private class JsBridge(private val onMessage: (String) -> Unit) {
     @JavascriptInterface
@@ -20,13 +25,9 @@ private class JsBridge(private val onMessage: (String) -> Unit) {
 actual fun AppWebView(
     url: String?,
     htmlContent: String?,
-    updateKey: String,
     modifier: Modifier,
     onHeightChange: ((Double) -> Unit)?,
 ) {
-    var lastSignature by remember { mutableStateOf<String?>(null) }
-    val currentSignature = updateKey
-
     val jsBridge = remember(onHeightChange) {
         JsBridge { msg ->
             try {
@@ -71,19 +72,32 @@ actual fun AppWebView(
                 } else if (htmlContent != null) {
                     loadDataWithBaseURL(null, htmlContent, "text/html", "utf-8", null)
                 }
-                lastSignature = currentSignature
             }
         },
         update = { webView ->
-            // Reload only when signature changes
-            if (lastSignature != currentSignature) {
-                if (url != null) {
-                    if (webView.url != url) webView.loadUrl(url)
-                } else if (htmlContent != null) {
-                    webView.loadDataWithBaseURL(null, htmlContent, "text/html", "utf-8", null)
+            when {
+                url != null -> {
+                    webView.loadUrl(url)
                 }
-                lastSignature = currentSignature
+
+                htmlContent != null -> {
+                    webView.loadDataWithBaseURL(
+                        null,
+                        htmlContent,
+                        "text/html",
+                        "UTF-8",
+                        null
+                    )
+                }
             }
         }
     )
+}
+
+@Composable
+actual fun OpenInBrowserTab(url: String) {
+    val ctx = LocalContext.current
+    val builder = CustomTabsIntent.Builder()
+    val customTabsIntent = builder.build()
+    customTabsIntent.launchUrl(ctx, url.toUri())
 }

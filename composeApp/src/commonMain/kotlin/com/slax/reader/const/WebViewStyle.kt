@@ -1,4 +1,4 @@
-package com.slax.reader.ui.bookmark.components
+package com.slax.reader.const
 
 const val resetStyle = """
     /* 防止夜间模式影响 */

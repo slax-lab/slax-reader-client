@@ -14,6 +14,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.slax.reader.data.database.model.UserTag
 import com.slax.reader.ui.bookmark.components.*
@@ -53,7 +54,6 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
     var showOverviewDialog by remember { mutableStateOf(false) }
     var showToolbar by remember { mutableStateOf(false) }
     var overviewBounds by remember { mutableStateOf(OverviewViewBounds()) }
-    val coroutineScope = rememberCoroutineScope()
 
     val toolbarPages = remember {
         listOf(
@@ -110,7 +110,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                     )
                     Text(
                         "查看原网页",
-                        modifier = Modifier.padding(start = 16.dp).clickable() {
+                        modifier = Modifier.padding(start = 16.dp).clickable {
                             println("被点击了")
                         },
                         style = TextStyle(color = Color(0xFF5490C2), fontSize = 14.sp, lineHeight = 20.sp)
@@ -149,7 +149,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
             addedTags = currentTags,
             onConfirm = { selectedTags ->
                 currentTags = selectedTags
-                coroutineScope.launch {
+                detailView.viewModelScope.launch {
                     detailView.updateBookmarkTags(bookmarkId, selectedTags.map { it.id })
                 }
             }
