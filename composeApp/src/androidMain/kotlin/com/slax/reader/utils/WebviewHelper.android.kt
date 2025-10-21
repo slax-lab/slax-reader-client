@@ -1,20 +1,12 @@
-package com.slax.reader.web
+package com.slax.reader.utils
 
 import android.annotation.SuppressLint
 import android.graphics.Color
-import android.webkit.JavascriptInterface
-import android.webkit.WebChromeClient
-import android.webkit.WebSettings
-import android.webkit.WebView
-import android.webkit.WebViewClient
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import android.webkit.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
- 
+
 
 private class JsBridge(private val onMessage: (String) -> Unit) {
     @JavascriptInterface
