@@ -33,6 +33,7 @@ expect fun AppWebView(
     htmlContent: String? = null,
     modifier: Modifier = Modifier,
     onHeightChange: ((Double) -> Unit)? = null,
+    onTap: (() -> Unit)? = null,
 )
 
 @Composable

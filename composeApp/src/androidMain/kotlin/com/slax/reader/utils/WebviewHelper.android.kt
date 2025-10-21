@@ -12,11 +12,24 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import com.slax.reader.const.HEIGHT_MONITOR_SCRIPT
 import com.slax.reader.const.JS_BRIDGE_NAME
+import com.slax.reader.const.TAP_LISTENER_SCRIPT
+import com.slax.reader.model.BridgeMessage
+import com.slax.reader.model.BridgeMessageParser
+import com.slax.reader.model.HeightMessage
+import com.slax.reader.model.TapMessage
 
-private class JsBridge(private val onMessage: (String) -> Unit) {
+private class JsBridge(
+    private val onHeightChange: ((Double) -> Unit)?,
+    private val onTap: (() -> Unit)?
+) {
     @JavascriptInterface
     fun postMessage(message: String) {
-        onMessage(message)
+        val bridgeMessage = BridgeMessageParser.parse(message) ?: return
+
+        when (bridgeMessage) {
+            is HeightMessage -> onHeightChange?.invoke(bridgeMessage.height)
+            is TapMessage -> onTap?.invoke()
+        }
     }
 }
 
@@ -27,16 +40,10 @@ actual fun AppWebView(
     htmlContent: String?,
     modifier: Modifier,
     onHeightChange: ((Double) -> Unit)?,
+    onTap: (() -> Unit)?
 ) {
-    val jsBridge = remember(onHeightChange) {
-        JsBridge { msg ->
-            try {
-                val heightValue = Regex("\"height\":\\s*([0-9.]+)")
-                    .find(msg)?.groupValues?.getOrNull(1)?.toDouble()
-                if (heightValue != null) onHeightChange?.invoke(heightValue)
-            } catch (_: Throwable) {
-            }
-        }
+    val jsBridge = remember(onHeightChange, onTap) {
+        JsBridge(onHeightChange, onTap)
     }
 
     AndroidView(
@@ -64,6 +71,9 @@ actual fun AppWebView(
                     override fun onPageFinished(view: WebView, url: String?) {
                         super.onPageFinished(view, url)
                         view.evaluateJavascript(HEIGHT_MONITOR_SCRIPT, null)
+                        if (onTap != null) {
+                            view.evaluateJavascript(TAP_LISTENER_SCRIPT, null)
+                        }
                     }
                 }
 
