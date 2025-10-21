@@ -11,6 +11,7 @@ coilCompose = "3.3.0"
 composeHotReload = "1.0.0-rc02"
 composeMultiplatform = "1.9.1"
 firebaseAnalytics = "2.3.0"
+firebaseMessageing = "2.3.0"
 kmpauthGoogle = "2.3.1"
 kotlinxDatetime = "0.7.1"
 okio = "3.16.2"
@@ -39,6 +40,7 @@ coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.re
 firebase-analytics = { module = "dev.gitlive:firebase-analytics", version.ref = "firebaseAnalytics" }
 firebase-app = { module = "dev.gitlive:firebase-app", version.ref = "firebaseAnalytics" }
 firebase-auth = { module = "dev.gitlive:firebase-auth", version.ref = "firebaseAnalytics" }
+firebase-message = { module = "dev.gitlive:firebase-messaging", version.ref = "firebaseMessageing" }
 firebase-crashlytics = { module = "dev.gitlive:firebase-crashlytics", version.ref = "firebaseAnalytics" }
 kmpauth-firebase = { module = "io.github.mirzemehdi:kmpauth-firebase", version.ref = "kmpauthGoogle" }
 kmpauth-google = { module = "io.github.mirzemehdi:kmpauth-google", version.ref = "kmpauthGoogle" }

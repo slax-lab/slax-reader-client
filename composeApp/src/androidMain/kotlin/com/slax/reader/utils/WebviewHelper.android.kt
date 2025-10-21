@@ -27,13 +27,18 @@ actual fun AppWebView(
     htmlContent: String?,
     modifier: Modifier,
     onHeightChange: ((Double) -> Unit)?,
+    onTap: (() -> Unit)?,
 ) {
+
+    val onTapCallback = remember(onTap) { onTap }
+    val onHeightChangeCallback = remember(onHeightChange) { onHeightChange }
+
     val jsBridge = remember(onHeightChange) {
         JsBridge { msg ->
             try {
                 val heightValue = Regex("\"height\":\\s*([0-9.]+)")
                     .find(msg)?.groupValues?.getOrNull(1)?.toDouble()
-                if (heightValue != null) onHeightChange?.invoke(heightValue)
+                if (heightValue != null) onHeightChangeCallback?.invoke(heightValue)
             } catch (_: Throwable) {
             }
         }
@@ -58,6 +63,15 @@ actual fun AppWebView(
                 }
 
                 addJavascriptInterface(jsBridge, JS_BRIDGE_NAME)
+
+                setOnTouchListener { _, event ->
+                    when (event.action) {
+                        android.view.MotionEvent.ACTION_UP -> {
+                            onTapCallback?.invoke()
+                        }
+                    }
+                    false
+                }
 
                 webChromeClient = WebChromeClient()
                 webViewClient = object : WebViewClient() {

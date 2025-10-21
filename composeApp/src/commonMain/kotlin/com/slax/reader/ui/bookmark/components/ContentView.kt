@@ -76,6 +76,7 @@ fun AdaptiveWebView(htmlContent: String) {
     AppWebView(
         htmlContent = htmlContent,
         modifier = webViewModifier,
-        onHeightChange = { h -> webViewHeight = h.dp }
+        onHeightChange = { h -> webViewHeight = h.dp },
+        onTap = { println("====== Tapped =====") }
     )
 }

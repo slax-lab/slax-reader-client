@@ -158,6 +158,7 @@ kotlin {
             implementation(libs.firebase.analytics)
             implementation(libs.firebase.crashlytics)
             implementation(libs.firebase.auth)
+            implementation(libs.firebase.message)
 
             // auth
             implementation(libs.kmpauth.google)
