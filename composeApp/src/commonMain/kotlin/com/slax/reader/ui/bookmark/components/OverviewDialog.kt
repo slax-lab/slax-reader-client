@@ -79,7 +79,7 @@ fun OverviewDialog(
                     }
             )
 
-            val targetWidth = with(density) { (screenWidth - 80.dp.toPx()) }
+            val targetWidth = with(density) { (screenWidth - 24.dp.toPx()) }
             val targetHeight = 300f
 
             val currentWidth = sourceBounds.width + (targetWidth - sourceBounds.width) * animationProgress

@@ -1,11 +1,14 @@
 package com.slax.reader.ui.bookmark.components
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,14 +35,22 @@ fun NavigatorBar(
     navController: NavController?,
     title: String = "",
     showBackButton: Boolean = true,
+    visible: Boolean = true,
     onBackClick: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
+    // 导航栏的偏移动画：隐藏时向上移动到屏幕外
+    val offsetY by animateDpAsState(
+        targetValue = if (visible) 0.dp else (-100).dp,
+        animationSpec = tween(durationMillis = 300)
+    )
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
             .height(44.dp)
+            .offset(y = offsetY)
             .background(Color.Transparent)
             .padding(horizontal = 20.dp)
     ) {

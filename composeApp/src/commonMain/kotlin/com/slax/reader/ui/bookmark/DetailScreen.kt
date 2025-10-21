@@ -1,7 +1,10 @@
 package com.slax.reader.ui.bookmark
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -10,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -55,6 +59,17 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
     var showToolbar by remember { mutableStateOf(false) }
     var overviewBounds by remember { mutableStateOf(OverviewViewBounds()) }
 
+    // FloatingActionBar 的显示和隐藏状态
+    var isFloatingBarVisible by remember { mutableStateOf(true) }
+    val scrollState = rememberScrollState()
+
+    // 监听滚动状态
+    LaunchedEffect(scrollState.value) {
+        if (scrollState.isScrollInProgress) {
+            isFloatingBarVisible = false
+        }
+    }
+
     val toolbarPages = remember {
         listOf(
             listOf(
@@ -75,11 +90,24 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
     }
 
 
-    Box(modifier = Modifier.fillMaxSize().background(Color(0xFFFCFCFC))) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(Color(0xFFFCFCFC))
+        .pointerInput(Unit) {
+            detectTapGestures(
+                onTap = {
+                    // 点击非可点击区域时显示 FloatingActionBar
+                    if (!isFloatingBarVisible) {
+                        isFloatingBarVisible = true
+                    }
+                }
+            )
+        }
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
         ) {
             // 页面内容从导航栏下方开始
             NavigatorBarSpacer()
@@ -105,7 +133,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = detail?.createdAt ?: "",
+                        text = detail?.displayTime ?: "",
                         style = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, color = Color(0xFF999999))
                     )
                     Text(
@@ -129,15 +157,28 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                     onBoundsChanged = { bounds -> overviewBounds = bounds }
                 )
 
-                BookmarkContentView(bookmarkId)
+                BookmarkContentView(
+                    bookmarkId = bookmarkId,
+                    onWebViewTap = {
+                        if (!isFloatingBarVisible) {
+                            isFloatingBarVisible = true
+                        }
+                    }
+                )
             }
         }
 
-        // 底部悬浮操作栏
+        // 底部悬浮操作栏 - 带有滑动动画
+        val floatingBarOffsetY by animateDpAsState(
+            targetValue = if (isFloatingBarVisible) 0.dp else 150.dp,
+            animationSpec = tween(durationMillis = 300)
+        )
+
         FloatingActionBar(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 58.dp),
+                .padding(bottom = 58.dp)
+                .offset(y = floatingBarOffsetY),
             onMoreClick = { showToolbar = true }
         )
 
@@ -175,6 +216,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
 
         NavigatorBar(
             navController = nav,
+            visible = isFloatingBarVisible
         )
     }
 }
