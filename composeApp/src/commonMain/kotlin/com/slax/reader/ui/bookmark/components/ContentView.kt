@@ -8,8 +8,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.slax.reader.web.AppWebView
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
+import com.slax.reader.utils.AppWebView
 import org.koin.compose.koinInject
 
 @Composable

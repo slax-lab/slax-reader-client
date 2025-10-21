@@ -33,10 +33,10 @@ import app.slax.reader.SlaxConfig
 import com.mmk.kmpauth.google.GoogleAuthCredentials
 import com.mmk.kmpauth.google.GoogleAuthProvider
 import com.mmk.kmpauth.google.GoogleButtonUiContainer
-import com.slax.reader.web.AppWebView
 import com.slax.reader.const.AppError
 import com.slax.reader.const.InboxRoutes
 import com.slax.reader.domain.auth.AuthDomain
+import com.slax.reader.utils.AppWebView
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
