@@ -3,6 +3,7 @@ package com.slax.reader.data.preferences
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.slax.reader.utils.timeUnix
 import kotlinx.coroutines.Dispatchers
@@ -18,11 +19,21 @@ data class AuthInfo(
     val userId: String
 )
 
+data class PowerSyncAuthInfo(
+    val token: String,
+    val refreshTime: Long,
+    val connectUrl: String
+)
+
 class AppPreferences(private val dataStore: DataStore<Preferences>) {
     companion object {
         private val AUTH_TOKEN_KEY = stringPreferencesKey("auth_token")
         private val USER_ID_KEY = stringPreferencesKey("user_id")
         private val LAST_REFRESH_TIME = stringPreferencesKey("last_refresh_time")
+
+        private val POWER_SYNC_REFRESH_TIME = longPreferencesKey("powersync_refresh_time")
+        private val POWER_SYNC_TOKEN_KEY = stringPreferencesKey("powersync_token")
+        private val POWER_SYNC_CONNECT_URL = stringPreferencesKey("powersync_connect_url")
     }
 
     suspend fun getLastRefreshTime(): Long? {
@@ -57,6 +68,25 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
         dataStore.edit { preferences ->
             preferences.remove(AUTH_TOKEN_KEY)
             preferences.remove(USER_ID_KEY)
+        }
+    }
+
+    suspend fun getPowerSyncToken(): PowerSyncAuthInfo? = withContext(Dispatchers.IO) {
+        val prefs = dataStore.data.first()
+        val token = prefs[POWER_SYNC_TOKEN_KEY]
+        val refreshTime = prefs[POWER_SYNC_REFRESH_TIME]
+        val connectUrl = prefs[POWER_SYNC_CONNECT_URL]
+        return@withContext if (token != null && refreshTime != null && connectUrl != null) {
+            PowerSyncAuthInfo(token, refreshTime, connectUrl)
+        } else {
+            null
+        }
+    }
+
+    suspend fun setPowerSyncToken(token: PowerSyncAuthInfo) = withContext(Dispatchers.IO) {
+        return@withContext dataStore.edit { preferences ->
+            preferences[POWER_SYNC_TOKEN_KEY] = token.token
+            preferences[POWER_SYNC_REFRESH_TIME] = token.refreshTime
         }
     }
 }

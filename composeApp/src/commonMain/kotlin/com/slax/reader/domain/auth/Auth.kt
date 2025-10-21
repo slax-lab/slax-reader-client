@@ -8,12 +8,14 @@ import com.slax.reader.data.network.dto.AuthParams
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.utils.platform
 import com.slax.reader.utils.timeUnix
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 sealed class AuthState {
     data object Loading : AuthState()
@@ -71,16 +73,21 @@ class AuthDomain(
             fileManager.deleteDataDirectory("bookmark")
             _authState.value = AuthState.Unauthenticated
         }
+        return
     }
 
-    suspend fun refreshToken() {
-        coroutineScope {
+    suspend fun refreshToken() = withContext(Dispatchers.IO) {
+        try {
             val lastRefreshTime = appPreferences.getLastRefreshTime()
             val currentTime = timeUnix()
             if (lastRefreshTime != null && (currentTime - lastRefreshTime) > 24 * 60 * 60) {
                 val res = apiService.refresh()
                 appPreferences.setAuthInfo(res.data!!.token, null)
             }
+            return@withContext
+        } catch (e: Exception) {
+            println("Error refreshing token: ${e.message}")
         }
+
     }
 }

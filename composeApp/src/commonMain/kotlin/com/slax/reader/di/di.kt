@@ -26,7 +26,7 @@ val fileModule = module {
 
 val networkModule = module {
     single { getHttpClient(get()) }
-    single { Connector(get()) }
+    single { Connector(get(), get()) }
     single { ApiService(get()) }
 }
 
