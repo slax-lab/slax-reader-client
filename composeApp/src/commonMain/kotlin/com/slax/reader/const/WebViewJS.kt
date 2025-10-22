@@ -50,16 +50,3 @@ const val HEIGHT_MONITOR_SCRIPT: String = """
         }
     })();
 """
-
-const val TAP_LISTENER_SCRIPT: String = """
-    (function() {
-        document.addEventListener('click', function(e) {
-            var payload = JSON.stringify({ type: 'tap' });
-            if (window.NativeBridge && window.NativeBridge.postMessage) {
-                window.NativeBridge.postMessage(payload);
-            } else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.NativeBridge) {
-                window.webkit.messageHandlers.NativeBridge.postMessage(payload);
-            }
-        }, true);
-    })();
-"""

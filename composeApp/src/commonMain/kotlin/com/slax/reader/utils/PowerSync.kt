@@ -1,26 +1,57 @@
 package com.slax.reader.utils
 
+import com.powersync.ExperimentalPowerSyncAPI
 import com.powersync.PowerSyncDatabase
 import com.powersync.connectors.PowerSyncBackendConnector
 import com.powersync.connectors.PowerSyncCredentials
 import com.powersync.db.crud.CrudEntry
 import com.powersync.db.crud.CrudTransaction
 import com.powersync.db.crud.SqliteRow
+import com.powersync.sync.SyncOptions
+import com.powersync.utils.JsonParam
 import com.slax.reader.data.database.model.BookmarkMetadata
 import com.slax.reader.data.database.model.ShareSettings
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.network.dto.ChangesItem
+import com.slax.reader.data.preferences.AppPreferences
+import com.slax.reader.data.preferences.PowerSyncAuthInfo
 import kotlinx.coroutines.flow.take
 import kotlinx.serialization.json.Json
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
+
+val ConnectParams = mapOf("schema_version" to JsonParam.String("1"))
+
+@OptIn(ExperimentalPowerSyncAPI::class)
+val ConnectOptions = SyncOptions(newClientImplementation = true)
 
 class Connector(
-    private val apiService: ApiService
+    private val apiService: ApiService,
+    private val preferences: AppPreferences
 ) : PowerSyncBackendConnector() {
 
+    @OptIn(ExperimentalTime::class)
     override suspend fun fetchCredentials(): PowerSyncCredentials {
+        val authInfo = preferences.getPowerSyncToken()
+        if (authInfo != null) {
+            val refreshTime = Instant.fromEpochMilliseconds(authInfo.refreshTime)
+            val current = kotlin.time.Clock.System.now()
+            if (current - refreshTime > 1.hours) return PowerSyncCredentials(
+                endpoint = authInfo.connectUrl,
+                token = authInfo.token
+            )
+        }
         val data = apiService.getSyncToken()
+        preferences.setPowerSyncToken(
+            PowerSyncAuthInfo(
+                connectUrl = data.data?.endpoint ?: throw Exception("No endpoint"),
+                token = data.data.token,
+                refreshTime = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            )
+        )
         return PowerSyncCredentials(
-            endpoint = data.data?.endpoint ?: throw Exception("No endpoint"),
+            endpoint = data.data.endpoint,
             token = data.data.token
         )
     }
@@ -141,7 +172,7 @@ class Connector(
             }
 
             apiService.uploadChanges(changes = postData)
-            
+
             transactions.forEach { it.complete(null) }
 
             println("Successfully uploaded ${transactions.size} transactions with ${batch.size} operations")

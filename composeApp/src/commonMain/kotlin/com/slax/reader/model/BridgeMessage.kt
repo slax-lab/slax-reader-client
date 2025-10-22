@@ -23,14 +23,6 @@ data class HeightMessage(
     val height: Double
 ) : BridgeMessage()
 
-/**
- * 点击事件消息
- */
-@Serializable
-@SerialName("tap")
-data class TapMessage(
-    override val type: String = "tap"
-) : BridgeMessage()
 
 /**
  * JSBridge消息解析器
@@ -55,7 +47,6 @@ object BridgeMessageParser {
 
             when (type) {
                 "height" -> json.decodeFromString<HeightMessage>(message)
-                "tap" -> json.decodeFromString<TapMessage>(message)
                 else -> null
             }
         } catch (e: Exception) {

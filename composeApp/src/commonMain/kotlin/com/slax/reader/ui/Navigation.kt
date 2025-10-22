@@ -11,8 +11,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.powersync.ExperimentalPowerSyncAPI
 import com.powersync.PowerSyncDatabase
-import com.powersync.sync.SyncOptions
-import com.powersync.utils.JsonParam
 import com.slax.reader.const.*
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.auth.AuthState
@@ -22,7 +20,7 @@ import com.slax.reader.ui.debug.DebugScreen
 import com.slax.reader.ui.inbox.InboxListScreen
 import com.slax.reader.ui.login.LoginScreen
 import com.slax.reader.ui.space.SpaceManager
-import com.slax.reader.utils.Connector
+import com.slax.reader.utils.*
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.analytics.analytics
 import dev.gitlive.firebase.crashlytics.crashlytics
@@ -52,11 +50,14 @@ fun SlaxNavigation(
         when (authState) {
             is AuthState.Authenticated -> {
                 launch(Dispatchers.IO) {
-                    authDomain.refreshToken()
+                    val state = getNetWorkState()
+                    if (state != NetworkState.NONE && state != NetworkState.ACCESS_DENIED) {
+                        authDomain.refreshToken()
+                    }
                     database!!.connect(
                         connector!!,
-                        params = mapOf("schema_version" to JsonParam.String("1")),
-                        options = SyncOptions(newClientImplementation = true)
+                        params = ConnectParams,
+                        options = ConnectOptions
                     )
                     backgroundDomain.startup()
                 }
@@ -64,18 +65,12 @@ fun SlaxNavigation(
                 Firebase.analytics.setAnalyticsCollectionEnabled(true)
                 Firebase.analytics.setUserId((authState as AuthState.Authenticated).userId)
                 Firebase.crashlytics.setUserId((authState as AuthState.Authenticated).userId)
-                navCtrl.navigate(InboxRoutes) {
-                    popUpTo(0) { inclusive = true }
-                }
             }
 
             AuthState.Unauthenticated -> {
                 launch(Dispatchers.IO) {
                     database?.disconnectAndClear()
                     backgroundDomain.cleanup()
-                }
-                navCtrl.navigate(LoginRoutes) {
-                    popUpTo(0) { inclusive = true }
                 }
             }
 
@@ -84,9 +79,15 @@ fun SlaxNavigation(
         }
     }
 
+    val startDestination = when (authState) {
+        is AuthState.Authenticated -> InboxRoutes
+        is AuthState.Unauthenticated -> LoginRoutes
+        is AuthState.Loading -> return
+    }
+
     NavHost(
         navController = navCtrl,
-        startDestination = InboxRoutes,
+        startDestination = startDestination,
         modifier = Modifier.fillMaxSize(),
         enterTransition = { EnterTransition.None },
         exitTransition = { ExitTransition.None },
@@ -99,7 +100,7 @@ fun SlaxNavigation(
             )
         }
         composable<BookmarkRoutes> { backStackEntry ->
-            val params: BookmarkRoutes = backStackEntry.toRoute()
+            val params = backStackEntry.toRoute<BookmarkRoutes>()
             DetailScreen(
                 bookmarkId = params.bookmarkId,
                 nav = navCtrl

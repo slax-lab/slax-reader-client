@@ -12,15 +12,11 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import com.slax.reader.const.HEIGHT_MONITOR_SCRIPT
 import com.slax.reader.const.JS_BRIDGE_NAME
-import com.slax.reader.const.TAP_LISTENER_SCRIPT
-import com.slax.reader.model.BridgeMessage
 import com.slax.reader.model.BridgeMessageParser
 import com.slax.reader.model.HeightMessage
-import com.slax.reader.model.TapMessage
 
 private class JsBridge(
     private val onHeightChange: ((Double) -> Unit)?,
-    private val onTap: (() -> Unit)?
 ) {
     @JavascriptInterface
     fun postMessage(message: String) {
@@ -28,12 +24,11 @@ private class JsBridge(
 
         when (bridgeMessage) {
             is HeightMessage -> onHeightChange?.invoke(bridgeMessage.height)
-            is TapMessage -> onTap?.invoke()
         }
     }
 }
 
-@SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
+@SuppressLint("SetJavaScriptEnabled", "JavascriptInterface", "ClickableViewAccessibility")
 @Composable
 actual fun AppWebView(
     url: String?,
@@ -42,8 +37,11 @@ actual fun AppWebView(
     onHeightChange: ((Double) -> Unit)?,
     onTap: (() -> Unit)?
 ) {
-    val jsBridge = remember(onHeightChange, onTap) {
-        JsBridge(onHeightChange, onTap)
+
+    val onTapCallback = remember(onTap) { onTap }
+
+    val jsBridge = remember(onHeightChange) {
+        JsBridge(onHeightChange)
     }
 
     AndroidView(
@@ -66,14 +64,20 @@ actual fun AppWebView(
 
                 addJavascriptInterface(jsBridge, JS_BRIDGE_NAME)
 
+                setOnTouchListener { _, event ->
+                    when (event.action) {
+                        android.view.MotionEvent.ACTION_UP -> {
+                            onTapCallback?.invoke()
+                        }
+                    }
+                    false
+                }
+
                 webChromeClient = WebChromeClient()
                 webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView, url: String?) {
                         super.onPageFinished(view, url)
                         view.evaluateJavascript(HEIGHT_MONITOR_SCRIPT, null)
-                        if (onTap != null) {
-                            view.evaluateJavascript(TAP_LISTENER_SCRIPT, null)
-                        }
                     }
                 }
 

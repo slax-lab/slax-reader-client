@@ -34,6 +34,8 @@ import coil3.compose.rememberAsyncImagePainter
 import com.slax.reader.const.BookmarkRoutes
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.domain.auth.AuthDomain
+import com.slax.reader.utils.NetworkState
+import com.slax.reader.utils.getNetWorkState
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.*
@@ -84,6 +86,7 @@ private fun UserAvatar() {
     // release 后可以删掉这个日志了
     LaunchedEffect(syncStatus) {
         println("==== Sync Status ====")
+        println("==== network: ${getNetWorkState().toString()}")
         println("==== connecting: ${syncStatus?.connecting}")
         println("==== connected: ${syncStatus?.connected}")
         println("==== uploading: ${syncStatus?.uploading}")
@@ -125,15 +128,22 @@ private fun UserAvatar() {
                         .background(Color.White)
                         .padding(1.dp)
                 ) {
+                    var showText = "x"
+                    var showColor = Color.Red
+                    val state = getNetWorkState()
+                    if (state == NetworkState.NONE || state == NetworkState.ACCESS_DENIED) {
+                        showText = "✈️"
+                        showColor = Color.Gray
+                    }
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .clip(CircleShape)
-                            .background(Color(0xFFE53935)),
+                            .background(showColor),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "✕",
+                            text = showText,
                             color = Color.White,
                             fontSize = 7.sp,
                             fontWeight = FontWeight.Bold
@@ -237,6 +247,11 @@ private fun UserAvatar() {
             }
         }
     }
+}
+
+@Composable
+private fun AvatarUploading() {
+
 }
 
 @Composable

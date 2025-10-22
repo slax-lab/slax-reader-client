@@ -9,10 +9,8 @@ import androidx.compose.ui.uikit.LocalUIViewController
 import androidx.compose.ui.viewinterop.UIKitView
 import com.slax.reader.const.HEIGHT_MONITOR_SCRIPT
 import com.slax.reader.const.JS_BRIDGE_NAME
-import com.slax.reader.const.TAP_LISTENER_SCRIPT
 import com.slax.reader.model.BridgeMessageParser
 import com.slax.reader.model.HeightMessage
-import com.slax.reader.model.TapMessage
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.CoreGraphics.CGRectMake
 import platform.Foundation.NSURL
@@ -23,11 +21,15 @@ import platform.UIKit.UIScrollViewContentInsetAdjustmentBehavior
 import platform.UIKit.UIView
 import platform.WebKit.*
 import platform.darwin.NSObject
+import kotlinx.cinterop.BetaInteropApi
+import kotlinx.cinterop.ObjCAction
+import platform.Foundation.NSSelectorFromString
+import platform.UIKit.*
 
 private class MessageHandler(
     private val onHeightChange: ((Double) -> Unit)?,
-    private val onTap: (() -> Unit)?
 ) : NSObject(), WKScriptMessageHandlerProtocol {
+
     override fun userContentController(
         userContentController: WKUserContentController,
         didReceiveScriptMessage: WKScriptMessage
@@ -39,7 +41,6 @@ private class MessageHandler(
 
         when (message) {
             is HeightMessage -> onHeightChange?.invoke(message.height)
-            is TapMessage -> onTap?.invoke()
         }
     }
 }
@@ -54,6 +55,34 @@ fun Color.toUIColor(): UIColor {
     )
 }
 
+private class TapHandler(
+    private val onTap: () -> Unit
+) : NSObject() {
+    @OptIn(BetaInteropApi::class)
+    @ObjCAction
+    fun handleTap() {
+        onTap()
+    }
+}
+
+private class TapGestureDelegate : NSObject(), UIGestureRecognizerDelegateProtocol {
+    override fun gestureRecognizer(
+        gestureRecognizer: UIGestureRecognizer,
+        shouldRecognizeSimultaneouslyWithGestureRecognizer: UIGestureRecognizer
+    ): Boolean {
+        // 允许同时识别多个手势，不阻塞其他手势
+        return true
+    }
+
+    override fun gestureRecognizer(
+        gestureRecognizer: UIGestureRecognizer,
+        shouldReceiveTouch: UITouch
+    ): Boolean {
+        // 总是接收触摸，但不干扰其他手势
+        return true
+    }
+}
+
 @OptIn(ExperimentalForeignApi::class)
 @Composable
 actual fun AppWebView(
@@ -61,11 +90,15 @@ actual fun AppWebView(
     htmlContent: String?,
     modifier: Modifier,
     onHeightChange: ((Double) -> Unit)?,
-    onTap: (() -> Unit)?
+    onTap: (() -> Unit)?,
 ) {
     val messageHandler = remember(onHeightChange, onTap) {
-        MessageHandler(onHeightChange, onTap)
+        MessageHandler(onHeightChange)
     }
+    val tapHandler = remember(onTap) {
+        TapHandler { onTap?.invoke() }
+    }
+    val tapGestureDelegate = remember { TapGestureDelegate() }
 
     UIKitView(
         modifier = modifier,
@@ -82,20 +115,22 @@ actual fun AppWebView(
                         injectionTime = WKUserScriptInjectionTime.WKUserScriptInjectionTimeAtDocumentEnd,
                         forMainFrameOnly = true
                     )
-                    addUserScript(heightScript)
 
-                    if (onTap != null) {
-                        val tapScript = WKUserScript(
-                            source = TAP_LISTENER_SCRIPT,
-                            injectionTime = WKUserScriptInjectionTime.WKUserScriptInjectionTimeAtDocumentEnd,
-                            forMainFrameOnly = true
-                        )
-                        addUserScript(tapScript)
-                    }
+                    addUserScript(heightScript)
                 }
             }
 
             val view = WKWebView(frame = CGRectMake(0.0, 0.0, 0.0, 0.0), configuration = config)
+
+            // 添加轻量级的点击手势监听，不干扰其他手势
+            val tapGesture = UITapGestureRecognizer(
+                target = tapHandler,
+                action = NSSelectorFromString("handleTap")
+            )
+            tapGesture.delegate = tapGestureDelegate
+            tapGesture.cancelsTouchesInView = false  // 关键：不取消其他触摸事件
+            view.addGestureRecognizer(tapGesture)
+
             view.scrollView.panGestureRecognizer.enabled = false
             view.scrollView.contentInsetAdjustmentBehavior =
                 UIScrollViewContentInsetAdjustmentBehavior.UIScrollViewContentInsetAdjustmentNever
@@ -110,7 +145,6 @@ actual fun AppWebView(
             val color = Color(0xFFFCFCFC).toUIColor()
             view.backgroundColor = color
             view.opaque = false
-
             if (url != null) {
                 view.loadRequest(NSURLRequest(uRL = NSURL(string = url)))
             } else if (htmlContent != null) {

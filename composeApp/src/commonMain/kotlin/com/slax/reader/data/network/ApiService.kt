@@ -9,8 +9,11 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.utils.io.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.withContext
 
 class ApiService(
     private val httpClient: HttpClient,
@@ -95,8 +98,8 @@ class ApiService(
         return post("/v1/sync/token")
     }
 
-    suspend fun uploadChanges(changes: List<ChangesItem>): HttpData<Any> {
-        return post("/v1/sync/changes", body = changes)
+    suspend fun uploadChanges(changes: List<ChangesItem>): HttpData<Any> = withContext(Dispatchers.IO) {
+        return@withContext post("/v1/sync/changes", body = changes)
     }
 
     suspend fun login(params: AuthParams): HttpData<AuthResult> {

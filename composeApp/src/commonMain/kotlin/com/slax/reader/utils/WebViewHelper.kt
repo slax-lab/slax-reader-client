@@ -31,7 +31,7 @@ fun wrapHtmlWithCSS(htmlContent: String): String {
 expect fun AppWebView(
     url: String? = null,
     htmlContent: String? = null,
-    modifier: Modifier = Modifier,
+    modifier: Modifier,
     onHeightChange: ((Double) -> Unit)? = null,
     onTap: (() -> Unit)? = null,
 )
