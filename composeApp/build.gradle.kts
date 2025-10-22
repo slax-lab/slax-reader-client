@@ -157,13 +157,9 @@ kotlin {
             implementation(libs.firebase.app)
             implementation(libs.firebase.analytics)
             implementation(libs.firebase.crashlytics)
-            implementation(libs.firebase.auth)
-            implementation(libs.firebase.message)
 
             // auth
             implementation(libs.kmpauth.google)
-            implementation(libs.kmpauth.firebase)
-            implementation(libs.kmpauth.uihelper)
 
             // IO/File
             implementation(libs.okio)
@@ -196,12 +192,22 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    signingConfigs {
+        register("release") {
+            storeFile = file("./slax-reader.release.jks")
+            storePassword = System.getenv("SLAX_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("upload")
+            keyPassword = System.getenv("SLAX_KEYSTORE_PASSWORD")
+        }
+    }
     buildTypes {
         getByName("debug") {
             isMinifyEnabled = false
         }
         getByName("release") {
             isMinifyEnabled = true
+            isShrinkResources = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

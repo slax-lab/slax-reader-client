@@ -70,10 +70,13 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
         }
     }
 
-    // 监听滚动停止后恢复显示
     LaunchedEffect(scrollState.isScrollInProgress) {
         if (scrollState.isScrollInProgress && manuallyVisible) {
+            // 滚动时隐藏
             manuallyVisible = false
+        } else if (!scrollState.isScrollInProgress && scrollState.value == 0) {
+            // 滚动停止且在顶部时恢复显示
+            manuallyVisible = true
         }
     }
 
@@ -97,19 +100,20 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
     }
 
 
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color(0xFFFCFCFC))
-        .pointerInput(Unit) {
-            detectTapGestures(
-                onTap = {
-                    // 点击非可点击区域时显示 FloatingActionBar
-                    if (!isFloatingBarVisible) {
-                        manuallyVisible = true
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFCFCFC))
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = {
+                        // 点击非可点击区域时显示 FloatingActionBar
+                        if (!isFloatingBarVisible) {
+                            manuallyVisible = true
+                        }
                     }
-                }
-            )
-        }
+                )
+            }
     ) {
         Column(
             modifier = Modifier

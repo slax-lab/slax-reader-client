@@ -13,6 +13,7 @@ import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.sync.BackgroundDomain
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.inbox.InboxListViewModel
+import com.slax.reader.ui.login.LoginViewModel
 import com.slax.reader.utils.Connector
 import com.slax.reader.utils.getHttpClient
 import com.slax.reader.utils.platformFileSystem
@@ -49,6 +50,7 @@ val repositoryModule = module {
 val viewModelModule = module {
     viewModelOf(::InboxListViewModel)
     viewModelOf(::BookmarkDetailViewModel)
+    viewModelOf(::LoginViewModel)
 }
 
 val domainModule = module {

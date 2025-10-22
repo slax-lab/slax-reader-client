@@ -49,18 +49,18 @@ class AuthDomain(
         }
     }
 
-    suspend fun signIn(token: String): Result<Unit> {
+    suspend fun signIn(code: String, type: String, redirectUrl: String = ""): Result<Unit> {
         return try {
             val result = apiService.login(
                 AuthParams(
-                    code = token,
-                    redirect_uri = "",
+                    code = code,
+                    redirect_uri = redirectUrl,
                     platform = platform,
-                    type = "google"
+                    type = type
                 )
             )
             appPreferences.setAuthInfo(result.data!!.token, result.data.user_id)
-            _authState.value = AuthState.Authenticated(token, result.data.user_id)
+            _authState.value = AuthState.Authenticated(result.data.token, result.data.user_id)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

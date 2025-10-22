@@ -11,7 +11,6 @@ coilCompose = "3.3.0"
 composeHotReload = "1.0.0-rc02"
 composeMultiplatform = "1.9.1"
 firebaseAnalytics = "2.3.0"
-firebaseMessageing = "2.3.0"
 kmpauthGoogle = "2.3.1"
 kotlinxDatetime = "0.7.1"
 okio = "3.16.2"
@@ -29,7 +28,6 @@ datastore = "1.1.7"
 kotlinx-serialization = "1.9.0"
 googleServices = "4.4.4"
 firebaseCrashlytics = "3.0.6"
-datastoreCore = "1.1.7"
 
 [libraries]
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
@@ -39,8 +37,6 @@ coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version
 coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coilCompose" }
 firebase-analytics = { module = "dev.gitlive:firebase-analytics", version.ref = "firebaseAnalytics" }
 firebase-app = { module = "dev.gitlive:firebase-app", version.ref = "firebaseAnalytics" }
-firebase-auth = { module = "dev.gitlive:firebase-auth", version.ref = "firebaseAnalytics" }
-firebase-message = { module = "dev.gitlive:firebase-messaging", version.ref = "firebaseMessageing" }
 firebase-crashlytics = { module = "dev.gitlive:firebase-crashlytics", version.ref = "firebaseAnalytics" }
 kmpauth-firebase = { module = "io.github.mirzemehdi:kmpauth-firebase", version.ref = "kmpauthGoogle" }
 kmpauth-google = { module = "io.github.mirzemehdi:kmpauth-google", version.ref = "kmpauthGoogle" }
@@ -70,7 +66,6 @@ napier = { module = "io.github.aakira:napier", version.ref = "napier" }
 navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
-androidx-datastore-core = { group = "androidx.datastore", name = "datastore-core", version.ref = "datastoreCore" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

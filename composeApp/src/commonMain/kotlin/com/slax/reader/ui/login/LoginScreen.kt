@@ -28,15 +28,16 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import app.slax.reader.SlaxConfig
 import com.mmk.kmpauth.google.GoogleAuthCredentials
 import com.mmk.kmpauth.google.GoogleAuthProvider
 import com.mmk.kmpauth.google.GoogleButtonUiContainer
-import com.slax.reader.const.AppError
 import com.slax.reader.const.InboxRoutes
-import com.slax.reader.domain.auth.AuthDomain
+import com.slax.reader.domain.auth.AppleSignInProvider
 import com.slax.reader.utils.AppWebView
+import com.slax.reader.utils.platform
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -51,23 +52,31 @@ import kotlin.math.roundToInt
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(navController: NavHostController) {
-    val authDomain: AuthDomain = koinInject()
-    val scope = rememberCoroutineScope()
-    var isLoading by remember { mutableStateOf(false) }
+    val viewModel: LoginViewModel = koinInject()
+
+    var isGoogleLoading by remember { mutableStateOf(false) }
+    var isAppleLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     var isAgreed by remember { mutableStateOf(false) }
     var showAgreement by remember { mutableStateOf(false) }
+    var pendingLoginAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+
+    val successHandle: () -> Unit = {
+        navController.navigate(InboxRoutes) {
+            popUpTo(0) { inclusive = true }
+        }
+    }
 
     GoogleAuthProvider.create(
         credentials = GoogleAuthCredentials(serverId = SlaxConfig.GOOGLE_AUTH_SERVER_ID)
     )
 
-    errorMessage?.let { message ->
+    if (errorMessage != null) {
         AlertDialog(
             onDismissRequest = { errorMessage = null },
             title = { Text("Login Failed") },
-            text = { Text(message) },
+            text = { Text(errorMessage!!) },
             confirmButton = {
                 TextButton(onClick = { errorMessage = null }) {
                     Text("OK")
@@ -119,46 +128,24 @@ fun LoginScreen(navController: NavHostController) {
         // 底部登录按钮区域
         Column(modifier = Modifier.padding(bottom = 30.dp)) {
             GoogleButtonUiContainer(onGoogleSignInResult = { googleUser ->
-                val idToken = googleUser?.idToken
-                if (idToken != null) {
-                    isLoading = true
-                    scope.launch {
-                        val result = authDomain.signIn(idToken)
-                        isLoading = false
-
-                        result.onSuccess {
-                            navController.navigate(InboxRoutes) {
-                                popUpTo(0) { inclusive = true }
-                            }
-                        }.onFailure { exception ->
-                            // Extract proper error message
-                            val message = when (exception) {
-                                is AppError.ApiException.HttpError -> {
-                                    "Login failed (${exception.code}): ${exception.message}"
-                                }
-
-                                is AppError.AuthException -> {
-                                    "Auth error: ${exception.message}"
-                                }
-
-                                else -> {
-                                    exception.message ?: "Unknown error occurred"
-                                }
-                            }
-                            errorMessage = message
-                            println("Login error: $message")
-                        }
-                    }
-                } else {
-                    errorMessage = "Failed to get Google ID token"
+                viewModel.viewModelScope.launch {
+                    viewModel.googleSignIn(
+                        googleUser,
+                        onSuccess = successHandle,
+                        onLoading = { isGoogleLoading = it },
+                        onError = {
+                            errorMessage = it
+                        },
+                    )
                 }
             }) {
                 LoginButton(
                     text = "Google 登录",
-                    isLoading = isLoading,
+                    isLoading = isGoogleLoading,
                     drawableResource = Res.drawable.ic_sm_google,
                     onClick = {
                         if (!isAgreed) {
+                            pendingLoginAction = { this.onClick() }
                             showAgreement = true
                         } else {
                             this.onClick()
@@ -167,12 +154,42 @@ fun LoginScreen(navController: NavHostController) {
                 )
             }
 
-//            LoginButton(
-//                modifier = Modifier.padding(top = 10.dp),
-//                text = "通过 Apple 登录",
-//                drawableResource = Res.drawable.ic_sm_apple,
-//                onClick = { }
-//            )
+            if (platform == "ios") {
+                val appleProvider = remember { AppleSignInProvider() }
+
+                LoginButton(
+                    modifier = Modifier.padding(top = 10.dp),
+                    drawableResource = Res.drawable.ic_sm_apple,
+                    isLoading = isAppleLoading,
+                    text = "通过 Apple 登录",
+                    onClick = {
+                        if (!isAgreed) {
+                            pendingLoginAction = {
+                                viewModel.viewModelScope.launch {
+                                    val result = appleProvider.signIn()
+                                    viewModel.appleSignIn(
+                                        result = result,
+                                        onSuccess = successHandle,
+                                        onLoading = { isAppleLoading = it },
+                                        onError = { errorMessage = it }
+                                    )
+                                }
+                            }
+                            showAgreement = true
+                        } else {
+                            viewModel.viewModelScope.launch {
+                                val result = appleProvider.signIn()
+                                viewModel.appleSignIn(
+                                    result = result,
+                                    onSuccess = successHandle,
+                                    onLoading = { isAppleLoading = it },
+                                    onError = { errorMessage = it }
+                                )
+                            }
+                        }
+                    }
+                )
+            }
 
             AgreementText(
                 agreed = isAgreed,
@@ -187,14 +204,20 @@ fun LoginScreen(navController: NavHostController) {
     // 用户协议弹窗
     AgreementBottomSheet(
         visible = showAgreement,
-        onDismiss = { showAgreement = false },
+        onDismiss = {
+            showAgreement = false
+            pendingLoginAction = null
+        },
         onAgree = {
             showAgreement = false
             isAgreed = true
+            pendingLoginAction?.invoke()
+            pendingLoginAction = null
         },
         onDisagree = {
             showAgreement = false
             isAgreed = false
+            pendingLoginAction = null
         }
     )
 }
