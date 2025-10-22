@@ -12,36 +12,36 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import com.slax.reader.const.HEIGHT_MONITOR_SCRIPT
 import com.slax.reader.const.JS_BRIDGE_NAME
+import com.slax.reader.model.BridgeMessageParser
+import com.slax.reader.model.HeightMessage
 
-private class JsBridge(private val onMessage: (String) -> Unit) {
+private class JsBridge(
+    private val onHeightChange: ((Double) -> Unit)?,
+) {
     @JavascriptInterface
     fun postMessage(message: String) {
-        onMessage(message)
+        val bridgeMessage = BridgeMessageParser.parse(message) ?: return
+
+        when (bridgeMessage) {
+            is HeightMessage -> onHeightChange?.invoke(bridgeMessage.height)
+        }
     }
 }
 
-@SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
+@SuppressLint("SetJavaScriptEnabled", "JavascriptInterface", "ClickableViewAccessibility")
 @Composable
 actual fun AppWebView(
     url: String?,
     htmlContent: String?,
     modifier: Modifier,
     onHeightChange: ((Double) -> Unit)?,
-    onTap: (() -> Unit)?,
+    onTap: (() -> Unit)?
 ) {
 
     val onTapCallback = remember(onTap) { onTap }
-    val onHeightChangeCallback = remember(onHeightChange) { onHeightChange }
 
     val jsBridge = remember(onHeightChange) {
-        JsBridge { msg ->
-            try {
-                val heightValue = Regex("\"height\":\\s*([0-9.]+)")
-                    .find(msg)?.groupValues?.getOrNull(1)?.toDouble()
-                if (heightValue != null) onHeightChangeCallback?.invoke(heightValue)
-            } catch (_: Throwable) {
-            }
-        }
+        JsBridge(onHeightChange)
     }
 
     AndroidView(

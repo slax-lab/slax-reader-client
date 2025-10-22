@@ -101,4 +101,7 @@ data class UserBookmark(
             else -> id.take(5)
         }
     }
+
+    val displayTime: String
+        get() = createdAt.take(16)
 }

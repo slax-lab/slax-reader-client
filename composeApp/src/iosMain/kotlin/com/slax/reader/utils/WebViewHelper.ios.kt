@@ -3,34 +3,56 @@ package com.slax.reader.utils
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.uikit.LocalUIViewController
 import androidx.compose.ui.viewinterop.UIKitView
 import com.slax.reader.const.HEIGHT_MONITOR_SCRIPT
 import com.slax.reader.const.JS_BRIDGE_NAME
-import kotlinx.cinterop.BetaInteropApi
+import com.slax.reader.model.BridgeMessageParser
+import com.slax.reader.model.HeightMessage
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.ObjCAction
 import platform.CoreGraphics.CGRectMake
-import platform.Foundation.NSSelectorFromString
 import platform.Foundation.NSURL
 import platform.Foundation.NSURLRequest
 import platform.SafariServices.SFSafariViewController
-import platform.UIKit.*
+import platform.UIKit.UIColor
+import platform.UIKit.UIScrollViewContentInsetAdjustmentBehavior
+import platform.UIKit.UIView
 import platform.WebKit.*
 import platform.darwin.NSObject
+import kotlinx.cinterop.BetaInteropApi
+import kotlinx.cinterop.ObjCAction
+import platform.Foundation.NSSelectorFromString
+import platform.UIKit.*
 
-private class HeightMessageHandler(private val onHeight: (Double) -> Unit) : NSObject(),
-    WKScriptMessageHandlerProtocol {
+private class MessageHandler(
+    private val onHeightChange: ((Double) -> Unit)?,
+) : NSObject(), WKScriptMessageHandlerProtocol {
+
     override fun userContentController(
         userContentController: WKUserContentController,
         didReceiveScriptMessage: WKScriptMessage
     ) {
         val body = didReceiveScriptMessage.body
-        val text = body.toString()
-        val regex = Regex("\"height\":\\s*([0-9.]+)")
-        val v = regex.find(text)?.groupValues?.getOrNull(1)?.toDoubleOrNull()
-        if (v != null) onHeight(v)
+        val messageText = body.toString()
+
+        val message = BridgeMessageParser.parse(messageText) ?: return
+
+        when (message) {
+            is HeightMessage -> onHeightChange?.invoke(message.height)
+        }
     }
+}
+
+fun Color.toUIColor(): UIColor {
+    val argb = this.toArgb()
+    return UIColor(
+        red = ((argb shr 16) and 0xFF) / 255.0,
+        green = ((argb shr 8) and 0xFF) / 255.0,
+        blue = (argb and 0xFF) / 255.0,
+        alpha = ((argb shr 24) and 0xFF) / 255.0
+    )
 }
 
 private class TapHandler(
@@ -70,7 +92,9 @@ actual fun AppWebView(
     onHeightChange: ((Double) -> Unit)?,
     onTap: (() -> Unit)?,
 ) {
-    val messageHandler = remember(onHeightChange) { HeightMessageHandler { h -> onHeightChange?.invoke(h) } }
+    val messageHandler = remember(onHeightChange, onTap) {
+        MessageHandler(onHeightChange)
+    }
     val tapHandler = remember(onTap) {
         TapHandler { onTap?.invoke() }
     }
@@ -85,12 +109,14 @@ actual fun AppWebView(
                 }
                 userContentController = WKUserContentController().apply {
                     addScriptMessageHandler(messageHandler, JS_BRIDGE_NAME)
-                    val script = WKUserScript(
+
+                    val heightScript = WKUserScript(
                         source = HEIGHT_MONITOR_SCRIPT,
                         injectionTime = WKUserScriptInjectionTime.WKUserScriptInjectionTimeAtDocumentEnd,
                         forMainFrameOnly = true
                     )
-                    addUserScript(script)
+
+                    addUserScript(heightScript)
                 }
             }
 
@@ -116,9 +142,9 @@ actual fun AppWebView(
             view.scrollView.bounces = false
             view.scrollView.alwaysBounceVertical = false
 
-            view.setUnderPageBackgroundColor(UIColor.whiteColor)
-            view.setBackgroundColor(UIColor.clearColor)
-
+            val color = Color(0xFFFCFCFC).toUIColor()
+            view.backgroundColor = color
+            view.opaque = false
             if (url != null) {
                 view.loadRequest(NSURLRequest(uRL = NSURL(string = url)))
             } else if (htmlContent != null) {

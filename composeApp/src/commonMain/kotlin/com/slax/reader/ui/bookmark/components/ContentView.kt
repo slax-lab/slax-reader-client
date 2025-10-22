@@ -13,7 +13,10 @@ import com.slax.reader.utils.AppWebView
 import org.koin.compose.koinInject
 
 @Composable
-fun BookmarkContentView(bookmarkId: String) {
+fun BookmarkContentView(
+    bookmarkId: String,
+    onWebViewTap: (() -> Unit)? = null
+) {
     val detailView: BookmarkDetailViewModel = koinInject()
     var htmlContent by remember { mutableStateOf<String?>(null) }
     var isLoadingContent by remember { mutableStateOf(true) }
@@ -36,7 +39,9 @@ fun BookmarkContentView(bookmarkId: String) {
                 modifier = Modifier.fillMaxWidth().padding(top = 20.dp).height(200.dp),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(
+                    color = Color(0xFF16B998)
+                )
             }
         }
 
@@ -55,13 +60,17 @@ fun BookmarkContentView(bookmarkId: String) {
         htmlContent != null -> {
             AdaptiveWebView(
                 htmlContent = htmlContent!!,
+                onWebViewTap = onWebViewTap
             )
         }
     }
 }
 
 @Composable
-fun AdaptiveWebView(htmlContent: String) {
+fun AdaptiveWebView(
+    htmlContent: String,
+    onWebViewTap: (() -> Unit)? = null
+) {
     var webViewHeight by remember { mutableStateOf(500.dp) }
 
     val webViewModifier by remember {
@@ -77,6 +86,6 @@ fun AdaptiveWebView(htmlContent: String) {
         htmlContent = htmlContent,
         modifier = webViewModifier,
         onHeightChange = { h -> webViewHeight = h.dp },
-        onTap = { println("====== Tapped =====") }
+        onTap = onWebViewTap
     )
 }
