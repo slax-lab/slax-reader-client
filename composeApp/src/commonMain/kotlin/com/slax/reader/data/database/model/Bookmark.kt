@@ -1,6 +1,8 @@
 package com.slax.reader.data.database.model
 
 import androidx.compose.runtime.Immutable
+import com.powersync.db.SqlCursor
+import com.powersync.db.getString
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -58,7 +60,7 @@ data class InboxListBookmarkItem(
     val aliasTitle: String,
     val createdAt: String,
     val updatedAt: String,
-    
+
     val metadataStatus: String?,
     var metadataTitle: String?,
     var metadataUrl: String?
@@ -104,4 +106,47 @@ data class UserBookmark(
 
     val displayTime: String
         get() = createdAt.take(16)
+}
+
+
+fun mapperToUserTag(cursor: SqlCursor): UserTag {
+    return UserTag(
+        id = cursor.getString("id"),
+        tag_name = cursor.getString("tag_name"),
+        display = cursor.getString("display"),
+        created_at = cursor.getString("created_at"),
+    )
+}
+
+fun mapperToBookmark(cursor: SqlCursor): UserBookmark {
+    return UserBookmark(
+        id = cursor.getString("id"),
+        isRead = cursor.getString("is_read").toIntOrNull() ?: 0,
+        archiveStatus = cursor.getString("archive_status").toIntOrNull() ?: 0,
+        isStarred = cursor.getString("is_starred").toIntOrNull() ?: 0,
+        createdAt = cursor.getString("created_at"),
+        updatedAt = cursor.getString("updated_at"),
+        aliasTitle = cursor.getString("alias_title"),
+        type = cursor.getString("type").toIntOrNull() ?: 0,
+        deletedAt = try {
+            cursor.getString("deleted_at")
+        } catch (_: Exception) {
+            null
+        },
+        metadataTitle = cursor.getString("metadata_title"),
+        metadataUrl = cursor.getString("metadata_url"),
+        metadata = cursor.getString("metadata"),
+    )
+}
+
+fun mapperToInboxListBookmarkItem(cursor: SqlCursor): InboxListBookmarkItem {
+    return InboxListBookmarkItem(
+        id = cursor.getString("id"),
+        aliasTitle = cursor.getString("alias_title"),
+        createdAt = cursor.getString("created_at"),
+        updatedAt = cursor.getString("updated_at"),
+        metadataTitle = cursor.getString("metadata_title"),
+        metadataUrl = cursor.getString("metadata_url"),
+        metadataStatus = cursor.getString("metadata_status"),
+    )
 }

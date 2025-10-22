@@ -15,6 +15,8 @@ class UserDao(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _userInfoFlow: StateFlow<UserInfo?> by lazy {
+        println("[database][watch] _userInfoFlow")
+
         database.watch(
             """SELECT email, name, picture, given_name, family_name,
                            lang, ai_lang, timezone, account,

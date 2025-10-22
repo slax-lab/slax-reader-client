@@ -16,6 +16,8 @@ class PowerSyncDao(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _syncStatusFlow: StateFlow<SyncStatusData?> by lazy {
+        println("[database][watch] _syncStatusFlow")
+
         database.currentStatus.asFlow()
             .stateIn(scope, SharingStarted.WhileSubscribed(5000), null)
     }

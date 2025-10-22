@@ -419,7 +419,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "export JAVA_HOME=$(/usr/libexec/java_home -v 17)\n\nif [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\\"YES\\\"\"\n  exit 0\nfi\ncd \"$SRCROOT/..\"\necho \"Building with flavor: $BUILD_FLAVOR\"\n./gradlew :composeApp:embedAndSignAppleFrameworkForXcode -Dbuildkonfig.flavor=$BUILD_FLAVOR --info\n";
+			shellScript = "export JAVA_HOME=$(/usr/libexec/java_home -v 17)\n\nif [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\\"YES\\\"\"\n  exit 0\nfi\ncd \"$SRCROOT/..\"\necho \"building $BUILD_FLAVOR\"\n./gradlew :composeApp:embedAndSignAppleFrameworkForXcode --info -Pbuildkonfig.flavor=$BUILD_FLAVOR\n";
 		};
 		B9DA97F42DC1497100A4DA20 /* Compile Kotlin Framework */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -438,7 +438,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "export JAVA_HOME=$(/usr/libexec/java_home -v 17)\n\nif [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\\"YES\\\"\"\n  exit 0\nfi\ncd \"$SRCROOT/..\"\necho \"Building with flavor: $BUILD_FLAVOR\"\n./gradlew :composeApp:embedAndSignAppleFrameworkForXcode -Dbuildkonfig.flavor=$BUILD_FLAVOR --info\n";
+			shellScript = "export JAVA_HOME=$(/usr/libexec/java_home -v 17)\n\nif [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\\"YES\\\"\"\n  exit 0\nfi\ncd \"$SRCROOT/..\"\necho \"building $BUILD_FLAVOR\"\n./gradlew :composeApp:embedAndSignAppleFrameworkForXcode --info -Pbuildkonfig.flavor=$BUILD_FLAVOR\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

@@ -28,6 +28,8 @@ fun TagsView(
     modifier: Modifier = Modifier,
     onAddTagClick: () -> Unit
 ) {
+    // println("[watch][UI] recomposition TagsView")
+
     FlowRow(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),

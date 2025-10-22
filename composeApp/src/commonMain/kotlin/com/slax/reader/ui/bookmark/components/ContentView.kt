@@ -17,6 +17,8 @@ fun BookmarkContentView(
     bookmarkId: String,
     onWebViewTap: (() -> Unit)? = null
 ) {
+    // println("[watch][UI] recomposition BookmarkContentView")
+
     val detailView: BookmarkDetailViewModel = koinInject()
     var htmlContent by remember { mutableStateOf<String?>(null) }
     var isLoadingContent by remember { mutableStateOf(true) }

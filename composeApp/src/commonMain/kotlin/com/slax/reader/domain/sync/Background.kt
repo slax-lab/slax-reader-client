@@ -62,6 +62,7 @@ class BackgroundDomain(
     private var downloadQueue: Channel<TaskItem>? = null
 
     private val _bookmarkStatusMap = MutableStateFlow<Map<String, BookmarkDownloadStatus>>(emptyMap())
+    
     val bookmarkStatusFlow: StateFlow<Map<String, BookmarkDownloadStatus>> = _bookmarkStatusMap.asStateFlow()
 
     @OptIn(ExperimentalTime::class)

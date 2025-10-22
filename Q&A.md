@@ -12,3 +12,16 @@
 ![build_error](./public/build_error.png)
 ![build_xcode](./public/xcode.png)
 只能打开work工程文件
+
+### 提示缺少iTMSTransporter
+
+> iTMSTransporter 是苹果提供的一个上传IPA的命令行工具，需要手动下载
+
+下载： https://help.apple.com/itc/transporteruserguide/en.lproj/static.html
+
+配置：
+
+```zsh
+export TRANSPORTER_HOME=/Applications/Transporter.app/Contents/itms
+export PATH=${PATH}:${TRANSPORTER_HOME}/bin
+```

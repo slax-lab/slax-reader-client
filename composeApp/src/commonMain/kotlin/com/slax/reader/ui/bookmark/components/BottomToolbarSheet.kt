@@ -31,6 +31,8 @@ fun BottomToolbarSheet(
     pages: List<List<ToolbarIcon>>,
     onIconClick: (pageIndex: Int, iconIndex: Int) -> Unit
 ) {
+    // println("[watch][UI] recomposition BottomToolbarSheet")
+
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn(animationSpec = tween(300)),

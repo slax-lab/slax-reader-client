@@ -1,7 +1,6 @@
 package com.slax.reader.data.database.dao
 
 import com.powersync.PowerSyncDatabase
-import com.powersync.db.SqlCursor
 import com.powersync.db.getString
 import com.slax.reader.data.database.model.*
 import kotlinx.coroutines.CoroutineScope
@@ -20,50 +19,8 @@ class BookmarkDao(
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    private fun mapperToUserTag(cursor: SqlCursor): UserTag {
-        return UserTag(
-            id = cursor.getString("id"),
-            tag_name = cursor.getString("tag_name"),
-            display = cursor.getString("display"),
-            created_at = cursor.getString("created_at"),
-        )
-    }
-
-    private fun mapperToBookmark(cursor: SqlCursor): UserBookmark {
-        return UserBookmark(
-            id = cursor.getString("id"),
-            isRead = cursor.getString("is_read").toIntOrNull() ?: 0,
-            archiveStatus = cursor.getString("archive_status").toIntOrNull() ?: 0,
-            isStarred = cursor.getString("is_starred").toIntOrNull() ?: 0,
-            createdAt = cursor.getString("created_at"),
-            updatedAt = cursor.getString("updated_at"),
-            aliasTitle = cursor.getString("alias_title"),
-            type = cursor.getString("type").toIntOrNull() ?: 0,
-            deletedAt = try {
-                cursor.getString("deleted_at")
-            } catch (_: Exception) {
-                null
-            },
-            metadataTitle = cursor.getString("metadata_title"),
-            metadataUrl = cursor.getString("metadata_url"),
-            metadata = cursor.getString("metadata"),
-        )
-    }
-
-    private fun mapperToInboxListBookmarkItem(cursor: SqlCursor): InboxListBookmarkItem {
-        return InboxListBookmarkItem(
-            id = cursor.getString("id"),
-            aliasTitle = cursor.getString("alias_title"),
-            createdAt = cursor.getString("created_at"),
-            updatedAt = cursor.getString("updated_at"),
-            metadataTitle = cursor.getString("metadata_title"),
-            metadataUrl = cursor.getString("metadata_url"),
-            metadataStatus = cursor.getString("metadata_status"),
-        )
-    }
-
     private val _userBookmarkListFlow: StateFlow<List<InboxListBookmarkItem>> by lazy {
-        println("[BookmarkDao] Initializing _userBookmarkListFlow")
+        println("[database][watch] _userBookmarkListFlow")
         database.watch(
             """
             SELECT
@@ -89,7 +46,7 @@ class BookmarkDao(
     fun watchUserBookmarkList(): StateFlow<List<InboxListBookmarkItem>> = _userBookmarkListFlow
 
     fun watchBookmarkDetail(bookmarkId: String): Flow<List<UserBookmark>> {
-        println("[data] watch bookmark detail")
+        println("[database][watch] watchBookmarkDetail")
         return database.watch(
             """
             SELECT
@@ -115,19 +72,23 @@ class BookmarkDao(
             .distinctUntilChanged()
     }
 
-    fun watchUserTag(): Flow<List<UserTag>> {
-        println("[data] watch user tag =======")
-        return database.watch(
+    private val _userTagListFlow: StateFlow<List<UserTag>> by lazy {
+        println("[database][watch] _userTagListFlow")
+        database.watch(
             """
             SELECT * FROM sr_user_tag
         """.trimIndent(), parameters = listOf(), mapper = { cursor ->
                 mapperToUserTag(cursor)
             }
         )
+            .distinctUntilChanged().stateIn(scope, SharingStarted.Eagerly, emptyList())
     }
 
+    fun watchUserTag(): Flow<List<UserTag>> = _userTagListFlow
+
     suspend fun getTagsByIds(tagIds: List<String>): List<UserTag> {
-        println("[data] get tags by ids")
+        println("[database] getTagsByIds === ")
+
         if (tagIds.isEmpty()) return emptyList()
 
         val placeholders = tagIds.joinToString(",") { "?" }

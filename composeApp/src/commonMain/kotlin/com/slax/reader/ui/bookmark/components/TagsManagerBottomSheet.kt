@@ -37,6 +37,8 @@ fun TagsManageBottomSheet(
     addedTags: List<UserTag> = emptyList(),
     onConfirm: (List<UserTag>) -> Unit = {}
 ) {
+    // println("[watch][UI] recomposition TagsManageBottomSheet")
+
     val detailView: BookmarkDetailViewModel = koinInject()
     val availableTags by detailView.userTagList.collectAsState(emptyList())
 

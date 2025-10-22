@@ -18,6 +18,8 @@ fun PagerToolbar(
     onIconClick: (pageIndex: Int, iconIndex: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // println("[watch][UI] recomposition PagerToolbar")
+
     val pagerState = rememberPagerState(pageCount = { pages.size })
 
     Column(

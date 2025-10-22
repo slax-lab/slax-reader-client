@@ -4,13 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,6 +27,8 @@ fun TagItem(
     onDelete: (() -> Unit)? = null,
     isLargeStyle: Boolean = false  // 是否使用大尺寸样式
 ) {
+    // println("[watch][UI] recomposition TagItem")
+
     // 根据样式选择不同的尺寸参数
     val height = if (isLargeStyle) 30.dp else 21.dp
     val fontSize = if (isLargeStyle) 15.sp else 12.sp

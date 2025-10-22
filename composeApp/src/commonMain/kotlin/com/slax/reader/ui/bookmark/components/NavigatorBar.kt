@@ -18,7 +18,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import org.jetbrains.compose.resources.painterResource
-import slax_reader_client.composeapp.generated.resources.*
+import slax_reader_client.composeapp.generated.resources.Res
+import slax_reader_client.composeapp.generated.resources.ic_sm_back
 
 @Composable
 fun NavigatorBarSpacer() {
@@ -39,6 +40,8 @@ fun NavigatorBar(
     onBackClick: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
+    // println("[watch][UI] recomposition NavigatorBar")
+
     // 导航栏的偏移动画：隐藏时向上移动到屏幕外
     val offsetY by animateDpAsState(
         targetValue = if (visible) 0.dp else (-100).dp,

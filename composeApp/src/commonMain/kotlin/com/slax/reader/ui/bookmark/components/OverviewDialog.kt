@@ -37,6 +37,8 @@ fun OverviewDialog(
     onDismissRequest: () -> Unit,
     sourceBounds: OverviewViewBounds
 ) {
+    // println("[watch][UI] recomposition OverviewDialog")
+
     val density = LocalDensity.current
 
     var screenWidth by remember { mutableStateOf(0f) }

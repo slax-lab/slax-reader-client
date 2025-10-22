@@ -15,10 +15,12 @@ import com.slax.reader.const.*
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.auth.AuthState
 import com.slax.reader.domain.sync.BackgroundDomain
+import com.slax.reader.ui.about.AboutScreen
 import com.slax.reader.ui.bookmark.DetailScreen
 import com.slax.reader.ui.debug.DebugScreen
 import com.slax.reader.ui.inbox.InboxListScreen
 import com.slax.reader.ui.login.LoginScreen
+import com.slax.reader.ui.setting.SettingScreen
 import com.slax.reader.ui.space.SpaceManager
 import com.slax.reader.utils.*
 import dev.gitlive.firebase.Firebase
@@ -114,6 +116,12 @@ fun SlaxNavigation(
         }
         composable<SpaceManagerRoutes> {
             SpaceManager()
+        }
+        composable<SettingsRoutes> {
+            SettingScreen()
+        }
+        composable<AboutRoutes> {
+            AboutScreen()
         }
     }
 }

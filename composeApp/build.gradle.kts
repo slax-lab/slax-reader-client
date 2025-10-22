@@ -14,7 +14,7 @@ buildscript {
         gradlePluginPortal()
     }
     dependencies {
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.0")
         classpath("com.codingfeline.buildkonfig:buildkonfig-gradle-plugin:0.17.1")
         classpath("io.github.cdimascio:dotenv-kotlin:6.5.1")
     }
@@ -114,7 +114,6 @@ kotlin {
             implementation(libs.coil.network.ktor)
         }
         commonMain.dependencies {
-            api(libs.powerSyncCore)
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
@@ -132,7 +131,7 @@ kotlin {
             implementation(libs.datastore.preferences)
 
             // PowerSync
-            implementation(libs.powerSyncCore)
+            api(libs.powerSyncCore)
 
             // DI
             implementation(libs.koin.core)
@@ -251,7 +250,7 @@ buildkonfig {
 
     defaultConfigs("release") {
         buildConfigField(STRING, "BUILD_ENV", buildFlavor)
-        buildConfigField(STRING, "API_BASE_URL", "https://reader-api.slax.com")
+        buildConfigField(STRING, "API_BASE_URL", "https://api-reader.slax.com")
         buildConfigField(STRING, "LOG_LEVEL", "ERROR")
         buildConfigField(
             STRING,

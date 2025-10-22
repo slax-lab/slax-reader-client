@@ -16,3 +16,10 @@ object SpaceManagerRoutes
 
 @Serializable
 data class BookmarkRoutes(val bookmarkId: String)
+
+@Serializable
+object SettingsRoutes
+
+@Serializable
+object AboutRoutes
+

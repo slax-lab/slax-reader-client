@@ -43,6 +43,8 @@ data class OverviewViewBounds(
 fun DetailScreen(nav: NavController, bookmarkId: String) {
     val detailView = koinViewModel<BookmarkDetailViewModel>()
 
+    // println("[watch][UI] recomposition DetailScreen")
+
     val details by detailView.bookmarkDetail.collectAsState()
     val detail = details.firstOrNull()
 
@@ -107,7 +109,6 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
             .pointerInput(Unit) {
                 detectTapGestures(
                     onTap = {
-                        // 点击非可点击区域时显示 FloatingActionBar
                         if (!isFloatingBarVisible) {
                             manuallyVisible = true
                         }
@@ -171,9 +172,11 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                 BookmarkContentView(
                     bookmarkId = bookmarkId,
                     onWebViewTap = {
-                        if (!isFloatingBarVisible) {
-                            manuallyVisible = true
-                        }
+                        // 在顶部的时候，不允许隐藏
+                        // 非顶部的时候，可以点击进行隐藏、显示的切换
+                        manuallyVisible = if (scrollState.value == 0) {
+                            true
+                        } else !isFloatingBarVisible
                     }
                 )
             }
@@ -208,11 +211,14 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
         )
 
         // Overview 弹窗
-        OverviewDialog(
-            visible = showOverviewDialog,
-            onDismissRequest = { showOverviewDialog = false },
-            sourceBounds = overviewBounds
-        )
+        if (showOverviewDialog) {
+            OverviewDialog(
+                visible = showOverviewDialog,
+                onDismissRequest = { showOverviewDialog = false },
+                sourceBounds = overviewBounds
+            )
+        }
+
 
         // 底部工具栏
         BottomToolbarSheet(

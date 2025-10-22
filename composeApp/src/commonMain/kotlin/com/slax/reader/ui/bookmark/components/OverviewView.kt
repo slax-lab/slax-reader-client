@@ -28,6 +28,7 @@ fun OverviewView(
     onBoundsChanged: (OverviewViewBounds) -> Unit = {}
 ) {
     val density = LocalDensity.current
+    // println("[watch][UI] recomposition OverviewView")
 
     Surface(
         modifier = modifier
