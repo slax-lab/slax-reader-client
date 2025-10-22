@@ -122,7 +122,7 @@ actual fun AppWebView(
             // 添加轻量级的点击手势监听，不干扰其他手势
             val tapGesture = UITapGestureRecognizer(
                 target = tapHandler,
-                action = NSSelectorFromString("handleTap")
+                action = NSSelectorFromString(tapHandler::handleTap.name)
             )
             tapGesture.delegate = tapGestureDelegate
             tapGesture.cancelsTouchesInView = false  // 关键：不取消其他触摸事件
