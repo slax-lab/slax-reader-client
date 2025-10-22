@@ -60,13 +60,20 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
     var overviewBounds by remember { mutableStateOf(OverviewViewBounds()) }
 
     // FloatingActionBar 的显示和隐藏状态
-    var isFloatingBarVisible by remember { mutableStateOf(true) }
     val scrollState = rememberScrollState()
+    var manuallyVisible by remember { mutableStateOf(true) }
 
-    // 监听滚动状态
-    LaunchedEffect(scrollState.value) {
-        if (scrollState.isScrollInProgress) {
-            isFloatingBarVisible = false
+    // 使用 derivedStateOf 优化性能，只在滚动状态变化时重组
+    val isFloatingBarVisible by remember {
+        derivedStateOf {
+            manuallyVisible
+        }
+    }
+
+    // 监听滚动停止后恢复显示
+    LaunchedEffect(scrollState.isScrollInProgress) {
+        if (scrollState.isScrollInProgress && manuallyVisible) {
+            manuallyVisible = false
         }
     }
 
@@ -98,7 +105,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                 onTap = {
                     // 点击非可点击区域时显示 FloatingActionBar
                     if (!isFloatingBarVisible) {
-                        isFloatingBarVisible = true
+                        manuallyVisible = true
                     }
                 }
             )
@@ -161,7 +168,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                     bookmarkId = bookmarkId,
                     onWebViewTap = {
                         if (!isFloatingBarVisible) {
-                            isFloatingBarVisible = true
+                            manuallyVisible = true
                         }
                     }
                 )
@@ -220,5 +227,3 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
         )
     }
 }
-
-
