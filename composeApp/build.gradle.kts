@@ -95,9 +95,11 @@ kotlin {
         }
     }
 
-//    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
+    listOf(iosArm64(), iosSimulatorArm64()).forEach { target ->
+        target.compilations.getByName("main") {
+            val nskeyvalueobserving by cinterops.creating
+        }
+    }
 
     sourceSets {
         androidMain.dependencies {
@@ -106,6 +108,7 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
             implementation(libs.koin.android)
             implementation(libs.coil.network.okhttp)
+            implementation(libs.androidx.browser)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -165,9 +168,6 @@ kotlin {
 
             // AtomicFU - required for Android runtime
             implementation(libs.atomicfu)
-
-            // browser tabs
-            implementation(libs.androidx.browser)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

@@ -11,20 +11,17 @@ import com.slax.reader.const.HEIGHT_MONITOR_SCRIPT
 import com.slax.reader.const.JS_BRIDGE_NAME
 import com.slax.reader.model.BridgeMessageParser
 import com.slax.reader.model.HeightMessage
+import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.ObjCAction
 import platform.CoreGraphics.CGRectMake
+import platform.Foundation.NSSelectorFromString
 import platform.Foundation.NSURL
 import platform.Foundation.NSURLRequest
 import platform.SafariServices.SFSafariViewController
-import platform.UIKit.UIColor
-import platform.UIKit.UIScrollViewContentInsetAdjustmentBehavior
-import platform.UIKit.UIView
+import platform.UIKit.*
 import platform.WebKit.*
 import platform.darwin.NSObject
-import kotlinx.cinterop.BetaInteropApi
-import kotlinx.cinterop.ObjCAction
-import platform.Foundation.NSSelectorFromString
-import platform.UIKit.*
 
 private class MessageHandler(
     private val onHeightChange: ((Double) -> Unit)?,

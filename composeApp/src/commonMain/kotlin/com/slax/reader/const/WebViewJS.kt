@@ -38,15 +38,15 @@ const val HEIGHT_MONITOR_SCRIPT: String = """
                 postHeight(currentHeight);
             }
         });
-        var images = document.getElementsByTagName('img');
-        for (var i = 0; i < images.length; i++) {
-            images[i].addEventListener('load', function() {
-                var currentHeight = getContentHeight();
-                if (currentHeight !== lastHeight) {
-                    lastHeight = currentHeight;
-                    postHeight(currentHeight);
-                }
-            });
-        }
+//        var images = document.getElementsByTagName('img');
+//        for (var i = 0; i < images.length; i++) {
+//            images[i].addEventListener('load', function() {
+//                var currentHeight = getContentHeight();
+//                if (currentHeight !== lastHeight) {
+//                    lastHeight = currentHeight;
+//                    postHeight(currentHeight);
+//                }
+//            });
+//        }
     })();
 """
