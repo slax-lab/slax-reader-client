@@ -402,17 +402,18 @@ private fun AgreementBottomSheet(
     CustomModalBottomSheet(
         visible = visible,
         onDismissRequest = onDismiss,
-        enableDrag = false
+        enableDrag = false,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .fillMaxHeight(fraction = 0.8F)
                 .padding(horizontal = 24.dp)
                 .padding(top = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                "用户协议与隐私政策",
+                text = "用户协议与隐私政策",
                 style = TextStyle(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -432,8 +433,8 @@ private fun AgreementBottomSheet(
             AppWebView(
                 url = "https://slax.com/blog.html",
                 modifier = Modifier
-                    .padding(vertical = 8.dp)
-                    .heightIn(max = 470.dp)
+                    .fillMaxWidth()
+                    .fillMaxHeight(fraction = 0.7F)
             )
 
             Box(
