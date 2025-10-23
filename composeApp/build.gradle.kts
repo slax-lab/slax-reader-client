@@ -195,7 +195,7 @@ android {
         register("release") {
             storeFile = file("./slax-reader.release.jks")
             storePassword = System.getenv("SLAX_KEYSTORE_PASSWORD")
-            keyAlias = System.getenv("upload")
+            keyAlias = "upload"
             keyPassword = System.getenv("SLAX_KEYSTORE_PASSWORD")
         }
     }

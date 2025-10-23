@@ -28,7 +28,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import app.slax.reader.SlaxConfig
 import com.mmk.kmpauth.google.GoogleAuthCredentials
@@ -61,6 +60,8 @@ fun LoginScreen(navController: NavHostController) {
     var isAgreed by remember { mutableStateOf(false) }
     var showAgreement by remember { mutableStateOf(false) }
     var pendingLoginAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+
+    val scope = rememberCoroutineScope()
 
     val successHandle: () -> Unit = {
         navController.navigate(InboxRoutes) {
@@ -128,7 +129,7 @@ fun LoginScreen(navController: NavHostController) {
         // 底部登录按钮区域
         Column(modifier = Modifier.padding(bottom = 30.dp)) {
             GoogleButtonUiContainer(onGoogleSignInResult = { googleUser ->
-                viewModel.viewModelScope.launch {
+                scope.launch {
                     viewModel.googleSignIn(
                         googleUser,
                         onSuccess = successHandle,
@@ -165,7 +166,7 @@ fun LoginScreen(navController: NavHostController) {
                     onClick = {
                         if (!isAgreed) {
                             pendingLoginAction = {
-                                viewModel.viewModelScope.launch {
+                                scope.launch {
                                     val result = appleProvider.signIn()
                                     viewModel.appleSignIn(
                                         result = result,
@@ -177,7 +178,7 @@ fun LoginScreen(navController: NavHostController) {
                             }
                             showAgreement = true
                         } else {
-                            viewModel.viewModelScope.launch {
+                            scope.launch {
                                 val result = appleProvider.signIn()
                                 viewModel.appleSignIn(
                                     result = result,
