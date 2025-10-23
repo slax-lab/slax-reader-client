@@ -170,3 +170,35 @@ actual fun OpenInBrowserTab(url: String) {
     val safariVC = SFSafariViewController(uRL = NSURL(string = url))
     viewController.presentViewController(safariVC, animated = true, completion = null)
 }
+
+@OptIn(ExperimentalForeignApi::class)
+@Composable
+actual fun WebView(url: String, modifier: Modifier) {
+
+    UIKitView(
+        modifier = modifier,
+        factory = {
+            val config = WKWebViewConfiguration().apply {
+                preferences = WKPreferences().apply {
+                    javaScriptEnabled = true
+                }
+            }
+
+            val view = WKWebView(frame = CGRectMake(0.0, 0.0, 0.0, 0.0), configuration = config)
+
+            view.scrollView.contentInsetAdjustmentBehavior =
+                UIScrollViewContentInsetAdjustmentBehavior.UIScrollViewContentInsetAdjustmentNever
+            view.scrollView.alwaysBounceVertical = true
+            view.scrollView.alwaysBounceHorizontal = false
+
+            view.backgroundColor = Color(0xFFFCFCFC).toUIColor()
+            view.loadRequest(NSURLRequest(uRL = NSURL(string = url)))
+
+            view as UIView
+        },
+        update = { uiView ->
+            val webView = uiView as WKWebView
+            webView.loadRequest(NSURLRequest(uRL = NSURL(string = url)))
+        }
+    )
+}

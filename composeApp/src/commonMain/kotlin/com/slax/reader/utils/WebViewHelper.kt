@@ -38,3 +38,9 @@ expect fun AppWebView(
 
 @Composable
 expect fun OpenInBrowserTab(url: String)
+
+@Composable
+expect fun WebView(
+    url: String,
+    modifier: Modifier
+)

@@ -35,7 +35,7 @@ import com.mmk.kmpauth.google.GoogleAuthProvider
 import com.mmk.kmpauth.google.GoogleButtonUiContainer
 import com.slax.reader.const.InboxRoutes
 import com.slax.reader.domain.auth.AppleSignInProvider
-import com.slax.reader.utils.AppWebView
+import com.slax.reader.utils.WebView
 import com.slax.reader.utils.platform
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
@@ -430,7 +430,7 @@ private fun AgreementBottomSheet(
                     .background(Color(0x14333333))
             )
 
-            AppWebView(
+            WebView(
                 url = "https://slax.com/blog.html",
                 modifier = Modifier
                     .fillMaxWidth()
