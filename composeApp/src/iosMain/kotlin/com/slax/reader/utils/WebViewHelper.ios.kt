@@ -8,19 +8,41 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.uikit.LocalUIViewController
 import androidx.compose.ui.viewinterop.UIKitView
+import app.slax.reader.SlaxConfig
 import com.slax.reader.const.HEIGHT_MONITOR_SCRIPT
 import com.slax.reader.const.JS_BRIDGE_NAME
 import com.slax.reader.model.BridgeMessageParser
 import com.slax.reader.model.HeightMessage
-import kotlinx.cinterop.*
+import kotlinx.cinterop.BetaInteropApi
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.ObjCAction
+import kotlinx.cinterop.ObjCSignatureOverride
+import kotlinx.cinterop.useContents
 import platform.CoreGraphics.CGPointMake
 import platform.CoreGraphics.CGRectMake
 import platform.Foundation.NSSelectorFromString
 import platform.Foundation.NSURL
 import platform.Foundation.NSURLRequest
 import platform.SafariServices.SFSafariViewController
-import platform.UIKit.*
-import platform.WebKit.*
+import platform.UIKit.UIColor
+import platform.UIKit.UIGestureRecognizer
+import platform.UIKit.UIGestureRecognizerDelegateProtocol
+import platform.UIKit.UIScrollView
+import platform.UIKit.UIScrollViewContentInsetAdjustmentBehavior
+import platform.UIKit.UIScrollViewDecelerationRateNormal
+import platform.UIKit.UIScrollViewDelegateProtocol
+import platform.UIKit.UITapGestureRecognizer
+import platform.UIKit.UITouch
+import platform.UIKit.UIView
+import platform.WebKit.WKPreferences
+import platform.WebKit.WKScriptMessage
+import platform.WebKit.WKScriptMessageHandlerProtocol
+import platform.WebKit.WKUserContentController
+import platform.WebKit.WKUserScript
+import platform.WebKit.WKUserScriptInjectionTime
+import platform.WebKit.WKWebView
+import platform.WebKit.WKWebViewConfiguration
+import platform.WebKit.javaScriptEnabled
 import platform.darwin.NSObject
 
 private class MessageHandler(
@@ -227,6 +249,7 @@ actual fun AppWebView(
             }
 
             val view = WKWebView(frame = CGRectMake(0.0, 0.0, 0.0, 0.0), configuration = config)
+            view.inspectable = SlaxConfig.BUILD_ENV == "dev"
             coordinator.webView = view
 
             // 添加点击手势
@@ -289,7 +312,12 @@ actual fun OpenInBrowserTab(url: String) {
 
 @OptIn(ExperimentalForeignApi::class)
 @Composable
-actual fun WebView(url: String, modifier: Modifier) {
+actual fun WebView(
+    url: String?,
+    htmlContent: String?,
+    modifier: Modifier,
+    onScroll: ((x: Double, y: Double) -> Unit)?
+) {
 
     UIKitView(
         modifier = modifier,
@@ -300,21 +328,40 @@ actual fun WebView(url: String, modifier: Modifier) {
                 }
             }
 
-            val view = WKWebView(frame = CGRectMake(0.0, 0.0, 0.0, 0.0), configuration = config)
+            WKWebView(
+                frame = CGRectMake(0.0, 0.0, 0.0, 0.0),
+                configuration = config,
+            ).apply {
+                inspectable = SlaxConfig.BUILD_ENV == "dev"
 
-            view.scrollView.contentInsetAdjustmentBehavior =
-                UIScrollViewContentInsetAdjustmentBehavior.UIScrollViewContentInsetAdjustmentNever
-            view.scrollView.alwaysBounceVertical = true
-            view.scrollView.alwaysBounceHorizontal = false
+                scrollView.contentInsetAdjustmentBehavior =
+                    UIScrollViewContentInsetAdjustmentBehavior.UIScrollViewContentInsetAdjustmentNever
+                scrollView.alwaysBounceVertical = true
+                scrollView.alwaysBounceHorizontal = false
 
-            view.backgroundColor = Color(0xFFFCFCFC).toUIColor()
-            view.loadRequest(NSURLRequest(uRL = NSURL(string = url)))
+                scrollView.delegate = object : NSObject(), UIScrollViewDelegateProtocol {
+                    override fun scrollViewDidScroll(scrollView: UIScrollView) {
+                        super.scrollViewDidScroll(scrollView)
 
-            view as UIView
+                        val offset = scrollView.contentOffset
+                        onScroll?.invoke(offset.useContents { x }, offset.useContents { y })
+                    }
+                }
+
+                backgroundColor = Color(0xFFFCFCFC).toUIColor()
+                when {
+                    url != null -> loadRequest(NSURLRequest(uRL = NSURL(string = url)))
+                    htmlContent != null -> loadHTMLString(htmlContent, baseURL = null)
+                }
+            }
         },
-        update = { uiView ->
-            val webView = uiView as WKWebView
-            webView.loadRequest(NSURLRequest(uRL = NSURL(string = url)))
+        update = { view ->
+            view.apply {
+                when {
+                    url != null -> loadRequest(NSURLRequest(uRL = NSURL(string = url)))
+                    htmlContent != null -> loadHTMLString(htmlContent, baseURL = null)
+                }
+            }
         }
     )
 }

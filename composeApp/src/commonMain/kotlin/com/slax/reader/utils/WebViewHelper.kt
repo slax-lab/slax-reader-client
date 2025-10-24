@@ -43,6 +43,8 @@ expect fun OpenInBrowserTab(url: String)
 
 @Composable
 expect fun WebView(
-    url: String,
-    modifier: Modifier
+    url: String? = null,
+    htmlContent: String? = null,
+    modifier: Modifier,
+    onScroll: ((x: Double, y: Double) -> Unit)? = null,
 )

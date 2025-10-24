@@ -2,7 +2,11 @@ package com.slax.reader.utils
 
 import android.annotation.SuppressLint
 import android.graphics.Color
-import android.webkit.*
+import android.webkit.JavascriptInterface
+import android.webkit.WebChromeClient
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -10,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
+import app.slax.reader.SlaxConfig
 import com.slax.reader.const.HEIGHT_MONITOR_SCRIPT
 import com.slax.reader.const.JS_BRIDGE_NAME
 import com.slax.reader.model.BridgeMessageParser
@@ -53,6 +58,9 @@ actual fun AppWebView(
                 setBackgroundColor(Color.TRANSPARENT)
                 isVerticalScrollBarEnabled = false
                 isHorizontalScrollBarEnabled = false
+
+                // 启用调试功能（开发环境）
+                WebView.setWebContentsDebuggingEnabled(SlaxConfig.BUILD_ENV == "dev")
 
                 settings.apply {
                     javaScriptEnabled = true
@@ -119,13 +127,21 @@ actual fun OpenInBrowserTab(url: String) {
 }
 
 @Composable
-actual fun WebView(url: String, modifier: Modifier) {
+actual fun WebView(
+    url: String?,
+    htmlContent: String?,
+    modifier: Modifier,
+    onScroll: ((x: Double, y: Double) -> Unit)?
+) {
     AndroidView(
         modifier = modifier,
         factory = { context ->
             WebView(context).apply {
 
                 setBackgroundColor(Color.TRANSPARENT)
+
+                // 启用调试功能（开发环境）
+                WebView.setWebContentsDebuggingEnabled(SlaxConfig.BUILD_ENV == "dev")
 
                 settings.apply {
                     javaScriptEnabled = true
@@ -137,12 +153,39 @@ actual fun WebView(url: String, modifier: Modifier) {
                     cacheMode = WebSettings.LOAD_DEFAULT
                 }
 
+                // 添加滚动监听器
+                setOnScrollChangeListener { _, scrollX, scrollY, _, _ ->
+                    onScroll?.invoke(scrollX.toDouble(), scrollY.toDouble())
+                }
+
                 webChromeClient = WebChromeClient()
                 webViewClient = WebViewClient()
 
-                loadUrl(url)
+                when {
+                    url != null -> loadUrl(url)
+                    htmlContent != null -> loadDataWithBaseURL(
+                        null,
+                        htmlContent,
+                        "text/html",
+                        "utf-8",
+                        null
+                    )
+                }
             }
         },
-        update = { view -> view.loadUrl(url) }
+        update = { view ->
+            view.apply {
+                when {
+                    url != null -> loadUrl(url)
+                    htmlContent != null -> loadDataWithBaseURL(
+                        null,
+                        htmlContent,
+                        "text/html",
+                        "utf-8",
+                        null
+                    )
+                }
+            }
+        }
     )
 }
