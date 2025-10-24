@@ -35,7 +35,7 @@ import com.mmk.kmpauth.google.GoogleAuthProvider
 import com.mmk.kmpauth.google.GoogleButtonUiContainer
 import com.slax.reader.const.InboxRoutes
 import com.slax.reader.domain.auth.AppleSignInProvider
-import com.slax.reader.utils.AppWebView
+import com.slax.reader.utils.WebView
 import com.slax.reader.utils.platform
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
@@ -402,17 +402,18 @@ private fun AgreementBottomSheet(
     CustomModalBottomSheet(
         visible = visible,
         onDismissRequest = onDismiss,
-        enableDrag = false
+        enableDrag = false,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .fillMaxHeight(fraction = 0.8F)
                 .padding(horizontal = 24.dp)
                 .padding(top = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                "用户协议与隐私政策",
+                text = "用户协议与隐私政策",
                 style = TextStyle(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -429,11 +430,11 @@ private fun AgreementBottomSheet(
                     .background(Color(0x14333333))
             )
 
-            AppWebView(
+            WebView(
                 url = "https://slax.com/blog.html",
                 modifier = Modifier
-                    .padding(vertical = 8.dp)
-                    .heightIn(max = 470.dp)
+                    .fillMaxWidth()
+                    .fillMaxHeight(fraction = 0.7F)
             )
 
             Box(

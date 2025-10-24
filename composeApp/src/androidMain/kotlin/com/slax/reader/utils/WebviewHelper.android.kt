@@ -115,3 +115,32 @@ actual fun OpenInBrowserTab(url: String) {
     val customTabsIntent = builder.build()
     customTabsIntent.launchUrl(ctx, url.toUri())
 }
+
+@Composable
+actual fun WebView(url: String, modifier: Modifier) {
+    AndroidView(
+        modifier = modifier,
+        factory = { context ->
+            WebView(context).apply {
+
+                setBackgroundColor(Color.TRANSPARENT)
+
+                settings.apply {
+                    javaScriptEnabled = true
+                    domStorageEnabled = true
+                    builtInZoomControls = false
+                    displayZoomControls = false
+                    allowFileAccess = false
+                    allowContentAccess = false
+                    cacheMode = WebSettings.LOAD_DEFAULT
+                }
+
+                webChromeClient = WebChromeClient()
+                webViewClient = WebViewClient()
+
+                loadUrl(url)
+            }
+        },
+        update = { view -> view.loadUrl(url) }
+    )
+}
