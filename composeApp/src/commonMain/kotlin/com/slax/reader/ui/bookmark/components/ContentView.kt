@@ -16,13 +16,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.utils.AppWebView
+import com.slax.reader.utils.timeUnix
 import org.koin.compose.koinInject
 
 @Composable
 fun BookmarkContentView(
     bookmarkId: String,
     scrollState: ScrollState,
-    viewportHeightPx: Double,
     onWebViewTap: (() -> Unit)? = null
 ) {
     // println("[watch][UI] recomposition BookmarkContentView")
@@ -71,7 +71,6 @@ fun BookmarkContentView(
             AdaptiveWebView(
                 htmlContent = htmlContent!!,
                 scrollState = scrollState,
-                viewportHeightPx = viewportHeightPx,
                 onWebViewTap = onWebViewTap
             )
         }
@@ -82,7 +81,6 @@ fun BookmarkContentView(
 fun AdaptiveWebView(
     htmlContent: String,
     scrollState: ScrollState,
-    viewportHeightPx: Double,
     onWebViewTap: (() -> Unit)? = null
 ) {
     val density = LocalDensity.current
@@ -112,13 +110,14 @@ fun AdaptiveWebView(
 
             snapshotFlow { scrollState.value }
                 .collect { scrollValue ->
-                    val currentTime = System.currentTimeMillis()
+                    val currentTime = timeUnix()
                     val scrollDouble = scrollValue.toDouble()
                     val shouldEnableWebView = scrollDouble >= webViewStartScrollPx
 
                     // 只有在状态变化时或经过足够时间后才通知，避免频繁调用
                     if (shouldEnableWebView != isWebViewScrolling ||
-                        (currentTime - lastUpdateTime) > debounceMs) {
+                        (currentTime - lastUpdateTime) > debounceMs
+                    ) {
 
                         if (shouldEnableWebView != isWebViewScrolling) {
                             isWebViewScrolling = shouldEnableWebView

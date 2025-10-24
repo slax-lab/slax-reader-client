@@ -14,7 +14,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -75,7 +74,6 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
 
     // FloatingActionBar 的显示和隐藏状态
     val scrollState = rememberScrollState()
-    var viewportHeightPx by remember { mutableStateOf(0.0) }
     var manuallyVisible by remember { mutableStateOf(true) }
 
     // 使用 derivedStateOf 优化性能，只在滚动状态变化时重组
@@ -127,12 +125,6 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                         }
                     }
                 )
-            }
-            .onGloballyPositioned { layoutCoordinates ->
-                val height = layoutCoordinates.size.height
-                if (height > 0) {
-                    viewportHeightPx = height.toDouble()
-                }
             }
     ) {
         Column(
@@ -191,7 +183,6 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                 BookmarkContentView(
                     bookmarkId = bookmarkId,
                     scrollState = scrollState,
-                    viewportHeightPx = viewportHeightPx,
                     onWebViewTap = {
                         // 在顶部的时候，不允许隐藏
                         // 非顶部的时候，可以点击进行隐藏、显示的切换
