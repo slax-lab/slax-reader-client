@@ -57,24 +57,32 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
     var overview by remember { mutableStateOf("") }
     var keyTakeaways by remember { mutableStateOf<List<String>>(emptyList()) }
     LaunchedEffect(bookmarkId) {
+        // 清空旧数据
+        overview = ""
+        keyTakeaways = emptyList()
+
         detailView.setBookmarkId(bookmarkId)
-        detailView.getBookmarkOverview(bookmarkId).collect { response ->
-            when (response) {
-                is OverviewResponse.Overview -> {
-                    overview += response.content
-                }
-                is OverviewResponse.KeyTakeaways -> {
-                    keyTakeaways = response.content
-                }
-                is OverviewResponse.Done -> {
-                    println("Overview loading completed")
-                }
-                is OverviewResponse.Error -> {
-                    println("Error loading overview: ${response.message}")
-                }
-                else -> {
+        try {
+            detailView.getBookmarkOverview(bookmarkId).collect { response ->
+                when (response) {
+                    is OverviewResponse.Overview -> {
+                        overview += response.content
+                    }
+                    is OverviewResponse.KeyTakeaways -> {
+                        keyTakeaways = response.content
+                    }
+                    is OverviewResponse.Done -> {
+                        println("Overview loading completed")
+                    }
+                    is OverviewResponse.Error -> {
+                        println("Error loading overview: ${response.message}")
+                    }
+                    else -> {
+                    }
                 }
             }
+        } catch (e: Exception) {
+            println("Failed to load overview: ${e.message}")
         }
     }
 
@@ -187,9 +195,11 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                     bookmarkId = bookmarkId,
                     scrollState = scrollState,
                     onWebViewTap = {
-                        if (!isFloatingBarVisible) {
-                            manuallyVisible = true
-                        }
+                        // 在顶部的时候，不允许隐藏
+                        // 非顶部的时候，可以点击进行隐藏、显示的切换
+                        manuallyVisible = if (scrollState.value == 0) {
+                            true
+                        } else !isFloatingBarVisible
                     }
                 )
             }
@@ -229,13 +239,15 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
         )
 
         // Overview 弹窗
-        OverviewDialog(
-            visible = showOverviewDialog,
-            onDismissRequest = { showOverviewDialog = false },
-            sourceBounds = overviewBounds,
-            overview = overview,
-            keyTakeaways = keyTakeaways
-        )
+        if (showOverviewDialog) {
+            OverviewDialog(
+                visible = showOverviewDialog,
+                onDismissRequest = { showOverviewDialog = false },
+                sourceBounds = overviewBounds,
+                overview = overview,
+                keyTakeaways = keyTakeaways
+            )
+        }
 
         detail?.let {
             // 底部工具栏

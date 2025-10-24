@@ -58,14 +58,26 @@ fun OverviewDialog(
     var screenHeight by remember { mutableStateOf(0f) }
     var contentHeight by remember { mutableStateOf(0f) }
 
+    // 内部动画触发状态
+    var internalVisible by remember { mutableStateOf(false) }
+
+    // 延迟触发动画，确保组件先添加到组合树再开始动画
+    LaunchedEffect(visible) {
+        if (visible) {
+            internalVisible = true
+        } else {
+            internalVisible = false
+        }
+    }
+
     val animationProgress by animateFloatAsState(
-        targetValue = if (visible) 1f else 0f,
+        targetValue = if (internalVisible) 1f else 0f,
         animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
         label = "dialogAnimation"
     )
 
     val alpha by animateFloatAsState(
-        targetValue = if (visible) 1f else 0f,
+        targetValue = if (internalVisible) 1f else 0f,
         animationSpec = tween(durationMillis = 300),
         label = "alphaAnimation"
     )
