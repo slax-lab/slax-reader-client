@@ -49,6 +49,7 @@ fun InboxListScreen(navCtrl: NavController) {
             lifecycleOwner.lifecycle.removeObserver(viewModel)
         }
     }
+
 // MARK:    navController.navigate(SpaceManagerRoutes)
     Sidebar(
         drawerState = drawerState,
