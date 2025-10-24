@@ -1,172 +1,96 @@
 package com.slax.reader.ui.bookmark.components
 
-import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.utils.AppWebView
-import com.slax.reader.utils.timeUnix
+import com.slax.reader.utils.wrapHtmlWithCSS
 import org.koin.compose.koinInject
 
 @Composable
 fun BookmarkContentView(
     bookmarkId: String,
-    scrollState: ScrollState,
-    onWebViewTap: (() -> Unit)? = null
+    topContentHeightPx: Float,
+    onWebViewTap: (() -> Unit)? = null,
+    onScrollChange: ((scrollY: Float) -> Unit)? = null,
 ) {
-    // println("[watch][UI] recomposition BookmarkContentView")
-
     val detailView: BookmarkDetailViewModel = koinInject()
-    var htmlContent by remember { mutableStateOf<String?>(null) }
-    var isLoadingContent by remember { mutableStateOf(true) }
-    var loadError by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(Unit) {
-        isLoadingContent = true
-        try {
-            htmlContent = detailView.getBookmarkContent(bookmarkId)
-        } catch (e: Exception) {
-            loadError = e.message ?: "加载失败"
-            println("加载内容失败: ${e.message}")
-        } finally {
-            isLoadingContent = false
+    var rawHtmlContent by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    // 等待顶部测量完成后再包装 HTML
+    // topContentHeightPx 基于 Compose 的 px（Android 为物理像素，iOS 为 points * scale）
+    // WebView 中的 CSS px 对应设备无关像素，因此需要按照 density 折算
+    val density = LocalDensity.current
+    val cssTopPaddingPx by remember(topContentHeightPx, density) {
+        derivedStateOf {
+            if (topContentHeightPx > 0f) {
+                topContentHeightPx / density.density
+            } else {
+                0f
+            }
         }
     }
+
+    val htmlContentWithPadding by remember(rawHtmlContent, cssTopPaddingPx) {
+        derivedStateOf {
+            if (rawHtmlContent != null && cssTopPaddingPx > 0f) {
+                println("[WebView] Using CSS padding-top: ${cssTopPaddingPx}px (css)")
+                wrapHtmlWithCSS(rawHtmlContent!!, cssTopPaddingPx)
+            } else {
+                null
+            }
+        }
+    }
+
+    LaunchedEffect(bookmarkId) {
+        isLoading = true
+        error = null
+        try {
+            rawHtmlContent = detailView.getBookmarkContent(bookmarkId)
+        } catch (e: Exception) {
+            error = e.message ?: "加载失败"
+        } finally {
+            isLoading = false
+        }
+    }
+
     when {
-        isLoadingContent -> {
+        isLoading -> {
             Box(
-                modifier = Modifier.fillMaxWidth().padding(top = 20.dp).height(200.dp),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(
-                    color = Color(0xFF16B998)
-                )
+                CircularProgressIndicator(color = Color(0xFF16B998))
             }
         }
 
-        loadError != null -> {
+        error != null -> {
             Box(
-                modifier = Modifier.fillMaxWidth().padding(top = 20.dp).height(200.dp),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "加载失败: $loadError",
-                    color = Color.Red
-                )
+                Text(text = "加载失败: $error", color = Color.Red)
             }
         }
 
-        htmlContent != null -> {
-            AdaptiveWebView(
-                htmlContent = htmlContent!!,
-                scrollState = scrollState,
-                onWebViewTap = onWebViewTap
+        htmlContentWithPadding != null -> {
+            // WebView 通过 CSS padding 预留顶部空间
+            AppWebView(
+                htmlContent = htmlContentWithPadding,
+                modifier = Modifier.fillMaxSize(),
+                onTap = onWebViewTap,
+                onScrollChange = onScrollChange
             )
         }
     }
-}
-
-@Composable
-fun AdaptiveWebView(
-    htmlContent: String,
-    scrollState: ScrollState,
-    onWebViewTap: (() -> Unit)? = null
-) {
-    val density = LocalDensity.current
-
-    var contentHeightPx by remember(htmlContent) { mutableStateOf(0.0) }
-    var webViewStartScrollPx by remember(htmlContent) { mutableStateOf(0.0) }
-
-    // 用于调用 native 层更新滚动状态的回调
-    var onScrollUpdate: ((Double) -> Unit)? by remember { mutableStateOf(null) }
-
-    // 记录当前 WebView 是否启用了滚动
-    var isWebViewScrolling by remember(htmlContent) { mutableStateOf(false) }
-
-    // 监听滚动变化，通过回调通知 native 层
-    LaunchedEffect(webViewStartScrollPx) {
-        // 只有在 webViewStartScrollPx 初始化完成后才开始监听
-        if (webViewStartScrollPx > 0.0 && onScrollUpdate != null) {
-            // 立即调用一次，初始化状态
-            val initialScroll = scrollState.value.toDouble()
-            onScrollUpdate?.invoke(initialScroll)
-            isWebViewScrolling = initialScroll >= webViewStartScrollPx
-            println("[Scroll Debug] Initial scroll check: scrollState=$initialScroll, startY=$webViewStartScrollPx, isWebViewScrolling=$isWebViewScrolling")
-
-            // 然后持续监听滚动变化，使用防抖减少更新频率
-            var lastUpdateTime = 0L
-            val debounceMs = 16L // 约 60fps
-
-            snapshotFlow { scrollState.value }
-                .collect { scrollValue ->
-                    val currentTime = timeUnix()
-                    val scrollDouble = scrollValue.toDouble()
-                    val shouldEnableWebView = scrollDouble >= webViewStartScrollPx
-
-                    // 只有在状态变化时或经过足够时间后才通知，避免频繁调用
-                    if (shouldEnableWebView != isWebViewScrolling ||
-                        (currentTime - lastUpdateTime) > debounceMs
-                    ) {
-
-                        if (shouldEnableWebView != isWebViewScrolling) {
-                            isWebViewScrolling = shouldEnableWebView
-                            onScrollUpdate?.invoke(scrollDouble)
-                            println("[Scroll Debug] Outer scroll state change: scroll=$scrollDouble, isWebViewScrolling=$isWebViewScrolling")
-                        }
-                        lastUpdateTime = currentTime
-                    }
-                }
-        }
-    }
-
-    // WebView 高度 = 内容实际高度
-    val webViewHeightDp = remember(contentHeightPx, density) {
-        if (contentHeightPx > 0.0) {
-            pxToDp(contentHeightPx, density)
-        } else {
-            with(density) { 800.dp }
-        }
-    }
-
-    val webViewModifier = Modifier
-        .fillMaxWidth()
-        .padding(top = 20.dp)
-        .windowInsetsPadding(WindowInsets(0, 0, 0, 0))
-        .onGloballyPositioned { coordinates ->
-            if (webViewStartScrollPx == 0.0) {
-                val posY = coordinates.positionInRoot().y.toDouble()
-                webViewStartScrollPx = scrollState.value.toDouble() + posY
-                println("[Scroll Debug] WebView start position: $webViewStartScrollPx")
-            }
-        }
-        .height(webViewHeightDp)
-
-    AppWebView(
-        htmlContent = htmlContent,
-        modifier = webViewModifier,
-        onHeightChange = { h ->
-            contentHeightPx = h
-        },
-        onTap = onWebViewTap,
-        webViewStartY = webViewStartScrollPx,
-        onWebViewPositioned = { callback ->
-            onScrollUpdate = callback
-        }
-    )
-}
-
-private fun pxToDp(px: Double, density: Density): Dp {
-    if (px <= 0.0) return 0.dp
-    return with(density) { px.toFloat().toDp() }
 }

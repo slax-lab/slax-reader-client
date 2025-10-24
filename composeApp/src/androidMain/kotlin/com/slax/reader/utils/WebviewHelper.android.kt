@@ -39,23 +39,35 @@ actual fun AppWebView(
     url: String?,
     htmlContent: String?,
     modifier: Modifier,
-    onHeightChange: ((Double) -> Unit)?,
+    topContentInsetPx: Float,
     onTap: (() -> Unit)?,
-    webViewStartY: Double,
-    onWebViewPositioned: (((Double) -> Unit) -> Unit)?,
+    onScrollChange: ((scrollY: Float) -> Unit)?,
 ) {
-
     val onTapCallback = remember(onTap) { onTap }
-
-    val jsBridge = remember(onHeightChange) {
-        JsBridge(onHeightChange)
-    }
+    val onScrollChangeCallback = remember(onScrollChange) { onScrollChange }
 
     AndroidView(
         modifier = modifier,
         factory = { context ->
-            WebView(context).apply {
+            // 自定义 WebView 以监听滚动
+            object : WebView(context) {
+                override fun onScrollChanged(l: Int, t: Int, oldl: Int, oldt: Int) {
+                    super.onScrollChanged(l, t, oldl, oldt)
+                    // Android WebView scrollY 已经是设备像素
+                    // 直接用于 graphicsLayer.translationY
+                    println("[Android WebView Scroll] scrollY(px)=$t")
+                    onScrollChangeCallback?.invoke(t.toFloat())
+                }
+            }.apply {
                 setBackgroundColor(Color.TRANSPARENT)
+
+                // 启用硬件加速以提升滚动性能
+                setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
+
+                // 启用嵌套滚动支持
+                isNestedScrollingEnabled = true
+
+                // 隐藏滚动条
                 isVerticalScrollBarEnabled = false
                 isHorizontalScrollBarEnabled = false
 
@@ -70,9 +82,13 @@ actual fun AppWebView(
                     allowFileAccess = false
                     allowContentAccess = false
                     cacheMode = WebSettings.LOAD_DEFAULT
-                }
 
-                addJavascriptInterface(jsBridge, JS_BRIDGE_NAME)
+                    // 性能优化配置
+                    @Suppress("DEPRECATION")
+                    setRenderPriority(WebSettings.RenderPriority.HIGH)
+                }
+                val topPadding = topContentInsetPx.coerceAtLeast(0f).toInt()
+                setPadding(paddingLeft, topPadding, paddingRight, paddingBottom)
 
                 setOnTouchListener { _, event ->
                     when (event.action) {
@@ -84,12 +100,7 @@ actual fun AppWebView(
                 }
 
                 webChromeClient = WebChromeClient()
-                webViewClient = object : WebViewClient() {
-                    override fun onPageFinished(view: WebView, url: String?) {
-                        super.onPageFinished(view, url)
-                        view.evaluateJavascript(HEIGHT_MONITOR_SCRIPT, null)
-                    }
-                }
+                webViewClient = WebViewClient()
 
                 if (url != null) {
                     loadUrl(url)
@@ -99,6 +110,10 @@ actual fun AppWebView(
             }
         },
         update = { webView ->
+            val topPadding = topContentInsetPx.coerceAtLeast(0f).toInt()
+            if (webView.paddingTop != topPadding) {
+                webView.setPadding(webView.paddingLeft, topPadding, webView.paddingRight, webView.paddingBottom)
+            }
             when {
                 url != null -> {
                     webView.loadUrl(url)

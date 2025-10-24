@@ -315,6 +315,6 @@ tasks.named("preBuild").configure {
     dependsOn(syncFirebaseAndroid)
 }
 
-tasks.matching { it.name.contains("embedAndSignAppleFrameworkForXcode") }.configureEach {
+tasks.matching { it.name.contains("embedAndSign") && it.name.contains("FrameworkForXcode") }.configureEach {
     dependsOn(syncFirebaseIOS)
 }

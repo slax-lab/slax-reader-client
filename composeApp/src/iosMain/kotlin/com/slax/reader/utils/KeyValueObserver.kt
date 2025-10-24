@@ -35,7 +35,7 @@ class KVOObserver(
         ofObject.addObserver(
             observer = this,
             forKeyPath = keyPath,
-            options = NSKeyValueObservingOptionNew or NSKeyValueObservingOptionOld or NSKeyValueObservingOptionInitial,
+            options = NSKeyValueObservingOptionNew or NSKeyValueObservingOptionOld,
             context = null
         )
     }
