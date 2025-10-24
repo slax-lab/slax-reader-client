@@ -1,13 +1,15 @@
 package com.slax.reader.ui.inbox
 
-import androidx.compose.animation.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -17,12 +19,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
+import com.slax.reader.const.AboutRoutes
+import com.slax.reader.const.SettingsRoutes
+import com.slax.reader.const.SpaceManagerRoutes
 import com.slax.reader.domain.auth.AuthDomain
+import com.slax.reader.ui.AppViewModel
 import com.slax.reader.ui.inbox.compenents.ArticleList
 import com.slax.reader.ui.inbox.compenents.InboxTitleRow
 import com.slax.reader.ui.inbox.compenents.UserAvatar
-import com.slax.reader.ui.sidebar.SideBar
+import com.slax.reader.ui.sidebar.Sidebar
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
@@ -30,54 +38,49 @@ import slax_reader_client.composeapp.generated.resources.inbox_tab
 
 @Composable
 fun InboxListScreen(navCtrl: NavController) {
-    var showSidebar by remember { mutableStateOf(false) }
     val authDomain: AuthDomain = koinInject()
+    val viewModel = koinInject<AppViewModel>()
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
 
-    // println("[watch][UI] recomposition InboxListScreen")
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.addObserver(viewModel)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(viewModel)
+        }
+    }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF5F5F3))
-            .statusBarsPadding()
+// MARK:    navController.navigate(SpaceManagerRoutes)
+    Sidebar(
+        drawerState = drawerState,
+        onSettingsClick = {
+            navCtrl.navigate(SettingsRoutes)
+        },
+        onAboutClick = {
+            navCtrl.navigate(AboutRoutes)
+        },
+        onLogout = {
+            authDomain.signOut()
+        }
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFFF5F5F3))
+                .statusBarsPadding()
         ) {
-            NavigationBar(onAvatarClick = { showSidebar = true })
-            Spacer(modifier = Modifier.height(8.dp))
-            ContentSection(navCtrl)
-        }
-
-        AnimatedVisibility(
-            visible = showSidebar,
-            enter = EnterTransition.None,
-            exit = ExitTransition.None,
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f))
-                    .clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    ) {
-                        showSidebar = false
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                NavigationBar(onAvatarClick = {
+                    scope.launch {
+                        drawerState.open()
                     }
-            )
-        }
-
-        AnimatedVisibility(
-            visible = showSidebar,
-            enter = slideInHorizontally(initialOffsetX = { -it }),
-            exit = slideOutHorizontally(targetOffsetX = { -it })
-        ) {
-            SideBar(
-                navController = navCtrl,
-                onLogout = {
-                    authDomain.signOut()
-                }
-            )
+                })
+                Spacer(modifier = Modifier.height(8.dp))
+                ContentSection(navCtrl)
+            }
         }
     }
 }
@@ -120,7 +123,7 @@ private fun NavigationBar(onAvatarClick: () -> Unit = {}) {
 @Composable
 private fun ContentSection(navCtrl: NavController) {
     // println("[watch][UI] recomposition ContentSection")
-    
+
     Column(
         modifier = Modifier
             .fillMaxSize()

@@ -1,13 +1,16 @@
 package com.slax.reader.ui
 
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import com.slax.reader.data.database.dao.PowerSyncDao
 import com.slax.reader.data.database.dao.UserDao
+import org.koin.core.component.KoinComponent
 
 class AppViewModel(
-    private val userDao: UserDao,
-    private val powerSyncDao: PowerSyncDao,
-) : ViewModel() {
+    userDao: UserDao,
+    powerSyncDao: PowerSyncDao,
+) : ViewModel(), KoinComponent, DefaultLifecycleObserver {
 
     val userInfo = userDao.watchUserInfo()
 
@@ -44,4 +47,28 @@ class AppViewModel(
                 0f
             }
         } ?: 0f
+
+    override fun onCreate(owner: LifecycleOwner) {
+        println("==== create")
+    }
+
+    override fun onStart(owner: LifecycleOwner) {
+        println("==== onStart")
+    }
+
+    override fun onResume(owner: LifecycleOwner) {
+        println("==== onResume")
+    }
+
+    override fun onPause(owner: LifecycleOwner) {
+        println("==== onPause")
+    }
+
+    override fun onStop(owner: LifecycleOwner) {
+        println("==== onStop")
+    }
+
+    override fun onDestroy(owner: LifecycleOwner) {
+        println("==== onDestroy")
+    }
 }

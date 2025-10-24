@@ -6,7 +6,7 @@ import com.slax.reader.data.file.FileManager
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.network.dto.AuthParams
 import com.slax.reader.data.preferences.AppPreferences
-import com.slax.reader.utils.platform
+import com.slax.reader.utils.platformType
 import com.slax.reader.utils.timeUnix
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -55,7 +55,7 @@ class AuthDomain(
                 AuthParams(
                     code = code,
                     redirect_uri = redirectUrl,
-                    platform = platform,
+                    platform = platformType,
                     type = type
                 )
             )

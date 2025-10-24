@@ -34,6 +34,8 @@ expect fun AppWebView(
     modifier: Modifier,
     onHeightChange: ((Double) -> Unit)? = null,
     onTap: (() -> Unit)? = null,
+    webViewStartY: Double = 0.0,
+    onWebViewPositioned: (((Double) -> Unit) -> Unit)? = null,
 )
 
 @Composable
