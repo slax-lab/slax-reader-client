@@ -36,7 +36,7 @@ import com.mmk.kmpauth.google.GoogleButtonUiContainer
 import com.slax.reader.const.InboxRoutes
 import com.slax.reader.domain.auth.AppleSignInProvider
 import com.slax.reader.utils.WebView
-import com.slax.reader.utils.platform
+import com.slax.reader.utils.platformType
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -155,7 +155,7 @@ fun LoginScreen(navController: NavHostController) {
                 )
             }
 
-            if (platform == "ios") {
+            if (platformType == "ios") {
                 val appleProvider = remember { AppleSignInProvider() }
 
                 LoginButton(

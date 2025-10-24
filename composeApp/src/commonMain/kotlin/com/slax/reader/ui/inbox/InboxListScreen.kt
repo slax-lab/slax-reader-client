@@ -17,11 +17,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import com.slax.reader.const.AboutRoutes
 import com.slax.reader.const.SettingsRoutes
 import com.slax.reader.const.SpaceManagerRoutes
 import com.slax.reader.domain.auth.AuthDomain
+import com.slax.reader.ui.AppViewModel
 import com.slax.reader.ui.inbox.compenents.ArticleList
 import com.slax.reader.ui.inbox.compenents.InboxTitleRow
 import com.slax.reader.ui.inbox.compenents.UserAvatar
@@ -35,9 +37,17 @@ import slax_reader_client.composeapp.generated.resources.inbox_tab
 @Composable
 fun InboxListScreen(navCtrl: NavController) {
     val authDomain: AuthDomain = koinInject()
+    val viewModel = koinInject<AppViewModel>()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.addObserver(viewModel)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(viewModel)
+        }
+    }
 // MARK:    navController.navigate(SpaceManagerRoutes)
     Sidebar(
         drawerState = drawerState,
@@ -110,7 +120,7 @@ private fun NavigationBar(onAvatarClick: () -> Unit = {}) {
 @Composable
 private fun ContentSection(navCtrl: NavController) {
     // println("[watch][UI] recomposition ContentSection")
-    
+
     Column(
         modifier = Modifier
             .fillMaxSize()

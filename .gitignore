@@ -21,3 +21,7 @@ Podfile.lock
 *.xcworkspace
 .env
 *.jks
+firebase/
+.env.release
+composeApp/google-services.json
+iosApp/iosApp/GoogleService-Info.plist

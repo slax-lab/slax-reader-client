@@ -18,12 +18,15 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.slax.reader.data.database.model.UserTag
+import com.slax.reader.ui.AppViewModel
 import com.slax.reader.ui.bookmark.components.*
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import slax_reader_client.composeapp.generated.resources.*
 
@@ -42,7 +45,15 @@ data class OverviewViewBounds(
 @Composable
 fun DetailScreen(nav: NavController, bookmarkId: String) {
     val detailView = koinViewModel<BookmarkDetailViewModel>()
+    val viewModel = koinInject<AppViewModel>()
 
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.addObserver(viewModel)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(viewModel)
+        }
+    }
     // println("[watch][UI] recomposition DetailScreen")
 
     val details by detailView.bookmarkDetail.collectAsState()
@@ -171,6 +182,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
 
                 BookmarkContentView(
                     bookmarkId = bookmarkId,
+                    scrollState = scrollState,
                     onWebViewTap = {
                         // 在顶部的时候，不允许隐藏
                         // 非顶部的时候，可以点击进行隐藏、显示的切换

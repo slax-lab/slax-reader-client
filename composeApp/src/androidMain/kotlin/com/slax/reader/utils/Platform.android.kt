@@ -1,3 +1,3 @@
 package com.slax.reader.utils
 
-actual val platform = "android"
+actual val platformType = "android"

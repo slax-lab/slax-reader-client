@@ -1,8 +1,5 @@
-@file:OptIn(ExperimentalKotlinGradlePluginApi::class)
-
 import com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING
 import io.github.cdimascio.dotenv.dotenv
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
 import java.util.*
@@ -229,6 +226,11 @@ buildkonfig {
 
     val dotenv = dotenv {
         directory = rootProject.projectDir.absolutePath
+        filename = if (buildFlavor == "release") {
+            ".env.release"
+        } else {
+            ".env"
+        }
     }
 
     defaultConfigs {
@@ -269,4 +271,50 @@ tasks.register<Exec>("syncXcodeVersionConfig") {
     """.trimIndent()
 
     commandLine("sh", "-c", "echo '$xconfigContent' > Versions.xcconfig")
+}
+
+val syncFirebaseAndroid = tasks.register<Exec>("syncFirebaseAndroid") {
+    group = "setup"
+    description = "Copy Android Firebase config from ./firebase directory"
+
+    workingDir(rootProject.projectDir)
+
+    val androidFile = if (buildFlavor == "release") {
+        "google-services.release.json"
+    } else {
+        "google-services.dev.json"
+    }
+
+    commandLine("cp", "firebase/$androidFile", "composeApp/google-services.json")
+
+    doFirst {
+        println("📱 Copying Android Firebase: $androidFile -> google-services.json")
+    }
+}
+
+val syncFirebaseIOS = tasks.register<Exec>("syncFirebaseIOS") {
+    group = "setup"
+    description = "Copy iOS Firebase config from ./firebase directory"
+
+    workingDir(rootProject.projectDir)
+
+    val iOSFile = if (buildFlavor == "release") {
+        "GoogleService-Info.release.plist"
+    } else {
+        "GoogleService-Info.dev.plist"
+    }
+
+    commandLine("cp", "firebase/$iOSFile", "iosApp/iosApp/GoogleService-Info.plist")
+
+    doFirst {
+        println("🍎 Copying iOS Firebase: $iOSFile -> iosApp/iosApp/GoogleService-Info.plist")
+    }
+}
+
+tasks.named("preBuild").configure {
+    dependsOn(syncFirebaseAndroid)
+}
+
+tasks.matching { it.name.contains("embedAndSignAppleFrameworkForXcode") }.configureEach {
+    dependsOn(syncFirebaseIOS)
 }

@@ -35,7 +35,9 @@ actual fun AppWebView(
     htmlContent: String?,
     modifier: Modifier,
     onHeightChange: ((Double) -> Unit)?,
-    onTap: (() -> Unit)?
+    onTap: (() -> Unit)?,
+    webViewStartY: Double,
+    onWebViewPositioned: (((Double) -> Unit) -> Unit)?,
 ) {
 
     val onTapCallback = remember(onTap) { onTap }
