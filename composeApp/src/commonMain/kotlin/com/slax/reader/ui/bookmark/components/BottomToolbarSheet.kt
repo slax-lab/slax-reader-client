@@ -12,13 +12,39 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.slax.reader.ui.bookmark.ToolbarIcon
+import androidx.lifecycle.viewModelScope
+import com.slax.reader.data.database.model.UserBookmark
+import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.DrawableResource
+import slax_reader_client.composeapp.generated.resources.Res
+import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_archieve
+import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_archieved
+import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_chatbot
+import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_comment
+import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_delete
+import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_edittitle
+import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_feedback
+import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_share
+import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_star
+import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_starred
+import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_summary
+import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_underline
+import slax_reader_client.composeapp.generated.resources.ic_floating_panel_star
 
+data class ToolbarIcon(
+    val id: String,
+    val label: String,
+    val iconRes: DrawableResource? = null
+)
 
 /**
  * 底部弹出工具栏
@@ -26,12 +52,39 @@ import com.slax.reader.ui.bookmark.ToolbarIcon
  */
 @Composable
 fun BottomToolbarSheet(
+    detail: UserBookmark,
+    detailView: BookmarkDetailViewModel,
     visible: Boolean,
     onDismissRequest: () -> Unit,
-    pages: List<List<ToolbarIcon>>,
-    onIconClick: (pageIndex: Int, iconIndex: Int) -> Unit
+    onIconClick: (pageId: String, iconIndex: Int) -> Unit
 ) {
     // println("[watch][UI] recomposition BottomToolbarSheet")
+    val toolbarPages = remember(detail.isStarred, detail.archiveStatus) {
+        listOf(
+            listOf(
+                ToolbarIcon("chat", "Chat", Res.drawable.ic_bottom_panel_chatbot),
+                ToolbarIcon("summary", "总结全文", Res.drawable.ic_bottom_panel_summary),
+                ToolbarIcon(
+                    "star",
+                    "加星",
+                    if (detail.isStarred == 1) Res.drawable.ic_bottom_panel_starred else Res.drawable.ic_bottom_panel_star
+                ),
+                ToolbarIcon(
+                    "archive",
+                    "归档",
+                    if (detail.archiveStatus == 1) Res.drawable.ic_bottom_panel_archieved else Res.drawable.ic_bottom_panel_archieve
+                ),
+                ToolbarIcon("underline", "划线", Res.drawable.ic_bottom_panel_underline),
+                ToolbarIcon("comment", "评论", Res.drawable.ic_bottom_panel_comment),
+                ToolbarIcon("edit_title", "改标题", Res.drawable.ic_bottom_panel_edittitle),
+                ToolbarIcon("share", "分享", Res.drawable.ic_bottom_panel_share)
+            ),
+            listOf(
+                ToolbarIcon("feedback", "反馈", Res.drawable.ic_bottom_panel_feedback),
+                ToolbarIcon("delete", "删除", Res.drawable.ic_bottom_panel_delete),
+            )
+        )
+    }
 
     AnimatedVisibility(
         visible = visible,
@@ -78,8 +131,18 @@ fun BottomToolbarSheet(
                 shadowElevation = 8.dp
             ) {
                 PagerToolbar(
-                    pages = pages,
-                    onIconClick = onIconClick,
+                    pages = toolbarPages,
+                    onIconClick = { pageId, iconIndex ->
+                        detailView.viewModelScope.launch {
+                            if (pageId == "star") {
+                                detailView.toggleStar(detail.isStarred != 1)
+                            } else if (pageId == "archive") {
+                                detailView.toggleArchive(detail.archiveStatus != 1)
+                            }
+                        }
+
+                        onIconClick(pageId, iconIndex)
+                    },
                     modifier = Modifier.padding(top = 30.dp)
                 )
             }

@@ -123,6 +123,9 @@ class ApiService(
         return streamPost("/v1/bookmark/content", body = BookmarkContentParam(id))
     }
 
+    fun streamBookmarkOverview(id: String): Flow<String> {
+        return streamPost("/v1/bookmark/overview", body = BookmarkOverviewParam(id))
+    }
     suspend fun addBookmarkUrl(url: String, title: String?): HttpData<CollectionBookmarkResult> {
         return post(
             "/v1/bookmark/add_url", body = CollectionBookmarkParam(

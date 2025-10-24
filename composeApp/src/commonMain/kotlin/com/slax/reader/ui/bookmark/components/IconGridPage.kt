@@ -22,7 +22,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.slax.reader.ui.bookmark.ToolbarIcon
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -80,7 +79,8 @@ fun IconButton(
                         delay(150)
                         isPressed = false
                     }
-//                    onClick()
+
+                    onClick()
                 }
             ),
         horizontalAlignment = Alignment.CenterHorizontally,

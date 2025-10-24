@@ -23,17 +23,12 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.slax.reader.data.database.model.UserTag
 import com.slax.reader.ui.AppViewModel
+import com.slax.reader.data.network.dto.OverviewResponse
 import com.slax.reader.ui.bookmark.components.*
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.DrawableResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
-import slax_reader_client.composeapp.generated.resources.*
 
-data class ToolbarIcon(
-    val label: String,
-    val iconRes: DrawableResource? = null
-)
 
 data class OverviewViewBounds(
     val x: Float = 0f,
@@ -59,9 +54,32 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
     val details by detailView.bookmarkDetail.collectAsState()
     val detail = details.firstOrNull()
 
-    var currentTags: List<UserTag> by remember { mutableStateOf(emptyList()) }
-    LaunchedEffect(bookmarkId, detail?.metadataObj?.tags) {
+    var overview by remember { mutableStateOf("") }
+    var keyTakeaways by remember { mutableStateOf<List<String>>(emptyList()) }
+    LaunchedEffect(bookmarkId) {
         detailView.setBookmarkId(bookmarkId)
+        detailView.getBookmarkOverview(bookmarkId).collect { response ->
+            when (response) {
+                is OverviewResponse.Overview -> {
+                    overview += response.content
+                }
+                is OverviewResponse.KeyTakeaways -> {
+                    keyTakeaways = response.content
+                }
+                is OverviewResponse.Done -> {
+                    println("Overview loading completed")
+                }
+                is OverviewResponse.Error -> {
+                    println("Error loading overview: ${response.message}")
+                }
+                else -> {
+                }
+            }
+        }
+    }
+
+    var currentTags: List<UserTag> by remember { mutableStateOf(emptyList()) }
+    LaunchedEffect(detail?.metadataObj?.tags) {
         if (detail?.metadataObj?.tags != null) {
             currentTags = detailView.getTagNames(detail.metadataObj!!.tags)
         }
@@ -83,34 +101,13 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
         }
     }
 
+    // 监听滚动停止后恢复显示
     LaunchedEffect(scrollState.isScrollInProgress) {
         if (scrollState.isScrollInProgress && manuallyVisible) {
-            // 滚动时隐藏
             manuallyVisible = false
-        } else if (!scrollState.isScrollInProgress && scrollState.value == 0) {
-            // 滚动停止且在顶部时恢复显示
-            manuallyVisible = true
         }
     }
 
-    val toolbarPages = remember {
-        listOf(
-            listOf(
-                ToolbarIcon("Chat", Res.drawable.ic_bottom_panel_chatbot),
-                ToolbarIcon("总结全文", Res.drawable.ic_bottom_panel_summary),
-                ToolbarIcon("加星", Res.drawable.ic_bottom_panel_star),
-                ToolbarIcon("归档", Res.drawable.ic_bottom_panel_archieve),
-                ToolbarIcon("划线", Res.drawable.ic_bottom_panel_underline),
-                ToolbarIcon("评论", Res.drawable.ic_bottom_panel_comment),
-                ToolbarIcon("改标题", Res.drawable.ic_bottom_panel_comment),
-                ToolbarIcon("分享", Res.drawable.ic_bottom_panel_share)
-            ),
-            listOf(
-                ToolbarIcon("反馈", Res.drawable.ic_bottom_panel_feedback),
-                ToolbarIcon("删除", Res.drawable.ic_bottom_panel_delete),
-            )
-        )
-    }
 
 
     Box(
@@ -120,6 +117,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
             .pointerInput(Unit) {
                 detectTapGestures(
                     onTap = {
+                        // 点击非可点击区域时显示 FloatingActionBar
                         if (!isFloatingBarVisible) {
                             manuallyVisible = true
                         }
@@ -174,21 +172,24 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                     onAddTagClick = { showTagView = true }
                 )
 
-                OverviewView(
-                    modifier = Modifier.padding(top = 20.dp),
-                    onExpand = { showOverviewDialog = true },
-                    onBoundsChanged = { bounds -> overviewBounds = bounds }
-                )
+                if (overview.isNotEmpty()) {
+                    OverviewView(
+                        modifier = Modifier.padding(top = 20.dp),
+                        content = overview,
+                        onExpand = {
+                            showOverviewDialog = true
+                        },
+                        onBoundsChanged = { bounds -> overviewBounds = bounds }
+                    )
+                }
 
                 BookmarkContentView(
                     bookmarkId = bookmarkId,
                     scrollState = scrollState,
                     onWebViewTap = {
-                        // 在顶部的时候，不允许隐藏
-                        // 非顶部的时候，可以点击进行隐藏、显示的切换
-                        manuallyVisible = if (scrollState.value == 0) {
-                            true
-                        } else !isFloatingBarVisible
+                        if (!isFloatingBarVisible) {
+                            manuallyVisible = true
+                        }
                     }
                 )
             }
@@ -200,13 +201,18 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
             animationSpec = tween(durationMillis = 300)
         )
 
-        FloatingActionBar(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 58.dp)
-                .offset(y = floatingBarOffsetY),
-            onMoreClick = { showToolbar = true }
-        )
+        detail?.let {
+            FloatingActionBar(
+                detail = it,
+                detailView = detailView,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 58.dp)
+                    .offset(y = floatingBarOffsetY),
+
+                onMoreClick = { showToolbar = true }
+            )
+        }
 
         // 标签管理界面
         TagsManageBottomSheet(
@@ -223,25 +229,27 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
         )
 
         // Overview 弹窗
-        if (showOverviewDialog) {
-            OverviewDialog(
-                visible = showOverviewDialog,
-                onDismissRequest = { showOverviewDialog = false },
-                sourceBounds = overviewBounds
+        OverviewDialog(
+            visible = showOverviewDialog,
+            onDismissRequest = { showOverviewDialog = false },
+            sourceBounds = overviewBounds,
+            overview = overview,
+            keyTakeaways = keyTakeaways
+        )
+
+        detail?.let {
+            // 底部工具栏
+            BottomToolbarSheet(
+                detail = it,
+                detailView = detailView,
+                visible = showToolbar,
+                onDismissRequest = { showToolbar = false },
+                onIconClick = { pageIndex, iconIndex ->
+                    println("点击了第 ${pageIndex + 1} 页的第 ${iconIndex + 1} 个图标")
+                    showToolbar = false
+                }
             )
         }
-
-
-        // 底部工具栏
-        BottomToolbarSheet(
-            visible = showToolbar,
-            onDismissRequest = { showToolbar = false },
-            pages = toolbarPages,
-            onIconClick = { pageIndex, iconIndex ->
-                println("点击了第 ${pageIndex + 1} 页的第 ${iconIndex + 1} 个图标")
-                showToolbar = false
-            }
-        )
 
         NavigatorBar(
             navController = nav,
