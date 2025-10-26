@@ -7,7 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.slax.reader.ui.bookmark.ToolbarIcon
 
 /**
  * 支持左右滑动分页的工具栏容器
@@ -15,7 +14,7 @@ import com.slax.reader.ui.bookmark.ToolbarIcon
 @Composable
 fun PagerToolbar(
     pages: List<List<ToolbarIcon>>,
-    onIconClick: (pageIndex: Int, iconIndex: Int) -> Unit,
+    onIconClick: (pageId: String, iconIndex: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     // println("[watch][UI] recomposition PagerToolbar")
@@ -35,7 +34,7 @@ fun PagerToolbar(
         ) { page ->
             IconGridPage(
                 icons = pages[page],
-                onIconClick = { iconIndex -> onIconClick(page, iconIndex) }
+                onIconClick = { iconId, iconIndex -> onIconClick( iconId, iconIndex) }
             )
         }
 
@@ -51,7 +50,7 @@ fun PagerToolbar(
 @Composable
 private fun IconGridPage(
     icons: List<ToolbarIcon>,
-    onIconClick: (Int) -> Unit,
+    onIconClick: (String, Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -66,7 +65,7 @@ private fun IconGridPage(
             icons.take(4).forEachIndexed { index, icon ->
                 IconButton(
                     icon = icon,
-                    onClick = { onIconClick(index) }
+                    onClick = { onIconClick(icon.id, index) }
                 )
             }
 
@@ -84,7 +83,7 @@ private fun IconGridPage(
                 icons.drop(4).take(4).forEachIndexed { index, icon ->
                     IconButton(
                         icon = icon,
-                        onClick = { onIconClick(index + 4) }
+                        onClick = { onIconClick(icon.id, index + 4) }
                     )
                 }
 

@@ -14,14 +14,23 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.slax.reader.data.database.model.UserBookmark
+import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_floating_panel_archieve
+import slax_reader_client.composeapp.generated.resources.ic_floating_panel_archieved
 import slax_reader_client.composeapp.generated.resources.ic_floating_panel_more
 import slax_reader_client.composeapp.generated.resources.ic_floating_panel_star
+import slax_reader_client.composeapp.generated.resources.ic_floating_panel_starred
 
 @Composable
 fun FloatingActionBar(
+    detail: UserBookmark,
+    detailView: BookmarkDetailViewModel,
     modifier: Modifier = Modifier,
     onMoreClick: () -> Unit = {}
 ) {
@@ -58,7 +67,11 @@ fun FloatingActionBar(
 
             ) {
                 Surface(
-                    onClick = { /* 点击事件 */ },
+                    onClick = {
+                        detailView.viewModelScope.launch {
+                            detailView.toggleStar(detail.isStarred != 1)
+                        }
+                    },
                     modifier = Modifier
                         .size(50.dp),
                     color = Color.Transparent,
@@ -67,7 +80,7 @@ fun FloatingActionBar(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            painter = painterResource(Res.drawable.ic_floating_panel_star),
+                            painter = painterResource(if (detail.isStarred == 1) Res.drawable.ic_floating_panel_starred else Res.drawable.ic_floating_panel_star),
                             contentDescription = null,
                             tint = Color.Unspecified,
                             modifier = Modifier.size(20.dp)
@@ -76,7 +89,11 @@ fun FloatingActionBar(
                 }
 
                 Surface(
-                    onClick = { /* 点击事件 */ },
+                    onClick = {
+                        detailView.viewModelScope.launch {
+                            detailView.toggleArchive(detail.archiveStatus != 1)
+                        }
+                    },
                     modifier = Modifier
                         .size(50.dp),
                     color = Color.Transparent,
@@ -85,7 +102,7 @@ fun FloatingActionBar(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            painter = painterResource(Res.drawable.ic_floating_panel_archieve),
+                            painter = painterResource(if (detail.archiveStatus == 1) Res.drawable.ic_floating_panel_archieved else Res.drawable.ic_floating_panel_archieve),
                             contentDescription = null,
                             tint = Color.Unspecified,
                             modifier = Modifier.size(20.dp)

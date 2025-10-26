@@ -20,19 +20,13 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.slax.reader.data.database.model.UserTag
+import com.slax.reader.data.network.dto.OverviewResponse
 import com.slax.reader.ui.AppViewModel
 import com.slax.reader.ui.bookmark.components.*
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.DrawableResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
-import slax_reader_client.composeapp.generated.resources.*
-import kotlin.math.abs
 
-data class ToolbarIcon(
-    val label: String,
-    val iconRes: DrawableResource? = null
-)
 
 data class OverviewViewBounds(
     val x: Float = 0f,
@@ -58,9 +52,44 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
     val details by detailView.bookmarkDetail.collectAsState()
     val detail = details.firstOrNull()
 
-    var currentTags: List<UserTag> by remember { mutableStateOf(emptyList()) }
-    LaunchedEffect(bookmarkId, detail?.metadataObj?.tags) {
+    var overview by remember { mutableStateOf("") }
+    var keyTakeaways by remember { mutableStateOf<List<String>>(emptyList()) }
+    LaunchedEffect(bookmarkId) {
+        // 清空旧数据
+        overview = ""
+        keyTakeaways = emptyList()
+
         detailView.setBookmarkId(bookmarkId)
+        try {
+            detailView.getBookmarkOverview(bookmarkId).collect { response ->
+                when (response) {
+                    is OverviewResponse.Overview -> {
+                        overview += response.content
+                    }
+
+                    is OverviewResponse.KeyTakeaways -> {
+                        keyTakeaways = response.content
+                    }
+
+                    is OverviewResponse.Done -> {
+                        println("Overview loading completed")
+                    }
+
+                    is OverviewResponse.Error -> {
+                        println("Error loading overview: ${response.message}")
+                    }
+
+                    else -> {
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            println("Failed to load overview: ${e.message}")
+        }
+    }
+
+    var currentTags: List<UserTag> by remember { mutableStateOf(emptyList()) }
+    LaunchedEffect(detail?.metadataObj?.tags) {
         if (detail?.metadataObj?.tags != null) {
             currentTags = detailView.getTagNames(detail.metadataObj!!.tags)
         }
@@ -71,50 +100,32 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
     var showToolbar by remember { mutableStateOf(false) }
     var overviewBounds by remember { mutableStateOf(OverviewViewBounds()) }
 
-    // WebView 滚动偏移 - 使用 Float 状态避免装箱
+    // WebView 滚动偏移
     var webViewScrollY by remember { mutableFloatStateOf(0f) }
 
-    // 顶部内容高度 (px)
+    // 顶部内容高度 (px) - 包含间距
     var topContentHeightPx by remember { mutableFloatStateOf(0f) }
 
     // FloatingActionBar 显示状态
     var manuallyVisible by remember { mutableStateOf(true) }
     val isFloatingBarVisible by remember { derivedStateOf { manuallyVisible } }
+
+    // 头部跟随滚动的偏移
     val headerTranslation by remember {
         derivedStateOf {
             -webViewScrollY.coerceIn(0f, topContentHeightPx)
         }
     }
 
-    val toolbarPages = remember {
-        listOf(
-            listOf(
-                ToolbarIcon("Chat", Res.drawable.ic_bottom_panel_chatbot),
-                ToolbarIcon("总结全文", Res.drawable.ic_bottom_panel_summary),
-                ToolbarIcon("加星", Res.drawable.ic_bottom_panel_star),
-                ToolbarIcon("归档", Res.drawable.ic_bottom_panel_archieve),
-                ToolbarIcon("划线", Res.drawable.ic_bottom_panel_underline),
-                ToolbarIcon("评论", Res.drawable.ic_bottom_panel_comment),
-                ToolbarIcon("改标题", Res.drawable.ic_bottom_panel_comment),
-                ToolbarIcon("分享", Res.drawable.ic_bottom_panel_share)
-            ),
-            listOf(
-                ToolbarIcon("反馈", Res.drawable.ic_bottom_panel_feedback),
-                ToolbarIcon("删除", Res.drawable.ic_bottom_panel_delete),
-            )
-        )
-    }
-
-
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFFCFCFC))
     ) {
-        // WebView 全屏滚动
+        // WebView 全屏滚动，使用原生 contentInset
         BookmarkContentView(
             bookmarkId = bookmarkId,
-            topContentHeightPx = topContentHeightPx,
+            topContentInsetPx = topContentHeightPx,
             onScrollChange = { scrollY ->
                 webViewScrollY = scrollY
                 val shouldShow = scrollY <= 10f
@@ -127,34 +138,31 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
             }
         )
 
-        // 顶部内容绝对定位悬浮，使用 graphicsLayer 跟随 WebView 滚动
-        // 使用 Box 包裹以测量完整的高度（包括 padding）
+        // 顶部内容跟随滚动
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .statusBarsPadding()
-                .onGloballyPositioned { coordinates ->
-                    // 测量包含 statusBarsPadding 后的完整高度
-                    val newHeight = coordinates.size.height.toFloat()
-                    if (abs(topContentHeightPx - newHeight) > 0.5f) {
-                        println("[DetailScreen] topContentHeight updated: $topContentHeightPx -> $newHeight")
-                        topContentHeightPx = newHeight
-                    }
-                }
+                .statusBarsPadding()  // 避开状态栏
                 .graphicsLayer {
                     // 跟随 WebView 滚动偏移，实现 1:1 同步
                     translationY = headerTranslation
-                    if (webViewScrollY > 0f && webViewScrollY % 50f < 1f) {
-                        println("[DetailScreen] graphicsLayer translationY=$headerTranslation (rawScrollY=$webViewScrollY)")
-                    }
                 }
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
+                    .padding(bottom = 16.dp)  // 底部留出视觉间距
+                    .onGloballyPositioned { coordinates ->
+                        // 测量 Column 高度（不包括 Box 的 statusBarsPadding）
+                        // 所以需要在 ContentView 中手动加上 statusBarsPadding
+                        val newHeight = coordinates.size.height.toFloat()
+                        topContentHeightPx = newHeight
+                        println("[DetailScreen] Column height measured: $newHeight px")
+                    }
             ) {
-                NavigatorBarSpacer()
+                // 不需要 NavigatorBarSpacer，因为 Box 已经有 statusBarsPadding
+                Spacer(modifier = Modifier.height(44.dp))
 
                 Text(
                     text = detail?.displayTitle ?: "",
@@ -189,11 +197,16 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                     onAddTagClick = { showTagView = true }
                 )
 
-                OverviewView(
-                    modifier = Modifier.padding(top = 20.dp, bottom = 20.dp),
-                    onExpand = { showOverviewDialog = true },
-                    onBoundsChanged = { bounds -> overviewBounds = bounds }
-                )
+                if (overview.isNotEmpty()) {
+                    OverviewView(
+                        modifier = Modifier.padding(top = 20.dp),
+                        content = overview,
+                        onExpand = {
+                            showOverviewDialog = true
+                        },
+                        onBoundsChanged = { bounds -> overviewBounds = bounds }
+                    )
+                }
             }
         }
 
@@ -203,13 +216,18 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
             animationSpec = tween(durationMillis = 300)
         )
 
-        FloatingActionBar(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 58.dp)
-                .offset(y = floatingBarOffsetY),
-            onMoreClick = { showToolbar = true }
-        )
+        detail?.let {
+            FloatingActionBar(
+                detail = it,
+                detailView = detailView,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 58.dp)
+                    .offset(y = floatingBarOffsetY),
+
+                onMoreClick = { showToolbar = true }
+            )
+        }
 
         // 标签管理界面
         TagsManageBottomSheet(
@@ -230,21 +248,25 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
             OverviewDialog(
                 visible = showOverviewDialog,
                 onDismissRequest = { showOverviewDialog = false },
-                sourceBounds = overviewBounds
+                sourceBounds = overviewBounds,
+                overview = overview,
+                keyTakeaways = keyTakeaways
             )
         }
 
-
-        // 底部工具栏
-        BottomToolbarSheet(
-            visible = showToolbar,
-            onDismissRequest = { showToolbar = false },
-            pages = toolbarPages,
-            onIconClick = { pageIndex, iconIndex ->
-                println("点击了第 ${pageIndex + 1} 页的第 ${iconIndex + 1} 个图标")
-                showToolbar = false
-            }
-        )
+        detail?.let {
+            // 底部工具栏
+            BottomToolbarSheet(
+                detail = it,
+                detailView = detailView,
+                visible = showToolbar,
+                onDismissRequest = { showToolbar = false },
+                onIconClick = { pageIndex, iconIndex ->
+                    println("点击了第 ${pageIndex + 1} 页的第 ${iconIndex + 1} 个图标")
+                    showToolbar = false
+                }
+            )
+        }
 
         NavigatorBar(
             navController = nav,

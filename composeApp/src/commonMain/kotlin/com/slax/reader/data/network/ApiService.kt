@@ -3,6 +3,7 @@ package com.slax.reader.data.network
 import app.slax.reader.SlaxConfig
 import com.slax.reader.const.AppError
 import com.slax.reader.data.network.dto.*
+import com.slax.reader.utils.parseConcatenatedJson
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -14,6 +15,8 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlin.text.iterator
 
 class ApiService(
     private val httpClient: HttpClient,
@@ -98,7 +101,7 @@ class ApiService(
         return post("/v1/sync/token")
     }
 
-    suspend fun uploadChanges(changes: List<ChangesItem>): HttpData<Any> = withContext(Dispatchers.IO) {
+    suspend fun uploadChanges(changes: List<ChangesItem>): HttpData<UploadChangesResult> = withContext(Dispatchers.IO) {
         return@withContext post("/v1/sync/changes", body = changes)
     }
 
@@ -123,6 +126,10 @@ class ApiService(
         return streamPost("/v1/bookmark/content", body = BookmarkContentParam(id))
     }
 
+    fun streamBookmarkOverview(id: String): Flow<String> {
+        return streamPost("/v1/bookmark/overview", body = BookmarkOverviewParam(id))
+    }
+
     suspend fun addBookmarkUrl(url: String, title: String?): HttpData<CollectionBookmarkResult> {
         return post(
             "/v1/bookmark/add_url", body = CollectionBookmarkParam(
@@ -143,4 +150,73 @@ class ApiService(
         )
     }
 
+    suspend fun getBookmarkOverview(bookmarkId: String): Flow<OverviewResponse> =
+        withContext(Dispatchers.IO) {
+            flow {
+                var errorCacheText = ""
+                var isDone = false
+
+                streamBookmarkOverview(bookmarkId).collect { text ->
+                    if (isDone || text.isEmpty()) {
+                        return@collect
+                    }
+
+                    try {
+                        val parsedJsons = try {
+                            val combineText = errorCacheText + text
+                            errorCacheText = ""
+                            combineText.parseConcatenatedJson<OverviewSocketData>()
+                        } catch (_: Exception) {
+                            println("Need concat: $text")
+                            errorCacheText = text
+                            return@collect
+                        }
+
+                        if (parsedJsons.isEmpty()) {
+                            return@collect
+                        }
+
+                        for (res in parsedJsons) {
+                            when {
+                                res.type == "error" -> {
+                                    emit(OverviewResponse.Error(res.message ?: "Unknown error"))
+                                    isDone = true
+                                    return@collect
+                                }
+
+                                res.type == "done" || res.data?.done == true -> {
+                                    emit(OverviewResponse.Done)
+                                    isDone = true
+                                    return@collect
+                                }
+
+                                res.data != null -> {
+                                    when {
+                                        res.data.overview != null -> {
+                                            emit(OverviewResponse.Overview(res.data.overview))
+                                        }
+
+                                        res.data.tags != null -> {
+                                            emit(OverviewResponse.Tags(res.data.tags))
+                                        }
+
+                                        res.data.tag != null -> {
+                                            emit(OverviewResponse.Tag(res.data.tag))
+                                        }
+
+                                        res.data.key_takeaways != null -> {
+                                            emit(OverviewResponse.KeyTakeaways(res.data.key_takeaways))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } catch (error: Exception) {
+                        println("Error processing overview: ${error.message}, text: $text")
+                        emit(OverviewResponse.Error(error.message ?: "Unknown error"))
+                        isDone = true
+                    }
+                }
+            }
+        }
 }

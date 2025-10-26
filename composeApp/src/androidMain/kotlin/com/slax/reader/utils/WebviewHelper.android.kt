@@ -53,10 +53,31 @@ actual fun AppWebView(
             object : WebView(context) {
                 override fun onScrollChanged(l: Int, t: Int, oldl: Int, oldt: Int) {
                     super.onScrollChanged(l, t, oldl, oldt)
+                    // 禁用水平滚动
+                    if (l != 0) {
+                        scrollTo(0, t)
+                    }
                     // Android WebView scrollY 已经是设备像素
                     // 直接用于 graphicsLayer.translationY
                     println("[Android WebView Scroll] scrollY(px)=$t")
                     onScrollChangeCallback?.invoke(t.toFloat())
+                }
+
+                override fun overScrollBy(
+                    deltaX: Int, deltaY: Int,
+                    scrollX: Int, scrollY: Int,
+                    scrollRangeX: Int, scrollRangeY: Int,
+                    maxOverScrollX: Int, maxOverScrollY: Int,
+                    isTouchEvent: Boolean
+                ): Boolean {
+                    // 禁用水平过度滚动
+                    return super.overScrollBy(
+                        0, deltaY,
+                        0, scrollY,
+                        0, scrollRangeY,
+                        0, maxOverScrollY,
+                        isTouchEvent
+                    )
                 }
             }.apply {
                 setBackgroundColor(Color.TRANSPARENT)
@@ -87,8 +108,9 @@ actual fun AppWebView(
                     @Suppress("DEPRECATION")
                     setRenderPriority(WebSettings.RenderPriority.HIGH)
                 }
-                val topPadding = topContentInsetPx.coerceAtLeast(0f).toInt()
-                setPadding(paddingLeft, topPadding, paddingRight, paddingBottom)
+
+                // Android WebView 的 setPadding 只影响滚动条，不影响内容
+                // 所以我们使用 CSS padding 来实现 contentInset 效果
 
                 setOnTouchListener { _, event ->
                     when (event.action) {
@@ -110,10 +132,8 @@ actual fun AppWebView(
             }
         },
         update = { webView ->
-            val topPadding = topContentInsetPx.coerceAtLeast(0f).toInt()
-            if (webView.paddingTop != topPadding) {
-                webView.setPadding(webView.paddingLeft, topPadding, webView.paddingRight, webView.paddingBottom)
-            }
+            // Android WebView 不需要更新 padding
+            // contentInset 通过 CSS padding 实现
             when {
                 url != null -> {
                     webView.loadUrl(url)

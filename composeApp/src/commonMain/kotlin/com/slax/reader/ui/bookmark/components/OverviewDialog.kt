@@ -7,10 +7,15 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -20,12 +25,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.ui.bookmark.OverviewViewBounds
+import org.jetbrains.compose.resources.painterResource
+import slax_reader_client.composeapp.generated.resources.Res
+import slax_reader_client.composeapp.generated.resources.ic_xs_blue_down_arrow
 import kotlin.math.roundToInt
 
 /**
@@ -35,7 +46,9 @@ import kotlin.math.roundToInt
 fun OverviewDialog(
     visible: Boolean,
     onDismissRequest: () -> Unit,
-    sourceBounds: OverviewViewBounds
+    sourceBounds: OverviewViewBounds,
+    overview: String = "",
+    keyTakeaways: List<String> = emptyList()
 ) {
     // println("[watch][UI] recomposition OverviewDialog")
 
@@ -43,15 +56,28 @@ fun OverviewDialog(
 
     var screenWidth by remember { mutableStateOf(0f) }
     var screenHeight by remember { mutableStateOf(0f) }
+    var contentHeight by remember { mutableStateOf(0f) }
+
+    // 内部动画触发状态
+    var internalVisible by remember { mutableStateOf(false) }
+
+    // 延迟触发动画，确保组件先添加到组合树再开始动画
+    LaunchedEffect(visible) {
+        if (visible) {
+            internalVisible = true
+        } else {
+            internalVisible = false
+        }
+    }
 
     val animationProgress by animateFloatAsState(
-        targetValue = if (visible) 1f else 0f,
+        targetValue = if (internalVisible) 1f else 0f,
         animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
         label = "dialogAnimation"
     )
 
     val alpha by animateFloatAsState(
-        targetValue = if (visible) 1f else 0f,
+        targetValue = if (internalVisible) 1f else 0f,
         animationSpec = tween(durationMillis = 300),
         label = "alphaAnimation"
     )
@@ -82,7 +108,12 @@ fun OverviewDialog(
             )
 
             val targetWidth = with(density) { (screenWidth - 24.dp.toPx()) }
-            val targetHeight = 300f
+            val maxDialogHeight = screenHeight * 0.8f
+            val targetHeight = if (contentHeight > 0f) {
+                minOf(contentHeight, maxDialogHeight)
+            } else {
+                maxDialogHeight
+            }
 
             val currentWidth = sourceBounds.width + (targetWidth - sourceBounds.width) * animationProgress
             val currentHeight = sourceBounds.height + (targetHeight - sourceBounds.height) * animationProgress
@@ -111,37 +142,158 @@ fun OverviewDialog(
                         },
                     shape = RoundedCornerShape(16.dp),
                     color = Color.White,
-                    shadowElevation = 8.dp
                 ) {
+
+                    val paddingTopValue = 24.dp
+                    val buttonHeight = 45.dp
                     Column(
-                        modifier = Modifier.padding(24.dp),
+                        modifier = Modifier
+                            .padding(top = paddingTopValue)
+                            .verticalScroll(rememberScrollState()),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(
-                            "全文概要",
-                            style = TextStyle(
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF0F1419)
-                            )
-                        )
+                        Column(
+                            modifier = Modifier
+                                .padding(horizontal = 20.dp)
+                                .onGloballyPositioned { coordinates ->
+                                    val measuredHeight = coordinates.size.height.toFloat()
+                                    if (measuredHeight > 0) {
+                                        val paddingPx = with(density) { (paddingTopValue + buttonHeight).toPx() }
+                                        contentHeight = measuredHeight + paddingPx
+                                    }
+                                },
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            if (overview.isNotEmpty()) {
+                                val annotatedText = remember(overview) {
+                                    buildAnnotatedString {
+                                        // 灰色前缀
+                                        withStyle(style = SpanStyle(color = Color(0xFF999999))) {
+                                            append("全文概要: ")
+                                        }
+                                        append(overview)
+                                    }
+                                }
 
-                        Box(
+                                Text(
+                                    annotatedText,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    style = TextStyle(
+                                        fontSize = 15.sp,
+                                        lineHeight = 24.sp,
+                                        color = Color(0xFF333333)
+                                    )
+                                )
+                            }
+
+                            if (keyTakeaways.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(14.dp))
+
+                                keyTakeaways.forEachIndexed { index, takeaway ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(IntrinsicSize.Min),
+                                        horizontalArrangement = Arrangement.Start,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .width(6.dp)
+                                                .fillMaxHeight()
+                                        ) {
+
+                                            val lineColor = Color(0x14333333)
+                                            if (index > 0) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .align(Alignment.TopCenter)
+                                                        .width(1.dp)
+                                                        .fillMaxHeight(0.5f)
+                                                        .background(lineColor)
+                                                )
+                                            }
+
+                                            if (index < keyTakeaways.size - 1) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .align(Alignment.BottomCenter)
+                                                        .width(1.dp)
+                                                        .fillMaxHeight(0.5f)
+                                                        .background(lineColor)
+                                                )
+                                            }
+
+                                            Box(
+                                                modifier = Modifier
+                                                    .align(Alignment.Center)
+                                                    .size(6.dp)
+                                                    .background(Color(0xCCF5F5F3))
+                                                    .border(1.26.dp, Color(0xFFD3D3D3), CircleShape)
+                                            )
+                                        }
+
+                                        // 右侧：文本内容
+                                        Text(
+                                            text = takeaway,
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .padding(start = 12.dp)
+                                                .padding(vertical = 6.dp),
+                                            style = TextStyle(
+                                                fontSize = 14.sp,
+                                                lineHeight = 20.sp,
+                                                color = Color(0xCC333333)
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .padding(top = 24.dp)
+                                    .height(0.5.dp)
+                                    .background(Color(0x14333333))
+                                    .fillMaxWidth()
+                            )
+                        }
+
+                        Surface(
+                            onClick = {
+                                onDismissRequest()
+                            },
+                            color = Color.Transparent,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 16.dp)
-                                .height(1.dp)
-                                .background(Color(0x14333333))
-                        )
-
-                        Text(
-                            "这里是全文概要的内容...",
-                            style = TextStyle(
-                                fontSize = 14.sp,
-                                lineHeight = 20.sp,
-                                color = Color(0xFF666666)
-                            )
-                        )
+                                .height(buttonHeight),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        "收起",
+                                        style = TextStyle(
+                                            fontSize = 12.sp,
+                                            lineHeight = 16.5.sp,
+                                            color = Color(0xFF5490C2)
+                                        )
+                                    )
+                                    Icon(
+                                        painter = painterResource(Res.drawable.ic_xs_blue_down_arrow),
+                                        contentDescription = null,
+                                        tint = Color.Unspecified,
+                                        modifier = Modifier.size(8.dp).graphicsLayer { rotationZ = 180f }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

@@ -18,7 +18,6 @@ fun wrapHtmlWithCSS(htmlContent: String, topPaddingPx: Float = 0f): String {
                 $articleStyle
                 $resetStyle
 
-                /* 顶部 padding 为悬浮内容预留空间 */
                 body {
                     padding-top: ${topPaddingPx}px !important;
                     padding-left: 20px !important;

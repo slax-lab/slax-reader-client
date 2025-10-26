@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.slax.reader.data.database.dao.BookmarkDao
 import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.data.database.model.UserTag
+import com.slax.reader.data.network.ApiService
+import com.slax.reader.data.network.dto.OverviewResponse
 import com.slax.reader.domain.sync.BackgroundDomain
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -15,8 +17,10 @@ import kotlinx.serialization.json.Json
 
 class BookmarkDetailViewModel(
     private val bookmarkDao: BookmarkDao,
-    private val backgroundDomain: BackgroundDomain
+    private val backgroundDomain: BackgroundDomain,
+    private val apiService: ApiService,
 ) : ViewModel() {
+
     private var _bookmarkId = MutableStateFlow<String?>(null)
 
     fun setBookmarkId(id: String) {
@@ -40,12 +44,16 @@ class BookmarkDetailViewModel(
             bookmarkDao.watchBookmarkDetail(id)
         }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    suspend fun toggleStar(bookmarkId: String, isStar: Boolean) = withContext(Dispatchers.IO) {
-        bookmarkDao.updateBookmarkStar(bookmarkId, if (isStar) 1 else 0)
+    suspend fun toggleStar(isStar: Boolean) = withContext(Dispatchers.IO) {
+        _bookmarkId.value?.let { id ->
+            bookmarkDao.updateBookmarkStar(id, if (isStar) 1 else 0)
+        }
     }
 
-    suspend fun toggleArchive(bookmarkId: String, isArchive: Boolean) = withContext(Dispatchers.IO) {
-        bookmarkDao.updateBookmarkArchive(bookmarkId, if (isArchive) 1 else 0)
+    suspend fun toggleArchive(isArchive: Boolean) = withContext(Dispatchers.IO) {
+        _bookmarkId.value?.let { id ->
+            bookmarkDao.updateBookmarkArchive(id, if (isArchive) 1 else 0)
+        }
     }
 
     suspend fun updateBookmarkTags(bookmarkId: String, newTagIds: List<String>) = withContext(Dispatchers.IO) {
@@ -54,5 +62,9 @@ class BookmarkDetailViewModel(
 
     suspend fun getBookmarkContent(bookmarkId: String): String = withContext(Dispatchers.IO) {
         return@withContext backgroundDomain.getBookmarkContent(bookmarkId)
+    }
+
+    suspend fun getBookmarkOverview(bookmarkId: String): Flow<OverviewResponse> {
+        return apiService.getBookmarkOverview(bookmarkId)
     }
 }
