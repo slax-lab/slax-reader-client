@@ -1,5 +1,6 @@
 package com.slax.reader.utils
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.slax.reader.const.articleStyle
@@ -51,5 +52,6 @@ expect fun WebView(
     url: String? = null,
     htmlContent: String? = null,
     modifier: Modifier,
+    contentInsets: PaddingValues? = null,
     onScroll: ((x: Double, y: Double) -> Unit)? = null,
 )
