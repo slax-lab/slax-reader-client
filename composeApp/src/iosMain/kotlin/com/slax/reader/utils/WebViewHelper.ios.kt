@@ -1,16 +1,26 @@
 package com.slax.reader.utils
 
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.uikit.LocalUIViewController
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.viewinterop.UIKitInteropInteractionMode
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
 import app.slax.reader.SlaxConfig
 import kotlinx.cinterop.BetaInteropApi
+import kotlinx.cinterop.CValue
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.ObjCAction
 import kotlinx.cinterop.useContents
@@ -20,7 +30,19 @@ import platform.Foundation.NSURL
 import platform.Foundation.NSURLRequest
 import platform.Foundation.NSValue
 import platform.SafariServices.SFSafariViewController
-import platform.UIKit.*
+import platform.UIKit.CGPointValue
+import platform.UIKit.UIColor
+import platform.UIKit.UIEdgeInsets
+import platform.UIKit.UIEdgeInsetsMake
+import platform.UIKit.UIGestureRecognizer
+import platform.UIKit.UIGestureRecognizerDelegateProtocol
+import platform.UIKit.UIScrollView
+import platform.UIKit.UIScrollViewContentInsetAdjustmentBehavior
+import platform.UIKit.UIScrollViewDecelerationRateNormal
+import platform.UIKit.UIScrollViewDelegateProtocol
+import platform.UIKit.UITapGestureRecognizer
+import platform.UIKit.UITouch
+import platform.UIKit.UIView
 import platform.WebKit.WKPreferences
 import platform.WebKit.WKWebView
 import platform.WebKit.WKWebViewConfiguration
@@ -87,7 +109,8 @@ actual fun AppWebView(
     val scrollObserver = remember {
         KVOObserver { keyPath, newValue, _ ->
             if (keyPath == "contentOffset") {
-                val offsetPoints = (newValue as? NSValue)?.CGPointValue()?.useContents { y }?.toFloat() ?: 0f
+                val offsetPoints =
+                    (newValue as? NSValue)?.CGPointValue()?.useContents { y }?.toFloat() ?: 0f
                 val offsetPx = offsetPoints * densityScale
                 println("[iOS WebView Scroll] offsetY(points)=$offsetPoints -> offsetPx=$offsetPx")
                 onScrollChangeState.value?.invoke(offsetPx)
@@ -183,6 +206,18 @@ actual fun OpenInBrowserTab(url: String) {
     viewController.presentViewController(safariVC, animated = true, completion = null)
 }
 
+@OptIn(ExperimentalForeignApi::class)
+val UIEdgeInsets_zero: CValue<UIEdgeInsets>
+    get() = UIEdgeInsetsMake(0.0, 0.0, 0.0, 0.0)
+
+@OptIn(ExperimentalForeignApi::class)
+val PaddingValues.toUIEdgeInsets: CValue<UIEdgeInsets>
+    get() = UIEdgeInsetsMake(
+        calculateTopPadding().value.toDouble(),
+        calculateLeftPadding(LayoutDirection.Ltr).value.toDouble(),
+        calculateBottomPadding().value.toDouble(),
+        calculateRightPadding(LayoutDirection.Ltr).value.toDouble(),
+    )
 
 @OptIn(ExperimentalForeignApi::class)
 @Composable
@@ -190,8 +225,21 @@ actual fun WebView(
     url: String?,
     htmlContent: String?,
     modifier: Modifier,
+    contentInsets: PaddingValues?,
     onScroll: ((x: Double, y: Double) -> Unit)?
 ) {
+
+    val scrollDelegate = remember {
+        object : NSObject(), UIScrollViewDelegateProtocol {
+            override fun scrollViewDidScroll(scrollView: UIScrollView) {
+                val contentOffset = scrollView.contentOffset
+                onScroll?.invoke(
+                    contentOffset.useContents { x },
+                    contentOffset.useContents { y }
+                )
+            }
+        }
+    }
 
     UIKitView(
         modifier = modifier,
@@ -207,20 +255,15 @@ actual fun WebView(
                 configuration = config,
             ).apply {
                 inspectable = SlaxConfig.BUILD_ENV == "dev"
+                backgroundColor = Color(0xFFFCFCFC).toUIColor()
 
                 scrollView.contentInsetAdjustmentBehavior =
                     UIScrollViewContentInsetAdjustmentBehavior.UIScrollViewContentInsetAdjustmentNever
                 scrollView.alwaysBounceVertical = true
                 scrollView.alwaysBounceHorizontal = false
+                scrollView.delegate = scrollDelegate
 
-                scrollView.delegate = object : NSObject(), UIScrollViewDelegateProtocol {
-                    override fun scrollViewDidScroll(scrollView: UIScrollView) {
-                        val offset = scrollView.contentOffset
-                        onScroll?.invoke(offset.useContents { x }, offset.useContents { y })
-                    }
-                }
-
-                backgroundColor = Color(0xFFFCFCFC).toUIColor()
+                scrollView.contentInset = contentInsets?.toUIEdgeInsets ?: UIEdgeInsets_zero
                 when {
                     url != null -> loadRequest(NSURLRequest(uRL = NSURL(string = url)))
                     htmlContent != null -> loadHTMLString(htmlContent, baseURL = null)
@@ -229,10 +272,7 @@ actual fun WebView(
         },
         update = { view ->
             view.apply {
-                when {
-                    url != null -> loadRequest(NSURLRequest(uRL = NSURL(string = url)))
-                    htmlContent != null -> loadHTMLString(htmlContent, baseURL = null)
-                }
+                scrollView.contentInset = contentInsets?.toUIEdgeInsets ?: UIEdgeInsets_zero
             }
         }
     )
