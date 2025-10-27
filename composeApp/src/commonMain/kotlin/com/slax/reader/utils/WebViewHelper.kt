@@ -5,7 +5,7 @@ import androidx.compose.ui.Modifier
 import com.slax.reader.const.articleStyle
 import com.slax.reader.const.resetStyle
 
-fun wrapHtmlWithCSS(htmlContent: String): String {
+fun wrapHtmlWithCSS(htmlContent: String, topPaddingPx: Float = 0f): String {
     return """
         <!DOCTYPE html>
         <html>
@@ -17,6 +17,14 @@ fun wrapHtmlWithCSS(htmlContent: String): String {
             <style>
                 $articleStyle
                 $resetStyle
+
+                /* 顶部 padding 为悬浮内容预留空间 */
+                body {
+                    padding-top: ${topPaddingPx}px !important;
+                    padding-left: 20px !important;
+                    padding-right: 20px !important;
+                    padding-bottom: 20px !important;
+                }
             </style>
         </head>
         <body>
@@ -31,11 +39,10 @@ fun wrapHtmlWithCSS(htmlContent: String): String {
 expect fun AppWebView(
     url: String? = null,
     htmlContent: String? = null,
-    modifier: Modifier,
-    onHeightChange: ((Double) -> Unit)? = null,
+    modifier: Modifier = Modifier,
+    topContentInsetPx: Float = 0f,
     onTap: (() -> Unit)? = null,
-    webViewStartY: Double = 0.0,
-    onWebViewPositioned: (((Double) -> Unit) -> Unit)? = null,
+    onScrollChange: ((scrollY: Float) -> Unit)? = null,  // 滚动偏移回调
 )
 
 @Composable
@@ -43,6 +50,8 @@ expect fun OpenInBrowserTab(url: String)
 
 @Composable
 expect fun WebView(
-    url: String,
-    modifier: Modifier
+    url: String? = null,
+    htmlContent: String? = null,
+    modifier: Modifier,
+    onScroll: ((x: Double, y: Double) -> Unit)? = null,
 )

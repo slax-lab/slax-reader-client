@@ -1,46 +1,31 @@
 package com.slax.reader.utils
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.uikit.LocalUIViewController
+import androidx.compose.ui.viewinterop.UIKitInteropInteractionMode
+import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
-import com.slax.reader.const.HEIGHT_MONITOR_SCRIPT
-import com.slax.reader.const.JS_BRIDGE_NAME
-import com.slax.reader.model.BridgeMessageParser
-import com.slax.reader.model.HeightMessage
-import kotlinx.cinterop.*
-import platform.CoreGraphics.CGPointMake
+import app.slax.reader.SlaxConfig
+import kotlinx.cinterop.BetaInteropApi
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.ObjCAction
+import kotlinx.cinterop.useContents
 import platform.CoreGraphics.CGRectMake
 import platform.Foundation.NSSelectorFromString
 import platform.Foundation.NSURL
 import platform.Foundation.NSURLRequest
+import platform.Foundation.NSValue
 import platform.SafariServices.SFSafariViewController
 import platform.UIKit.*
-import platform.WebKit.*
+import platform.WebKit.WKPreferences
+import platform.WebKit.WKWebView
+import platform.WebKit.WKWebViewConfiguration
+import platform.WebKit.javaScriptEnabled
 import platform.darwin.NSObject
-
-private class MessageHandler(
-    private val onHeightChange: ((Double) -> Unit)?
-) : NSObject(), WKScriptMessageHandlerProtocol {
-
-    override fun userContentController(
-        userContentController: WKUserContentController,
-        didReceiveScriptMessage: WKScriptMessage
-    ) {
-        val body = didReceiveScriptMessage.body
-        val messageText = body.toString()
-
-        val message = BridgeMessageParser.parse(messageText) ?: return
-
-        when (message) {
-            is HeightMessage -> onHeightChange?.invoke(message.height)
-        }
-    }
-}
 
 fun Color.toUIColor(): UIColor {
     val argb = this.toArgb()
@@ -59,94 +44,6 @@ private class TapHandler(
     @ObjCAction
     fun handleTap() {
         onTap()
-    }
-}
-
-// 嵌套滚动协调器：监听外层和内层滚动，自动切换
-private class NestedScrollCoordinator : NSObject() {
-    var webView: WKWebView? = null
-    var webViewStartY: Double = 0.0
-    var isWebViewScrollEnabled: Boolean = false
-
-    // 添加缓冲区，避免频繁切换
-    private val bufferZone = 5.0
-
-    // 根据外层滚动位置判断是否需要启用 WebView 滚动
-    @OptIn(ExperimentalForeignApi::class)
-    fun onOuterScrollChanged(outerScrollOffset: Double) {
-        // 防护：如果 startY 还没初始化，忽略
-        if (webViewStartY <= 0.0) {
-            println("[Scroll Debug] Ignoring scroll update, startY not initialized yet")
-            return
-        }
-
-        val web = webView ?: return
-        val scrollView = web.scrollView
-
-        // 当外层滚动到 WebView 起始位置时（带缓冲区），启用 WebView 内部滚动
-        val shouldEnable = outerScrollOffset >= (webViewStartY - bufferZone)
-
-        if (shouldEnable != isWebViewScrollEnabled) {
-            isWebViewScrollEnabled = shouldEnable
-            // 先设置状态，避免状态切换冲突
-            scrollView.scrollEnabled = shouldEnable
-            scrollView.userInteractionEnabled = shouldEnable
-            web.userInteractionEnabled = shouldEnable
-            println("[Scroll Debug] Switch scrollEnabled=$shouldEnable at outerScroll=$outerScrollOffset, startY=$webViewStartY")
-        }
-    }
-}
-
-private class WebViewScrollDelegate(
-    private val coordinator: NestedScrollCoordinator
-) : NSObject(), UIScrollViewDelegateProtocol {
-
-    // 添加触发阈值，避免轻微触碰就禁用滚动
-    private val topThreshold = -10.0
-
-    @ObjCSignatureOverride
-    @OptIn(ExperimentalForeignApi::class)
-    override fun scrollViewDidScroll(scrollView: UIScrollView) {
-        if (!scrollView.userInteractionEnabled) return
-
-        val offset = scrollView.contentOffset.useContents { y }
-
-        // 只有当向上滚动超过阈值（实际上是向上滚动了一小段）才禁用
-        if (offset <= topThreshold) {
-            val web = coordinator.webView ?: return
-            scrollView.userInteractionEnabled = false
-            scrollView.scrollEnabled = false
-            scrollView.contentOffset = CGPointMake(0.0, 0.0)
-            web.userInteractionEnabled = false
-            coordinator.isWebViewScrollEnabled = false
-            println("[Scroll Debug] Disabled scroll at top, offset=$offset")
-        }
-    }
-
-    @ObjCSignatureOverride
-    @OptIn(ExperimentalForeignApi::class)
-    override fun scrollViewDidEndDragging(scrollView: UIScrollView, willDecelerate: Boolean) {
-        // 拖动结束时检查是否到达边界
-        if (!scrollView.userInteractionEnabled) return
-
-        val offset = scrollView.contentOffset.useContents { y }
-        val contentHeight = scrollView.contentSize.useContents { height }
-        val frameHeight = scrollView.frame.useContents { size.height }
-
-        // 到达顶部
-        if (offset <= topThreshold) {
-            val web = coordinator.webView ?: return
-            scrollView.userInteractionEnabled = false
-            scrollView.scrollEnabled = false
-            web.userInteractionEnabled = false
-            coordinator.isWebViewScrollEnabled = false
-            println("[Scroll Debug] Disabled at top on drag end, offset=$offset")
-        }
-        // 到达底部（预留 50px 的缓冲区）
-        else if (offset + frameHeight >= contentHeight - 50.0) {
-            println("[Scroll Debug] Reached bottom, offset=$offset, contentHeight=$contentHeight, frameHeight=$frameHeight")
-            // 到底部不禁用，但记录状态
-        }
     }
 }
 
@@ -172,36 +69,41 @@ actual fun AppWebView(
     url: String?,
     htmlContent: String?,
     modifier: Modifier,
-    onHeightChange: ((Double) -> Unit)?,
+    topContentInsetPx: Float,
     onTap: (() -> Unit)?,
-    webViewStartY: Double,
-    onWebViewPositioned: (((Double) -> Unit) -> Unit)?,
+    onScrollChange: ((scrollY: Float) -> Unit)?,
 ) {
-    val messageHandler = remember(onHeightChange, onTap) {
-        MessageHandler(onHeightChange)
-    }
-
     val tapHandler = remember(onTap) {
         TapHandler { onTap?.invoke() }
     }
     val tapGestureDelegate = remember { TapGestureDelegate() }
-
-    val coordinator = remember { NestedScrollCoordinator() }
-    val scrollDelegate = remember { WebViewScrollDelegate(coordinator) }
-
-    // 通过 LaunchedEffect 设置 webViewStartY 并立即检查状态
-    LaunchedEffect(webViewStartY) {
-        if (webViewStartY > 0.0) {
-            coordinator.webViewStartY = webViewStartY
-            // 立即触发一次检查，确保初始状态正确
-            println("[Scroll Debug] Initial check with startY=$webViewStartY")
+    val density = LocalDensity.current
+    val densityScale = density.density
+    val topInsetPoints by remember(topContentInsetPx, densityScale) {
+        derivedStateOf { (topContentInsetPx / densityScale).coerceAtLeast(0f) }
+    }
+    val onScrollChangeState = rememberUpdatedState(onScrollChange)
+    var observedScrollView by remember { mutableStateOf<UIScrollView?>(null) }
+    val scrollObserver = remember {
+        KVOObserver { keyPath, newValue, _ ->
+            if (keyPath == "contentOffset") {
+                val offsetPoints = (newValue as? NSValue)?.CGPointValue()?.useContents { y }?.toFloat() ?: 0f
+                val offsetPx = offsetPoints * densityScale
+                println("[iOS WebView Scroll] offsetY(points)=$offsetPoints -> offsetPx=$offsetPx")
+                onScrollChangeState.value?.invoke(offsetPx)
+            }
         }
     }
 
-    // 提供回调给 Compose 层，用于通知滚动位置变化
-    LaunchedEffect(Unit) {
-        onWebViewPositioned?.invoke { scrollOffset: Double ->
-            coordinator.onOuterScrollChanged(scrollOffset)
+    DisposableEffect(scrollObserver, observedScrollView) {
+        val scrollView = observedScrollView
+        if (scrollView != null) {
+            scrollObserver.observe("contentOffset", scrollView)
+            onDispose {
+                scrollObserver.unobserve("contentOffset", scrollView)
+            }
+        } else {
+            onDispose { }
         }
     }
 
@@ -212,22 +114,10 @@ actual fun AppWebView(
                 preferences = WKPreferences().apply {
                     javaScriptEnabled = true
                 }
-                userContentController = WKUserContentController().apply {
-                    addScriptMessageHandler(messageHandler, JS_BRIDGE_NAME)
-
-                    val heightScript = WKUserScript(
-                        source = HEIGHT_MONITOR_SCRIPT,
-                        injectionTime = WKUserScriptInjectionTime.WKUserScriptInjectionTimeAtDocumentEnd,
-                        forMainFrameOnly = true
-                    )
-
-                    suppressesIncrementalRendering = false
-                    addUserScript(heightScript)
-                }
             }
 
             val view = WKWebView(frame = CGRectMake(0.0, 0.0, 0.0, 0.0), configuration = config)
-            coordinator.webView = view
+            view.inspectable = SlaxConfig.BUILD_ENV == "dev"
 
             // 添加点击手势
             val tapGesture = UITapGestureRecognizer(
@@ -238,44 +128,51 @@ actual fun AppWebView(
             tapGesture.cancelsTouchesInView = false
             view.addGestureRecognizer(tapGesture)
 
-            // 配置滚动行为
-            view.scrollView.delegate = scrollDelegate
-            view.scrollView.contentInsetAdjustmentBehavior =
-                UIScrollViewContentInsetAdjustmentBehavior.UIScrollViewContentInsetAdjustmentNever
-            view.scrollView.showsHorizontalScrollIndicator = false
-            view.scrollView.showsVerticalScrollIndicator = false
-            view.scrollView.alwaysBounceHorizontal = false
-            view.scrollView.bounces = true
-            view.scrollView.alwaysBounceVertical = false
-            view.scrollView.opaque = false
+            // 配置滚动视图
+            view.scrollView.apply {
+                contentInsetAdjustmentBehavior =
+                    UIScrollViewContentInsetAdjustmentBehavior.UIScrollViewContentInsetAdjustmentNever
+                showsHorizontalScrollIndicator = false
+                showsVerticalScrollIndicator = false
+                alwaysBounceHorizontal = false
+                bounces = true
+                alwaysBounceVertical = true
 
-            // 性能优化：减少滚动延迟
-            view.scrollView.delaysContentTouches = false
-            view.scrollView.canCancelContentTouches = true
-            view.scrollView.decelerationRate = UIScrollViewDecelerationRateNormal
+                // 启用滚动
+                scrollEnabled = true
 
-            // 初始状态：禁用滚动
-            view.scrollView.scrollEnabled = false
-            view.scrollView.userInteractionEnabled = false
-
-            // 关键：禁用 WebView 本身的用户交互，防止在禁用状态下仍可滚动
-            view.userInteractionEnabled = false
-
-            println("[Scroll Debug] WebView created, interaction disabled")
+                // 性能优化
+                delaysContentTouches = false
+                canCancelContentTouches = true
+                decelerationRate = UIScrollViewDecelerationRateNormal
+            }
+            if (observedScrollView !== view.scrollView) {
+                observedScrollView = view.scrollView
+            }
 
             val color = Color(0xFFFCFCFC).toUIColor()
             view.backgroundColor = color
             view.opaque = false
+
             if (url != null) {
                 view.loadRequest(NSURLRequest(uRL = NSURL(string = url)))
             } else if (htmlContent != null) {
                 view.loadHTMLString(htmlContent, baseURL = null)
             }
+
             view as UIView
         },
-        update = { _ ->
-            // update 块保持空白
-        }
+        update = { uiView ->
+            val webView = uiView as WKWebView
+            val scrollView = webView.scrollView
+            if (observedScrollView !== scrollView) {
+                observedScrollView = scrollView
+            }
+        },
+        // 使用 UIKitInteropProperties 配置交互模式
+        properties = UIKitInteropProperties(
+            interactionMode = UIKitInteropInteractionMode.Cooperative()
+        )
     )
 }
 
@@ -289,7 +186,12 @@ actual fun OpenInBrowserTab(url: String) {
 
 @OptIn(ExperimentalForeignApi::class)
 @Composable
-actual fun WebView(url: String, modifier: Modifier) {
+actual fun WebView(
+    url: String?,
+    htmlContent: String?,
+    modifier: Modifier,
+    onScroll: ((x: Double, y: Double) -> Unit)?
+) {
 
     UIKitView(
         modifier = modifier,
@@ -300,21 +202,38 @@ actual fun WebView(url: String, modifier: Modifier) {
                 }
             }
 
-            val view = WKWebView(frame = CGRectMake(0.0, 0.0, 0.0, 0.0), configuration = config)
+            WKWebView(
+                frame = CGRectMake(0.0, 0.0, 0.0, 0.0),
+                configuration = config,
+            ).apply {
+                inspectable = SlaxConfig.BUILD_ENV == "dev"
 
-            view.scrollView.contentInsetAdjustmentBehavior =
-                UIScrollViewContentInsetAdjustmentBehavior.UIScrollViewContentInsetAdjustmentNever
-            view.scrollView.alwaysBounceVertical = true
-            view.scrollView.alwaysBounceHorizontal = false
+                scrollView.contentInsetAdjustmentBehavior =
+                    UIScrollViewContentInsetAdjustmentBehavior.UIScrollViewContentInsetAdjustmentNever
+                scrollView.alwaysBounceVertical = true
+                scrollView.alwaysBounceHorizontal = false
 
-            view.backgroundColor = Color(0xFFFCFCFC).toUIColor()
-            view.loadRequest(NSURLRequest(uRL = NSURL(string = url)))
+                scrollView.delegate = object : NSObject(), UIScrollViewDelegateProtocol {
+                    override fun scrollViewDidScroll(scrollView: UIScrollView) {
+                        val offset = scrollView.contentOffset
+                        onScroll?.invoke(offset.useContents { x }, offset.useContents { y })
+                    }
+                }
 
-            view as UIView
+                backgroundColor = Color(0xFFFCFCFC).toUIColor()
+                when {
+                    url != null -> loadRequest(NSURLRequest(uRL = NSURL(string = url)))
+                    htmlContent != null -> loadHTMLString(htmlContent, baseURL = null)
+                }
+            }
         },
-        update = { uiView ->
-            val webView = uiView as WKWebView
-            webView.loadRequest(NSURLRequest(uRL = NSURL(string = url)))
+        update = { view ->
+            view.apply {
+                when {
+                    url != null -> loadRequest(NSURLRequest(uRL = NSURL(string = url)))
+                    htmlContent != null -> loadHTMLString(htmlContent, baseURL = null)
+                }
+            }
         }
     )
 }

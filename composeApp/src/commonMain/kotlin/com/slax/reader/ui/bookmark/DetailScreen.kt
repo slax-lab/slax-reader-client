@@ -4,16 +4,14 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -28,7 +26,8 @@ import com.slax.reader.ui.bookmark.components.*
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
-
+import slax_reader_client.composeapp.generated.resources.*
+import kotlin.math.abs
 
 data class OverviewViewBounds(
     val x: Float = 0f,
@@ -98,21 +97,18 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
     var showToolbar by remember { mutableStateOf(false) }
     var overviewBounds by remember { mutableStateOf(OverviewViewBounds()) }
 
-    // FloatingActionBar 的显示和隐藏状态
-    val scrollState = rememberScrollState()
+    // WebView 滚动偏移 - 使用 Float 状态避免装箱
+    var webViewScrollY by remember { mutableFloatStateOf(0f) }
+
+    // 顶部内容高度 (px)
+    var topContentHeightPx by remember { mutableFloatStateOf(0f) }
+
+    // FloatingActionBar 显示状态
     var manuallyVisible by remember { mutableStateOf(true) }
-
-    // 使用 derivedStateOf 优化性能，只在滚动状态变化时重组
-    val isFloatingBarVisible by remember {
+    val isFloatingBarVisible by remember { derivedStateOf { manuallyVisible } }
+    val headerTranslation by remember {
         derivedStateOf {
-            manuallyVisible
-        }
-    }
-
-    // 监听滚动停止后恢复显示
-    LaunchedEffect(scrollState.isScrollInProgress) {
-        if (scrollState.isScrollInProgress && manuallyVisible) {
-            manuallyVisible = false
+            -webViewScrollY.coerceIn(0f, topContentHeightPx)
         }
     }
 
@@ -122,32 +118,52 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFFCFCFC))
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = {
-                        // 点击非可点击区域时显示 FloatingActionBar
-                        if (!isFloatingBarVisible) {
-                            manuallyVisible = true
-                        }
-                    }
-                )
-            }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-        ) {
-            // 页面内容从导航栏下方开始
-            NavigatorBarSpacer()
+        // WebView 全屏滚动
+        BookmarkContentView(
+            bookmarkId = bookmarkId,
+            topContentHeightPx = topContentHeightPx,
+            onScrollChange = { scrollY ->
+                webViewScrollY = scrollY
+                val shouldShow = scrollY <= 10f
+                if (manuallyVisible != shouldShow) {
+                    manuallyVisible = shouldShow
+                }
+            },
+            onWebViewTap = {
+                manuallyVisible = if (webViewScrollY <= 10f) true else !manuallyVisible
+            }
+        )
 
+        // 顶部内容绝对定位悬浮，使用 graphicsLayer 跟随 WebView 滚动
+        // 使用 Box 包裹以测量完整的高度（包括 padding）
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .onGloballyPositioned { coordinates ->
+                    // 测量包含 statusBarsPadding 后的完整高度
+                    val newHeight = coordinates.size.height.toFloat()
+                    if (abs(topContentHeightPx - newHeight) > 0.5f) {
+                        println("[DetailScreen] topContentHeight updated: $topContentHeightPx -> $newHeight")
+                        topContentHeightPx = newHeight
+                    }
+                }
+                .graphicsLayer {
+                    // 跟随 WebView 滚动偏移，实现 1:1 同步
+                    translationY = headerTranslation
+                    if (webViewScrollY > 0f && webViewScrollY % 50f < 1f) {
+                        println("[DetailScreen] graphicsLayer translationY=$headerTranslation (rawScrollY=$webViewScrollY)")
+                    }
+                }
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .statusBarsPadding()
                     .padding(horizontal = 20.dp)
-                    .padding(bottom = 58.dp)
             ) {
+                NavigatorBarSpacer()
+
                 Text(
                     text = detail?.displayTitle ?: "",
                     style = TextStyle(
@@ -157,6 +173,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                         color = Color(0xFF0f1419)
                     )
                 )
+
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -190,18 +207,6 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                         onBoundsChanged = { bounds -> overviewBounds = bounds }
                     )
                 }
-
-                BookmarkContentView(
-                    bookmarkId = bookmarkId,
-                    scrollState = scrollState,
-                    onWebViewTap = {
-                        // 在顶部的时候，不允许隐藏
-                        // 非顶部的时候，可以点击进行隐藏、显示的切换
-                        manuallyVisible = if (scrollState.value == 0) {
-                            true
-                        } else !isFloatingBarVisible
-                    }
-                )
             }
         }
 
