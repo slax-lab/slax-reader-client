@@ -3,7 +3,6 @@ package com.slax.reader.data.network
 import app.slax.reader.SlaxConfig
 import com.slax.reader.const.AppError
 import com.slax.reader.data.network.dto.*
-import com.slax.reader.utils.parseConcatenatedJson
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -14,13 +13,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 
 class ApiService(
     private val httpClient: HttpClient,
 ) {
 
-    private fun buildUrl(pathName: String, query: Map<String, String>?): String {
+    private fun buildUrl(pathName: String, query: Map<String, String>? = emptyMap()): String {
         val builder = URLBuilder()
         builder.takeFrom(SlaxConfig.API_BASE_URL)
         builder.path(pathName)
@@ -124,10 +125,6 @@ class ApiService(
         return streamPost("/v1/bookmark/content", body = BookmarkContentParam(id))
     }
 
-    fun streamBookmarkOverview(id: String): Flow<String> {
-        return streamPost("/v1/bookmark/overview", body = BookmarkOverviewParam(id))
-    }
-
     suspend fun addBookmarkUrl(url: String, title: String?): HttpData<CollectionBookmarkResult> {
         return post(
             "/v1/bookmark/add_url", body = CollectionBookmarkParam(
@@ -148,67 +145,35 @@ class ApiService(
         )
     }
 
-    suspend fun getBookmarkOverview(bookmarkId: String): Flow<OverviewResponse> =
-        withContext(Dispatchers.IO) {
-            flow {
-                val buffer = StringBuilder()
-                var isDone = false
+    fun getBookmarkOverview(bookmarkId: String): Flow<OverviewResponse> = flow {
+        val url = buildUrl("/v1/bookmark/overview")
 
-                streamBookmarkOverview(bookmarkId).collect { text ->
-                    if (isDone || text.isEmpty()) {
-                        return@collect
-                    }
+        httpClient.preparePost(url) {
+            headers {
+                append(HttpHeaders.ContentType, "application/json")
+                append(HttpHeaders.Accept, "text/event-stream")
+            }
+            setBody(BookmarkOverviewParam(bookmarkId))
+        }.execute { response ->
+            val channel = response.bodyAsChannel()
 
-                    buffer.append(text)
+            while (!channel.isClosedForRead) {
+                val line = channel.readUTF8Line() ?: break
+                if (line.isEmpty()) continue
 
-                    val parsedJsons = try {
-                        buffer.toString().parseConcatenatedJson<OverviewSocketData>()
-                    } catch (_: Exception) {
-                        return@collect
-                    }
+                val itemData = Json.decodeFromString<OverviewEventData>(line)
+                val data = itemData.data ?: continue
 
-                    if (parsedJsons.isEmpty()) {
-                        return@collect
-                    }
-
-                    buffer.clear()
-
-                    for (res in parsedJsons) {
-                        when {
-                            res.type == "error" -> {
-                                emit(OverviewResponse.Error(res.message ?: "Unknown error"))
-                                isDone = true
-                                return@collect
-                            }
-
-                            res.type == "done" || res.data?.done == true -> {
-                                emit(OverviewResponse.Done)
-                                isDone = true
-                                return@collect
-                            }
-
-                            res.data != null -> {
-                                when {
-                                    res.data.overview != null -> {
-                                        emit(OverviewResponse.Overview(res.data.overview))
-                                    }
-
-                                    res.data.tags != null -> {
-                                        emit(OverviewResponse.Tags(res.data.tags))
-                                    }
-
-                                    res.data.tag != null -> {
-                                        emit(OverviewResponse.Tag(res.data.tag))
-                                    }
-
-                                    res.data.key_takeaways != null -> {
-                                        emit(OverviewResponse.KeyTakeaways(res.data.key_takeaways))
-                                    }
-                                }
-                            }
-                        }
-                    }
+                if (data.done == true) {
+                    emit(OverviewResponse.Done)
+                    continue
                 }
+
+                data.overview?.let { emit(OverviewResponse.Overview(it)) }
+                data.tags?.let { emit(OverviewResponse.Tags(it)) }
+                data.tag?.let { emit(OverviewResponse.Tag(it)) }
+                data.key_takeaways?.let { emit(OverviewResponse.KeyTakeaways(it)) }
             }
         }
+    }.flowOn(Dispatchers.IO)
 }

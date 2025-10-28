@@ -4,8 +4,6 @@ import app.slax.reader.SlaxConfig
 import com.slax.reader.data.preferences.AppPreferences
 import io.ktor.client.*
 import io.ktor.client.plugins.*
-import io.ktor.client.plugins.cache.*
-import io.ktor.client.plugins.cache.storage.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
@@ -28,9 +26,7 @@ fun getHttpClient(appPreferences: AppPreferences): HttpClient {
         engine {
 
         }
-        install(HttpCache) {
-            publicStorage(CacheStorage.Disabled)
-        }
+//        install(SSE)
         install(ContentNegotiation) {
             json(Json {
                 prettyPrint = SlaxConfig.BUILD_ENV == "dev"
