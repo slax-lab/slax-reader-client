@@ -22,16 +22,6 @@ import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_sm_back
 
 @Composable
-fun NavigatorBarSpacer() {
-    Spacer(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(44.dp)
-            .statusBarsPadding()
-    )
-}
-
-@Composable
 fun NavigatorBar(
     navController: NavController?,
     title: String = "",
@@ -40,9 +30,6 @@ fun NavigatorBar(
     onBackClick: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
-    // println("[watch][UI] recomposition NavigatorBar")
-
-    // 导航栏的偏移动画：隐藏时向上移动到屏幕外
     val offsetY by animateDpAsState(
         targetValue = if (visible) 0.dp else (-100).dp,
         animationSpec = tween(durationMillis = 300)

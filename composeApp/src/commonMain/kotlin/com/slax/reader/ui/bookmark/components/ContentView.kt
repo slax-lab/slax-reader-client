@@ -30,28 +30,20 @@ fun BookmarkContentView(
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
 
-    // 计算 CSS padding（仅 Android 用）和 contentInset（仅 iOS 用）
     val density = LocalDensity.current.density
 
     // 获取 statusBarsPadding 的高度
     val windowInsets = WindowInsets.statusBars
     val statusBarHeightPx = windowInsets.getTop(LocalDensity.current).toFloat()
 
-    println("[ContentView] platformType=$platformType, topContentInsetPx=$topContentInsetPx, statusBarHeightPx=$statusBarHeightPx")
+    val isAndroid = remember { platformType == "android" }
 
-    // Android: CSS padding = Column 高度 + statusBarsPadding
-    // iOS: 不使用 CSS padding，用原生 contentInset（已包含所有高度）
-    val cssTopPaddingPx by remember(topContentInsetPx, statusBarHeightPx) {
+    val cssTopPaddingPx by remember(topContentInsetPx, statusBarHeightPx, density) {
         derivedStateOf {
-            if (platformType == "android" && topContentInsetPx > 0f) {
-                // topContentInsetPx 已经包含了 Column 的 padding(bottom = 16.dp)
-                // 所以这里只需要加 statusBarsPadding，不需要再加 16f
-                val result = (topContentInsetPx + statusBarHeightPx) / density
-                println("[Android CSS] topContentInsetPx=$topContentInsetPx, statusBarHeightPx=$statusBarHeightPx, density=$density, cssTopPaddingPx=$result")
-                result
+            if (isAndroid && topContentInsetPx > 0f) {
+                (topContentInsetPx + statusBarHeightPx) / density
             } else {
-                println("[iOS] Skip CSS padding, use contentInset instead")
-                0f  // iOS 不使用 CSS padding
+                0f
             }
         }
     }
@@ -94,7 +86,6 @@ fun BookmarkContentView(
         }
 
         wrappedHtml != null -> {
-            // Android 使用 CSS padding，iOS 使用原生 contentInset
             AppWebView(
                 htmlContent = wrappedHtml,
                 modifier = Modifier.fillMaxSize(),

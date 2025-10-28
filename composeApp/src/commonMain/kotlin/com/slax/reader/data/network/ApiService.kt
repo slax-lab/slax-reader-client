@@ -15,8 +15,6 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
-import kotlin.text.iterator
 
 class ApiService(
     private val httpClient: HttpClient,
@@ -153,7 +151,7 @@ class ApiService(
     suspend fun getBookmarkOverview(bookmarkId: String): Flow<OverviewResponse> =
         withContext(Dispatchers.IO) {
             flow {
-                var errorCacheText = ""
+                val buffer = StringBuilder()
                 var isDone = false
 
                 streamBookmarkOverview(bookmarkId).collect { text ->
@@ -161,60 +159,54 @@ class ApiService(
                         return@collect
                     }
 
-                    try {
-                        val parsedJsons = try {
-                            val combineText = errorCacheText + text
-                            errorCacheText = ""
-                            combineText.parseConcatenatedJson<OverviewSocketData>()
-                        } catch (_: Exception) {
-                            println("Need concat: $text")
-                            errorCacheText = text
-                            return@collect
-                        }
+                    buffer.append(text)
 
-                        if (parsedJsons.isEmpty()) {
-                            return@collect
-                        }
+                    val parsedJsons = try {
+                        buffer.toString().parseConcatenatedJson<OverviewSocketData>()
+                    } catch (_: Exception) {
+                        return@collect
+                    }
 
-                        for (res in parsedJsons) {
-                            when {
-                                res.type == "error" -> {
-                                    emit(OverviewResponse.Error(res.message ?: "Unknown error"))
-                                    isDone = true
-                                    return@collect
-                                }
+                    if (parsedJsons.isEmpty()) {
+                        return@collect
+                    }
 
-                                res.type == "done" || res.data?.done == true -> {
-                                    emit(OverviewResponse.Done)
-                                    isDone = true
-                                    return@collect
-                                }
+                    buffer.clear()
 
-                                res.data != null -> {
-                                    when {
-                                        res.data.overview != null -> {
-                                            emit(OverviewResponse.Overview(res.data.overview))
-                                        }
+                    for (res in parsedJsons) {
+                        when {
+                            res.type == "error" -> {
+                                emit(OverviewResponse.Error(res.message ?: "Unknown error"))
+                                isDone = true
+                                return@collect
+                            }
 
-                                        res.data.tags != null -> {
-                                            emit(OverviewResponse.Tags(res.data.tags))
-                                        }
+                            res.type == "done" || res.data?.done == true -> {
+                                emit(OverviewResponse.Done)
+                                isDone = true
+                                return@collect
+                            }
 
-                                        res.data.tag != null -> {
-                                            emit(OverviewResponse.Tag(res.data.tag))
-                                        }
+                            res.data != null -> {
+                                when {
+                                    res.data.overview != null -> {
+                                        emit(OverviewResponse.Overview(res.data.overview))
+                                    }
 
-                                        res.data.key_takeaways != null -> {
-                                            emit(OverviewResponse.KeyTakeaways(res.data.key_takeaways))
-                                        }
+                                    res.data.tags != null -> {
+                                        emit(OverviewResponse.Tags(res.data.tags))
+                                    }
+
+                                    res.data.tag != null -> {
+                                        emit(OverviewResponse.Tag(res.data.tag))
+                                    }
+
+                                    res.data.key_takeaways != null -> {
+                                        emit(OverviewResponse.KeyTakeaways(res.data.key_takeaways))
                                     }
                                 }
                             }
                         }
-                    } catch (error: Exception) {
-                        println("Error processing overview: ${error.message}, text: $text")
-                        emit(OverviewResponse.Error(error.message ?: "Unknown error"))
-                        isDone = true
                     }
                 }
             }

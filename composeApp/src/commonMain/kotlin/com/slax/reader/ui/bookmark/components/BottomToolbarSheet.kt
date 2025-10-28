@@ -22,19 +22,7 @@ import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
-import slax_reader_client.composeapp.generated.resources.Res
-import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_archieve
-import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_archieved
-import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_chatbot
-import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_comment
-import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_delete
-import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_edittitle
-import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_feedback
-import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_share
-import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_star
-import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_starred
-import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_summary
-import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_underline
+import slax_reader_client.composeapp.generated.resources.*
 
 data class ToolbarIcon(
     val id: String,
@@ -54,7 +42,7 @@ fun BottomToolbarSheet(
     onDismissRequest: () -> Unit,
     onIconClick: (pageId: String, iconIndex: Int) -> Unit
 ) {
-    // println("[watch][UI] recomposition BottomToolbarSheet")
+    println("[watch][UI] recomposition BottomToolbarSheet")
     val toolbarPages = remember(detail.isStarred, detail.archiveStatus) {
         listOf(
             listOf(

@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.uikit.LocalUIViewController
 import androidx.compose.ui.viewinterop.UIKitInteropInteractionMode
@@ -27,16 +26,8 @@ import platform.WebKit.WKWebView
 import platform.WebKit.WKWebViewConfiguration
 import platform.WebKit.javaScriptEnabled
 import platform.darwin.NSObject
-
-fun Color.toUIColor(): UIColor {
-    val argb = this.toArgb()
-    return UIColor(
-        red = ((argb shr 16) and 0xFF) / 255.0,
-        green = ((argb shr 8) and 0xFF) / 255.0,
-        blue = (argb and 0xFF) / 255.0,
-        alpha = ((argb shr 24) and 0xFF) / 255.0
-    )
-}
+import kotlin.math.abs
+import kotlin.math.max
 
 private class TapHandler(
     private val onTap: () -> Unit
@@ -66,6 +57,7 @@ private class TapGestureDelegate : NSObject(), UIGestureRecognizerDelegateProtoc
 
 @OptIn(ExperimentalForeignApi::class)
 @Composable
+@Suppress("UNUSED_PARAMETER")
 actual fun AppWebView(
     url: String?,
     htmlContent: String?,
@@ -92,18 +84,18 @@ actual fun AppWebView(
     val topInsetPoints by remember(totalInsetPx, densityScale) {
         derivedStateOf { (totalInsetPx / densityScale).coerceAtLeast(0f) }
     }
-    val topInsetPointsState = rememberUpdatedState(topInsetPoints)
     val onScrollChangeState = rememberUpdatedState(onScrollChange)
     var observedScrollView by remember { mutableStateOf<UIScrollView?>(null) }
     val scrollObserver = remember {
         KVOObserver { keyPath, newValue, _ ->
-            if (keyPath == "contentOffset") {
+            val scrollView = observedScrollView
+            if (keyPath == "contentOffset" && scrollView != null) {
                 val offsetPoints = (newValue as? NSValue)?.CGPointValue()?.useContents { y }?.toFloat() ?: 0f
+                val insetPoints = scrollView.contentInset.useContents { top }.toFloat()
                 // contentInset 会让初始 contentOffset.y = -contentInset.top
-                // 加上 contentInset.top 得到实际滚动距离
-                val adjustedOffsetPoints = offsetPoints + topInsetPointsState.value
-                val offsetPx = adjustedOffsetPoints * densityScaleState.value
-                println("[iOS WebView Scroll] offsetY=$offsetPoints, inset=${topInsetPointsState.value}, adjusted=$adjustedOffsetPoints, px=$offsetPx")
+                // 加上当前 contentInset.top 得到实际滚动距离
+                val adjustedOffsetPoints = offsetPoints + insetPoints
+                val offsetPx = max(adjustedOffsetPoints * densityScaleState.value, 0f)
                 onScrollChangeState.value?.invoke(offsetPx)
             }
         }
@@ -151,8 +143,6 @@ actual fun AppWebView(
                 alwaysBounceHorizontal = false
                 bounces = true
                 alwaysBounceVertical = true
-
-                // 禁用左右滑动
                 scrollEnabled = true
 
                 // 性能优化
@@ -161,7 +151,7 @@ actual fun AppWebView(
                 decelerationRate = UIScrollViewDecelerationRateNormal
 
                 // 设置 contentInset
-                contentInset = platform.UIKit.UIEdgeInsetsMake(
+                contentInset = UIEdgeInsetsMake(
                     top = topInsetPoints.toDouble(),
                     left = 0.0,
                     bottom = 0.0,
@@ -203,32 +193,33 @@ actual fun AppWebView(
         update = { uiView ->
             val webView = uiView as WKWebView
             val scrollView = webView.scrollView
+            val currentInsetPoints = scrollView.contentInset.useContents { top }.toFloat()
+            if (abs(currentInsetPoints - topInsetPoints) > 0.1f) {
+                // 保存当前的实际滚动位置（调整后的）
+                val currentOffsetPoints = scrollView.contentOffset.useContents { y }.toFloat()
+                val actualScrollPosition = currentOffsetPoints + currentInsetPoints
 
-            // 保存当前的实际滚动位置（调整后的）
-            val currentOffsetPoints = scrollView.contentOffset.useContents { y }.toFloat()
-            val currentAdjustedOffset = currentOffsetPoints + (scrollView.contentInset.useContents { top }.toFloat())
+                // 更新 contentInset
+                scrollView.contentInset = UIEdgeInsetsMake(
+                    top = topInsetPoints.toDouble(),
+                    left = 0.0,
+                    bottom = 0.0,
+                    right = 0.0
+                )
 
-            // 更新 contentInset
-            scrollView.contentInset = platform.UIKit.UIEdgeInsetsMake(
-                top = topInsetPoints.toDouble(),
-                left = 0.0,
-                bottom = 0.0,
-                right = 0.0
-            )
-
-            // 恢复实际滚动位置，避免跳动
-            // 新的 contentOffset = 实际位置 - 新的 contentInset.top
-            val newOffsetY = currentAdjustedOffset - topInsetPoints
-            scrollView.setContentOffset(
-                platform.CoreGraphics.CGPointMake(0.0, newOffsetY.toDouble()),
-                animated = false
-            )
+                // 恢复实际滚动位置，避免跳动
+                // 新的 contentOffset = 实际位置 - 新的 contentInset.top
+                val newOffsetY = actualScrollPosition - topInsetPoints
+                scrollView.setContentOffset(
+                    platform.CoreGraphics.CGPointMake(0.0, newOffsetY.toDouble()),
+                    animated = false
+                )
+            }
 
             if (observedScrollView !== scrollView) {
                 observedScrollView = scrollView
             }
         },
-        // 使用 UIKitInteropProperties 配置交互模式
         properties = UIKitInteropProperties(
             interactionMode = UIKitInteropInteractionMode.Cooperative()
         )

@@ -33,7 +33,6 @@ fun wrapHtmlWithCSS(htmlContent: String, topPaddingPx: Float = 0f): String {
     """.trimIndent()
 }
 
-
 @Composable
 expect fun AppWebView(
     url: String? = null,
@@ -41,7 +40,7 @@ expect fun AppWebView(
     modifier: Modifier = Modifier,
     topContentInsetPx: Float = 0f,
     onTap: (() -> Unit)? = null,
-    onScrollChange: ((scrollY: Float) -> Unit)? = null,  // 滚动偏移回调
+    onScrollChange: ((scrollY: Float) -> Unit)? = null,
 )
 
 @Composable

@@ -66,7 +66,7 @@ data class BookmarkOverviewParam(
 
 @Serializable
 data class TagInfo(
-    val id: Int,
+    val id: Long,
     val name: String
 )
 
