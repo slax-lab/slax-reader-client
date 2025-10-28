@@ -14,18 +14,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
-import slax_reader_client.composeapp.generated.resources.Res
-import slax_reader_client.composeapp.generated.resources.ic_floating_panel_archieve
-import slax_reader_client.composeapp.generated.resources.ic_floating_panel_archieved
-import slax_reader_client.composeapp.generated.resources.ic_floating_panel_more
-import slax_reader_client.composeapp.generated.resources.ic_floating_panel_star
-import slax_reader_client.composeapp.generated.resources.ic_floating_panel_starred
+import slax_reader_client.composeapp.generated.resources.*
 
 @Composable
 fun FloatingActionBar(
@@ -80,7 +74,11 @@ fun FloatingActionBar(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            painter = painterResource(if (detail.isStarred == 1) Res.drawable.ic_floating_panel_starred else Res.drawable.ic_floating_panel_star),
+                            painter = painterResource(
+                                if (detail.isStarred == 1)
+                                    Res.drawable.ic_floating_panel_starred
+                                else Res.drawable.ic_floating_panel_star
+                            ),
                             contentDescription = null,
                             tint = Color.Unspecified,
                             modifier = Modifier.size(20.dp)

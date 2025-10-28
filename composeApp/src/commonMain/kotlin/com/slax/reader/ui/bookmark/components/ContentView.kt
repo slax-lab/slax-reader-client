@@ -1,7 +1,9 @@
 package com.slax.reader.ui.bookmark.components
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -11,44 +13,44 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.utils.AppWebView
+import com.slax.reader.utils.platformType
 import com.slax.reader.utils.wrapHtmlWithCSS
 import org.koin.compose.koinInject
 
 @Composable
 fun BookmarkContentView(
     bookmarkId: String,
-    topContentHeightPx: Float,
+    topContentInsetPx: Float,
     onWebViewTap: (() -> Unit)? = null,
     onScrollChange: ((scrollY: Float) -> Unit)? = null,
 ) {
     val detailView: BookmarkDetailViewModel = koinInject()
 
-    var rawHtmlContent by remember { mutableStateOf<String?>(null) }
+    var htmlContent by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
 
-    // 等待顶部测量完成后再包装 HTML
-    // topContentHeightPx 基于 Compose 的 px（Android 为物理像素，iOS 为 points * scale）
-    // WebView 中的 CSS px 对应设备无关像素，因此需要按照 density 折算
-    val density = LocalDensity.current
-    val cssTopPaddingPx by remember(topContentHeightPx, density) {
+    val density = LocalDensity.current.density
+
+    // 获取 statusBarsPadding 的高度
+    val windowInsets = WindowInsets.statusBars
+    val statusBarHeightPx = windowInsets.getTop(LocalDensity.current).toFloat()
+
+    val isAndroid = remember { platformType == "android" }
+
+    val cssTopPaddingPx by remember(topContentInsetPx, statusBarHeightPx, density) {
         derivedStateOf {
-            if (topContentHeightPx > 0f) {
-                topContentHeightPx / density.density
+            if (isAndroid && topContentInsetPx > 0f) {
+                (topContentInsetPx + statusBarHeightPx) / density
             } else {
                 0f
             }
         }
     }
 
-    val htmlContentWithPadding by remember(rawHtmlContent, cssTopPaddingPx) {
+    val wrappedHtml by remember(htmlContent, cssTopPaddingPx) {
         derivedStateOf {
-            if (rawHtmlContent != null && cssTopPaddingPx > 0f) {
-                println("[WebView] Using CSS padding-top: ${cssTopPaddingPx}px (css)")
-                wrapHtmlWithCSS(rawHtmlContent!!, cssTopPaddingPx)
-            } else {
-                null
-            }
+            htmlContent?.let { wrapHtmlWithCSS(it, cssTopPaddingPx) }
         }
     }
 
@@ -56,7 +58,7 @@ fun BookmarkContentView(
         isLoading = true
         error = null
         try {
-            rawHtmlContent = detailView.getBookmarkContent(bookmarkId)
+            htmlContent = detailView.getBookmarkContent(bookmarkId)
         } catch (e: Exception) {
             error = e.message ?: "加载失败"
         } finally {
@@ -83,11 +85,11 @@ fun BookmarkContentView(
             }
         }
 
-        htmlContentWithPadding != null -> {
-            // WebView 通过 CSS padding 预留顶部空间
+        wrappedHtml != null -> {
             AppWebView(
-                htmlContent = htmlContentWithPadding,
+                htmlContent = wrappedHtml,
                 modifier = Modifier.fillMaxSize(),
+                topContentInsetPx = topContentInsetPx,
                 onTap = onWebViewTap,
                 onScrollChange = onScrollChange
             )

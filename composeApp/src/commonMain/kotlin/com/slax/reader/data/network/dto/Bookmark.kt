@@ -18,6 +18,11 @@ data class ChangesItem(
 )
 
 @Serializable
+data class UploadChangesResult(
+    val status: Boolean = true
+)
+
+@Serializable
 data class AuthResult(
     val token: String = "",
     val user_id: String = "",
@@ -61,7 +66,7 @@ data class BookmarkOverviewParam(
 
 @Serializable
 data class TagInfo(
-    val id: Int,
+    val id: Long,
     val name: String
 )
 

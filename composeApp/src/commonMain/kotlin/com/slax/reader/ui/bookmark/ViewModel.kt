@@ -8,12 +8,23 @@ import com.slax.reader.data.database.model.UserTag
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.network.dto.OverviewResponse
 import com.slax.reader.domain.sync.BackgroundDomain
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.IO
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+
+data class OverviewState(
+    private val overviewBuilder: StringBuilder = StringBuilder(),
+    val keyTakeaways: List<String> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null
+) {
+    val overview: String get() = overviewBuilder.toString()
+
+    fun appendOverview(content: String): OverviewState {
+        overviewBuilder.append(content)
+        return this
+    }
+}
 
 class BookmarkDetailViewModel(
     private val bookmarkDao: BookmarkDao,
@@ -22,6 +33,9 @@ class BookmarkDetailViewModel(
 ) : ViewModel() {
 
     private var _bookmarkId = MutableStateFlow<String?>(null)
+
+    private val _overviewState = MutableStateFlow(OverviewState())
+    val overviewState: StateFlow<OverviewState> = _overviewState.asStateFlow()
 
     fun setBookmarkId(id: String) {
         _bookmarkId.value = id
@@ -64,7 +78,51 @@ class BookmarkDetailViewModel(
         return@withContext backgroundDomain.getBookmarkContent(bookmarkId)
     }
 
-    suspend fun getBookmarkOverview(bookmarkId: String): Flow<OverviewResponse> {
-        return apiService.getBookmarkOverview(bookmarkId)
+    fun loadOverview(bookmarkId: String) {
+        viewModelScope.launch {
+            _overviewState.value = OverviewState(isLoading = true)
+
+            try {
+                apiService.getBookmarkOverview(bookmarkId).collect { response ->
+                    when (response) {
+                        is OverviewResponse.Overview -> {
+                            _overviewState.update { state ->
+                                state.appendOverview(response.content).copy(isLoading = true)
+                            }
+                        }
+
+                        is OverviewResponse.KeyTakeaways -> {
+                            _overviewState.update { state ->
+                                state.copy(keyTakeaways = response.content)
+                            }
+                        }
+
+                        is OverviewResponse.Done -> {
+                            _overviewState.update { state ->
+                                state.copy(isLoading = false)
+                            }
+                        }
+
+                        is OverviewResponse.Error -> {
+                            _overviewState.update { state ->
+                                state.copy(
+                                    error = response.message,
+                                    isLoading = false
+                                )
+                            }
+                        }
+
+                        else -> {}
+                    }
+                }
+            } catch (e: Exception) {
+                _overviewState.update { state ->
+                    state.copy(
+                        error = e.message ?: "Unknown error",
+                        isLoading = false
+                    )
+                }
+            }
+        }
     }
 }

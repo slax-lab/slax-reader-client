@@ -18,7 +18,6 @@ fun wrapHtmlWithCSS(htmlContent: String, topPaddingPx: Float = 0f): String {
                 $articleStyle
                 $resetStyle
 
-                /* 顶部 padding 为悬浮内容预留空间 */
                 body {
                     padding-top: ${topPaddingPx}px !important;
                     padding-left: 20px !important;
@@ -34,7 +33,6 @@ fun wrapHtmlWithCSS(htmlContent: String, topPaddingPx: Float = 0f): String {
     """.trimIndent()
 }
 
-
 @Composable
 expect fun AppWebView(
     url: String? = null,
@@ -42,7 +40,7 @@ expect fun AppWebView(
     modifier: Modifier = Modifier,
     topContentInsetPx: Float = 0f,
     onTap: (() -> Unit)? = null,
-    onScrollChange: ((scrollY: Float) -> Unit)? = null,  // 滚动偏移回调
+    onScrollChange: ((scrollY: Float) -> Unit)? = null,
 )
 
 @Composable

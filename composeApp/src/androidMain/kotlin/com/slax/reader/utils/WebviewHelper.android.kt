@@ -1,8 +1,8 @@
 package com.slax.reader.utils
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.graphics.Color
-import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -15,23 +15,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import app.slax.reader.SlaxConfig
-import com.slax.reader.const.HEIGHT_MONITOR_SCRIPT
-import com.slax.reader.const.JS_BRIDGE_NAME
-import com.slax.reader.model.BridgeMessageParser
-import com.slax.reader.model.HeightMessage
-
-private class JsBridge(
-    private val onHeightChange: ((Double) -> Unit)?,
-) {
-    @JavascriptInterface
-    fun postMessage(message: String) {
-        val bridgeMessage = BridgeMessageParser.parse(message) ?: return
-
-        when (bridgeMessage) {
-            is HeightMessage -> onHeightChange?.invoke(bridgeMessage.height)
-        }
-    }
-}
 
 @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface", "ClickableViewAccessibility")
 @Composable
@@ -49,14 +32,29 @@ actual fun AppWebView(
     AndroidView(
         modifier = modifier,
         factory = { context ->
-            // 自定义 WebView 以监听滚动
             object : WebView(context) {
                 override fun onScrollChanged(l: Int, t: Int, oldl: Int, oldt: Int) {
                     super.onScrollChanged(l, t, oldl, oldt)
-                    // Android WebView scrollY 已经是设备像素
-                    // 直接用于 graphicsLayer.translationY
-                    println("[Android WebView Scroll] scrollY(px)=$t")
+                    if (l != 0) {
+                        scrollTo(0, t)
+                    }
                     onScrollChangeCallback?.invoke(t.toFloat())
+                }
+
+                override fun overScrollBy(
+                    deltaX: Int, deltaY: Int,
+                    scrollX: Int, scrollY: Int,
+                    scrollRangeX: Int, scrollRangeY: Int,
+                    maxOverScrollX: Int, maxOverScrollY: Int,
+                    isTouchEvent: Boolean
+                ): Boolean {
+                    return super.overScrollBy(
+                        0, deltaY,
+                        0, scrollY,
+                        0, scrollRangeY,
+                        0, maxOverScrollY,
+                        isTouchEvent
+                    )
                 }
             }.apply {
                 setBackgroundColor(Color.TRANSPARENT)
@@ -87,8 +85,6 @@ actual fun AppWebView(
                     @Suppress("DEPRECATION")
                     setRenderPriority(WebSettings.RenderPriority.HIGH)
                 }
-                val topPadding = topContentInsetPx.coerceAtLeast(0f).toInt()
-                setPadding(paddingLeft, topPadding, paddingRight, paddingBottom)
 
                 setOnTouchListener { _, event ->
                     when (event.action) {
@@ -110,10 +106,6 @@ actual fun AppWebView(
             }
         },
         update = { webView ->
-            val topPadding = topContentInsetPx.coerceAtLeast(0f).toInt()
-            if (webView.paddingTop != topPadding) {
-                webView.setPadding(webView.paddingLeft, topPadding, webView.paddingRight, webView.paddingBottom)
-            }
             when {
                 url != null -> {
                     webView.loadUrl(url)
