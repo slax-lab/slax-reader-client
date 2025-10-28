@@ -262,15 +262,36 @@ buildkonfig {
     }
 }
 
-tasks.register<Exec>("syncXcodeVersionConfig") {
-    workingDir(layout.projectDirectory.dir("../iosApp"))
+val syncXcodeVersionConfig = tasks.register<Exec>("syncXcodeVersionConfig") {
+    workingDir(rootProject.projectDir)
 
-    val xconfigContent = """
-        BUNDLE_SHORT_VERSION_STRING = $appVersionName
-        BUNDLE_VERSION = $appVersionCode
+    val iOSFirebaseFile = if (buildFlavor == "release") {
+        "GoogleService-Info.release.plist"
+    } else {
+        "GoogleService-Info.dev.plist"
+    }
+
+    val envFile = if (buildFlavor == "release") {
+        ".env.release"
+    } else {
+        ".env"
+    }
+
+    val script = """
+        GID_CLIENT_ID=${'$'}(/usr/libexec/PlistBuddy -c "Print :CLIENT_ID" "firebase/$iOSFirebaseFile")
+        GID_REVERSED_CLIENT_ID=${'$'}(/usr/libexec/PlistBuddy -c "Print :REVERSED_CLIENT_ID" "firebase/$iOSFirebaseFile")
+        GID_SERVER_CLIENT_ID=${'$'}(grep GOOGLE_AUTH_SERVER_ID "$envFile" | cut -d'=' -f2 | tr -d ' "')
+
+        cat > iosApp/Versions.xcconfig <<EOF
+BUNDLE_SHORT_VERSION_STRING = $appVersionName
+BUNDLE_VERSION = $appVersionCode
+GID_CLIENT_ID = ${'$'}GID_CLIENT_ID
+GID_SERVER_CLIENT_ID = ${'$'}GID_SERVER_CLIENT_ID
+GID_REVERSED_CLIENT_ID = ${'$'}GID_REVERSED_CLIENT_ID
+EOF
     """.trimIndent()
 
-    commandLine("sh", "-c", "echo '$xconfigContent' > Versions.xcconfig")
+    commandLine("sh", "-c", script)
 }
 
 val syncFirebaseAndroid = tasks.register<Exec>("syncFirebaseAndroid") {
@@ -317,4 +338,5 @@ tasks.named("preBuild").configure {
 
 tasks.matching { it.name.contains("embedAndSign") && it.name.contains("FrameworkForXcode") }.configureEach {
     dependsOn(syncFirebaseIOS)
+    dependsOn(syncXcodeVersionConfig)
 }

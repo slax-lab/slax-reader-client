@@ -73,11 +73,11 @@ fun LoginScreen(navController: NavHostController) {
         credentials = GoogleAuthCredentials(serverId = SlaxConfig.GOOGLE_AUTH_SERVER_ID)
     )
 
-    if (errorMessage != null) {
+    errorMessage?.let { message ->
         AlertDialog(
             onDismissRequest = { errorMessage = null },
             title = { Text("Login Failed") },
-            text = { Text(errorMessage!!) },
+            text = { Text(message) },
             confirmButton = {
                 TextButton(onClick = { errorMessage = null }) {
                     Text("OK")
