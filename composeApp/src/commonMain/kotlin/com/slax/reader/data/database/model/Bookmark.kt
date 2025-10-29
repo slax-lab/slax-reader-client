@@ -61,6 +61,8 @@ data class InboxListBookmarkItem(
     val createdAt: String,
     val updatedAt: String,
 
+    val archiveStatus: Int,
+    val isStarred: Int,
     val metadataStatus: String?,
     var metadataTitle: String?,
     var metadataUrl: String?
@@ -143,6 +145,8 @@ fun mapperToInboxListBookmarkItem(cursor: SqlCursor): InboxListBookmarkItem {
     return InboxListBookmarkItem(
         id = cursor.getString("id"),
         aliasTitle = cursor.getString("alias_title"),
+        archiveStatus = cursor.getString("archive_status").toIntOrNull() ?: 0,
+        isStarred = cursor.getString("is_starred").toIntOrNull() ?: 0,
         createdAt = cursor.getString("created_at"),
         updatedAt = cursor.getString("updated_at"),
         metadataTitle = cursor.getString("metadata_title"),

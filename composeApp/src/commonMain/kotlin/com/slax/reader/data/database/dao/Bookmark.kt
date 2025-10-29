@@ -25,6 +25,8 @@ class BookmarkDao(
             """
             SELECT
                 id,
+                archive_status,
+                is_starred,
                 created_at,
                 updated_at,
                 alias_title,
