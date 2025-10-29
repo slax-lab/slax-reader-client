@@ -24,6 +24,10 @@ class InboxListViewModel(
         bookmarkDao.updateBookmarkArchive(bookmarkId, if (isArchive) 1 else 0)
     }
 
+    suspend fun editTitle(bookmarkId: String, title: String) = withContext(Dispatchers.IO) {
+        bookmarkDao.updateBookmarkAliasTitle(bookmarkId, title)
+    }
+
     suspend fun deleteBookmark(bookmarkId: String) = withContext(Dispatchers.IO) {
         bookmarkDao.deleteBookmark(bookmarkId)
     }

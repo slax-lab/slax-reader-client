@@ -153,6 +153,15 @@ class BookmarkDao(
         }
     }
 
+    suspend fun updateBookmarkAliasTitle(bookmarkId: String, title: String) {
+        database.writeTransaction { tx ->
+            tx.execute(
+                "UPDATE sr_user_bookmark SET alias_title = ? WHERE id = ?",
+                listOf(title, bookmarkId)
+            )
+        }
+    }
+
     @OptIn(ExperimentalUuidApi::class, ExperimentalTime::class)
     suspend fun createBookmark(url: String) {
         val bookmarkId = Uuid.random().toString()
