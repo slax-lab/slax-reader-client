@@ -19,6 +19,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -26,6 +30,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -89,6 +97,16 @@ fun BookmarkItemRow(
     var lastMenuTriggerSource by remember { mutableStateOf(MenuTriggerSource.NONE) }
     val showMenu = menuTriggerSource != MenuTriggerSource.NONE
 
+    var isEditingTitle by remember { mutableStateOf(false) }
+    var editTitleText by remember { mutableStateOf("") }
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(isEditingTitle) {
+        if (isEditingTitle) {
+            focusRequester.requestFocus()
+        }
+    }
+
     val offsetXAnimatable = remember { Animatable(0f) }
     var boxSize by remember { mutableStateOf(IntSize.Zero) }
     val actualMorePainter = if (menuTriggerSource == MenuTriggerSource.MORE_ICON) {
@@ -134,6 +152,15 @@ fun BookmarkItemRow(
         kotlin.math.max(leftProgress, rightProgress).coerceIn(0f, 1f)
     }
 
+    // 计算菜单透明度（0-1），根据滑动进度渐变
+    val menuAlpha = remember(offsetXAnimatable.value) {
+        if (offsetXAnimatable.value < 0f) {
+            (kotlin.math.abs(offsetXAnimatable.value) / kotlin.math.abs(maxSwipeLeft)).coerceIn(0f, 1f)
+        } else {
+            0f
+        }
+    }
+
     val draggableState = rememberDraggableState { delta ->
         scope.launch {
             val newOffset = (offsetXAnimatable.value + delta).coerceIn(maxSwipeLeft, maxSwipeRight)
@@ -155,7 +182,8 @@ fun BookmarkItemRow(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .padding(end = 18.dp)
-                    .fillMaxHeight(),
+                    .fillMaxHeight()
+                    .graphicsLayer { alpha = menuAlpha },
                 horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -331,13 +359,42 @@ fun BookmarkItemRow(
                             }
                         }
 
-                        Text(
-                            text = bookmark.displayTitle(),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f),
-                            style = TextStyle(fontSize = 15.sp, lineHeight = 24.sp, color = Color(0xFF0F1419))
-                        )
+                        if (isEditingTitle) {
+                            BasicTextField(
+                                value = editTitleText,
+                                onValueChange = { editTitleText = it },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .background(Color.Transparent)
+                                    .focusRequester(focusRequester),
+                                textStyle = TextStyle(fontSize = 15.sp, lineHeight = 24.sp, color = Color(0xFF0F1419)),
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                                keyboardActions = KeyboardActions(
+                                    onDone = {
+                                        val trimmedTitle = editTitleText.trim()
+                                        if (trimmedTitle.isEmpty() || editTitleText == bookmark.displayTitle()) {
+                                            isEditingTitle = false
+                                            editTitleText = ""
+                                        } else {
+                                            scope.launch {
+                                                viewModel.editTitle(bookmark.id, trimmedTitle)
+                                                isEditingTitle = false
+                                                editTitleText = ""
+                                            }
+                                        }
+                                    }
+                                )
+                            )
+                        } else {
+                            Text(
+                                text = bookmark.displayTitle(),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f),
+                                style = TextStyle(fontSize = 15.sp, lineHeight = 24.sp, color = Color(0xFF0F1419))
+                            )
+                        }
                     }
 
                     Image(
@@ -434,6 +491,8 @@ fun BookmarkItemRow(
                     scope.launch {
                         menuTriggerSource = MenuTriggerSource.NONE
                         isLongPressed = false
+                        editTitleText = bookmark.displayTitle()
+                        isEditingTitle = true
                     }
                 }
             )
