@@ -73,7 +73,7 @@ fun SlaxNavigation(
                 launch(Dispatchers.IO) {
                     database?.disconnectAndClear(
                         clearLocal = true,
-//                        soft = true
+                        soft = true
                     )
                     backgroundDomain.cleanup()
                 }

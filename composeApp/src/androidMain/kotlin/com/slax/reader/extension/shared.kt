@@ -209,14 +209,13 @@ class ShareActivity : ComponentActivity() {
         LaunchedEffect(Unit) {
             isVisible = true
 
-            delay(500)
             state = processShare()
             haptics.performHapticFeedback(HapticFeedbackType.Confirm)
 
             if (state == "ok") {
-                delay(3000)
+                delay(2000)
                 isVisible = false
-                delay(300)
+                delay(100)
                 onDismiss()
             }
         }
