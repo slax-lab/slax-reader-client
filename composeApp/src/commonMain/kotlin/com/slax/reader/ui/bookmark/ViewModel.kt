@@ -13,18 +13,11 @@ import kotlinx.coroutines.flow.*
 import kotlinx.serialization.json.Json
 
 data class OverviewState(
-    private val overviewBuilder: StringBuilder = StringBuilder(),
+    val overview: String = "",
     val keyTakeaways: List<String> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null
-) {
-    val overview: String get() = overviewBuilder.toString()
-
-    fun appendOverview(content: String): OverviewState {
-        overviewBuilder.append(content)
-        return this
-    }
-}
+)
 
 class BookmarkDetailViewModel(
     private val bookmarkDao: BookmarkDao,
@@ -86,7 +79,10 @@ class BookmarkDetailViewModel(
                 apiService.getBookmarkOverview(bookmarkId).collect { response ->
                     _overviewState.update { state ->
                         when (response) {
-                            is OverviewResponse.Overview -> state.appendOverview(response.content).copy(isLoading = true)
+                            is OverviewResponse.Overview -> state.copy(
+                                overview = state.overview + response.content,
+                                isLoading = true
+                            )
                             is OverviewResponse.KeyTakeaways -> state.copy(keyTakeaways = response.content)
                             is OverviewResponse.Done -> state.copy(isLoading = false)
                             is OverviewResponse.Error -> state.copy(error = response.message, isLoading = false)

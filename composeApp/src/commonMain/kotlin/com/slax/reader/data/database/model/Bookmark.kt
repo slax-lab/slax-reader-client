@@ -62,14 +62,14 @@ data class InboxListBookmarkItem(
     val updatedAt: String,
 
     val metadataStatus: String?,
-    var metadataTitle: String?,
-    var metadataUrl: String?
+    val metadataTitle: String?,
+    val metadataUrl: String?
 ) {
     fun displayTitle(): String {
         return when {
             aliasTitle.isNotEmpty() -> aliasTitle
-            !metadataTitle.isNullOrEmpty() -> metadataTitle!!
-            !metadataUrl.isNullOrEmpty() -> metadataUrl!!
+            !metadataTitle.isNullOrEmpty() -> metadataTitle
+            !metadataUrl.isNullOrEmpty() -> metadataUrl
             else -> id.take(5)
         }
     }

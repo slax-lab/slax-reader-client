@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,8 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.slax.reader.const.BookmarkRoutes
 import com.slax.reader.data.database.model.InboxListBookmarkItem
-import com.slax.reader.ui.inbox.InboxListViewModel
-import org.koin.compose.koinInject
+import com.slax.reader.domain.sync.DownloadStatus
 
 
 @Composable
@@ -31,14 +28,9 @@ fun BookmarkItemRow(
     bookmark: InboxListBookmarkItem,
     iconPainter: Painter,
     morePainter: Painter,
+    downloadStatus: DownloadStatus?,
 ) {
     val haptics = LocalHapticFeedback.current
-    val viewModel: InboxListViewModel = koinInject()
-
-    val bookmarkStatusMap by viewModel.bookmarkStatusFlow.collectAsState()
-    val downloadStatus = bookmarkStatusMap[bookmark.id]
-
-    // println("[watch][UI] recomposition BookmarkItemRow")
 
     Row(
         modifier = Modifier
@@ -70,7 +62,7 @@ fun BookmarkItemRow(
                     contentScale = ContentScale.Fit
                 )
 
-                if (downloadStatus?.status == com.slax.reader.domain.sync.DownloadStatus.DOWNLOADING) {
+                if (downloadStatus == DownloadStatus.DOWNLOADING) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
                         color = Color(0xFF1DA1F2),
