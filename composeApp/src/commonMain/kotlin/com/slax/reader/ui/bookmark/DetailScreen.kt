@@ -66,7 +66,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
     var overviewBounds by remember { mutableStateOf(OverviewViewBounds()) }
 
     // WebView 滚动偏移
-    var webViewScrollY by remember { mutableFloatStateOf(0f) }
+    val webViewScrollY = remember { mutableFloatStateOf(0f) }
 
     // 顶部内容高度 (px)
     var headerMeasuredHeight by remember { mutableFloatStateOf(0f) }
@@ -81,7 +81,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
 
     val headerVisible by remember {
         derivedStateOf {
-            headerMeasuredHeight == 0f || webViewScrollY < headerMeasuredHeight
+            headerMeasuredHeight == 0f || webViewScrollY.floatValue < headerMeasuredHeight
         }
     }
 
@@ -96,7 +96,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
             onScrollChange = remember {
                 { scrollY ->
                     val clampedScroll = max(scrollY, 0f)
-                    webViewScrollY = clampedScroll
+                    webViewScrollY.floatValue = clampedScroll
                     val shouldShow = clampedScroll <= 10f
                     if (manuallyVisible != shouldShow) {
                         manuallyVisible = shouldShow
@@ -104,7 +104,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                 }
             },
             onWebViewTap = {
-                manuallyVisible = if (webViewScrollY <= 10f) true else !manuallyVisible
+                manuallyVisible = if (webViewScrollY.floatValue <= 10f) true else !manuallyVisible
             }
         )
 
@@ -113,7 +113,7 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
                 detail = detail,
                 currentTags = currentTags,
                 overview = overview,
-                scrollY = webViewScrollY,
+                scrollY = webViewScrollY.floatValue,
                 onHeightChanged = remember {
                     { height ->
                         headerMeasuredHeight = height
