@@ -34,7 +34,7 @@ class BookmarkDao(
                 JSON_EXTRACT(metadata, '$.bookmark.target_url') as metadata_url,
                 JSON_EXTRACT(metadata, '$.bookmark.status') as metadata_status
             FROM sr_user_bookmark WHERE archive_status = 0
-            ORDER BY updated_at DESC
+            ORDER BY created_at DESC
             """.trimIndent()
         ) { cursor ->
             mapperToInboxListBookmarkItem(cursor)
