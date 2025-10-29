@@ -44,14 +44,7 @@ fun UserAvatar() {
     )
 
     LaunchedEffect(syncStatus) {
-        println("==== Sync Status ====")
-        println("==== network: ${getNetWorkState().toString()}")
-        println("==== connecting: ${syncStatus?.connecting}")
-        println("==== connected: ${syncStatus?.connected}")
-        println("==== uploading: ${syncStatus?.uploading}")
-        println("==== downloading: ${syncStatus?.downloading}")
-        println("==== anyError: ${syncStatus?.anyError}")
-        println("==== Sync Status ====")
+        println("network error: ${getNetWorkState()}, error: ${syncStatus?.anyError}")
     }
 
     Box(

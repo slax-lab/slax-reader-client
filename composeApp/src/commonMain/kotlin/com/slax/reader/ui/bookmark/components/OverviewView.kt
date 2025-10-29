@@ -30,7 +30,7 @@ fun OverviewView(
     onExpand: () -> Unit = {},
     onBoundsChanged: (OverviewViewBounds) -> Unit = {}
 ) {
-    val plainTextContent = remember { content }
+    val plainTextContent = remember(content) { content }
 
     Surface(
         modifier = modifier

@@ -13,18 +13,11 @@ import kotlinx.coroutines.flow.*
 import kotlinx.serialization.json.Json
 
 data class OverviewState(
-    private val overviewBuilder: StringBuilder = StringBuilder(),
+    val overview: String = "",
     val keyTakeaways: List<String> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null
-) {
-    val overview: String get() = overviewBuilder.toString()
-
-    fun appendOverview(content: String): OverviewState {
-        overviewBuilder.append(content)
-        return this
-    }
-}
+)
 
 class BookmarkDetailViewModel(
     private val bookmarkDao: BookmarkDao,
@@ -84,43 +77,22 @@ class BookmarkDetailViewModel(
 
             try {
                 apiService.getBookmarkOverview(bookmarkId).collect { response ->
-                    when (response) {
-                        is OverviewResponse.Overview -> {
-                            _overviewState.update { state ->
-                                state.appendOverview(response.content).copy(isLoading = true)
-                            }
+                    _overviewState.update { state ->
+                        when (response) {
+                            is OverviewResponse.Overview -> state.copy(
+                                overview = state.overview + response.content,
+                                isLoading = true
+                            )
+                            is OverviewResponse.KeyTakeaways -> state.copy(keyTakeaways = response.content)
+                            is OverviewResponse.Done -> state.copy(isLoading = false)
+                            is OverviewResponse.Error -> state.copy(error = response.message, isLoading = false)
+                            is OverviewResponse.Tags, is OverviewResponse.Tag -> state // Ignore tags for now
                         }
-
-                        is OverviewResponse.KeyTakeaways -> {
-                            _overviewState.update { state ->
-                                state.copy(keyTakeaways = response.content)
-                            }
-                        }
-
-                        is OverviewResponse.Done -> {
-                            _overviewState.update { state ->
-                                state.copy(isLoading = false)
-                            }
-                        }
-
-                        is OverviewResponse.Error -> {
-                            _overviewState.update { state ->
-                                state.copy(
-                                    error = response.message,
-                                    isLoading = false
-                                )
-                            }
-                        }
-
-                        else -> {}
                     }
                 }
             } catch (e: Exception) {
                 _overviewState.update { state ->
-                    state.copy(
-                        error = e.message ?: "Unknown error",
-                        isLoading = false
-                    )
+                    state.copy(error = e.message ?: "Unknown error", isLoading = false)
                 }
             }
         }

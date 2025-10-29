@@ -202,7 +202,6 @@
 				5C6A594B031FD26E7C85442A /* [CP] Check Pods Manifest.lock */,
 				8AD9DE5F2E9A3DAE006B8204 /* [CP] Prepare powersync-sqlite-core xcframework */,
 				B9DA97F42DC1497100A4DA20 /* Compile Kotlin Framework */,
-				8A0D8C002E8BD3230021AA96 /* Sync Kotlin Framework Version */,
 				B9DA97AD2DC1472C00A4DA20 /* Sources */,
 				B9DA97AE2DC1472C00A4DA20 /* Frameworks */,
 				B9DA97AF2DC1472C00A4DA20 /* Resources */,
@@ -340,25 +339,6 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		8A0D8C002E8BD3230021AA96 /* Sync Kotlin Framework Version */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Sync Kotlin Framework Version";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "cd \"$SRCROOT/..\"\n./gradlew :composeApp:syncXcodeVersionConfig\n";
-		};
 		8ACC80462E9CA25C0078F1FF /* Upload dSYM file */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -419,7 +399,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "export JAVA_HOME=$(/usr/libexec/java_home -v 17)\n\nif [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\\"YES\\\"\"\n  exit 0\nfi\ncd \"$SRCROOT/..\"\n\nif [ -z \"$BUILD_FLAVOR\" ]; then BUILD_FLAVOR=dev; fi\necho \"building $BUILD_FLAVOR\"\n./gradlew :composeApp:embedAndSignAppleFrameworkForXcode --info -Pbuildkonfig.flavor=$BUILD_FLAVOR\n";
+			shellScript = "export JAVA_HOME=$(/usr/libexec/java_home -v 17)\n\nif [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\necho \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\\"YES\\\"\"\nexit 0\nfi\ncd \"$SRCROOT/..\"\n\nif [ -z \"$BUILD_FLAVOR\" ]; then BUILD_FLAVOR=dev; fi\necho \"building $BUILD_FLAVOR\"\n\nCACHE_FLAG=\"\"\nif [ \"$BUILD_FLAVOR\" = \"release\" ]; then\necho \"building on no-configuration-cache\"\nCACHE_FLAG=\"--no-configuration-cache\"\nfi\n\n./gradlew :composeApp:embedAndSignAppleFrameworkForXcode --info -Pbuildkonfig.flavor=$BUILD_FLAVOR $CACHE_FLAG\n";
 		};
 		B9DA97F42DC1497100A4DA20 /* Compile Kotlin Framework */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -438,7 +418,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "export JAVA_HOME=$(/usr/libexec/java_home -v 17)\n\nif [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\\"YES\\\"\"\n  exit 0\nfi\ncd \"$SRCROOT/..\"\n\nif [ -z \"$BUILD_FLAVOR\" ]; then BUILD_FLAVOR=dev; fi\necho \"building $BUILD_FLAVOR\"\n./gradlew :composeApp:embedAndSignAppleFrameworkForXcode --info -Pbuildkonfig.flavor=$BUILD_FLAVOR\n";
+			shellScript = "export JAVA_HOME=$(/usr/libexec/java_home -v 17)\n\nif [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\necho \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\\"YES\\\"\"\nexit 0\nfi\ncd \"$SRCROOT/..\"\n\nif [ -z \"$BUILD_FLAVOR\" ]; then BUILD_FLAVOR=dev; fi\necho \"building $BUILD_FLAVOR\"\n\nCACHE_FLAG=\"\"\nif [ \"$BUILD_FLAVOR\" = \"release\" ]; then\necho \"building on no-configuration-cache\"\nCACHE_FLAG=\"--no-configuration-cache\"\nfi\n\n./gradlew :composeApp:embedAndSignAppleFrameworkForXcode --info -Pbuildkonfig.flavor=$BUILD_FLAVOR $CACHE_FLAG\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

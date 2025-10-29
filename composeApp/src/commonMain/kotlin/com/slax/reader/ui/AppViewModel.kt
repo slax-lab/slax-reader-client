@@ -8,8 +8,8 @@ import com.slax.reader.data.database.dao.UserDao
 import org.koin.core.component.KoinComponent
 
 class AppViewModel(
-    userDao: UserDao,
-    powerSyncDao: PowerSyncDao,
+    private val userDao: UserDao,
+    private val powerSyncDao: PowerSyncDao,
 ) : ViewModel(), KoinComponent, DefaultLifecycleObserver {
 
     val userInfo = userDao.watchUserInfo()

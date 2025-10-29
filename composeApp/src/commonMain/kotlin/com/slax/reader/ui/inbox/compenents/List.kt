@@ -5,13 +5,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.slax.reader.ui.inbox.InboxListViewModel
@@ -26,6 +21,7 @@ import slax_reader_client.composeapp.generated.resources.ic_cell_more
 fun ArticleList(navCtrl: NavController) {
     val viewModel: InboxListViewModel = koinInject()
     val bookmarks by viewModel.bookmarks.collectAsState()
+    val bookmarkStatusMap by viewModel.bookmarkStatusFlow.collectAsState()
     val iconResource = painterResource(Res.drawable.ic_cell_internet)
     val moreResource = painterResource(Res.drawable.ic_cell_more)
     val iconPainter = remember { iconResource }
@@ -34,14 +30,9 @@ fun ArticleList(navCtrl: NavController) {
         { DividerLine() }
     }
 
-    // println("[watch][UI] recomposition ArticleList")
-
     LazyColumn(
         modifier = Modifier
-            .fillMaxSize()
-            .graphicsLayer {
-                compositingStrategy = CompositingStrategy.Offscreen
-            },
+            .fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(0.dp),
         contentPadding = PaddingValues(bottom = 0.dp),
     ) {
@@ -50,7 +41,16 @@ fun ArticleList(navCtrl: NavController) {
             key = { _, bookmark -> bookmark.id },
             contentType = { _, _ -> "bookmark" }
         ) { index, bookmark ->
-            BookmarkItemRow(navCtrl, bookmark, iconPainter, morePainter)
+            val bookmarkStatus = remember {
+                derivedStateOf { bookmarkStatusMap[bookmark.id]?.status }
+            }.value
+            BookmarkItemRow(
+                navCtrl = navCtrl,
+                bookmark = bookmark,
+                iconPainter = iconPainter,
+                morePainter = morePainter,
+                downloadStatus = bookmarkStatus
+            )
 
             if (index < bookmarks.lastIndex) {
                 dividerLine()

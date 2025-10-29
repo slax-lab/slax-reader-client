@@ -80,7 +80,7 @@ data class OverviewDataWrapper(
 )
 
 @Serializable
-data class OverviewSocketData(
+data class OverviewEventData(
     val type: String,
     val data: OverviewDataWrapper? = null,
     val message: String? = null

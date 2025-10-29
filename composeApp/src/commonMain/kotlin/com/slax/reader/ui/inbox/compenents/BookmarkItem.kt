@@ -33,7 +33,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -70,6 +69,7 @@ import slax_reader_client.composeapp.generated.resources.ic_cell_more_highlighte
 import slax_reader_client.composeapp.generated.resources.ic_cell_more_star
 import slax_reader_client.composeapp.generated.resources.ic_floating_panel_archieved
 import slax_reader_client.composeapp.generated.resources.ic_floating_panel_starred
+import com.slax.reader.domain.sync.DownloadStatus
 
 // 菜单触发源枚举
 enum class MenuTriggerSource {
@@ -84,14 +84,12 @@ fun BookmarkItemRow(
     bookmark: InboxListBookmarkItem,
     iconPainter: Painter,
     morePainter: Painter,
+    downloadStatus: DownloadStatus?,
 ) {
     val haptics = LocalHapticFeedback.current
     val viewModel: InboxListViewModel = koinInject()
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
-
-    val bookmarkStatusMap by viewModel.bookmarkStatusFlow.collectAsState()
-    val downloadStatus = bookmarkStatusMap[bookmark.id]
 
     var menuTriggerSource by remember { mutableStateOf(MenuTriggerSource.NONE) }
     var lastMenuTriggerSource by remember { mutableStateOf(MenuTriggerSource.NONE) }
@@ -333,8 +331,8 @@ fun BookmarkItemRow(
                                 .fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            val isDownloading = downloadStatus?.status == com.slax.reader.domain.sync.DownloadStatus.DOWNLOADING
-                            val isCompleted = downloadStatus?.status == com.slax.reader.domain.sync.DownloadStatus.COMPLETED
+                            val isDownloading = downloadStatus == DownloadStatus.DOWNLOADING
+                            val isCompleted = downloadStatus == DownloadStatus.COMPLETED
 
                             Surface(
                                 modifier = Modifier.size(18.dp),

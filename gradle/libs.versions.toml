@@ -42,6 +42,7 @@ kmpauth-firebase = { module = "io.github.mirzemehdi:kmpauth-firebase", version.r
 kmpauth-google = { module = "io.github.mirzemehdi:kmpauth-google", version.ref = "kmpauthGoogle" }
 kmpauth-uihelper = { module = "io.github.mirzemehdi:kmpauth-uihelper", version.ref = "kmpauthGoogle" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
+ktor-server-sse = { module = "io.ktor:ktor-server-sse", version.ref = "ktorClientOkhttp" }
 okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
 powerSyncCore = { module = "com.powersync:core", version.ref = "powerSyncCore" }
 powerSyncRoom = { module = "com.powersync:integration-room", version.ref = "powerSyncRoom" }
