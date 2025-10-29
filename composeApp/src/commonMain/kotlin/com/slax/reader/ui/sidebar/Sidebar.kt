@@ -1,11 +1,14 @@
 package com.slax.reader.ui.sidebar
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -14,7 +17,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.DefaultStrokeLineCap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -31,6 +36,7 @@ fun Sidebar(
     drawerState: DrawerState,
     onSettingsClick: () -> Unit = {},
     onAboutClick: () -> Unit = {},
+    onSpaceManagerClick: () -> Unit = {},
     onLogout: () -> Unit = {},
     content: @Composable () -> Unit
 ) {
@@ -43,7 +49,7 @@ fun Sidebar(
                 modifier = Modifier
                     .fillMaxHeight()
                     .widthIn(max = 320.dp),
-                drawerContainerColor = Color.White
+                drawerContainerColor = Color(0xFFF5F5F3)
             ) {
                 DrawerContent(
                     onDismiss = {
@@ -92,7 +98,7 @@ private fun DrawerContent(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
-            .padding(12.dp)
+            .padding(8.dp)
     ) {
         // 关闭按钮
         Box(
@@ -141,56 +147,66 @@ private fun DrawerContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (appViewModel.syncType != null) {
-            Column(
+        appViewModel.syncType?.let {
+            Surface(
                 modifier = Modifier
-                    .padding(start = 12.dp)
                     .fillMaxWidth(),
-                horizontalAlignment = Alignment.Start
+                shape = RoundedCornerShape(8.dp),
+                color = Color(0xFFE8EBED),
             ) {
-                Text(
-                    text = appViewModel.syncType!!,
-                    fontSize = 11.sp,
-                    color = Color(0xFF0F1419),
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val style = TextStyle(
+                            fontSize = 11.sp,
+                            lineHeight = 15.sp,
+                            color = Color(0xFF333333)
+                        )
 
-                Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = it,
+                            style = style
+                        )
 
-                LinearProgressIndicator(
-                    progress = {
-                        when {
-                            syncStatus?.downloading == true -> appViewModel.downloadProgress
-                            syncStatus?.uploading == true -> 0f
-                            else -> 0f
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(2.dp)),
-                    color = Color(0xFF1976D2),
-                )
+                        Text(
+                            text = "${
+                                (when {
+                                    syncStatus?.downloading == true -> appViewModel.downloadProgress
+                                    syncStatus?.uploading == true -> 0f
+                                    else -> 0f
+                                } * 100).toInt()
+                            }%",
+                            style = style
+                        )
+                    }
 
-                Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = "${
-                        (when {
-                            syncStatus?.downloading == true -> appViewModel.downloadProgress
-                            syncStatus?.uploading == true -> 0f
-                            else -> 0f
-                        } * 100).toInt()
-                    }%",
-                    fontSize = 10.sp,
-                    color = Color(0xFF0F1419),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                    LinearProgressIndicator(
+                        strokeCap = DefaultStrokeLineCap,
+                        progress = {
+                            when {
+                                syncStatus?.downloading == true -> appViewModel.downloadProgress
+                                syncStatus?.uploading == true -> 0f
+                                else -> 0f
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(5.dp)
+                            .clip(RoundedCornerShape(2.5.dp)),
+                        color = Color(0xFF16B998),
+                        trackColor = Color(0x140F1419)
+                    )
+                }
             }
         }
-
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -218,7 +234,6 @@ private fun DrawerContent(
                 },
                 selected = false,
                 onClick = onSettingsClick,
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
                 colors = NavigationDrawerItemDefaults.colors(
                     unselectedContainerColor = Color.Transparent
                 )
@@ -244,11 +259,43 @@ private fun DrawerContent(
                 },
                 selected = false,
                 onClick = onAboutClick,
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
                 colors = NavigationDrawerItemDefaults.colors(
                     unselectedContainerColor = Color.Transparent
                 )
             )
+
+
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp).padding(top = 60.dp).fillMaxWidth()
+            ) {
+                Button(
+                    onClick = onLogout,
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.White
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxSize().background(Color.White),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+
+                        Text(
+                            "退出登录",
+                            style = TextStyle(
+                                fontSize = 16.sp,
+                                lineHeight = 22.5.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF333333)
+                            )
+                        )
+                    }
+                }
+            }
+
         }
     }
 }
