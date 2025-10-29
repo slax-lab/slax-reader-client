@@ -4,7 +4,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -28,6 +27,7 @@ import com.slax.reader.utils.getNetWorkState
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
+import slax_reader_client.composeapp.generated.resources.ic_inbox_plane
 import slax_reader_client.composeapp.generated.resources.global_default_avatar
 
 @Composable
@@ -55,14 +55,14 @@ fun UserAvatar() {
     }
 
     Box(
-        modifier = Modifier.size(32.dp),
+        modifier = Modifier.size(24.dp),
         contentAlignment = Alignment.Center
     ) {
         Image(
             painter = avatarPainter,
             contentDescription = "Avatar",
             modifier = Modifier
-                .size(32.dp)
+                .size(20.dp)
                 .clip(CircleShape),
             contentScale = ContentScale.Crop
         )
@@ -71,34 +71,35 @@ fun UserAvatar() {
             viewModel.hasError -> {
                 CircularProgressIndicator(
                     progress = { 1f },
-                    modifier = Modifier.size(36.dp),
+                    modifier = Modifier.size(24.dp),
                     color = Color(0xFFE53935),
-                    strokeWidth = 2.dp,
+                    strokeWidth = 1.dp,
                     trackColor = Color(0x33E53935)
                 )
+                var showText = "x"
+                var showColor = Color.Red
+                var showPlane = false
+                val state = getNetWorkState()
+                if (state == NetworkState.NONE || state == NetworkState.ACCESS_DENIED) {
+                    showPlane = true
+                    showColor = Color.Gray
+                }
 
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .size(12.dp)
                         .clip(CircleShape)
-                        .background(Color.White)
-                        .padding(1.dp)
+                        .size(8.dp)
+                        .background(showColor),
+                    contentAlignment = Alignment.Center
                 ) {
-                    var showText = "x"
-                    var showColor = Color.Red
-                    val state = getNetWorkState()
-                    if (state == NetworkState.NONE || state == NetworkState.ACCESS_DENIED) {
-                        showText = "✈️"
-                        showColor = Color.Gray
-                    }
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape)
-                            .background(showColor),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    if (showPlane) {
+                        Image(
+                            painter = painterResource(Res.drawable.ic_inbox_plane),
+                            contentDescription = "Plane",
+                            modifier = Modifier.size(8.dp)
+                        )
+                    } else {
                         Text(
                             text = showText,
                             color = Color.White,
@@ -113,19 +114,18 @@ fun UserAvatar() {
             viewModel.isUploading -> {
                 CircularProgressIndicator(
                     progress = { viewModel.downloadProgress },
-                    modifier = Modifier.size(36.dp),
+                    modifier = Modifier.size(24.dp),
                     color = Color(0xFF1DA1F2),
-                    strokeWidth = 2.dp,
+                    strokeWidth = 1.dp,
                     trackColor = Color(0x33333333)
                 )
 
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .size(12.dp)
+                        .size(8.dp)
                         .clip(CircleShape)
-                        .background(Color.White)
-                        .padding(1.dp)
+                        .background(Color(0xFFF5F5F3))
                 ) {
                     Box(
                         modifier = Modifier
@@ -152,16 +152,16 @@ fun UserAvatar() {
                 if (hasProgress) {
                     CircularProgressIndicator(
                         progress = { progress },
-                        modifier = Modifier.size(36.dp),
+                        modifier = Modifier.size(24.dp),
                         color = Color(0xFF1DA1F2),
-                        strokeWidth = 2.dp,
+                        strokeWidth = 1.dp,
                         trackColor = Color(0x33333333)
                     )
                 } else {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(36.dp),
+                        modifier = Modifier.size(24.dp),
                         color = Color(0xFF1DA1F2),
-                        strokeWidth = 2.dp,
+                        strokeWidth = 1.dp,
                         trackColor = Color(0x33333333)
                     )
                 }
@@ -169,10 +169,9 @@ fun UserAvatar() {
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .size(12.dp)
+                        .size(8.dp)
                         .clip(CircleShape)
-                        .background(Color.White)
-                        .padding(1.dp)
+                        .background(Color(0xFFF5F5F3))
                 ) {
                     Box(
                         modifier = Modifier
@@ -196,9 +195,9 @@ fun UserAvatar() {
             // 正在连接 - 虚线进度环
             viewModel.isConnecting && !viewModel.connected -> {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(36.dp),
+                    modifier = Modifier.size(24.dp),
                     color = Color(0xFF1DA1F2),
-                    strokeWidth = 2.dp,
+                    strokeWidth = 1.dp,
                     trackColor = Color(0x33333333)
                 )
             }
