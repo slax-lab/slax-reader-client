@@ -1,7 +1,6 @@
 package com.slax.reader.utils
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.graphics.Color
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
@@ -26,35 +25,24 @@ actual fun AppWebView(
     onTap: (() -> Unit)?,
     onScrollChange: ((scrollY: Float) -> Unit)?,
 ) {
+    println("[watch][UI] recomposition AppWebView")
+
     val onTapCallback = remember(onTap) { onTap }
-    val onScrollChangeCallback = remember(onScrollChange) { onScrollChange }
 
     AndroidView(
         modifier = modifier,
         factory = { context ->
             object : WebView(context) {
-                override fun onScrollChanged(l: Int, t: Int, oldl: Int, oldt: Int) {
-                    super.onScrollChanged(l, t, oldl, oldt)
-                    if (l != 0) {
-                        scrollTo(0, t)
-                    }
-                    onScrollChangeCallback?.invoke(t.toFloat())
+                override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+                    val newHeightMeasureSpec = MeasureSpec.makeMeasureSpec(
+                        0,
+                        MeasureSpec.UNSPECIFIED
+                    )
+                    super.onMeasure(widthMeasureSpec, newHeightMeasureSpec)
                 }
 
-                override fun overScrollBy(
-                    deltaX: Int, deltaY: Int,
-                    scrollX: Int, scrollY: Int,
-                    scrollRangeX: Int, scrollRangeY: Int,
-                    maxOverScrollX: Int, maxOverScrollY: Int,
-                    isTouchEvent: Boolean
-                ): Boolean {
-                    return super.overScrollBy(
-                        0, deltaY,
-                        0, scrollY,
-                        0, scrollRangeY,
-                        0, maxOverScrollY,
-                        isTouchEvent
-                    )
+                override fun onScrollChanged(l: Int, t: Int, oldl: Int, oldt: Int) {
+                    scrollTo(0, 0)
                 }
             }.apply {
                 setBackgroundColor(Color.TRANSPARENT)
@@ -62,8 +50,8 @@ actual fun AppWebView(
                 // 启用硬件加速以提升滚动性能
                 setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
 
-                // 启用嵌套滚动支持
-                isNestedScrollingEnabled = true
+                // 禁用嵌套滚动支持
+                isNestedScrollingEnabled = false
 
                 // 隐藏滚动条
                 isVerticalScrollBarEnabled = false
@@ -105,23 +93,6 @@ actual fun AppWebView(
                 }
             }
         },
-        update = { webView ->
-            when {
-                url != null -> {
-                    webView.loadUrl(url)
-                }
-
-                htmlContent != null -> {
-                    webView.loadDataWithBaseURL(
-                        null,
-                        htmlContent,
-                        "text/html",
-                        "UTF-8",
-                        null
-                    )
-                }
-            }
-        }
     )
 }
 

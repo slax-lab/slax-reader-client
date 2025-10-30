@@ -4,26 +4,24 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.data.database.model.UserBookmark
-import com.slax.reader.data.database.model.UserTag
+import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.OverviewViewBounds
 
 @Composable
 fun HeaderContent(
-    detail: UserBookmark?,
-    currentTags: List<UserTag>,
-    overview: String,
-    scrollY: Float,
+    detailView: BookmarkDetailViewModel,
+    detail: UserBookmark,
     onHeightChanged: (Float) -> Unit,
     onTagClick: () -> Unit,
     onOverviewExpand: () -> Unit,
@@ -31,17 +29,13 @@ fun HeaderContent(
 ) {
     println("[watch][UI] recomposition HeaderContent")
 
-    val displayTitle = remember(detail) { detail?.displayTitle ?: "" }
-    val displayTime = remember(detail) { detail?.displayTime ?: "" }
-    val hasOverview = remember(overview) { overview.isNotEmpty() }
+    val displayTitle = remember(detail?.displayTitle) { detail?.displayTitle ?: "" }
+    val displayTime = remember(detail?.displayTime) { detail?.displayTime ?: "" }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .graphicsLayer {
-                this.translationY = -scrollY
-            }
     ) {
         Column(
             modifier = Modifier
@@ -82,20 +76,23 @@ fun HeaderContent(
                 )
             }
 
-            TagsView(
-                modifier = Modifier.padding(top = 16.dp),
-                tags = currentTags,
-                onAddTagClick = onTagClick
-            )
-
-            if (hasOverview) {
-                OverviewView(
-                    modifier = Modifier.padding(top = 20.dp),
-                    content = overview,
-                    onExpand = onOverviewExpand,
-                    onBoundsChanged = onOverviewBoundsChanged
-                )
+            key(detail.metadataObj?.tags) {
+                detail.metadataObj?.tags?.let {
+                    TagsView(
+                        modifier = Modifier.padding(top = 16.dp),
+                        tags = it,
+                        onAddTagClick = onTagClick,
+                        detailView = detailView
+                    )
+                }
             }
+
+            OverviewView(
+                detailView = detailView,
+                modifier = Modifier.padding(top = 20.dp),
+                onExpand = onOverviewExpand,
+                onBoundsChanged = onOverviewBoundsChanged
+            )
         }
     }
 }

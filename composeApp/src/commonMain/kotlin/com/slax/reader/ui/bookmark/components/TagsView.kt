@@ -9,33 +9,41 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.key
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewModelScope
 import com.slax.reader.data.database.model.UserTag
+import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_xs_yellow_plus
 
 @Composable
 fun TagsView(
-    tags: List<UserTag>,
+    detailView: BookmarkDetailViewModel,
+    tags: List<String>,
     modifier: Modifier = Modifier,
     onAddTagClick: () -> Unit
 ) {
-    // println("[watch][UI] recomposition TagsView")
+    var currentTags: List<UserTag> by remember { mutableStateOf(emptyList()) }
+
+    LaunchedEffect(tags) {
+        detailView.viewModelScope.launch {
+            currentTags = detailView.getTagNames(tags)
+        }
+    }
 
     FlowRow(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        tags.forEach { tag ->
+        currentTags.forEach { tag ->
             key(tag.id) {
                 TagItem(
                     tag = tag.tag_name,

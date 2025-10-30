@@ -28,6 +28,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.OverviewViewBounds
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
@@ -39,13 +40,16 @@ import kotlin.math.roundToInt
  */
 @Composable
 fun OverviewDialog(
+    detailView: BookmarkDetailViewModel,
     visible: Boolean,
     onDismissRequest: () -> Unit,
-    sourceBounds: OverviewViewBounds,
-    overview: String = "",
-    keyTakeaways: List<String> = emptyList()
+    sourceBounds: OverviewViewBounds
 ) {
     println("[watch][UI] recomposition OverviewDialog")
+
+    val overview by detailView.overviewContent.collectAsState()
+    val overviewState by detailView.overviewState.collectAsState()
+    val keyTakeaways = overviewState.keyTakeaways
 
     val density = LocalDensity.current
 
