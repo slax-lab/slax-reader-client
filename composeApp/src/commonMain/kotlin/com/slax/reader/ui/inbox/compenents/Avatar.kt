@@ -44,7 +44,7 @@ fun UserAvatar() {
     )
 
     LaunchedEffect(syncStatus) {
-        println("network error: ${getNetWorkState()}, error: ${syncStatus?.anyError}")
+        println("network : ${getNetWorkState()}, error: ${syncStatus?.anyError}")
     }
 
     Box(

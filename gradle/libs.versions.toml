@@ -14,13 +14,13 @@ firebaseAnalytics = "2.3.0"
 kmpauthGoogle = "2.3.1"
 kotlinxDatetime = "0.7.1"
 okio = "3.16.2"
-powerSyncCore = "1.7.0"
+powerSyncCore = "1.8.1"
 powerSyncRoom = "1.7.0"
 room = "2.8.0"
 sqlite = "2.6.0"
 ksp = "2.2.20-2.0.3"
 koinCompose = "4.1.1"
-kotlin = "2.2.20"
+kotlin = "2.2.21"
 ktorClientOkhttp = "3.3.1"
 napier = "2.7.1"
 navigationCompose = "2.9.1"
@@ -35,14 +35,12 @@ atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu"
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coilCompose" }
 coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coilCompose" }
+powerSyncCompose = { module = "com.powersync:compose", version.ref = "powerSyncCore" }
 firebase-analytics = { module = "dev.gitlive:firebase-analytics", version.ref = "firebaseAnalytics" }
 firebase-app = { module = "dev.gitlive:firebase-app", version.ref = "firebaseAnalytics" }
 firebase-crashlytics = { module = "dev.gitlive:firebase-crashlytics", version.ref = "firebaseAnalytics" }
-kmpauth-firebase = { module = "io.github.mirzemehdi:kmpauth-firebase", version.ref = "kmpauthGoogle" }
 kmpauth-google = { module = "io.github.mirzemehdi:kmpauth-google", version.ref = "kmpauthGoogle" }
-kmpauth-uihelper = { module = "io.github.mirzemehdi:kmpauth-uihelper", version.ref = "kmpauthGoogle" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
-ktor-server-sse = { module = "io.ktor:ktor-server-sse", version.ref = "ktorClientOkhttp" }
 okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
 powerSyncCore = { module = "com.powersync:core", version.ref = "powerSyncCore" }
 powerSyncRoom = { module = "com.powersync:integration-room", version.ref = "powerSyncRoom" }

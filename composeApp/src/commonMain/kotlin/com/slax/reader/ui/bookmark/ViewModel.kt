@@ -53,18 +53,18 @@ class BookmarkDetailViewModel(
 
     suspend fun toggleStar(isStar: Boolean) = withContext(Dispatchers.IO) {
         _bookmarkId.value?.let { id ->
-            bookmarkDao.updateBookmarkStar(id, if (isStar) 1 else 0)
+            return@withContext bookmarkDao.updateBookmarkStar(id, if (isStar) 1 else 0)
         }
     }
 
     suspend fun toggleArchive(isArchive: Boolean) = withContext(Dispatchers.IO) {
         _bookmarkId.value?.let { id ->
-            bookmarkDao.updateBookmarkArchive(id, if (isArchive) 1 else 0)
+            return@withContext bookmarkDao.updateBookmarkArchive(id, if (isArchive) 1 else 0)
         }
     }
 
     suspend fun updateBookmarkTags(bookmarkId: String, newTagIds: List<String>) = withContext(Dispatchers.IO) {
-        bookmarkDao.updateMetadataField(bookmarkId, "tags", Json.encodeToString(newTagIds))
+        return@withContext bookmarkDao.updateMetadataField(bookmarkId, "tags", Json.encodeToString(newTagIds))
     }
 
     suspend fun getBookmarkContent(bookmarkId: String): String = withContext(Dispatchers.IO) {
@@ -83,6 +83,7 @@ class BookmarkDetailViewModel(
                                 overview = state.overview + response.content,
                                 isLoading = true
                             )
+
                             is OverviewResponse.KeyTakeaways -> state.copy(keyTakeaways = response.content)
                             is OverviewResponse.Done -> state.copy(isLoading = false)
                             is OverviewResponse.Error -> state.copy(error = response.message, isLoading = false)

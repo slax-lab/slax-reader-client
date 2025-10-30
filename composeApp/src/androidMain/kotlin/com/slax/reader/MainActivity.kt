@@ -1,5 +1,6 @@
 package com.slax.reader
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -14,6 +15,7 @@ import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.initialize
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
+import org.koin.core.context.GlobalContext
 import org.koin.core.context.GlobalContext.startKoin
 import org.koin.core.logger.Level
 
@@ -21,7 +23,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (org.koin.core.context.GlobalContext.getOrNull() == null) {
+        if (GlobalContext.getOrNull() == null) {
             Firebase.initialize(this@MainActivity.applicationContext)
             startKoin {
                 androidLogger(Level.INFO)
@@ -32,12 +34,12 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(
-                scrim = android.graphics.Color.TRANSPARENT,
-                darkScrim = android.graphics.Color.TRANSPARENT
+                scrim = Color.TRANSPARENT,
+                darkScrim = Color.TRANSPARENT
             ),
             navigationBarStyle = SystemBarStyle.light(
-                scrim = android.graphics.Color.TRANSPARENT,
-                darkScrim = android.graphics.Color.TRANSPARENT
+                scrim = Color.TRANSPARENT,
+                darkScrim = Color.TRANSPARENT
             )
         )
 

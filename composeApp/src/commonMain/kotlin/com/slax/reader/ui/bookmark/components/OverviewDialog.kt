@@ -58,11 +58,7 @@ fun OverviewDialog(
 
     // 延迟触发动画，确保组件先添加到组合树再开始动画
     LaunchedEffect(visible) {
-        if (visible) {
-            internalVisible = true
-        } else {
-            internalVisible = false
-        }
+        internalVisible = visible
     }
 
     val animationProgress by animateFloatAsState(
