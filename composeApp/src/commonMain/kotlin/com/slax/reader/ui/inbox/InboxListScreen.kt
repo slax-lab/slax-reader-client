@@ -13,6 +13,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -23,22 +24,27 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import com.slax.reader.const.AboutRoutes
 import com.slax.reader.const.SettingsRoutes
+import com.slax.reader.const.SpaceManagerRoutes
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.ui.AppViewModel
+import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.ui.inbox.compenents.ArticleList
 import com.slax.reader.ui.inbox.compenents.InboxTitleRow
+import com.slax.reader.ui.inbox.compenents.TitleEditOverlay
 import com.slax.reader.ui.inbox.compenents.UserAvatar
 import com.slax.reader.ui.sidebar.Sidebar
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
-import slax_reader_client.composeapp.generated.resources.inbox_tab
+import slax_reader_client.composeapp.generated.resources.ic_inbox_tab
 
 @Composable
 fun InboxListScreen(navCtrl: NavController) {
     val authDomain: AuthDomain = koinInject()
     val viewModel = koinInject<AppViewModel>()
+    val inboxViewModel = koinInject<InboxListViewModel>()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -50,7 +56,6 @@ fun InboxListScreen(navCtrl: NavController) {
         }
     }
 
-// MARK:    navController.navigate(SpaceManagerRoutes)
     Sidebar(
         drawerState = drawerState,
         onSettingsClick = {
@@ -58,6 +63,9 @@ fun InboxListScreen(navCtrl: NavController) {
         },
         onAboutClick = {
             navCtrl.navigate(AboutRoutes)
+        },
+        onSpaceManagerClick = {
+            navCtrl.navigate(SpaceManagerRoutes)
         },
         onLogout = {
             authDomain.signOut()
@@ -77,8 +85,11 @@ fun InboxListScreen(navCtrl: NavController) {
                         drawerState.open()
                     }
                 })
-                Spacer(modifier = Modifier.height(8.dp))
-                ContentSection(navCtrl)
+                ContentSection(
+                    navCtrl = navCtrl,
+                    inboxViewModel = inboxViewModel,
+                    scope = scope
+                )
             }
         }
     }
@@ -90,19 +101,18 @@ private fun NavigationBar(onAvatarClick: () -> Unit = {}) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 16.dp)
+            .padding(horizontal = 24.dp, vertical = 10.dp)
     ) {
         Row(
             modifier = Modifier
-                .width(70.dp)
                 .align(Alignment.CenterStart),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
-                painter = painterResource(Res.drawable.inbox_tab),
+                painter = painterResource(Res.drawable.ic_inbox_tab),
                 contentDescription = "Menu",
-                modifier = Modifier.size(20.dp, 20.dp).clickable(onClick = onAvatarClick),
+                modifier = Modifier.size(24.dp, 24.dp).clickable(onClick = onAvatarClick),
                 contentScale = ContentScale.Fit
             )
             UserAvatar()
@@ -120,21 +130,42 @@ private fun NavigationBar(onAvatarClick: () -> Unit = {}) {
 }
 
 @Composable
-private fun ContentSection(navCtrl: NavController) {
+private fun ContentSection(
+    navCtrl: NavController,
+    inboxViewModel: InboxListViewModel,
+    scope: CoroutineScope
+) {
     // println("[watch][UI] recomposition ContentSection")
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                color = Color(0xFFFCFCFC),
-                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
-            )
-            .padding(horizontal = 24.dp)
+    Box(
+        modifier = Modifier.fillMaxSize().clipToBounds()
     ) {
-        Spacer(modifier = Modifier.height(17.dp))
-        InboxTitleRow()
-        Spacer(modifier = Modifier.height(16.dp))
-        ArticleList(navCtrl)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    color = Color(0xFFFCFCFC),
+                    shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+                )
+        ) {
+            Spacer(modifier = Modifier.height(20.dp))
+            InboxTitleRow()
+            Spacer(modifier = Modifier.height(4.dp))
+
+            ArticleList(
+                navCtrl = navCtrl,
+                viewModel = inboxViewModel,
+                justUpdatedBookmarkId = inboxViewModel.justUpdatedBookmarkId
+            )
+        }
+
+        if (inboxViewModel.editingBookmark != null) {
+            TitleEditOverlay(
+                editText = inboxViewModel.editTitleText,
+                onEditTextChange = inboxViewModel::updateEditTitleText,
+                onConfirm = { scope.launch { inboxViewModel.confirmEditTitle() } },
+                onDismiss = inboxViewModel::cancelEditTitle
+            )
+        }
     }
 }

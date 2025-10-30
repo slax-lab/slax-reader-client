@@ -25,6 +25,8 @@ class BookmarkDao(
             """
             SELECT
                 id,
+                archive_status,
+                is_starred,
                 created_at,
                 updated_at,
                 alias_title,
@@ -32,7 +34,7 @@ class BookmarkDao(
                 JSON_EXTRACT(metadata, '$.bookmark.target_url') as metadata_url,
                 JSON_EXTRACT(metadata, '$.bookmark.status') as metadata_status
             FROM sr_user_bookmark WHERE archive_status = 0
-            ORDER BY updated_at DESC
+            ORDER BY created_at DESC
             """.trimIndent()
         ) { cursor ->
             mapperToInboxListBookmarkItem(cursor)
@@ -147,6 +149,15 @@ class BookmarkDao(
             tx.execute(
                 "UPDATE sr_user_bookmark SET is_starred = ? WHERE id = ?",
                 listOf(state, bookmarkId)
+            )
+        }
+    }
+
+    suspend fun updateBookmarkAliasTitle(bookmarkId: String, title: String) {
+        database.writeTransaction { tx ->
+            tx.execute(
+                "UPDATE sr_user_bookmark SET alias_title = ? WHERE id = ?",
+                listOf(title, bookmarkId)
             )
         }
     }

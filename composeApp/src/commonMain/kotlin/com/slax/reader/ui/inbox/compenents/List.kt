@@ -11,19 +11,21 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.slax.reader.ui.inbox.InboxListViewModel
 import org.jetbrains.compose.resources.painterResource
-import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
-import slax_reader_client.composeapp.generated.resources.inbox_internet
-import slax_reader_client.composeapp.generated.resources.inbox_list_more
+import slax_reader_client.composeapp.generated.resources.ic_cell_internet
+import slax_reader_client.composeapp.generated.resources.ic_cell_more
 
 
 @Composable
-fun ArticleList(navCtrl: NavController) {
-    val viewModel: InboxListViewModel = koinInject()
+fun ArticleList(
+    navCtrl: NavController,
+    viewModel: InboxListViewModel,
+    justUpdatedBookmarkId: String?
+) {
     val bookmarks by viewModel.bookmarks.collectAsState()
     val bookmarkStatusMap by viewModel.bookmarkStatusFlow.collectAsState()
-    val iconResource = painterResource(Res.drawable.inbox_internet)
-    val moreResource = painterResource(Res.drawable.inbox_list_more)
+    val iconResource = painterResource(Res.drawable.ic_cell_internet)
+    val moreResource = painterResource(Res.drawable.ic_cell_more)
     val iconPainter = remember { iconResource }
     val morePainter = remember { moreResource }
     val dividerLine: @Composable () -> Unit = remember {
@@ -34,7 +36,7 @@ fun ArticleList(navCtrl: NavController) {
         modifier = Modifier
             .fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(0.dp),
-        contentPadding = PaddingValues(bottom = 16.dp),
+        contentPadding = PaddingValues(bottom = 0.dp),
     ) {
         itemsIndexed(
             items = bookmarks,
@@ -46,10 +48,12 @@ fun ArticleList(navCtrl: NavController) {
             }.value
             BookmarkItemRow(
                 navCtrl = navCtrl,
+                viewModel = viewModel,
                 bookmark = bookmark,
                 iconPainter = iconPainter,
                 morePainter = morePainter,
-                downloadStatus = bookmarkStatus
+                downloadStatus = bookmarkStatus,
+                isJustUpdated = justUpdatedBookmarkId == bookmark.id
             )
 
             if (index < bookmarks.lastIndex) {
