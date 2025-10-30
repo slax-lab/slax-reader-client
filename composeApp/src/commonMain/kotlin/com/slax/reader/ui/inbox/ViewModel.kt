@@ -48,7 +48,7 @@ class InboxListViewModel(
             editTitle(currentBookmark.id, trimmedTitle)
             justUpdatedBookmarkId = currentBookmark.id
             cancelEditTitle()
-            // 闪烁动画持续后清除标记 (180ms * 4 = 720ms)
+            // 闪烁动画持续后清除标记
             delay(800)
             justUpdatedBookmarkId = null
         } else {
