@@ -18,8 +18,11 @@ import slax_reader_client.composeapp.generated.resources.ic_cell_more
 
 
 @Composable
-fun ArticleList(navCtrl: NavController) {
-    val viewModel: InboxListViewModel = koinInject()
+fun ArticleList(
+    navCtrl: NavController,
+    justUpdatedBookmarkId: String?
+) {
+    val viewModel = koinInject<InboxListViewModel>()
     val bookmarks by viewModel.bookmarks.collectAsState()
     val bookmarkStatusMap by viewModel.bookmarkStatusFlow.collectAsState()
     val iconResource = painterResource(Res.drawable.ic_cell_internet)
@@ -49,7 +52,8 @@ fun ArticleList(navCtrl: NavController) {
                 bookmark = bookmark,
                 iconPainter = iconPainter,
                 morePainter = morePainter,
-                downloadStatus = bookmarkStatus
+                downloadStatus = bookmarkStatus,
+                isJustUpdated = justUpdatedBookmarkId == bookmark.id
             )
 
             if (index < bookmarks.lastIndex) {

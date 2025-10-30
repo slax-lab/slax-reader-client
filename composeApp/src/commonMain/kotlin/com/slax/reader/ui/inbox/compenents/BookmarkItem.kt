@@ -19,10 +19,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,8 +26,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -84,9 +78,10 @@ fun BookmarkItemRow(
     iconPainter: Painter,
     morePainter: Painter,
     downloadStatus: DownloadStatus?,
+    isJustUpdated: Boolean
 ) {
     val haptics = LocalHapticFeedback.current
-    val viewModel: InboxListViewModel = koinInject()
+    val viewModel = koinInject<InboxListViewModel>()
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
 
@@ -94,13 +89,14 @@ fun BookmarkItemRow(
     var lastMenuTriggerSource by remember { mutableStateOf(MenuTriggerSource.NONE) }
     val showMenu = menuTriggerSource != MenuTriggerSource.NONE
 
-    var isEditingTitle by remember { mutableStateOf(false) }
-    var editTitleText by remember { mutableStateOf("") }
-    val focusRequester = remember { FocusRequester() }
-
-    LaunchedEffect(isEditingTitle) {
-        if (isEditingTitle) {
-            focusRequester.requestFocus()
+    // 闪烁动画
+    val flashAlpha = remember { Animatable(0f) }
+    LaunchedEffect(isJustUpdated) {
+        if (isJustUpdated) {
+            flashAlpha.animateTo(0.05f, animationSpec = tween(durationMillis = 180))
+            flashAlpha.animateTo(0f, animationSpec = tween(durationMillis = 180))
+            flashAlpha.animateTo(0.05f, animationSpec = tween(durationMillis = 180))
+            flashAlpha.animateTo(0f, animationSpec = tween(durationMillis = 180))
         }
     }
 
@@ -356,42 +352,13 @@ fun BookmarkItemRow(
                             }
                         }
 
-                        if (isEditingTitle) {
-                            BasicTextField(
-                                value = editTitleText,
-                                onValueChange = { editTitleText = it },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .background(Color.Transparent)
-                                    .focusRequester(focusRequester),
-                                textStyle = TextStyle(fontSize = 15.sp, lineHeight = 24.sp, color = Color(0xFF0F1419)),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                                keyboardActions = KeyboardActions(
-                                    onDone = {
-                                        val trimmedTitle = editTitleText.trim()
-                                        if (trimmedTitle.isEmpty() || editTitleText == bookmark.displayTitle()) {
-                                            isEditingTitle = false
-                                            editTitleText = ""
-                                        } else {
-                                            scope.launch {
-                                                viewModel.editTitle(bookmark.id, trimmedTitle)
-                                                isEditingTitle = false
-                                                editTitleText = ""
-                                            }
-                                        }
-                                    }
-                                )
-                            )
-                        } else {
-                            Text(
-                                text = bookmark.displayTitle(),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f),
-                                style = TextStyle(fontSize = 15.sp, lineHeight = 24.sp, color = Color(0xFF0F1419))
-                            )
-                        }
+                        Text(
+                            text = bookmark.displayTitle(),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                            style = TextStyle(fontSize = 15.sp, lineHeight = 24.sp, color = Color(0xFF0F1419))
+                        )
                     }
 
                     Image(
@@ -420,6 +387,15 @@ fun BookmarkItemRow(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(Color.Black.copy(alpha = overlayAlpha))
+                    )
+                }
+
+                // 闪烁效果覆盖层（使用长按时的高亮效果）
+                if (flashAlpha.value > 0f) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = flashAlpha.value))
                     )
                 }
             }
@@ -485,12 +461,9 @@ fun BookmarkItemRow(
                 icon = painterResource(Res.drawable.ic_cell_more_edittitle),
                 text = "修改标题",
                 onClick = {
-                    scope.launch {
-                        menuTriggerSource = MenuTriggerSource.NONE
-                        isLongPressed = false
-                        editTitleText = bookmark.displayTitle()
-                        isEditingTitle = true
-                    }
+                    menuTriggerSource = MenuTriggerSource.NONE
+                    isLongPressed = false
+                    viewModel.startEditTitle(bookmark)
                 }
             )
 

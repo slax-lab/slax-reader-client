@@ -50,7 +50,7 @@ val repositoryModule = module {
 
 val viewModelModule = module {
     viewModelOf(::AppViewModel)
-    viewModelOf(::InboxListViewModel)
+    single { InboxListViewModel(get(), get()) }
     viewModelOf(::BookmarkDetailViewModel)
     viewModelOf(::LoginViewModel)
 }
