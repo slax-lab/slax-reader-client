@@ -154,6 +154,7 @@ private fun ContentSection(
 
             ArticleList(
                 navCtrl = navCtrl,
+                viewModel = inboxViewModel,
                 justUpdatedBookmarkId = inboxViewModel.justUpdatedBookmarkId
             )
         }

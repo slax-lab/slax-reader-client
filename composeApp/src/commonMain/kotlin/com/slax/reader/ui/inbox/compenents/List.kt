@@ -11,7 +11,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.slax.reader.ui.inbox.InboxListViewModel
 import org.jetbrains.compose.resources.painterResource
-import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_cell_internet
 import slax_reader_client.composeapp.generated.resources.ic_cell_more
@@ -20,9 +19,9 @@ import slax_reader_client.composeapp.generated.resources.ic_cell_more
 @Composable
 fun ArticleList(
     navCtrl: NavController,
+    viewModel: InboxListViewModel,
     justUpdatedBookmarkId: String?
 ) {
-    val viewModel = koinInject<InboxListViewModel>()
     val bookmarks by viewModel.bookmarks.collectAsState()
     val bookmarkStatusMap by viewModel.bookmarkStatusFlow.collectAsState()
     val iconResource = painterResource(Res.drawable.ic_cell_internet)
@@ -49,6 +48,7 @@ fun ArticleList(
             }.value
             BookmarkItemRow(
                 navCtrl = navCtrl,
+                viewModel = viewModel,
                 bookmark = bookmark,
                 iconPainter = iconPainter,
                 morePainter = morePainter,

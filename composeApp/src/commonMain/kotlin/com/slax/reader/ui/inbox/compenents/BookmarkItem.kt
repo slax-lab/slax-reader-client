@@ -50,7 +50,6 @@ import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.InboxListViewModel
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
-import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_cell_action_archieve
 import slax_reader_client.composeapp.generated.resources.ic_cell_action_star
@@ -74,6 +73,7 @@ enum class MenuTriggerSource {
 @Composable
 fun BookmarkItemRow(
     navCtrl: NavController,
+    viewModel: InboxListViewModel,
     bookmark: InboxListBookmarkItem,
     iconPainter: Painter,
     morePainter: Painter,
@@ -81,7 +81,6 @@ fun BookmarkItemRow(
     isJustUpdated: Boolean
 ) {
     val haptics = LocalHapticFeedback.current
-    val viewModel = koinInject<InboxListViewModel>()
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
 
@@ -361,19 +360,19 @@ fun BookmarkItemRow(
                         )
                     }
 
-                    Image(
-                        painter = actualMorePainter,
-                        contentDescription = "More",
-                        modifier = Modifier
-                            .size(14.dp)
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) {
-                                menuTriggerSource = MenuTriggerSource.MORE_ICON
-                            },
-                        contentScale = ContentScale.Fit
-                    )
+//                    Image(
+//                        painter = actualMorePainter,
+//                        contentDescription = "More",
+//                        modifier = Modifier
+//                            .size(14.dp)
+//                            .clickable(
+//                                interactionSource = remember { MutableInteractionSource() },
+//                                indication = null
+//                            ) {
+//                                menuTriggerSource = MenuTriggerSource.MORE_ICON
+//                            },
+//                        contentScale = ContentScale.Fit
+//                    )
                 }
 
                 val overlayAlpha = if (isPressed) {
