@@ -27,7 +27,6 @@ import com.slax.reader.const.SettingsRoutes
 import com.slax.reader.const.SpaceManagerRoutes
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.ui.AppViewModel
-import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.ui.inbox.compenents.ArticleList
 import com.slax.reader.ui.inbox.compenents.InboxTitleRow
 import com.slax.reader.ui.inbox.compenents.TitleEditOverlay
@@ -47,6 +46,8 @@ fun InboxListScreen(navCtrl: NavController) {
     val inboxViewModel = koinInject<InboxListViewModel>()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+
+    println("[watch][UI] recomposition InboxListScreen")
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -97,7 +98,7 @@ fun InboxListScreen(navCtrl: NavController) {
 
 @Composable
 private fun NavigationBar(onAvatarClick: () -> Unit = {}) {
-    // println("[watch][UI] recomposition NavigationBar")
+    println("[watch][UI] recomposition NavigationBar")
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -135,7 +136,7 @@ private fun ContentSection(
     inboxViewModel: InboxListViewModel,
     scope: CoroutineScope
 ) {
-    // println("[watch][UI] recomposition ContentSection")
+    println("[watch][UI] recomposition ContentSection")
 
     Box(
         modifier = Modifier.fillMaxSize().clipToBounds()
@@ -155,7 +156,6 @@ private fun ContentSection(
             ArticleList(
                 navCtrl = navCtrl,
                 viewModel = inboxViewModel,
-                justUpdatedBookmarkId = inboxViewModel.justUpdatedBookmarkId
             )
         }
 

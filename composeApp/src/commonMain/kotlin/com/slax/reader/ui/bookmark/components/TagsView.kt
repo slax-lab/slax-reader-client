@@ -30,6 +30,8 @@ fun TagsView(
     modifier: Modifier = Modifier,
     onAddTagClick: () -> Unit
 ) {
+    println("[watch][UI] recomposition TagsView")
+    
     var currentTags: List<UserTag> by remember { mutableStateOf(emptyList()) }
 
     LaunchedEffect(tags) {

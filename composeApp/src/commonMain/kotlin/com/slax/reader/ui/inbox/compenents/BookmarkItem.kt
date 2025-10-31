@@ -1,16 +1,10 @@
 package com.slax.reader.ui.inbox.compenents
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
@@ -18,26 +12,20 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -46,21 +34,12 @@ import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
 import com.slax.reader.const.BookmarkRoutes
 import com.slax.reader.data.database.model.InboxListBookmarkItem
+import com.slax.reader.domain.sync.DownloadStatus
 import com.slax.reader.ui.inbox.InboxListViewModel
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
-import slax_reader_client.composeapp.generated.resources.Res
-import slax_reader_client.composeapp.generated.resources.ic_cell_action_archieve
-import slax_reader_client.composeapp.generated.resources.ic_cell_action_star
-import slax_reader_client.composeapp.generated.resources.ic_cell_more
-import slax_reader_client.composeapp.generated.resources.ic_cell_more_archieve
-import slax_reader_client.composeapp.generated.resources.ic_cell_more_delete
-import slax_reader_client.composeapp.generated.resources.ic_cell_more_edittitle
-import slax_reader_client.composeapp.generated.resources.ic_cell_more_highlighted
-import slax_reader_client.composeapp.generated.resources.ic_cell_more_star
-import slax_reader_client.composeapp.generated.resources.ic_floating_panel_archieved
-import slax_reader_client.composeapp.generated.resources.ic_floating_panel_starred
-import com.slax.reader.domain.sync.DownloadStatus
+import slax_reader_client.composeapp.generated.resources.*
+import kotlin.math.abs
 
 // 菜单触发源枚举
 enum class MenuTriggerSource {
@@ -75,9 +54,6 @@ fun BookmarkItemRow(
     viewModel: InboxListViewModel,
     bookmark: InboxListBookmarkItem,
     iconPainter: Painter,
-    morePainter: Painter,
-    downloadStatus: DownloadStatus?,
-    isJustUpdated: Boolean
 ) {
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
@@ -87,8 +63,19 @@ fun BookmarkItemRow(
     var lastMenuTriggerSource by remember { mutableStateOf(MenuTriggerSource.NONE) }
     val showMenu = menuTriggerSource != MenuTriggerSource.NONE
 
+    val bookmarkStatusMap by viewModel.bookmarkStatusFlow.collectAsState()
+
+    val bookmarkStatus by remember {
+        derivedStateOf { bookmarkStatusMap[bookmark.id] }
+    }
+
     // 闪烁动画
     val flashAlpha = remember { Animatable(0f) }
+    val isJustUpdated by remember {
+        derivedStateOf {
+            viewModel.justUpdatedBookmarkId == bookmark.id
+        }
+    }
     LaunchedEffect(isJustUpdated) {
         if (isJustUpdated) {
             flashAlpha.animateTo(0.05f, animationSpec = tween(durationMillis = 180))
@@ -98,13 +85,7 @@ fun BookmarkItemRow(
         }
     }
 
-    val offsetXAnimatable = remember { Animatable(0f) }
     var boxSize by remember { mutableStateOf(IntSize.Zero) }
-    val actualMorePainter = if (menuTriggerSource == MenuTriggerSource.MORE_ICON) {
-        painterResource(Res.drawable.ic_cell_more_highlighted)
-    } else {
-        painterResource(Res.drawable.ic_cell_more)
-    }
 
     // 点击交互状态
     val interactionSource = remember { MutableInteractionSource() }
@@ -132,32 +113,33 @@ fun BookmarkItemRow(
     val maxSwipeLeft = -130f
     val maxSwipeRight = 0f
 
-    // 计算滑动进度（0-1），用于背景透明度渐变
-    val swipeProgress = remember(offsetXAnimatable.value) {
-        val leftProgress = if (offsetXAnimatable.value < 0f) {
-            kotlin.math.abs(offsetXAnimatable.value) / kotlin.math.abs(maxSwipeLeft)
-        } else 0f
-        val rightProgress = if (offsetXAnimatable.value > 0f) {
-            offsetXAnimatable.value / maxSwipeRight
-        } else 0f
-        kotlin.math.max(leftProgress, rightProgress).coerceIn(0f, 1f)
-    }
-
-    // 计算菜单透明度（0-1），根据滑动进度渐变
-    val menuAlpha = remember(offsetXAnimatable.value) {
-        if (offsetXAnimatable.value < 0f) {
-            (kotlin.math.abs(offsetXAnimatable.value) / kotlin.math.abs(maxSwipeLeft)).coerceIn(0f, 1f)
-        } else {
-            0f
+    val offsetXAnimatable = remember {
+        Animatable(0f).apply {
+            updateBounds(maxSwipeLeft, maxSwipeRight)
         }
     }
 
-    val draggableState = rememberDraggableState { delta ->
-        scope.launch {
-            val newOffset = (offsetXAnimatable.value + delta).coerceIn(maxSwipeLeft, maxSwipeRight)
-            offsetXAnimatable.snapTo(newOffset)
+    val swipeProgress by remember {
+        derivedStateOf {
+            val offset = offsetXAnimatable.value
+            if (offset < 0f) {
+                (abs(offset) / abs(maxSwipeLeft)).coerceIn(0f, 1f)
+            } else 0f
         }
     }
+
+    val menuAlpha by remember {
+        derivedStateOf {
+            val offset = offsetXAnimatable.value
+            if (offset < 0f) {
+                (abs(offset) / abs(maxSwipeLeft)).coerceIn(0f, 1f)
+            } else 0f
+        }
+    }
+
+    var isDragging by remember { mutableStateOf(false) }
+    var totalDragDistance by remember { mutableStateOf(0f) }
+    val dragThreshold = 10f
 
     Box(
         modifier = Modifier
@@ -259,47 +241,85 @@ fun BookmarkItemRow(
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .offset(x = offsetXAnimatable.value.dp)
                 .graphicsLayer {
+                    translationX = with(density) { offsetXAnimatable.value.dp.toPx() }
                     scaleX = scale
                     scaleY = scale
+                    shadowElevation = elevation
                 }
-                .shadow(elevation.dp)
-                .draggable(
-                    state = draggableState,
-                    orientation = Orientation.Horizontal,
-                    onDragStopped = {
-                        scope.launch {
-                            // 自动回弹动画
-                            val targetOffset = when {
-                                offsetXAnimatable.value < -40f -> maxSwipeLeft
-                                offsetXAnimatable.value > 40f -> maxSwipeRight
-                                else -> 0f
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragStart = {
+                            isDragging = true
+                            totalDragDistance = 0f
+                        },
+                        onDragEnd = {
+                            scope.launch {
+                                // 自动回弹动画
+                                val targetOffset = when {
+                                    offsetXAnimatable.value < -40f -> maxSwipeLeft
+                                    offsetXAnimatable.value > 40f -> maxSwipeRight
+                                    else -> 0f
+                                }
+                                offsetXAnimatable.animateTo(
+                                    targetValue = targetOffset,
+                                    animationSpec = tween(durationMillis = 200)
+                                )
+
+                                // 延迟重置拖动状态，确保动画完成后再允许点击
+                                kotlinx.coroutines.delay(250)
+                                isDragging = false
+                                totalDragDistance = 0f
                             }
-                            offsetXAnimatable.animateTo(
-                                targetValue = targetOffset,
-                                animationSpec = tween(durationMillis = 200)
-                            )
+                        },
+                        onDragCancel = {
+                            scope.launch {
+                                // 取消拖动时也回弹
+                                offsetXAnimatable.animateTo(
+                                    targetValue = 0f,
+                                    animationSpec = tween(durationMillis = 200)
+                                )
+                                isDragging = false
+                                totalDragDistance = 0f
+                            }
+                        },
+                        onHorizontalDrag = { change, dragAmount ->
+                            change.consume()
+                            scope.launch {
+                                val newOffset = (offsetXAnimatable.value + dragAmount)
+                                    .coerceIn(maxSwipeLeft, maxSwipeRight)
+                                offsetXAnimatable.snapTo(newOffset)
+
+                                // 累计拖动距离
+                                totalDragDistance += abs(dragAmount)
+                            }
                         }
-                    }
-                )
+                    )
+                }
                 .combinedClickable(
                     interactionSource = interactionSource,
                     indication = null,
+                    enabled = !isDragging,
                     onClick = {
-                        if (offsetXAnimatable.value != 0f) {
-                            // 如果有滑动偏移，点击时关闭
-                            scope.launch {
-                                offsetXAnimatable.animateTo(0f, animationSpec = tween(200))
+                        // 检查是否真的是点击而非滑动
+                        if (totalDragDistance < dragThreshold) {
+                            if (offsetXAnimatable.value != 0f) {
+                                // 如果有滑动偏移,点击时关闭
+                                scope.launch {
+                                    offsetXAnimatable.animateTo(0f, animationSpec = tween(200))
+                                }
+                            } else {
+                                navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmark.id))
                             }
-                        } else {
-                            navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmark.id))
                         }
                     },
                     onLongClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        isLongPressed = true
-                        menuTriggerSource = MenuTriggerSource.LONG_PRESS
+                        // 只有在未拖动时才触发长按
+                        if (!isDragging && totalDragDistance < dragThreshold) {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            isLongPressed = true
+                            menuTriggerSource = MenuTriggerSource.LONG_PRESS
+                        }
                     }
                 ),
             color = Color(0xFFFCFCFC)
@@ -324,8 +344,8 @@ fun BookmarkItemRow(
                                 .fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            val isDownloading = downloadStatus == DownloadStatus.DOWNLOADING
-                            val isCompleted = downloadStatus == DownloadStatus.COMPLETED
+                            val isDownloading = bookmarkStatus?.status == DownloadStatus.DOWNLOADING
+                            val isCompleted = bookmarkStatus?.status == DownloadStatus.COMPLETED
 
                             Surface(
                                 modifier = Modifier.size(18.dp),
@@ -358,20 +378,6 @@ fun BookmarkItemRow(
                             style = TextStyle(fontSize = 15.sp, lineHeight = 24.sp, color = Color(0xFF0F1419))
                         )
                     }
-
-//                    Image(
-//                        painter = actualMorePainter,
-//                        contentDescription = "More",
-//                        modifier = Modifier
-//                            .size(14.dp)
-//                            .clickable(
-//                                interactionSource = remember { MutableInteractionSource() },
-//                                indication = null
-//                            ) {
-//                                menuTriggerSource = MenuTriggerSource.MORE_ICON
-//                            },
-//                        contentScale = ContentScale.Fit
-//                    )
                 }
 
                 val overlayAlpha = if (isPressed) {
@@ -411,73 +417,77 @@ fun BookmarkItemRow(
             MenuTriggerSource.LONG_PRESS -> {
                 DpOffset(x = 8.dp, y = cellHeight + 10.dp)
             }
+
             MenuTriggerSource.MORE_ICON -> {
                 val boxWidthDp = with(density) { boxSize.width.toDp() }
                 val menuWidth = 180.dp
                 DpOffset(x = boxWidthDp - menuWidth - 8.dp, y = cellHeight - 10.dp)  // 48dp 是单元格高度
             }
+
             MenuTriggerSource.NONE -> DpOffset(x = 8.dp, y = cellHeight + 10.dp)  // 默认位置
         }
 
-        Menu(
-            expanded = showMenu,
-            onDismissRequest = {
-                menuTriggerSource = MenuTriggerSource.NONE
-                isLongPressed = false
-            },
-            offset = menuOffset,
-            modifier = Modifier.width(180.dp)
-        ) {
-            // 加星
-            MenuItem(
-                icon = painterResource(if (bookmark.isStarred == 1) Res.drawable.ic_floating_panel_starred else Res.drawable.ic_cell_more_star),
-                text = "加星",
-                onClick = {
-                    scope.launch {
-                        menuTriggerSource = MenuTriggerSource.NONE
-                        isLongPressed = false
-                        viewModel.toggleStar(bookmark.id, bookmark.isStarred != 1)
-                    }
-                }
-            )
-
-            // 归档
-            MenuItem(
-                icon = painterResource(if (bookmark.archiveStatus == 1) Res.drawable.ic_floating_panel_archieved else Res.drawable.ic_cell_more_archieve),
-                text = "归档",
-                onClick = {
-                    scope.launch {
-                        menuTriggerSource = MenuTriggerSource.NONE
-                        isLongPressed = false
-                        viewModel.toggleArchive(bookmark.id, bookmark.archiveStatus != 1)
-                    }
-                }
-            )
-
-            // 修改标题
-            MenuItem(
-                icon = painterResource(Res.drawable.ic_cell_more_edittitle),
-                text = "修改标题",
-                onClick = {
+        if (showMenu) {
+            Menu(
+                expanded = showMenu,
+                onDismissRequest = {
                     menuTriggerSource = MenuTriggerSource.NONE
                     isLongPressed = false
-                    viewModel.startEditTitle(bookmark)
-                }
-            )
+                },
+                offset = menuOffset,
+                modifier = Modifier.width(180.dp)
+            ) {
+                // 加星
+                MenuItem(
+                    icon = painterResource(if (bookmark.isStarred == 1) Res.drawable.ic_floating_panel_starred else Res.drawable.ic_cell_more_star),
+                    text = "加星",
+                    onClick = {
+                        scope.launch {
+                            menuTriggerSource = MenuTriggerSource.NONE
+                            isLongPressed = false
+                            viewModel.toggleStar(bookmark.id, bookmark.isStarred != 1)
+                        }
+                    }
+                )
 
-            // 删除
-            MenuItem(
-                icon = painterResource(Res.drawable.ic_cell_more_delete),
-                text = "删除",
-                color = Color(0xFFF45454),
-                onClick = {
-                    scope.launch {
+                // 归档
+                MenuItem(
+                    icon = painterResource(if (bookmark.archiveStatus == 1) Res.drawable.ic_floating_panel_archieved else Res.drawable.ic_cell_more_archieve),
+                    text = "归档",
+                    onClick = {
+                        scope.launch {
+                            menuTriggerSource = MenuTriggerSource.NONE
+                            isLongPressed = false
+                            viewModel.toggleArchive(bookmark.id, bookmark.archiveStatus != 1)
+                        }
+                    }
+                )
+
+                // 修改标题
+                MenuItem(
+                    icon = painterResource(Res.drawable.ic_cell_more_edittitle),
+                    text = "修改标题",
+                    onClick = {
                         menuTriggerSource = MenuTriggerSource.NONE
                         isLongPressed = false
-                        viewModel.deleteBookmark(bookmark.id)
+                        viewModel.startEditTitle(bookmark)
                     }
-                }
-            )
+                )
+
+                // 删除
+                MenuItem(
+                    icon = painterResource(Res.drawable.ic_cell_more_delete),
+                    text = "删除",
+                    color = Color(0xFFF45454),
+                    onClick = {
+                        scope.launch {
+                            menuTriggerSource = MenuTriggerSource.NONE
+                            isLongPressed = false
+                            viewModel.deleteBookmark(bookmark.id)
+                        }
+                    }
+                )
+            }
         }
     }
 }

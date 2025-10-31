@@ -31,6 +31,8 @@ fun OverviewView(
     onExpand: () -> Unit = {},
     onBoundsChanged: (OverviewViewBounds) -> Unit = {}
 ) {
+    println("[watch][UI] recomposition OverviewView")
+    
     LaunchedEffect(detailView._bookmarkId) {
         detailView.loadOverview()
     }

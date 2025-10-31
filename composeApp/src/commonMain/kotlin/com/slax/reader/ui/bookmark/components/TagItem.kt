@@ -27,8 +27,6 @@ fun TagItem(
     onDelete: (() -> Unit)? = null,
     isLargeStyle: Boolean = false  // 是否使用大尺寸样式
 ) {
-    // println("[watch][UI] recomposition TagItem")
-
     // 根据样式选择不同的尺寸参数
     val height = if (isLargeStyle) 30.dp else 21.dp
     val fontSize = if (isLargeStyle) 15.sp else 12.sp

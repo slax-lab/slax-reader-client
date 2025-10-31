@@ -23,7 +23,7 @@ import slax_reader_client.composeapp.generated.resources.inbox_more
 @Composable
 fun InboxTitleRow() {
     var expanded by remember { mutableStateOf(false) }
-    // println("[watch][UI] recomposition InboxTitleRow")
+    println("[watch][UI] recomposition InboxTitleRow")
     Row(
         modifier = Modifier
             .padding(start = 24.dp),

@@ -35,7 +35,7 @@ fun IconButton(
     icon: ToolbarIcon,
     onClick: () -> Unit
 ) {
-    // println("[watch][UI] recomposition IconButton")
+    println("[watch][UI] recomposition IconButton")
 
     // 记录按下状态
     var isPressed by remember { mutableStateOf(false) }

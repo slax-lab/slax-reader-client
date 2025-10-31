@@ -29,8 +29,8 @@ fun HeaderContent(
 ) {
     println("[watch][UI] recomposition HeaderContent")
 
-    val displayTitle = remember(detail?.displayTitle) { detail?.displayTitle ?: "" }
-    val displayTime = remember(detail?.displayTime) { detail?.displayTime ?: "" }
+    val displayTitle = remember(detail.displayTitle) { detail.displayTitle }
+    val displayTime = remember(detail.displayTime) { detail.displayTime }
 
     Box(
         modifier = Modifier

@@ -27,11 +27,13 @@ import com.slax.reader.utils.getNetWorkState
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
-import slax_reader_client.composeapp.generated.resources.ic_inbox_plane
 import slax_reader_client.composeapp.generated.resources.global_default_avatar
+import slax_reader_client.composeapp.generated.resources.ic_inbox_plane
 
 @Composable
 fun UserAvatar() {
+    println("[watch][UI] recomposition UserAvatar")
+
     val viewModel = koinInject<AppViewModel>()
 
     val userInfo by viewModel.userInfo.collectAsState()

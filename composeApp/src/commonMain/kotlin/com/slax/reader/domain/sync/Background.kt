@@ -12,6 +12,7 @@ import kotlinx.atomicfu.update
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.ExperimentalTime
 
@@ -62,15 +63,15 @@ class BackgroundDomain(
     private var downloadQueue: Channel<TaskItem>? = null
 
     private val _bookmarkStatusMap = MutableStateFlow<Map<String, BookmarkDownloadStatus>>(emptyMap())
-    
+
     val bookmarkStatusFlow: StateFlow<Map<String, BookmarkDownloadStatus>> = _bookmarkStatusMap.asStateFlow()
 
     @OptIn(ExperimentalTime::class)
     private fun shouldDownload(bookmark: InboxListBookmarkItem): Boolean {
         if (bookmark.metadataStatus != successStatus) return false
 
-        val updateAt = parseInstant(bookmark.updatedAt)
-        val now = kotlin.time.Clock.System.now()
+        val updateAt = parseInstant(bookmark.createdAt)
+        val now = Clock.System.now()
         val age = now - updateAt
 
         if (age > recentDownloadDuration) return false
@@ -83,7 +84,7 @@ class BackgroundDomain(
     @OptIn(ExperimentalCoroutinesApi::class)
     fun startup() {
         workerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        downloadQueue = Channel<TaskItem>(100)
+        downloadQueue = Channel(100)
 
         workerScope!!.launch {
             bookmarkDao.watchUserBookmarkList().collect { bookmarkList ->

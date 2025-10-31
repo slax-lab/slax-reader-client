@@ -45,13 +45,17 @@ actual fun DetailScreen(
     }
 
     val scrollState = rememberScrollState()
+    val scrollY by remember { derivedStateOf { scrollState.value.toFloat() } }
     var manuallyVisible by remember { mutableStateOf(true) }
 
-    SideEffect {
-        val shouldShow = scrollState.value <= 10
-        if (manuallyVisible != shouldShow) {
-            manuallyVisible = shouldShow
-        }
+    LaunchedEffect(Unit) {
+        snapshotFlow { scrollState.value }
+            .collect { scrollValue ->
+                val shouldShow = scrollValue <= 10
+                if (manuallyVisible != shouldShow) {
+                    manuallyVisible = shouldShow
+                }
+            }
     }
 
     var showTagView by remember { mutableStateOf(false) }
@@ -92,7 +96,7 @@ actual fun DetailScreen(
                     modifier = Modifier.fillMaxWidth(),
                     topContentInsetPx = 0f,
                     onTap = {
-                        manuallyVisible = !manuallyVisible
+                        manuallyVisible = if (scrollY <= 10f) true else !manuallyVisible
                     },
                     onScrollChange = null
                 )
@@ -109,7 +113,7 @@ actual fun DetailScreen(
             )
         }
 
-        // 标签管理界面 - 在这里获取currentTags并处理更新
+        // 标签管理界面
         if (showTagView) {
             AnimatedVisibility(
                 visible = showTagView,

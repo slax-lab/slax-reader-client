@@ -28,7 +28,7 @@ fun FloatingActionBar(
     modifier: Modifier = Modifier,
     onMoreClick: () -> Unit = {}
 ) {
-    // println("[watch][UI] recomposition FloatingActionBar")
+    println("[watch][UI] recomposition FloatingActionBar")
 
     Box(
         modifier = modifier

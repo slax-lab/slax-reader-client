@@ -22,8 +22,8 @@ fun PageIndicator(
     modifier: Modifier = Modifier
 ) {
     if (pageCount <= 1) return
-    
-    // println("[watch][UI] recomposition PageIndicator")
+
+    println("[watch][UI] recomposition PageIndicator")
 
     Row(
         modifier = modifier,
