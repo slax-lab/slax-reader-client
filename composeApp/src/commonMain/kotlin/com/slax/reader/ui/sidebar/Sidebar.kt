@@ -174,36 +174,40 @@ private fun DrawerContent(
                             style = style
                         )
 
-                        Text(
-                            text = "${
-                                (when {
+                        if (!appViewModel.hasError) {
+                            Text(
+                                text = "${
+                                    (when {
+                                        syncStatus?.downloading == true -> appViewModel.downloadProgress
+                                        syncStatus?.uploading == true -> 0f
+                                        else -> 0f
+                                    } * 100).toInt()
+                                }%",
+                                style = style
+                            )
+                        }
+                    }
+
+                    if (!appViewModel.hasError) {
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        LinearProgressIndicator(
+                            strokeCap = DefaultStrokeLineCap,
+                            progress = {
+                                when {
                                     syncStatus?.downloading == true -> appViewModel.downloadProgress
                                     syncStatus?.uploading == true -> 0f
                                     else -> 0f
-                                } * 100).toInt()
-                            }%",
-                            style = style
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(5.dp)
+                                .clip(RoundedCornerShape(2.5.dp)),
+                            color = Color(0xFF16B998),
+                            trackColor = Color(0x140F1419)
                         )
                     }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    LinearProgressIndicator(
-                        strokeCap = DefaultStrokeLineCap,
-                        progress = {
-                            when {
-                                syncStatus?.downloading == true -> appViewModel.downloadProgress
-                                syncStatus?.uploading == true -> 0f
-                                else -> 0f
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(5.dp)
-                            .clip(RoundedCornerShape(2.5.dp)),
-                        color = Color(0xFF16B998),
-                        trackColor = Color(0x140F1419)
-                    )
                 }
             }
         }
