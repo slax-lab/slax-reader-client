@@ -5,7 +5,7 @@ import androidx.compose.ui.Modifier
 import com.slax.reader.const.articleStyle
 import com.slax.reader.const.resetStyle
 
-fun wrapHtmlWithCSS(htmlContent: String, topPaddingPx: Float = 0f): String {
+fun wrapHtmlWithCSS(htmlContent: String): String {
     return """
         <!DOCTYPE html>
         <html>
@@ -19,7 +19,7 @@ fun wrapHtmlWithCSS(htmlContent: String, topPaddingPx: Float = 0f): String {
                 $resetStyle
 
                 body {
-                    padding-top: ${topPaddingPx}px !important;
+                    padding-top: 0px !important;
                     padding-left: 20px !important;
                     padding-right: 20px !important;
                     padding-bottom: 20px !important;

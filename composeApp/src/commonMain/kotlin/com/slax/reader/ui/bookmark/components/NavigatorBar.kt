@@ -30,6 +30,8 @@ fun NavigatorBar(
     onBackClick: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
+    println("[watch][UI] recomposition NavigatorBar")
+    
     val offsetY by animateDpAsState(
         targetValue = if (visible) 0.dp else (-100).dp,
         animationSpec = tween(durationMillis = 300)

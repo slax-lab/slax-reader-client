@@ -18,6 +18,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.OverviewViewBounds
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
@@ -25,12 +26,17 @@ import slax_reader_client.composeapp.generated.resources.ic_xs_blue_down_arrow
 
 @Composable
 fun OverviewView(
+    detailView: BookmarkDetailViewModel,
     modifier: Modifier = Modifier,
-    content: String = "",
     onExpand: () -> Unit = {},
     onBoundsChanged: (OverviewViewBounds) -> Unit = {}
 ) {
-    val plainTextContent = remember(content) { content }
+    LaunchedEffect(detailView._bookmarkId) {
+        detailView.loadOverview()
+    }
+
+    val plainTextContent by detailView.overviewContent.collectAsState()
+    if (plainTextContent.isEmpty()) return
 
     Surface(
         modifier = modifier
