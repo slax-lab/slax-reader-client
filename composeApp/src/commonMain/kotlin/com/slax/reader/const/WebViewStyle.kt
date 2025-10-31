@@ -133,7 +133,6 @@ const val articleStyle = """
     img {
       max-width: 100%;
       height: auto;
-      background-color: #f5f5f3;
       object-fit: contain;
     }
 
@@ -168,6 +167,7 @@ const val articleStyle = """
       display: block;
       white-space: pre;
       font-family: 'Courier New', Courier, monospace !important;
+      overflow-x: auto;
     }
 
     pre code * {
