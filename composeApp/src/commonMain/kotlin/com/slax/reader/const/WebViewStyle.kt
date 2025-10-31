@@ -213,6 +213,7 @@ const val articleStyle = """
 
     ul > li {
       position: relative;
+      margin-left: 20px;
     }
 
     ul > li::before {
