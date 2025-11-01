@@ -28,9 +28,6 @@ class InboxListViewModel(
     var editTitleText by mutableStateOf("")
         private set
 
-    var justUpdatedBookmarkId by mutableStateOf<String?>(null)
-        private set
-
     fun startEditTitle(bookmark: InboxListBookmarkItem) {
         editingBookmark = bookmark
         editTitleText = bookmark.displayTitle()
@@ -46,11 +43,6 @@ class InboxListViewModel(
 
         if (trimmedTitle.isNotEmpty() && trimmedTitle != currentBookmark.displayTitle()) {
             editTitle(currentBookmark.id, trimmedTitle)
-            justUpdatedBookmarkId = currentBookmark.id
-            cancelEditTitle()
-            // 闪烁动画持续后清除标记
-            delay(800)
-            justUpdatedBookmarkId = null
         } else {
             cancelEditTitle()
         }
