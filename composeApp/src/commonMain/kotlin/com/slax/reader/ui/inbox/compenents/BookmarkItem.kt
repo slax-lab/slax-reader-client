@@ -69,17 +69,19 @@ fun BookmarkItemRow(
         derivedStateOf { bookmarkStatusMap[bookmark.id] }
     }
 
-    val currentTitle by remember { derivedStateOf { bookmark.displayTitle() } }
-
     // 闪烁动画
     val flashAlpha = remember { Animatable(0f) }
+    var currentTitle by remember { mutableStateOf("") }
 
-    LaunchedEffect(currentTitle) {
+    LaunchedEffect(bookmark.displayTitle()) {
+        if (currentTitle == "") currentTitle = bookmark.displayTitle()
+
         if (flashAlpha.value == 0f && currentTitle != bookmark.displayTitle()) {
             flashAlpha.animateTo(0.05f, animationSpec = tween(durationMillis = 180))
             flashAlpha.animateTo(0f, animationSpec = tween(durationMillis = 180))
             flashAlpha.animateTo(0.05f, animationSpec = tween(durationMillis = 180))
             flashAlpha.animateTo(0f, animationSpec = tween(durationMillis = 180))
+            currentTitle = bookmark.displayTitle()
         }
     }
 
