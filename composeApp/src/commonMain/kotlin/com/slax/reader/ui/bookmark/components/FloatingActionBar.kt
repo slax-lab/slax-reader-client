@@ -1,5 +1,7 @@
 package com.slax.reader.ui.bookmark.components
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -8,11 +10,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import com.slax.reader.data.database.model.UserBookmark
@@ -26,12 +32,26 @@ fun FloatingActionBar(
     detail: UserBookmark,
     detailView: BookmarkDetailViewModel,
     modifier: Modifier = Modifier,
+    visible: Boolean = true,
     onMoreClick: () -> Unit = {}
 ) {
     println("[watch][UI] recomposition FloatingActionBar")
 
+    val density = LocalDensity.current
+    val hiddenOffsetPx = remember(density) { with(density) { 150.dp.toPx() } }
+    val translationY = remember { Animatable(if (visible) 0f else hiddenOffsetPx) }
+
+    LaunchedEffect(visible) {
+        translationY.animateTo(
+            targetValue = if (visible) 0f else hiddenOffsetPx,
+            animationSpec = tween(durationMillis = 300)
+        )
+    }
+
     Box(
-        modifier = modifier
+        modifier = modifier.graphicsLayer {
+            this.translationY = translationY.value
+        }
     ) {
         Box(
             modifier = Modifier

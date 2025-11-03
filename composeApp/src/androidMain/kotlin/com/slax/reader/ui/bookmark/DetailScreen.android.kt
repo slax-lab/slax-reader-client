@@ -5,10 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -16,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.slax.reader.data.database.model.UserBookmark
@@ -104,14 +102,15 @@ actual fun DetailScreen(
         }
 
         // 浮动操作栏
-        if (manuallyVisible) {
-            DetailFloatingActionBar(
-                detail = detail,
-                detailView = detailViewModel,
-                manuallyVisible = manuallyVisible,
-                onMoreClick = { showToolbar = true }
-            )
-        }
+        FloatingActionBar(
+            detail = detail,
+            detailView = detailViewModel,
+            visible = manuallyVisible,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 58.dp),
+            onMoreClick = { showToolbar = true }
+        )
 
         // 标签管理界面
         if (showTagView) {
