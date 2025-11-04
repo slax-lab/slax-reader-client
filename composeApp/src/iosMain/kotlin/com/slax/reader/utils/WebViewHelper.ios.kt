@@ -1,26 +1,51 @@
 package com.slax.reader.utils
 
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.uikit.LocalUIViewController
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.viewinterop.UIKitInteropInteractionMode
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
 import app.slax.reader.SlaxConfig
 import kotlinx.cinterop.BetaInteropApi
+import kotlinx.cinterop.CValue
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.ObjCAction
 import kotlinx.cinterop.useContents
+import platform.CoreGraphics.CGPointMake
 import platform.CoreGraphics.CGRectMake
 import platform.Foundation.NSSelectorFromString
 import platform.Foundation.NSURL
 import platform.Foundation.NSURLRequest
 import platform.Foundation.NSValue
 import platform.SafariServices.SFSafariViewController
-import platform.UIKit.*
+import platform.UIKit.CGPointValue
+import platform.UIKit.UIEdgeInsets
+import platform.UIKit.UIEdgeInsetsMake
+import platform.UIKit.UIGestureRecognizer
+import platform.UIKit.UIGestureRecognizerDelegateProtocol
+import platform.UIKit.UIScrollView
+import platform.UIKit.UIScrollViewContentInsetAdjustmentBehavior
+import platform.UIKit.UIScrollViewDecelerationRateNormal
+import platform.UIKit.UIScrollViewDelegateProtocol
+import platform.UIKit.UITapGestureRecognizer
+import platform.UIKit.UITouch
+import platform.UIKit.UIView
+import platform.WebKit.WKNavigation
+import platform.WebKit.WKNavigationDelegateProtocol
 import platform.WebKit.WKPreferences
 import platform.WebKit.WKWebView
 import platform.WebKit.WKWebViewConfiguration
@@ -28,6 +53,7 @@ import platform.WebKit.javaScriptEnabled
 import platform.darwin.NSObject
 import kotlin.math.abs
 import kotlin.math.max
+import kotlin.time.ExperimentalTime
 
 private class TapHandler(
     private val onTap: () -> Unit
@@ -39,7 +65,7 @@ private class TapHandler(
     }
 }
 
-private class TapGestureDelegate : NSObject(), UIGestureRecognizerDelegateProtocol {
+private class SingleTapGestureDelegate : NSObject(), UIGestureRecognizerDelegateProtocol {
     override fun gestureRecognizer(
         gestureRecognizer: UIGestureRecognizer,
         shouldRecognizeSimultaneouslyWithGestureRecognizer: UIGestureRecognizer
@@ -47,11 +73,12 @@ private class TapGestureDelegate : NSObject(), UIGestureRecognizerDelegateProtoc
         return true
     }
 
+    @OptIn(ExperimentalTime::class)
     override fun gestureRecognizer(
         gestureRecognizer: UIGestureRecognizer,
         shouldReceiveTouch: UITouch
     ): Boolean {
-        return true
+        return shouldReceiveTouch.tapCount == 1uL
     }
 }
 
@@ -69,13 +96,13 @@ actual fun AppWebView(
     val tapHandler = remember(onTap) {
         TapHandler { onTap?.invoke() }
     }
-    val tapGestureDelegate = remember { TapGestureDelegate() }
+    val singleTapGestureDelegate = remember { SingleTapGestureDelegate() }
     val density = LocalDensity.current
     val densityScale = density.density
     val densityScaleState = rememberUpdatedState(densityScale)
 
     // 获取 statusBarsPadding 高度
-    val windowInsets = androidx.compose.foundation.layout.WindowInsets.statusBars
+    val windowInsets = WindowInsets.statusBars
     val statusBarHeightPx = windowInsets.getTop(density).toFloat()
 
     // iOS contentInset 需要完整高度：Column + statusBarsPadding + 视觉间距
@@ -90,13 +117,29 @@ actual fun AppWebView(
         KVOObserver { keyPath, newValue, _ ->
             val scrollView = observedScrollView
             if (keyPath == "contentOffset" && scrollView != null) {
-                val offsetPoints = (newValue as? NSValue)?.CGPointValue()?.useContents { y }?.toFloat() ?: 0f
+                val offsetPoints =
+                    (newValue as? NSValue)?.CGPointValue()?.useContents { y }?.toFloat() ?: 0f
                 val insetPoints = scrollView.contentInset.useContents { top }.toFloat()
                 // contentInset 会让初始 contentOffset.y = -contentInset.top
                 // 加上当前 contentInset.top 得到实际滚动距离
                 val adjustedOffsetPoints = offsetPoints + insetPoints
                 val offsetPx = max(adjustedOffsetPoints * densityScaleState.value, 0f)
                 onScrollChangeState.value?.invoke(offsetPx)
+            }
+        }
+    }
+
+    val navigationDelegate = remember {
+        object : NSObject(), WKNavigationDelegateProtocol {
+            override fun webView(webView: WKWebView, didFinishNavigation: WKNavigation?) {
+                // 移除导致双击上下翻页的双击手势识别器
+                webView.scrollView.subviews.forEach { subview ->
+                    (subview as UIView).gestureRecognizers?.forEach {
+                        if (it is UITapGestureRecognizer && it.numberOfTapsRequired == 2UL && it.numberOfTouchesRequired == 1UL) {
+                            subview.removeGestureRecognizer(it)
+                        }
+                    }
+                }
             }
         }
     }
@@ -123,16 +166,20 @@ actual fun AppWebView(
             }
 
             val view = WKWebView(frame = CGRectMake(0.0, 0.0, 0.0, 0.0), configuration = config)
-            view.inspectable = SlaxConfig.BUILD_ENV == "dev"
+            if (available("16.4")) {
+                view.inspectable = SlaxConfig.BUILD_ENV == "dev"
+            }
+
+            view.navigationDelegate = navigationDelegate
 
             // 添加点击手势
-            val tapGesture = UITapGestureRecognizer(
+            val singleTapGesture = UITapGestureRecognizer(
                 target = tapHandler,
                 action = NSSelectorFromString(tapHandler::handleTap.name)
             )
-            tapGesture.delegate = tapGestureDelegate
-            tapGesture.cancelsTouchesInView = false
-            view.addGestureRecognizer(tapGesture)
+            singleTapGesture.delegate = singleTapGestureDelegate
+            singleTapGesture.cancelsTouchesInView = false
+            view.addGestureRecognizer(singleTapGesture)
 
             // 配置滚动视图
             view.scrollView.apply {
@@ -159,21 +206,6 @@ actual fun AppWebView(
                 )
             }
 
-            // 禁用 WebView 的左右滑动手势
-            view.scrollView.delegate = object : NSObject(), UIScrollViewDelegateProtocol {
-                override fun scrollViewDidScroll(scrollView: UIScrollView) {
-                    // 强制限制水平滚动为 0
-                    if (scrollView.contentOffset.useContents { x } != 0.0) {
-                        scrollView.setContentOffset(
-                            platform.CoreGraphics.CGPointMake(
-                                0.0,
-                                scrollView.contentOffset.useContents { y }
-                            ),
-                            animated = false
-                        )
-                    }
-                }
-            }
             if (observedScrollView !== view.scrollView) {
                 observedScrollView = view.scrollView
             }
@@ -211,7 +243,7 @@ actual fun AppWebView(
                 // 新的 contentOffset = 实际位置 - 新的 contentInset.top
                 val newOffsetY = actualScrollPosition - topInsetPoints
                 scrollView.setContentOffset(
-                    platform.CoreGraphics.CGPointMake(0.0, newOffsetY.toDouble()),
+                    contentOffset = CGPointMake(0.0, newOffsetY.toDouble()),
                     animated = false
                 )
             }
@@ -233,6 +265,18 @@ actual fun OpenInBrowserTab(url: String) {
     viewController.presentViewController(safariVC, animated = true, completion = null)
 }
 
+@OptIn(ExperimentalForeignApi::class)
+val UIEdgeInsets_zero: CValue<UIEdgeInsets>
+    get() = UIEdgeInsetsMake(0.0, 0.0, 0.0, 0.0)
+
+@OptIn(ExperimentalForeignApi::class)
+val PaddingValues.toUIEdgeInsets: CValue<UIEdgeInsets>
+    get() = UIEdgeInsetsMake(
+        calculateTopPadding().value.toDouble(),
+        calculateLeftPadding(LayoutDirection.Ltr).value.toDouble(),
+        calculateBottomPadding().value.toDouble(),
+        calculateRightPadding(LayoutDirection.Ltr).value.toDouble(),
+    )
 
 @OptIn(ExperimentalForeignApi::class)
 @Composable
@@ -240,8 +284,21 @@ actual fun WebView(
     url: String?,
     htmlContent: String?,
     modifier: Modifier,
+    contentInsets: PaddingValues?,
     onScroll: ((x: Double, y: Double) -> Unit)?
 ) {
+
+    val scrollDelegate = remember {
+        object : NSObject(), UIScrollViewDelegateProtocol {
+            override fun scrollViewDidScroll(scrollView: UIScrollView) {
+                val contentOffset = scrollView.contentOffset
+                onScroll?.invoke(
+                    contentOffset.useContents { x },
+                    contentOffset.useContents { y }
+                )
+            }
+        }
+    }
 
     UIKitView(
         modifier = modifier,
@@ -256,21 +313,18 @@ actual fun WebView(
                 frame = CGRectMake(0.0, 0.0, 0.0, 0.0),
                 configuration = config,
             ).apply {
-                inspectable = SlaxConfig.BUILD_ENV == "dev"
+                if (available("16.4")) {
+                    inspectable = SlaxConfig.BUILD_ENV == "dev"
+                }
+                backgroundColor = Color(0xFFFCFCFC).toUIColor()
 
                 scrollView.contentInsetAdjustmentBehavior =
                     UIScrollViewContentInsetAdjustmentBehavior.UIScrollViewContentInsetAdjustmentNever
                 scrollView.alwaysBounceVertical = true
                 scrollView.alwaysBounceHorizontal = false
+                scrollView.delegate = scrollDelegate
 
-                scrollView.delegate = object : NSObject(), UIScrollViewDelegateProtocol {
-                    override fun scrollViewDidScroll(scrollView: UIScrollView) {
-                        val offset = scrollView.contentOffset
-                        onScroll?.invoke(offset.useContents { x }, offset.useContents { y })
-                    }
-                }
-
-                backgroundColor = Color(0xFFFCFCFC).toUIColor()
+                scrollView.contentInset = contentInsets?.toUIEdgeInsets ?: UIEdgeInsets_zero
                 when {
                     url != null -> loadRequest(NSURLRequest(uRL = NSURL(string = url)))
                     htmlContent != null -> loadHTMLString(htmlContent, baseURL = null)
@@ -279,10 +333,7 @@ actual fun WebView(
         },
         update = { view ->
             view.apply {
-                when {
-                    url != null -> loadRequest(NSURLRequest(uRL = NSURL(string = url)))
-                    htmlContent != null -> loadHTMLString(htmlContent, baseURL = null)
-                }
+                scrollView.contentInset = contentInsets?.toUIEdgeInsets ?: UIEdgeInsets_zero
             }
         }
     )

@@ -7,13 +7,17 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import app.slax.reader.SlaxConfig
+import kotlin.math.roundToInt
+
 
 @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface", "ClickableViewAccessibility")
 @Composable
@@ -104,11 +108,21 @@ actual fun OpenInBrowserTab(url: String) {
     customTabsIntent.launchUrl(ctx, url.toUri())
 }
 
+fun PaddingValues.setOnWebView(webView: WebView) {
+    webView.setPadding(
+        calculateLeftPadding(LayoutDirection.Ltr).value.roundToInt(),
+        calculateTopPadding().value.roundToInt(),
+        calculateRightPadding(LayoutDirection.Ltr).value.roundToInt(),
+        calculateBottomPadding().value.roundToInt()
+    )
+}
+
 @Composable
 actual fun WebView(
     url: String?,
     htmlContent: String?,
     modifier: Modifier,
+    contentInsets: PaddingValues?,
     onScroll: ((x: Double, y: Double) -> Unit)?
 ) {
     AndroidView(
@@ -139,6 +153,7 @@ actual fun WebView(
                 webChromeClient = WebChromeClient()
                 webViewClient = WebViewClient()
 
+                contentInsets?.setOnWebView(this)
                 when {
                     url != null -> loadUrl(url)
                     htmlContent != null -> loadDataWithBaseURL(
@@ -153,6 +168,7 @@ actual fun WebView(
         },
         update = { view ->
             view.apply {
+                contentInsets?.setOnWebView(this)
                 when {
                     url != null -> loadUrl(url)
                     htmlContent != null -> loadDataWithBaseURL(
