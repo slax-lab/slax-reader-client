@@ -136,4 +136,8 @@ class BookmarkDetailViewModel(
     suspend fun getBookmarkContent(bookmarkId: String): String = withContext(Dispatchers.IO) {
         return@withContext backgroundDomain.getBookmarkContent(bookmarkId)
     }
+
+    suspend fun createTag(tagName: String): UserTag = withContext(Dispatchers.IO) {
+        return@withContext bookmarkDao.createTag(tagName)
+    }
 }

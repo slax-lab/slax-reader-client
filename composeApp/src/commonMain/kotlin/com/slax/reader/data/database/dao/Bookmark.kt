@@ -207,4 +207,25 @@ class BookmarkDao(
             )
         }
     }
+
+    @OptIn(ExperimentalUuidApi::class, ExperimentalTime::class)
+    suspend fun createTag(tagName: String): UserTag {
+        val tagId = Uuid.random().toString()
+        val now = Clock.System.now().toString()
+
+        database.writeTransaction { tx ->
+            tx.execute(
+                """INSERT INTO sr_user_tag (id, tag_name, display, created_at)
+                   VALUES (?, ?, ?, ?)""",
+                listOf(tagId, tagName, tagName, now)
+            )
+        }
+
+        return UserTag(
+            id = tagId,
+            tag_name = tagName,
+            display = tagName,
+            created_at = now
+        )
+    }
 }
