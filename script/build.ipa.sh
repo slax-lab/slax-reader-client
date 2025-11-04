@@ -4,9 +4,14 @@ set -e
 export JAVA_HOME=$(/usr/libexec/java_home -v 17)
 export BUILD_FLAVOR=release
 
-cp iosApp/iosApp/GoogleService-Info.plist iosApp/iosApp/GoogleService-Info.plist.backup
+./gradlew :composeApp:syncXcodeVersionConfig -Pbuildkonfig.flavor=$BUILD_FLAVOR
 
-cp firebase/GoogleService-Info.release.plist iosApp/iosApp/GoogleService-Info.plist
+./gradlew :composeApp:syncFirebaseIOS -Pbuildkonfig.flavor=$BUILD_FLAVOR
+
+xcodebuild clean \
+  -workspace iosApp/iosApp.xcworkspace \
+  -scheme iosApp \
+  -configuration Release
 
 xcodebuild archive \
   -workspace iosApp/iosApp.xcworkspace \

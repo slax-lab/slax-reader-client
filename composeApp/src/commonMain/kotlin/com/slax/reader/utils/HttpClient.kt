@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
+expect fun HttpClientConfig<*>.configureSslPinning(pins: List<String>)
+
 fun getHttpClient(appPreferences: AppPreferences): HttpClient {
     val token = MutableStateFlow<String?>(null)
     CoroutineScope(Dispatchers.Default).launch {
@@ -23,10 +25,12 @@ fun getHttpClient(appPreferences: AppPreferences): HttpClient {
     }
 
     return HttpClient {
+        if (SlaxConfig.BUILD_ENV == "release") {
+//            configureSslPinning(SSLPins.allPins)
+        }
         engine {
 
         }
-//        install(SSE)
         install(ContentNegotiation) {
             json(Json {
                 prettyPrint = SlaxConfig.BUILD_ENV == "dev"

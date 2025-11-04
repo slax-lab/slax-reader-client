@@ -13,6 +13,7 @@ class AppViewModel(
 ) : ViewModel(), KoinComponent, DefaultLifecycleObserver {
 
     val userInfo = userDao.watchUserInfo()
+    var incrErr = 0
 
     val syncStatusData = powerSyncDao.watchPowerSyncStatus()
 
@@ -23,19 +24,27 @@ class AppViewModel(
         get() = syncStatusData.value?.uploading == true
 
     val hasError: Boolean
-        get() = syncStatusData.value?.anyError != null
+        get() {
+            val hasErr = syncStatusData.value?.anyError != null
+            if (hasErr) incrErr += 1
+            return incrErr != 1 && hasErr
+        }
 
     val isDownloading: Boolean
         get() = syncStatusData.value?.downloading == true
 
     val connected: Boolean
-        get() = syncStatusData.value?.connected == true
+        get() {
+            val isConnected = syncStatusData.value?.connected == true
+            if (isConnected) incrErr = 0
+            return isConnected
+        }
 
     val syncType: String?
         get() = when {
-            syncStatusData.value?.downloading == true -> "正在下载数据"
-            syncStatusData.value?.uploading == true -> "正在上传数据"
-            syncStatusData.value?.connecting == true -> "正在连接"
+            syncStatusData.value?.downloading == true -> "Downloading"
+            syncStatusData.value?.uploading == true -> "Uploading"
+            syncStatusData.value?.connecting == true -> "Connecting"
             else -> null
         }
 
@@ -48,27 +57,7 @@ class AppViewModel(
             }
         } ?: 0f
 
-    override fun onCreate(owner: LifecycleOwner) {
-        println("==== create")
-    }
-
-    override fun onStart(owner: LifecycleOwner) {
-        println("==== onStart")
-    }
-
     override fun onResume(owner: LifecycleOwner) {
-        println("==== onResume")
-    }
-
-    override fun onPause(owner: LifecycleOwner) {
-        println("==== onPause")
-    }
-
-    override fun onStop(owner: LifecycleOwner) {
-        println("==== onStop")
-    }
-
-    override fun onDestroy(owner: LifecycleOwner) {
-        println("==== onDestroy")
+        incrErr = 1
     }
 }

@@ -45,9 +45,7 @@ fun UserAvatar() {
         placeholder = painterResource(Res.drawable.global_default_avatar)
     )
 
-    LaunchedEffect(syncStatus) {
-        println("network : ${getNetWorkState()}, error: ${syncStatus?.anyError}")
-    }
+    LaunchedEffect(syncStatus) {}
 
     Box(
         modifier = Modifier.size(24.dp),

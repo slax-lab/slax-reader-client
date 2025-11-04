@@ -4,22 +4,25 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.runtime.*
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.data.database.model.InboxListBookmarkItem
@@ -34,15 +37,9 @@ fun TitleEditOverlay(
 ) {
     println("[watch][UI] recomposition TitleEditOverlay")
 
-    var editText by remember { mutableStateOf(bookmark.displayTitle()) }
     val scope = rememberCoroutineScope()
     val focusRequester = remember { FocusRequester() }
-    val textFieldValue = remember(editText) {
-        TextFieldValue(
-            text = editText,
-            selection = TextRange(editText.length)
-        )
-    }
+    val textState = rememberTextFieldState(bookmark.displayTitle())
 
     // 半透明背景的动画
     val backgroundAlpha = remember { Animatable(0f) }
@@ -63,7 +60,7 @@ fun TitleEditOverlay(
                 backgroundAlpha.animateTo(0f, animationSpec = tween(durationMillis = 300))
             }.join()
 
-            val trimmed = editText.trim()
+            val trimmed = textState.text.trim().toString()
             if (trimmed.isNotEmpty() && trimmed != bookmark.displayTitle()) {
                 viewModel.confirmEditTitle(bookmark.id, trimmed)
             }
@@ -92,7 +89,7 @@ fun TitleEditOverlay(
                 .graphicsLayer { alpha = backgroundAlpha.value }
                 .background(Color(0xF2FCFCFC))
                 .clickable(
-                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    interactionSource = remember { MutableInteractionSource() },
                     indication = null
                 ) {
                     handleDismiss()
@@ -115,10 +112,7 @@ fun TitleEditOverlay(
                 .padding(horizontal = 16.dp, vertical = 18.dp)
         ) {
             BasicTextField(
-                value = textFieldValue,
-                onValueChange = { newValue ->
-                    editText = newValue.text
-                },
+                state = textState,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(24.dp)
@@ -128,14 +122,11 @@ fun TitleEditOverlay(
                     lineHeight = 24.sp,
                     color = Color(0xFF0F1419)
                 ),
-                maxLines = 1,
-                singleLine = true,
+                lineLimits = TextFieldLineLimits.SingleLine,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        handleConfirm()
-                    }
-                )
+                onKeyboardAction = {
+                    handleConfirm()
+                }
             )
         }
     }

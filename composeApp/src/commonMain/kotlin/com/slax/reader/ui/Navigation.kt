@@ -71,11 +71,11 @@ fun SlaxNavigation(
 
             AuthState.Unauthenticated -> {
                 launch(Dispatchers.IO) {
+                    backgroundDomain.cleanup()
                     database?.disconnectAndClear(
                         clearLocal = true,
                         soft = true
                     )
-                    backgroundDomain.cleanup()
                 }
             }
 
