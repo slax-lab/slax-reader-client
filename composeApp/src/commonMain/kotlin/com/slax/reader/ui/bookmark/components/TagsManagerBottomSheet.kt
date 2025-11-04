@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -58,7 +59,7 @@ fun TagsManageBottomSheet(
     val coroutineScope = rememberCoroutineScope()
     var isCreatingMode by remember { mutableStateOf(false) }
 
-    var inputText by remember { mutableStateOf("") }
+    val inputText = rememberTextFieldState("")
     val focusRequester = remember { FocusRequester() }
 
     var addedTags by remember { mutableStateOf<List<UserTag>>(emptyList()) }
@@ -71,10 +72,10 @@ fun TagsManageBottomSheet(
     }
     val similarTags by remember(inputText, availableTags, currentSelectedTags) {
         derivedStateOf {
-            if (inputText.isEmpty()) emptyList()
+            if (inputText.text.isEmpty()) emptyList()
             else availableTags
                 .filter { it !in currentSelectedTags }
-                .filter { it.tag_name.contains(inputText, ignoreCase = true) }
+                .filter { it.tag_name.contains(inputText.text, ignoreCase = true) }
                 .take(5)
         }
     }
@@ -101,13 +102,21 @@ fun TagsManageBottomSheet(
 
     fun exitCreatingMode() {
         isCreatingMode = false
-        inputText = ""
+        inputText.edit {
+            replace(0, length, "")
+        }
     }
 
     fun createAndAddTag() {
-        if (inputText.isNotBlank()) {
+        if (inputText.text.isNotBlank()) {
+            val tagName = inputText.text.toString()
+            if (currentSelectedTags.any { it.tag_name.equals(tagName, ignoreCase = true) }) {
+                exitCreatingMode()
+                return
+            }
+
             coroutineScope.launch {
-                val newTag = detailViewModel.createTag(inputText.trim())
+                val newTag = detailViewModel.createTag(tagName)
                 currentSelectedTags = currentSelectedTags + newTag
                 exitCreatingMode()
             }
@@ -372,8 +381,7 @@ fun TagsManageBottomSheet(
                                 )
                         ) {
                             BasicTextField(
-                                value = inputText,
-                                onValueChange = { inputText = it },
+                                state = inputText,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(44.dp)
@@ -393,14 +401,14 @@ fun TagsManageBottomSheet(
                                     fontWeight = FontWeight.Bold
                                 ),
                                 cursorBrush = SolidColor(Color(0xFF16b998)),
-                                decorationBox = { innerTextField ->
+                                decorator = { innerTextField ->
                                     Box(
                                         modifier = Modifier
                                             .fillMaxSize()
                                             .padding(horizontal = 12.dp),
                                         contentAlignment = Alignment.CenterStart
                                     ) {
-                                        if (inputText.isEmpty()) {
+                                        if (inputText.text.isEmpty()) {
                                             Text(
                                                 text = "创建新标签",
                                                 style = TextStyle(
@@ -421,7 +429,7 @@ fun TagsManageBottomSheet(
                                     .height(60.dp),
                                 color = Color.Transparent
                             ) {
-                                if (!inputText.isNotBlank()) {
+                                if (!inputText.text.isNotBlank()) {
                                     return@Surface
                                 }
 
@@ -449,7 +457,7 @@ fun TagsManageBottomSheet(
                                     )
 
                                     Text(
-                                        text = "创建：$inputText",
+                                        text = "创建：${inputText.text}",
                                         style = TextStyle(
                                             fontSize = 15.sp,
                                             color = Color(0xFFA28D64)
@@ -466,7 +474,7 @@ fun TagsManageBottomSheet(
                                     .height(0.5.dp),
                                 color = Color.Transparent
                             ) {
-                                if (!(inputText.isNotBlank() && similarTags.isNotEmpty())) {
+                                if (!(inputText.text.isNotBlank() && similarTags.isNotEmpty())) {
                                     return@Surface
                                 }
 
@@ -520,7 +528,7 @@ fun TagsManageBottomSheet(
                                                 modifier = Modifier.padding(start = 11.dp),
                                                 text = buildAnnotatedString {
                                                     val tagName = tag.tag_name
-                                                    val searchText = inputText
+                                                    val searchText = inputText.text.toString()
                                                     val startIndex = tagName.indexOf(searchText, ignoreCase = true)
 
                                                     if (startIndex >= 0) {
