@@ -8,9 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -25,6 +23,7 @@ import androidx.navigation.NavController
 import com.slax.reader.const.AboutRoutes
 import com.slax.reader.const.SettingsRoutes
 import com.slax.reader.const.SpaceManagerRoutes
+import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.ui.AppViewModel
 import com.slax.reader.ui.inbox.compenents.ArticleList
@@ -32,7 +31,6 @@ import com.slax.reader.ui.inbox.compenents.InboxTitleRow
 import com.slax.reader.ui.inbox.compenents.TitleEditOverlay
 import com.slax.reader.ui.inbox.compenents.UserAvatar
 import com.slax.reader.ui.sidebar.Sidebar
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
@@ -89,7 +87,6 @@ fun InboxListScreen(navCtrl: NavController) {
                 ContentSection(
                     navCtrl = navCtrl,
                     inboxViewModel = inboxViewModel,
-                    scope = scope
                 )
             }
         }
@@ -134,9 +131,10 @@ private fun NavigationBar(onAvatarClick: () -> Unit = {}) {
 private fun ContentSection(
     navCtrl: NavController,
     inboxViewModel: InboxListViewModel,
-    scope: CoroutineScope
 ) {
     println("[watch][UI] recomposition ContentSection")
+
+    var editingBookmark by remember { mutableStateOf<InboxListBookmarkItem?>(null) }
 
     Box(
         modifier = Modifier.fillMaxSize().clipToBounds()
@@ -156,15 +154,19 @@ private fun ContentSection(
             ArticleList(
                 navCtrl = navCtrl,
                 viewModel = inboxViewModel,
+                onEditTitle = { bookmark ->
+                    editingBookmark = bookmark
+                }
             )
         }
 
-        if (inboxViewModel.editingBookmark != null) {
+        editingBookmark?.let { bookmark ->
             TitleEditOverlay(
-                editText = inboxViewModel.editTitleText,
-                onEditTextChange = inboxViewModel::updateEditTitleText,
-                onConfirm = { scope.launch { inboxViewModel.confirmEditTitle() } },
-                onDismiss = inboxViewModel::cancelEditTitle
+                bookmark = bookmark,
+                viewModel = inboxViewModel,
+                onDismiss = {
+                    editingBookmark = null
+                }
             )
         }
     }

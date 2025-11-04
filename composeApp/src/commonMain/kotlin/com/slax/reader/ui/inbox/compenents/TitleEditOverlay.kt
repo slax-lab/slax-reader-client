@@ -9,10 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
@@ -25,17 +22,19 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.slax.reader.data.database.model.InboxListBookmarkItem
+import com.slax.reader.ui.inbox.InboxListViewModel
 import kotlinx.coroutines.launch
 
 @Composable
 fun TitleEditOverlay(
-    editText: String,
-    onEditTextChange: (String) -> Unit,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
+    bookmark: InboxListBookmarkItem,
+    viewModel: InboxListViewModel,
+    onDismiss: () -> Unit,
 ) {
     println("[watch][UI] recomposition TitleEditOverlay")
 
+    var editText by remember { mutableStateOf(bookmark.displayTitle()) }
     val scope = rememberCoroutineScope()
     val focusRequester = remember { FocusRequester() }
     val textFieldValue = remember(editText) {
@@ -55,6 +54,35 @@ fun TitleEditOverlay(
         focusRequester.requestFocus()
     }
 
+    val handleConfirm: () -> Unit = {
+        scope.launch {
+            launch {
+                slideOffset.animateTo(-150f, animationSpec = tween(durationMillis = 300))
+            }
+            launch {
+                backgroundAlpha.animateTo(0f, animationSpec = tween(durationMillis = 300))
+            }.join()
+
+            val trimmed = editText.trim()
+            if (trimmed.isNotEmpty() && trimmed != bookmark.displayTitle()) {
+                viewModel.confirmEditTitle(bookmark.id, trimmed)
+            }
+            onDismiss()
+        }
+    }
+
+    val handleDismiss: () -> Unit = {
+        scope.launch {
+            launch {
+                slideOffset.animateTo(-150f, animationSpec = tween(durationMillis = 300))
+            }
+            launch {
+                backgroundAlpha.animateTo(0f, animationSpec = tween(durationMillis = 300))
+            }.join()
+            onDismiss()
+        }
+    }
+
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -67,11 +95,7 @@ fun TitleEditOverlay(
                     interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
                     indication = null
                 ) {
-                    scope.launch {
-                        slideOffset.animateTo(-150f, animationSpec = tween(durationMillis = 300))
-                        backgroundAlpha.animateTo(0f, animationSpec = tween(durationMillis = 300))
-                        onDismiss()
-                    }
+                    handleDismiss()
                 }
         )
 
@@ -93,7 +117,7 @@ fun TitleEditOverlay(
             BasicTextField(
                 value = textFieldValue,
                 onValueChange = { newValue ->
-                    onEditTextChange(newValue.text)
+                    editText = newValue.text
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -109,11 +133,7 @@ fun TitleEditOverlay(
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(
                     onDone = {
-                        scope.launch {
-                            slideOffset.animateTo(-150f, animationSpec = tween(durationMillis = 300))
-                            backgroundAlpha.animateTo(0f, animationSpec = tween(durationMillis = 300))
-                            onConfirm()
-                        }
+                        handleConfirm()
                     }
                 )
             )

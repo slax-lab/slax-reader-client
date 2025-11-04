@@ -6,14 +6,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.InboxListViewModel
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
@@ -24,6 +24,7 @@ import slax_reader_client.composeapp.generated.resources.ic_cell_internet
 fun ArticleList(
     navCtrl: NavController,
     viewModel: InboxListViewModel,
+    onEditTitle: (InboxListBookmarkItem) -> Unit,
 ) {
     println("[watch][UI] recomposition ArticleList")
 
@@ -35,33 +36,8 @@ fun ArticleList(
         { DividerLine() }
     }
 
-    val isScrolling by remember {
-        derivedStateOf { lazyListState.isScrollInProgress }
-    }
-
-    val nestedScrollConnection = remember {
-        object : NestedScrollConnection {
-            override fun onPreScroll(
-                available: Offset,
-                source: NestedScrollSource
-            ): Offset {
-                return if (isScrolling) {
-                    Offset(available.x, 0f)
-                } else Offset.Zero
-            }
-
-            override fun onPostScroll(
-                consumed: Offset,
-                available: Offset,
-                source: NestedScrollSource
-            ): Offset {
-                return Offset(available.x, 0f)
-            }
-        }
-    }
-
     LazyColumn(
-        modifier = Modifier.fillMaxSize().nestedScroll(nestedScrollConnection),
+        modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(0.dp),
         contentPadding = PaddingValues(bottom = 0.dp),
         state = lazyListState
@@ -76,6 +52,7 @@ fun ArticleList(
                 viewModel = viewModel,
                 bookmark = bookmark,
                 iconPainter = iconPainter,
+                onEditTitle = onEditTitle
             )
 
             if (index < bookmarks.lastIndex) {
