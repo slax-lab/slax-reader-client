@@ -9,6 +9,7 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -52,6 +54,13 @@ fun TagsManageBottomSheet(
     onConfirm: (List<UserTag>) -> Unit = {}
 ) {
     println("[watch][UI] recomposition TagsManageBottomSheet")
+
+    val coroutineScope = rememberCoroutineScope()
+    var isCreatingMode by remember { mutableStateOf(false) }
+
+    var inputText by remember { mutableStateOf("") }
+    val focusRequester = remember { FocusRequester() }
+
     var addedTags by remember { mutableStateOf<List<UserTag>>(emptyList()) }
     val availableTags by detailViewModel.userTagList.collectAsState(emptyList())
     var currentSelectedTags by remember(addedTags) { mutableStateOf(addedTags) }
@@ -60,13 +69,19 @@ fun TagsManageBottomSheet(
             availableTags.filter { tag -> currentSelectedTags.none { it.id == tag.id } }
         }
     }
+    val similarTags by remember(inputText, availableTags, currentSelectedTags) {
+        derivedStateOf {
+            if (inputText.isEmpty()) emptyList()
+            else availableTags
+                .filter { it !in currentSelectedTags }
+                .filter { it.tag_name.contains(inputText, ignoreCase = true) }
+                .take(5)
+        }
+    }
 
     val density = LocalDensity.current
     var offsetY by remember { mutableFloatStateOf(0f) }
-    var isCreatingMode by remember { mutableStateOf(false) }
-    var inputText by remember { mutableStateOf("") }
-    val focusRequester = remember { FocusRequester() }
-    val coroutineScope = rememberCoroutineScope()
+
 
     LaunchedEffect(currentTags) {
         currentTags?.let { tagIds ->
@@ -82,14 +97,6 @@ fun TagsManageBottomSheet(
         if (isCreatingMode) {
             focusRequester.requestFocus()
         }
-    }
-
-    val similarTags = remember(inputText, availableTags, currentSelectedTags) {
-        if (inputText.isEmpty()) emptyList()
-        else availableTags
-            .filter { it !in currentSelectedTags }
-            .filter { it.tag_name.contains(inputText, ignoreCase = true) }
-            .take(5)
     }
 
     fun exitCreatingMode() {
@@ -135,6 +142,8 @@ fun TagsManageBottomSheet(
             color = Color.White,
             modifier = Modifier
                 .fillMaxWidth()
+                .wrapContentHeight()
+                .heightIn(max = with(density) { (density.density * 800).dp })
                 .padding(0.dp)
                 .offset { IntOffset(0, offsetY.roundToInt()) }
                 .then(
@@ -416,11 +425,15 @@ fun TagsManageBottomSheet(
                                     return@Surface
                                 }
 
+                                val createInteractionSource = remember { MutableInteractionSource() }
+                                val isCreatePressed by createInteractionSource.collectIsPressedAsState()
+
                                 Row(
                                     modifier = Modifier
                                         .fillMaxSize()
+                                        .alpha(if (isCreatePressed) 0.65f else 1f)
                                         .clickable(
-                                            interactionSource = remember { MutableInteractionSource() },
+                                            interactionSource = createInteractionSource,
                                             indication = null
                                         ) {
                                             createAndAddTag()
@@ -479,12 +492,16 @@ fun TagsManageBottomSheet(
                                         .fillMaxSize()
                                 ) {
                                     items(similarTags) { tag ->
+                                        val itemInteractionSource = remember { MutableInteractionSource() }
+                                        val isItemPressed by itemInteractionSource.collectIsPressedAsState()
+
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .height(44.dp)
+                                                .alpha(if (isItemPressed) 0.65f else 1f)
                                                 .clickable(
-                                                    interactionSource = remember { MutableInteractionSource() },
+                                                    interactionSource = itemInteractionSource,
                                                     indication = null
                                                 ) {
                                                     addExistingTag(tag)
