@@ -4,7 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -76,16 +75,11 @@ fun HeaderContent(
                 )
             }
 
-            key(detail.metadataObj?.tags) {
-                detail.metadataObj?.tags?.let {
-                    TagsView(
-                        modifier = Modifier.padding(top = 16.dp),
-                        tags = it,
-                        onAddTagClick = onTagClick,
-                        detailView = detailView
-                    )
-                }
-            }
+            TagsView(
+                modifier = Modifier.padding(top = 16.dp),
+                onAddTagClick = onTagClick,
+                detailView = detailView
+            )
 
             OverviewView(
                 detailView = detailView,

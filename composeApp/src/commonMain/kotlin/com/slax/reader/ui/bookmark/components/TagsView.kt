@@ -15,10 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewModelScope
-import com.slax.reader.data.database.model.UserTag
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_xs_yellow_plus
@@ -26,19 +23,12 @@ import slax_reader_client.composeapp.generated.resources.ic_xs_yellow_plus
 @Composable
 fun TagsView(
     detailView: BookmarkDetailViewModel,
-    tags: List<String>,
     modifier: Modifier = Modifier,
     onAddTagClick: () -> Unit
 ) {
     println("[watch][UI] recomposition TagsView")
-    
-    var currentTags: List<UserTag> by remember { mutableStateOf(emptyList()) }
 
-    LaunchedEffect(tags) {
-        detailView.viewModelScope.launch {
-            currentTags = detailView.getTagNames(tags)
-        }
-    }
+    val currentTags by detailView.selectedTagList.collectAsState()
 
     FlowRow(
         modifier = modifier,

@@ -121,7 +121,6 @@ actual fun DetailScreen(
             ) {
                 TagsManageBottomSheet(
                     detailViewModel = detailViewModel,
-                    currentTags = detail.metadataObj?.tags,
                     onDismissRequest = { showTagView = false },
                     enableDrag = false,
                     onConfirm = { selectedTags ->

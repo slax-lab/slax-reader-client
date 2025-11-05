@@ -117,6 +117,19 @@ class BookmarkDetailViewModel(
             bookmarkDao.watchBookmarkDetail(id)
         }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val selectedTagList: StateFlow<Set<UserTag>> = bookmarkDetail
+        .mapLatest { bookmarks ->
+            val tagIds = bookmarks.firstOrNull()?.metadataObj?.tags ?: emptyList()
+            if (tagIds.isEmpty()) {
+                emptySet()
+            } else {
+                getTagNames(tagIds).toHashSet()
+            }
+        }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptySet())
+
     suspend fun toggleStar(isStar: Boolean) = withContext(Dispatchers.IO) {
         _bookmarkId.value?.let { id ->
             return@withContext bookmarkDao.updateBookmarkStar(id, if (isStar) 1 else 0)

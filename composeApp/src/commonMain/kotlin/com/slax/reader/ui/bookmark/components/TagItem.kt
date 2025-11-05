@@ -52,7 +52,8 @@ fun TagItem(
                     Modifier
                         .clickable(
                             onClick = onClick,
-                            interactionSource = remember { MutableInteractionSource() }
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
                         )
                         .padding(horizontal = horizontalPadding)
                 }

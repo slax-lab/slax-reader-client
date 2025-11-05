@@ -29,9 +29,6 @@ xcodebuild -exportArchive \
 echo "ipa PATH: build/ipa/Slax Reader.ipa"
 echo "upload to connect"
 
-cp firebase/GoogleService-Info.dev.plist iosApp/iosApp/GoogleService-Info.plist
-rm iosApp/iosApp/GoogleService-Info.plist.backup
-
 iTMSTransporter -m upload \
   -u $APPLE_UPLOAD_EMAIL \
   -p $APPLE_UPLOAD_PASSWORD \
