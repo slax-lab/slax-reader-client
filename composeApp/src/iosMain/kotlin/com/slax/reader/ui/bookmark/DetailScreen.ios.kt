@@ -28,7 +28,8 @@ import kotlin.math.max
 data class WebViewMessage(
     val type: String,
     val height: Int? = null,
-    val src: String? = null
+    val src: String? = null,
+    val allImages: List<String>? = null
 )
 
 @Composable
@@ -74,6 +75,11 @@ actual fun DetailScreen(
     var showTagView by remember { mutableStateOf(false) }
     var showOverviewDialog by remember { mutableStateOf(false) }
     var showToolbar by remember { mutableStateOf(false) }
+
+    // 图片浏览器状态
+    var showImageViewer by remember { mutableStateOf(false) }
+    var currentImageUrl by remember { mutableStateOf("") }
+    var allImageUrls by remember { mutableStateOf<List<String>>(emptyList()) }
 
     Box(
         modifier = Modifier
@@ -122,10 +128,14 @@ actual fun DetailScreen(
                                     println("[WebView] Content height changed: $height")
                                 }
                                 "imageClick" -> {
-                                    // 处理图片点击消息
                                     val src = webViewMessage.src
-                                    println("[WebView] Image clicked: $src")
-                                    // 这里可以添加图片预览功能
+                                    val allImages = webViewMessage.allImages
+
+                                    if (src != null && !allImages.isNullOrEmpty()) {
+                                        currentImageUrl = src
+                                        allImageUrls = allImages
+                                        showImageViewer = true
+                                    }
                                 }
                                 else -> {
                                     println("[WebView] Unknown message type: ${webViewMessage.type}")
@@ -215,5 +225,16 @@ actual fun DetailScreen(
                 visible = manuallyVisible
             )
         }
+
+        // 图片浏览器
+        ImageViewer(
+            imageUrls = allImageUrls,
+            initialImageUrl = currentImageUrl,
+            visible = showImageViewer,
+            onDismiss = {
+                println("[ImageViewer] Dismissed")
+                showImageViewer = false
+            }
+        )
     }
 }
