@@ -21,6 +21,15 @@ import com.slax.reader.ui.bookmark.components.*
 import com.slax.reader.utils.AppWebView
 import com.slax.reader.utils.wrapHtmlWithCSS
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+
+@Serializable
+data class WebViewMessage(
+    val type: String,
+    val height: Int? = null,
+    val src: String? = null
+)
 
 @Composable
 actual fun DetailScreen(
@@ -96,7 +105,32 @@ actual fun DetailScreen(
                     onTap = {
                         manuallyVisible = if (scrollY <= 10f) true else !manuallyVisible
                     },
-                    onScrollChange = null
+                    onScrollChange = null,
+                    onJsMessage = { message ->
+                        try {
+                            val json = Json { ignoreUnknownKeys = true }
+                            val webViewMessage = json.decodeFromString<WebViewMessage>(message)
+
+                            when (webViewMessage.type) {
+                                "height" -> {
+                                    // 处理高度变化消息
+                                    val height = webViewMessage.height
+                                    println("[WebView] Content height changed: $height")
+                                }
+                                "imageClick" -> {
+                                    // 处理图片点击消息
+                                    val src = webViewMessage.src
+                                    println("[WebView] Image clicked: $src")
+                                    // 这里可以添加图片预览功能
+                                }
+                                else -> {
+                                    println("[WebView] Unknown message type: ${webViewMessage.type}")
+                                }
+                            }
+                        } catch (e: Exception) {
+                            println("[WebView] Failed to parse message: $message, error: ${e.message}")
+                        }
+                    }
                 )
             }
         }

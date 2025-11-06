@@ -47,6 +47,17 @@ const val HEIGHT_MONITOR_SCRIPT: String = """
                     postHeight(currentHeight);
                 }
             });
+            
+            images[i].style = ''
+            
+            images[i].addEventListener('click', function(event) {
+                var payload = JSON.stringify({ type: 'imageClick', src: event.target.src });
+                if (window.NativeBridge && window.NativeBridge.postMessage) {
+                    window.NativeBridge.postMessage(payload);
+                } else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.NativeBridge) {
+                    window.webkit.messageHandlers.NativeBridge.postMessage(payload);
+                }
+            });
         }
     })();
 """

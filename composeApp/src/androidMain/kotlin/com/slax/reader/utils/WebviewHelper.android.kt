@@ -2,6 +2,7 @@ package com.slax.reader.utils
 
 import android.annotation.SuppressLint
 import android.graphics.Color
+import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -16,6 +17,8 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import app.slax.reader.SlaxConfig
+import com.slax.reader.const.HEIGHT_MONITOR_SCRIPT
+import com.slax.reader.const.JS_BRIDGE_NAME
 import kotlin.math.roundToInt
 
 
@@ -28,10 +31,12 @@ actual fun AppWebView(
     topContentInsetPx: Float,
     onTap: (() -> Unit)?,
     onScrollChange: ((scrollY: Float) -> Unit)?,
+    onJsMessage: ((message: String) -> Unit)?,
 ) {
     println("[watch][UI] recomposition AppWebView")
 
     val onTapCallback = remember(onTap) { onTap }
+    val onJsMessageCallback = remember(onJsMessage) { onJsMessage }
 
     AndroidView(
         modifier = modifier,
@@ -78,6 +83,16 @@ actual fun AppWebView(
                     setRenderPriority(WebSettings.RenderPriority.HIGH)
                 }
 
+                // 添加 JavaScript Interface 用于接收来自 JS 的消息
+                if (onJsMessageCallback != null) {
+                    addJavascriptInterface(object {
+                        @JavascriptInterface
+                        fun postMessage(message: String) {
+                            onJsMessageCallback.invoke(message)
+                        }
+                    }, JS_BRIDGE_NAME)
+                }
+
                 setOnTouchListener { _, event ->
                     when (event.action) {
                         android.view.MotionEvent.ACTION_UP -> {
@@ -88,7 +103,15 @@ actual fun AppWebView(
                 }
 
                 webChromeClient = WebChromeClient()
-                webViewClient = WebViewClient()
+                webViewClient = object : WebViewClient() {
+                    override fun onPageFinished(view: WebView?, url: String?) {
+                        super.onPageFinished(view, url)
+                        // 页面加载完成后注入 JS 脚本
+                        if (onJsMessageCallback != null) {
+                            view?.evaluateJavascript(HEIGHT_MONITOR_SCRIPT, null)
+                        }
+                    }
+                }
 
                 if (url != null) {
                     loadUrl(url)
