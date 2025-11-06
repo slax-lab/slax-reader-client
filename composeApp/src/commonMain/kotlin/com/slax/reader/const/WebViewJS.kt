@@ -38,6 +38,14 @@ const val HEIGHT_MONITOR_SCRIPT: String = """
                 postHeight(currentHeight);
             }
         });
+        
+        var anchors = document.getElementsByTagName('a')
+        for (var i = 0; i < anchors.length; i++) {
+            anchors[i].addEventListener('click', (event) => {
+              event.preventDefault();
+            });
+        }
+        
         var images = document.getElementsByTagName('img');
         for (var i = 0; i < images.length; i++) {
             images[i].addEventListener('load', function() {
@@ -51,7 +59,20 @@ const val HEIGHT_MONITOR_SCRIPT: String = """
             images[i].style = ''
             
             images[i].addEventListener('click', function(event) {
-                var payload = JSON.stringify({ type: 'imageClick', src: event.target.src });
+                // 获取所有图片的URL
+                var allImageUrls = [];
+                for (var j = 0; j < images.length; j++) {
+                    if (images[j].src) {
+                        allImageUrls.push(images[j].src);
+                    }
+                }
+
+                var payload = JSON.stringify({
+                    type: 'imageClick',
+                    src: event.target.src,
+                    allImages: allImageUrls
+                });
+
                 if (window.NativeBridge && window.NativeBridge.postMessage) {
                     window.NativeBridge.postMessage(payload);
                 } else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.NativeBridge) {

@@ -27,7 +27,7 @@ fun wrapHtmlWithCSS(htmlContent: String): String {
                 }
             </style>
         </head>
-        <body>
+        <body lang="en">
             $htmlContent
         </body>
         </html>
