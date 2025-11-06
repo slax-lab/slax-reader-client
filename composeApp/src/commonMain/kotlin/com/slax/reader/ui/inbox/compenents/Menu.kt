@@ -101,9 +101,8 @@ fun Menu(
                     Box(
                         modifier = Modifier
                             .matchParentSize()
-                            .blur(radius = 100.dp)
                             .background(
-                                color = Color(0xF0F5F5F3),
+                                color = Color(0xD9F5F5F3),
                                 shape = RoundedCornerShape(20.dp)
                             )
                     )

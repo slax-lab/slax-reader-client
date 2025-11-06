@@ -104,7 +104,7 @@ private fun NavigationBar(onAvatarClick: () -> Unit = {}) {
         Row(
             modifier = Modifier
                 .align(Alignment.CenterStart),
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
@@ -137,7 +137,7 @@ private fun ContentSection(
     var editingBookmark by remember { mutableStateOf<InboxListBookmarkItem?>(null) }
 
     Box(
-        modifier = Modifier.fillMaxSize().clipToBounds()
+        modifier = Modifier.fillMaxSize().padding(top = 8.dp).clipToBounds()
     ) {
         Column(
             modifier = Modifier

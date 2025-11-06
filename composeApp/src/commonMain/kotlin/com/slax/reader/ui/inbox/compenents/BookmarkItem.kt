@@ -146,7 +146,7 @@ fun BookmarkItemRow(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp)
+            .height(53.dp)
             .zIndex(if (isLongPressed) 10f else 0f)
             .onSizeChanged { size ->
                 boxSize = size
@@ -363,7 +363,7 @@ fun BookmarkItemRow(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f),
-                            style = TextStyle(fontSize = 15.sp, lineHeight = 24.sp, color = Color(0xFF0F1419))
+                            style = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, color = Color(0xFF0F1419))
                         )
                     }
                 }
@@ -401,19 +401,12 @@ fun BookmarkItemRow(
         val cellHeight = 48.dp
 
         // 计算菜单位置偏移 - 使用 lastMenuTriggerSource 保持菜单关闭时位置不变
-        val menuOffset = when (lastMenuTriggerSource) {
-            MenuTriggerSource.LONG_PRESS -> {
-                DpOffset(x = 8.dp, y = cellHeight + 10.dp)
-            }
-
-            MenuTriggerSource.MORE_ICON -> {
-                val boxWidthDp = with(density) { boxSize.width.toDp() }
-                val menuWidth = 180.dp
-                DpOffset(x = boxWidthDp - menuWidth - 8.dp, y = cellHeight - 10.dp)  // 48dp 是单元格高度
-            }
-
-            MenuTriggerSource.NONE -> DpOffset(x = 8.dp, y = cellHeight + 10.dp)  // 默认位置
-        }
+        val boxWidthDp = with(density) { boxSize.width.toDp() }
+        val menuWidth = 180.dp
+        val menuOffset = DpOffset(
+            x = boxWidthDp - menuWidth - 8.dp,
+            y = cellHeight - 10.dp
+        )
 
         if (showMenu) {
             Menu(

@@ -92,6 +92,10 @@ fun LoginScreen(navController: NavHostController) {
     ) {
         // 顶部内容区域
         Column {
+            Spacer(modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(375f / 128f))
+
             Text(
                 text = "欢迎来到 \nSlax Reader",
                 style = TextStyle(
@@ -100,7 +104,7 @@ fun LoginScreen(navController: NavHostController) {
                     fontWeight = FontWeight.SemiBold,
                     color = Color(0xFF0F1419)
                 ),
-                modifier = Modifier.padding(start = 40.dp, top = 84.dp)
+                modifier = Modifier.padding(start = 40.dp)
             )
 
             Box(modifier = Modifier.fillMaxWidth()) {
