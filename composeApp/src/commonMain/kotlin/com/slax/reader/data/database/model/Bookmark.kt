@@ -3,7 +3,8 @@ package com.slax.reader.data.database.model
 import androidx.compose.runtime.Immutable
 import com.powersync.db.SqlCursor
 import com.powersync.db.getString
-import com.slax.reader.utils.formatDisplayTime
+import com.slax.reader.utils.toDateTime
+import com.slax.reader.utils.toISODateFormat
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -108,7 +109,7 @@ data class UserBookmark(
     }
 
     val displayTime: String
-        get() = formatDisplayTime(createdAt)
+        get() = createdAt.toDateTime().toISODateFormat().take(16)
 }
 
 
