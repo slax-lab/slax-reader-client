@@ -166,6 +166,11 @@ kotlin {
 
             // AtomicFU - required for Android runtime
             implementation(libs.atomicfu)
+
+            // network connectivity
+            implementation(libs.connectivity.core)
+            implementation(libs.connectivity.device)
+            implementation(libs.connectivity.compose.device)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

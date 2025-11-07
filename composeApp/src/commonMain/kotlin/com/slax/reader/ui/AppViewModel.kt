@@ -1,7 +1,5 @@
 package com.slax.reader.ui
 
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import com.slax.reader.data.database.dao.PowerSyncDao
 import com.slax.reader.data.database.dao.UserDao
@@ -10,10 +8,9 @@ import org.koin.core.component.KoinComponent
 class AppViewModel(
     private val userDao: UserDao,
     private val powerSyncDao: PowerSyncDao,
-) : ViewModel(), KoinComponent, DefaultLifecycleObserver {
+) : ViewModel(), KoinComponent {
 
     val userInfo = userDao.watchUserInfo()
-    var incrErr = 0
 
     val syncStatusData = powerSyncDao.watchPowerSyncStatus()
 
@@ -24,21 +21,13 @@ class AppViewModel(
         get() = syncStatusData.value?.uploading == true
 
     val hasError: Boolean
-        get() {
-            val hasErr = syncStatusData.value?.anyError != null
-            if (hasErr) incrErr += 1
-            return incrErr != 1 && hasErr
-        }
+        get() = syncStatusData.value?.anyError != null
 
     val isDownloading: Boolean
         get() = syncStatusData.value?.downloading == true
 
     val connected: Boolean
-        get() {
-            val isConnected = syncStatusData.value?.connected == true
-            if (isConnected) incrErr = 0
-            return isConnected
-        }
+        get() = syncStatusData.value?.connected == true
 
     val syncType: String?
         get() = when {
@@ -56,8 +45,4 @@ class AppViewModel(
                 0f
             }
         } ?: 0f
-
-    override fun onResume(owner: LifecycleOwner) {
-        incrErr = 1
-    }
 }

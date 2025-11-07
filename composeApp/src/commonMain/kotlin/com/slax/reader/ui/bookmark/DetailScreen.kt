@@ -29,16 +29,7 @@ data class DetailScreenState(
 @Composable
 fun DetailScreen(nav: NavController, bookmarkId: String) {
     val detailView = koinViewModel<BookmarkDetailViewModel>()
-    val viewModel = koinInject<AppViewModel>()
-
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        lifecycleOwner.lifecycle.addObserver(viewModel)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(viewModel)
-        }
-    }
-
+    
     LaunchedEffect(bookmarkId) {
         detailView.setBookmarkId(bookmarkId)
     }

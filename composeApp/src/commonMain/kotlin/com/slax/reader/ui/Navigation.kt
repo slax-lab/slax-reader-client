@@ -5,6 +5,7 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -39,6 +40,14 @@ fun SlaxNavigation(
     val authDomain: AuthDomain = koinInject()
     val backgroundDomain: BackgroundDomain = koinInject()
     val authState by authDomain.authState.collectAsState()
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.addObserver(LifeCycleHelper)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(LifeCycleHelper)
+        }
+    }
 
     var database by remember { mutableStateOf<PowerSyncDatabase?>(null) }
     var connector by remember { mutableStateOf<Connector?>(null) }
