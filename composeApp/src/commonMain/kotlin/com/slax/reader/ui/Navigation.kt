@@ -11,10 +11,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.powersync.ExperimentalPowerSyncAPI
-import com.powersync.PowerSyncDatabase
 import com.slax.reader.const.*
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.auth.AuthState
+import com.slax.reader.domain.coordinator.CoordinatorDomain
 import com.slax.reader.domain.sync.BackgroundDomain
 import com.slax.reader.ui.about.AboutScreen
 import com.slax.reader.ui.bookmark.DetailScreen
@@ -23,7 +23,7 @@ import com.slax.reader.ui.inbox.InboxListScreen
 import com.slax.reader.ui.login.LoginScreen
 import com.slax.reader.ui.setting.SettingScreen
 import com.slax.reader.ui.space.SpaceManager
-import com.slax.reader.utils.*
+import com.slax.reader.utils.LifeCycleHelper
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.analytics.analytics
 import dev.gitlive.firebase.crashlytics.crashlytics
@@ -39,6 +39,7 @@ fun SlaxNavigation(
 ) {
     val authDomain: AuthDomain = koinInject()
     val backgroundDomain: BackgroundDomain = koinInject()
+    val coordinator: CoordinatorDomain = koinInject()
     val authState by authDomain.authState.collectAsState()
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -49,28 +50,13 @@ fun SlaxNavigation(
         }
     }
 
-    var database by remember { mutableStateOf<PowerSyncDatabase?>(null) }
-    var connector by remember { mutableStateOf<Connector?>(null) }
-
-    if (authState is AuthState.Authenticated && database == null) {
-        database = koinInject()
-        connector = koinInject()
-    }
-
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Authenticated -> {
                 launch(Dispatchers.IO) {
-                    val state = getNetWorkState()
-                    if (state != NetworkState.NONE && state != NetworkState.ACCESS_DENIED) {
-                        authDomain.refreshToken()
-                    }
-                    database!!.connect(
-                        connector!!,
-                        params = ConnectParams,
-                        options = ConnectOptions
-                    )
+                    authDomain.refreshToken()
                     backgroundDomain.startup()
+                    coordinator.startup()
                 }
                 Firebase.crashlytics.setCrashlyticsCollectionEnabled(true)
                 Firebase.analytics.setAnalyticsCollectionEnabled(true)
@@ -81,10 +67,7 @@ fun SlaxNavigation(
             AuthState.Unauthenticated -> {
                 launch(Dispatchers.IO) {
                     backgroundDomain.cleanup()
-                    database?.disconnectAndClear(
-                        clearLocal = true,
-                        soft = true
-                    )
+                    coordinator.cleanup(true)
                 }
             }
 

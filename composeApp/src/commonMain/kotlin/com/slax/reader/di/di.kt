@@ -10,11 +10,12 @@ import com.slax.reader.data.file.FileManager
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.preferences.preferencesPlatformModule
 import com.slax.reader.domain.auth.AuthDomain
+import com.slax.reader.domain.coordinator.CoordinatorDomain
 import com.slax.reader.domain.sync.BackgroundDomain
-import com.slax.reader.ui.AppViewModel
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.ui.login.LoginViewModel
+import com.slax.reader.ui.sidebar.SidebarViewModel
 import com.slax.reader.utils.Connector
 import com.slax.reader.utils.getHttpClient
 import com.slax.reader.utils.platformFileSystem
@@ -49,15 +50,16 @@ val repositoryModule = module {
 }
 
 val viewModelModule = module {
-    viewModelOf(::AppViewModel)
     viewModelOf(::InboxListViewModel)
     viewModelOf(::BookmarkDetailViewModel)
     viewModelOf(::LoginViewModel)
+    viewModelOf(::SidebarViewModel)
 }
 
 val domainModule = module {
     single { AuthDomain(get(), get(), get()) }
     single { BackgroundDomain(get(), get(), get()) }
+    single { CoordinatorDomain(get(), get(), get()) }
 }
 
 val appModule = module {

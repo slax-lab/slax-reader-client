@@ -30,7 +30,7 @@ class ApiService(
     }
 
     private suspend inline fun <reified T> processResult(response: HttpResponse): HttpData<T> {
-        if (response.status != HttpStatusCode.OK) {
+        if (response.status != HttpStatusCode.OK && response.status != HttpStatusCode.NoContent) {
             val errorMessage = try {
                 val errorBody = response.body<ErrorResponse>()
                 errorBody.message

@@ -4,6 +4,9 @@ import platform.Foundation.*
 import platform.posix.*
 
 actual fun isNetworkException(e: Any): Boolean {
+    val errorString = e.toString()
+    if (errorString.contains("NSURLErrorDomain")) return true
+
     val nsError = (e as? NSError) ?: return false
 
     return when (nsError.domain) {

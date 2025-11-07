@@ -320,7 +320,7 @@ private fun ZoomableImagePage(
             },
         contentAlignment = Alignment.Center
     ) {
-        PlatformImage(
+        ImageShower(
             url = imageUrl,
             contentDescription = null,
             contentScale = ContentScale.Fit,

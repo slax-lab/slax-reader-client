@@ -2,15 +2,21 @@ package com.slax.reader.ui.inbox
 
 import androidx.lifecycle.ViewModel
 import com.slax.reader.data.database.dao.BookmarkDao
+import com.slax.reader.data.database.dao.UserDao
+import com.slax.reader.domain.coordinator.CoordinatorDomain
 import com.slax.reader.domain.sync.BackgroundDomain
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 
 class InboxListViewModel(
+    private val userDao: UserDao,
     private val bookmarkDao: BookmarkDao,
     private val backgroundDomain: BackgroundDomain,
+    private val coordinatorDomain: CoordinatorDomain
 ) : ViewModel() {
+    val userInfo = userDao.watchUserInfo()
+    val syncState = coordinatorDomain.syncState
 
     val bookmarks = bookmarkDao.watchUserBookmarkList()
 

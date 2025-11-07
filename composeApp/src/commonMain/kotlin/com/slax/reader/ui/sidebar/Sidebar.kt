@@ -1,14 +1,10 @@
 package com.slax.reader.ui.sidebar
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -17,19 +13,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.DefaultStrokeLineCap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.rememberAsyncImagePainter
-import com.slax.reader.ui.AppViewModel
+import com.slax.reader.domain.coordinator.AppSyncState
+import com.slax.reader.ui.sidebar.compenents.FooterMenu
+import com.slax.reader.ui.sidebar.compenents.SyncStatusBar
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
-import slax_reader_client.composeapp.generated.resources.*
+import slax_reader_client.composeapp.generated.resources.Res
+import slax_reader_client.composeapp.generated.resources.global_default_avatar
+import slax_reader_client.composeapp.generated.resources.ic_xs_sidebar_close
 
 @Composable
 fun Sidebar(
@@ -84,9 +81,10 @@ private fun DrawerContent(
     onAboutClick: () -> Unit,
     onLogout: () -> Unit
 ) {
-    val appViewModel: AppViewModel = koinInject()
-    val userInfo by appViewModel.userInfo.collectAsState()
-    val syncStatus by appViewModel.syncStatusData.collectAsState()
+    val viewModel = koinInject<SidebarViewModel>()
+
+    val userInfo by viewModel.userInfo.collectAsState()
+    val syncStatus by viewModel.syncStatus.collectAsState()
 
     val avatarPainter = rememberAsyncImagePainter(
         model = userInfo?.picture,
@@ -147,65 +145,9 @@ private fun DrawerContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        appViewModel.syncType?.let {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
-                color = Color(0xFFE8EBED),
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(12.dp),
-                    horizontalAlignment = Alignment.Start
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        val style = TextStyle(
-                            fontSize = 11.sp,
-                            lineHeight = 15.sp,
-                            color = Color(0xFF333333)
-                        )
 
-                        Text(
-                            text = it,
-                            style = style
-                        )
-
-                        Text(
-                            text = "${
-                                (when {
-                                    syncStatus?.downloading == true -> appViewModel.downloadProgress
-                                    syncStatus?.uploading == true -> 0f
-                                    else -> 0f
-                                } * 100).toInt()
-                            }%",
-                            style = style
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    LinearProgressIndicator(
-                        strokeCap = DefaultStrokeLineCap,
-                        progress = {
-                            when {
-                                syncStatus?.downloading == true -> appViewModel.downloadProgress
-                                syncStatus?.uploading == true -> 0f
-                                else -> 0f
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(5.dp)
-                            .clip(RoundedCornerShape(2.5.dp)),
-                        color = Color(0xFF16B998),
-                        trackColor = Color(0x140F1419)
-                    )
-                }
-            }
+        if (syncStatus != AppSyncState.Connected) {
+            SyncStatusBar(syncStatus)
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -214,88 +156,11 @@ private fun DrawerContent(
         Column(
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
-            // 设置菜单项
-            NavigationDrawerItem(
-                label = {
-                    Text(
-                        text = "设置",
-                        fontSize = 16.sp,
-                        lineHeight = 20.sp,
-                        color = Color(0xFF333333)
-                    )
-                },
-                icon = {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_xs_sidebar_config),
-                        contentDescription = null,
-                        tint = Color.Unspecified,
-                        modifier = Modifier.size(20.dp)
-                    )
-                },
-                selected = false,
-                onClick = onSettingsClick,
-                colors = NavigationDrawerItemDefaults.colors(
-                    unselectedContainerColor = Color.Transparent
-                )
+            FooterMenu(
+                onSettingsClick = onSettingsClick,
+                onAboutClick = onAboutClick,
+                onLogout = onLogout
             )
-
-            // 关于菜单项
-            NavigationDrawerItem(
-                label = {
-                    Text(
-                        text = "关于",
-                        fontSize = 16.sp,
-                        lineHeight = 20.sp,
-                        color = Color(0xFF333333)
-                    )
-                },
-                icon = {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_xs_sidebar_about),
-                        contentDescription = null,
-                        tint = Color.Unspecified,
-                        modifier = Modifier.size(20.dp)
-                    )
-                },
-                selected = false,
-                onClick = onAboutClick,
-                colors = NavigationDrawerItemDefaults.colors(
-                    unselectedContainerColor = Color.Transparent
-                )
-            )
-
-
-            Column(
-                modifier = Modifier.padding(horizontal = 16.dp).padding(top = 60.dp).fillMaxWidth()
-            ) {
-                Button(
-                    onClick = onLogout,
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = Color.White
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxSize().background(Color.White),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-
-                        Text(
-                            "退出登录",
-                            style = TextStyle(
-                                fontSize = 16.sp,
-                                lineHeight = 22.5.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color(0xFF333333)
-                            )
-                        )
-                    }
-                }
-            }
-
         }
     }
 }

@@ -7,11 +7,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import com.slax.reader.data.database.model.UserBookmark
-import com.slax.reader.ui.AppViewModel
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 data class OverviewViewBounds(
@@ -29,7 +26,7 @@ data class DetailScreenState(
 @Composable
 fun DetailScreen(nav: NavController, bookmarkId: String) {
     val detailView = koinViewModel<BookmarkDetailViewModel>()
-    
+
     LaunchedEffect(bookmarkId) {
         detailView.setBookmarkId(bookmarkId)
     }
