@@ -9,6 +9,11 @@ target 'iosApp' do
   platform :ios, '14.1'
 
   pod 'ComposeApp', :path => '../composeApp'
+
+   target 'share' do
+       inherit! :search_paths
+       pod 'ComposeApp', path: '../composeApp'
+   end
 end
 
 post_install do |installer|

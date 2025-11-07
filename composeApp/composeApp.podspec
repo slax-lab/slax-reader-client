@@ -9,6 +9,7 @@ Pod::Spec.new do |spec|
     spec.vendored_frameworks      = 'build/cocoapods/framework/ComposeApp.framework'
     spec.libraries                = 'c++'
     spec.ios.deployment_target    = '14.1'
+    spec.dependency 'SDWebImage'
     spec.dependency 'powersync-sqlite-core'
                 
     if !Dir.exist?('build/cocoapods/framework/ComposeApp.framework') || Dir.empty?('build/cocoapods/framework/ComposeApp.framework')

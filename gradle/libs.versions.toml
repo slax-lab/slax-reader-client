@@ -34,6 +34,7 @@ connectivity = "2.3.0"
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
 atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" }
+coil-gif = { module = "io.coil-kt.coil3:coil-gif", version.ref = "coilCompose" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coilCompose" }
 coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coilCompose" }
 firebase-analytics = { module = "dev.gitlive:firebase-analytics", version.ref = "firebaseAnalytics" }

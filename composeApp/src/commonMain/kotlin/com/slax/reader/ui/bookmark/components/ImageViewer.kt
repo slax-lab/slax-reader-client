@@ -7,11 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.calculatePan
-import androidx.compose.foundation.gestures.calculateZoom
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,8 +26,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
-import coil3.compose.AsyncImagePainter
 
 /**
  * 图片浏览器组件
@@ -152,16 +146,16 @@ private fun ZoomableImagePage(
     println("[watch][UI] recomposition ZoomableImagePage: $imageUrl")
 
     var scale by scaleState
-    var offsetX by remember { mutableStateOf(0f) }
-    var offsetY by remember { mutableStateOf(0f) }
+    var offsetX by remember { mutableFloatStateOf(0f) }
+    var offsetY by remember { mutableFloatStateOf(0f) }
 
     var containerSize by remember { mutableStateOf(IntSize.Zero) }
     var imageSize by remember { mutableStateOf(Size.Zero) }
-    
+
     var isDoubleTapAnimating by remember { mutableStateOf(false) }
-    var animationTargetScale by remember { mutableStateOf(1f) }
-    var animationTargetOffsetX by remember { mutableStateOf(0f) }
-    var animationTargetOffsetY by remember { mutableStateOf(0f) }
+    var animationTargetScale by remember { mutableFloatStateOf(1f) }
+    var animationTargetOffsetX by remember { mutableFloatStateOf(0f) }
+    var animationTargetOffsetY by remember { mutableFloatStateOf(0f) }
 
     // 双击时的动画值
     val animatedScale by animateFloatAsState(
@@ -189,7 +183,8 @@ private fun ZoomableImagePage(
      */
     fun calculateFitSize(imageSize: Size, containerSize: IntSize): Size {
         if (imageSize.width == 0f || imageSize.height == 0f ||
-            containerSize.width == 0 || containerSize.height == 0) {
+            containerSize.width == 0 || containerSize.height == 0
+        ) {
             return Size.Zero
         }
 
@@ -325,16 +320,13 @@ private fun ZoomableImagePage(
             },
         contentAlignment = Alignment.Center
     ) {
-        AsyncImage(
-            model = imageUrl,
+        PlatformImage(
+            url = imageUrl,
             contentDescription = null,
             contentScale = ContentScale.Fit,
-            onState = { state ->
-                if (state is AsyncImagePainter.State.Success) {
-                    val intrinsicSize = state.painter.intrinsicSize
-                    if (intrinsicSize.width > 0f && intrinsicSize.height > 0f) {
-                        imageSize = intrinsicSize
-                    }
+            onImageSize = { size ->
+                if (size.width > 0f && size.height > 0f) {
+                    imageSize = size
                 }
             },
             modifier = Modifier

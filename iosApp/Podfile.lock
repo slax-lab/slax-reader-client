@@ -1,7 +1,11 @@
 PODS:
   - ComposeApp (1.0.1):
     - powersync-sqlite-core
+    - SDWebImage
   - powersync-sqlite-core (0.4.6)
+  - SDWebImage (5.21.3):
+    - SDWebImage/Core (= 5.21.3)
+  - SDWebImage/Core (5.21.3)
 
 DEPENDENCIES:
   - ComposeApp (from `../composeApp`)
@@ -9,15 +13,17 @@ DEPENDENCIES:
 SPEC REPOS:
   trunk:
     - powersync-sqlite-core
+    - SDWebImage
 
 EXTERNAL SOURCES:
   ComposeApp:
     :path: "../composeApp"
 
 SPEC CHECKSUMS:
-  ComposeApp: 304df8b0d2f7140e485db6e32d3ff04d9c4f9409
+  ComposeApp: 34172e912a7d41693aeeb3c51ca226c790cd67f4
   powersync-sqlite-core: 42c4a42a692b3b770a5488778789430d67a39b49
+  SDWebImage: 16309af6d214ba3f77a7c6f6fdda888cb313a50a
 
-PODFILE CHECKSUM: 5ac413d42c16ab806b230059ce1558b1b139ac13
+PODFILE CHECKSUM: cab1271df3be58fca0f35e831ce35c93d4378038
 
 COCOAPODS: 1.16.2

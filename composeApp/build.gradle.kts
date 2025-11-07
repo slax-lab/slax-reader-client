@@ -78,6 +78,9 @@ kotlin {
             linkOnly = true
         }
 
+        pod("SDWebImage") {
+        }
+
         framework {
             baseName = "ComposeApp"
             isStatic = true
@@ -105,6 +108,7 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
             implementation(libs.koin.android)
             implementation(libs.coil.network.okhttp)
+            implementation(libs.coil.gif)
             implementation(libs.androidx.browser)
         }
         iosMain.dependencies {

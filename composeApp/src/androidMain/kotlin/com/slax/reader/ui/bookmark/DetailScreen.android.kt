@@ -128,6 +128,7 @@ actual fun DetailScreen(
                                         showImageViewer = true
                                     }
                                 }
+
                                 else -> {
                                     println("[WebView] Unknown message type: ${webViewMessage.type}")
                                 }
@@ -205,14 +206,16 @@ actual fun DetailScreen(
         }
 
         // 图片浏览器
-        ImageViewer(
-            imageUrls = allImageUrls,
-            initialImageUrl = currentImageUrl,
-            visible = showImageViewer,
-            onDismiss = {
-                println("[ImageViewer] Dismissed")
-                showImageViewer = false
-            }
-        )
+        if (showImageViewer) {
+            ImageViewer(
+                imageUrls = allImageUrls,
+                initialImageUrl = currentImageUrl,
+                visible = showImageViewer,
+                onDismiss = {
+                    println("[ImageViewer] Dismissed")
+                    showImageViewer = false
+                }
+            )
+        }
     }
 }
