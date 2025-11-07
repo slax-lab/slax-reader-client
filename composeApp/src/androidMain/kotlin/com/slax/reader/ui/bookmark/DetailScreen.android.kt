@@ -118,11 +118,6 @@ actual fun DetailScreen(
                             val webViewMessage = json.decodeFromString<WebViewMessage>(message)
 
                             when (webViewMessage.type) {
-                                "height" -> {
-                                    // 处理高度变化消息
-                                    val height = webViewMessage.height
-                                    println("[WebView] Content height changed: $height")
-                                }
                                 "imageClick" -> {
                                     val src = webViewMessage.src
                                     val allImages = webViewMessage.allImages
