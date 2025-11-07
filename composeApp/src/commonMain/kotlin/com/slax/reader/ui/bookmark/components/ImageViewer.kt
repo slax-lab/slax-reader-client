@@ -26,6 +26,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
+import coil3.compose.AsyncImagePainter
 
 /**
  * 图片浏览器组件
@@ -320,13 +322,34 @@ private fun ZoomableImagePage(
             },
         contentAlignment = Alignment.Center
     ) {
-        ImageShower(
-            url = imageUrl,
+//        ImageShower(
+//            url = imageUrl,
+//            contentDescription = null,
+//            contentScale = ContentScale.Fit,
+//            onImageSize = { size ->
+//                if (size.width > 0f && size.height > 0f) {
+//                    imageSize = size
+//                }
+//            },
+//            modifier = Modifier
+//                .fillMaxSize()
+//                .graphicsLayer {
+//                    scaleX = if (isDoubleTapAnimating) animatedScale else scale
+//                    scaleY = if (isDoubleTapAnimating) animatedScale else scale
+//                    translationX = if (isDoubleTapAnimating) animatedOffsetX else offsetX
+//                    translationY = if (isDoubleTapAnimating) animatedOffsetY else offsetY
+//                }
+//        )
+        AsyncImage(
+            model = imageUrl,
             contentDescription = null,
             contentScale = ContentScale.Fit,
-            onImageSize = { size ->
-                if (size.width > 0f && size.height > 0f) {
-                    imageSize = size
+            onState = { state ->
+                if (state is AsyncImagePainter.State.Success) {
+                    val intrinsicSize = state.painter.intrinsicSize
+                    if (intrinsicSize.width > 0f && intrinsicSize.height > 0f) {
+                        imageSize = intrinsicSize
+                    }
                 }
             },
             modifier = Modifier
