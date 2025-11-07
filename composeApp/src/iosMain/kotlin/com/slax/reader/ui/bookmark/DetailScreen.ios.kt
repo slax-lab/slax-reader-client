@@ -20,7 +20,17 @@ import com.slax.reader.ui.bookmark.components.*
 import com.slax.reader.utils.AppWebView
 import com.slax.reader.utils.wrapHtmlWithCSS
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import kotlin.math.max
+
+@Serializable
+data class WebViewMessage(
+    val type: String,
+    val height: Int? = null,
+    val src: String? = null,
+    val allImages: List<String>? = null
+)
 
 @Composable
 actual fun DetailScreen(
@@ -66,6 +76,11 @@ actual fun DetailScreen(
     var showOverviewDialog by remember { mutableStateOf(false) }
     var showToolbar by remember { mutableStateOf(false) }
 
+    // 图片浏览器状态
+    var showImageViewer by remember { mutableStateOf(false) }
+    var currentImageUrl by remember { mutableStateOf("") }
+    var allImageUrls by remember { mutableStateOf<List<String>>(emptyList()) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -99,6 +114,30 @@ actual fun DetailScreen(
                             if (manuallyVisible != shouldShow) {
                                 manuallyVisible = shouldShow
                             }
+                        }
+                    },
+                    onJsMessage = { message ->
+                        try {
+                            val json = Json { ignoreUnknownKeys = true }
+                            val webViewMessage = json.decodeFromString<WebViewMessage>(message)
+
+                            when (webViewMessage.type) {
+                                "imageClick" -> {
+                                    val src = webViewMessage.src
+                                    val allImages = webViewMessage.allImages
+
+                                    if (src != null && !allImages.isNullOrEmpty()) {
+                                        currentImageUrl = src
+                                        allImageUrls = allImages
+                                        showImageViewer = true
+                                    }
+                                }
+                                else -> {
+                                    println("[WebView] Unknown message type: ${webViewMessage.type}")
+                                }
+                            }
+                        } catch (e: Exception) {
+                            println("[WebView] Failed to parse message: $message, error: ${e.message}")
                         }
                     }
                 )
@@ -181,5 +220,16 @@ actual fun DetailScreen(
                 visible = manuallyVisible
             )
         }
+
+        // 图片浏览器
+        ImageViewer(
+            imageUrls = allImageUrls,
+            initialImageUrl = currentImageUrl,
+            visible = showImageViewer,
+            onDismiss = {
+                println("[ImageViewer] Dismissed")
+                showImageViewer = false
+            }
+        )
     }
 }

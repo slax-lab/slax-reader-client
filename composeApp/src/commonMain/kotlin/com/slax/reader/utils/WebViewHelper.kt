@@ -27,7 +27,7 @@ fun wrapHtmlWithCSS(htmlContent: String): String {
                 }
             </style>
         </head>
-        <body>
+        <body lang="en">
             $htmlContent
         </body>
         </html>
@@ -42,6 +42,7 @@ expect fun AppWebView(
     topContentInsetPx: Float = 0f,
     onTap: (() -> Unit)? = null,
     onScrollChange: ((scrollY: Float) -> Unit)? = null,
+    onJsMessage: ((message: String) -> Unit)? = null,
 )
 
 @Composable

@@ -10,6 +10,7 @@ html {
 
 body {
   background-color: transparent !important;
+  hyphens: auto;
 }
 
 /* 块级元素重置 */

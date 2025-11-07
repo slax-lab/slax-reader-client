@@ -13,38 +13,37 @@ const val HEIGHT_MONITOR_SCRIPT: String = """
                 document.documentElement.offsetHeight
             );
         }
-        function postHeight(h) {
-            var payload = JSON.stringify({ type: 'height', height: h });
-            if (window.NativeBridge && window.NativeBridge.postMessage) {
-                window.NativeBridge.postMessage(payload);
-            } else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.NativeBridge) {
-                window.webkit.messageHandlers.NativeBridge.postMessage(payload);
-            }
+        
+        var anchors = document.getElementsByTagName('a')
+        for (var i = 0; i < anchors.length; i++) {
+            anchors[i].addEventListener('click', (event) => {
+              event.preventDefault();
+            });
         }
-        var lastHeight = getContentHeight();
-        postHeight(lastHeight);
-        var observer = new MutationObserver(function() {
-            var currentHeight = getContentHeight();
-            if (currentHeight !== lastHeight) {
-                lastHeight = currentHeight;
-                postHeight(currentHeight);
-            }
-        });
-        observer.observe(document.body, { childList: true, subtree: true, attributes: true, characterData: true });
-        window.addEventListener('resize', function() {
-            var currentHeight = getContentHeight();
-            if (currentHeight !== lastHeight) {
-                lastHeight = currentHeight;
-                postHeight(currentHeight);
-            }
-        });
+        
         var images = document.getElementsByTagName('img');
-        for (var i = 0; i < images.length; i++) {
-            images[i].addEventListener('load', function() {
-                var currentHeight = getContentHeight();
-                if (currentHeight !== lastHeight) {
-                    lastHeight = currentHeight;
-                    postHeight(currentHeight);
+        for (var i = 0; i < images.length; i++) {            
+            images[i].style = ''
+            
+            images[i].addEventListener('click', function(event) {
+                // 获取所有图片的URL
+                var allImageUrls = [];
+                for (var j = 0; j < images.length; j++) {
+                    if (images[j].src) {
+                        allImageUrls.push(images[j].src);
+                    }
+                }
+
+                var payload = JSON.stringify({
+                    type: 'imageClick',
+                    src: event.target.src,
+                    allImages: allImageUrls
+                });
+
+                if (window.NativeBridge && window.NativeBridge.postMessage) {
+                    window.NativeBridge.postMessage(payload);
+                } else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.NativeBridge) {
+                    window.webkit.messageHandlers.NativeBridge.postMessage(payload);
                 }
             });
         }

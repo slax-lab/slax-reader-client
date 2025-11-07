@@ -20,6 +20,8 @@ import androidx.compose.ui.viewinterop.UIKitInteropInteractionMode
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
 import app.slax.reader.SlaxConfig
+import com.slax.reader.const.HEIGHT_MONITOR_SCRIPT
+import com.slax.reader.const.JS_BRIDGE_NAME
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.CValue
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -47,6 +49,9 @@ import platform.UIKit.UIView
 import platform.WebKit.WKNavigation
 import platform.WebKit.WKNavigationDelegateProtocol
 import platform.WebKit.WKPreferences
+import platform.WebKit.WKScriptMessage
+import platform.WebKit.WKScriptMessageHandlerProtocol
+import platform.WebKit.WKUserContentController
 import platform.WebKit.WKWebView
 import platform.WebKit.WKWebViewConfiguration
 import platform.WebKit.javaScriptEnabled
@@ -82,6 +87,20 @@ private class SingleTapGestureDelegate : NSObject(), UIGestureRecognizerDelegate
     }
 }
 
+private class ScriptMessageHandler(
+    private val onMessage: (String) -> Unit
+) : NSObject(), WKScriptMessageHandlerProtocol {
+    override fun userContentController(
+        userContentController: WKUserContentController,
+        didReceiveScriptMessage: WKScriptMessage
+    ) {
+        val body = didReceiveScriptMessage.body as? String
+        if (body != null) {
+            onMessage(body)
+        }
+    }
+}
+
 @OptIn(ExperimentalForeignApi::class)
 @Composable
 @Suppress("UNUSED_PARAMETER")
@@ -92,11 +111,22 @@ actual fun AppWebView(
     topContentInsetPx: Float,
     onTap: (() -> Unit)?,
     onScrollChange: ((scrollY: Float) -> Unit)?,
+    onJsMessage: ((message: String) -> Unit)?,
 ) {
     val tapHandler = remember(onTap) {
         TapHandler { onTap?.invoke() }
     }
     val singleTapGestureDelegate = remember { SingleTapGestureDelegate() }
+    val onJsMessageCallback = rememberUpdatedState(onJsMessage)
+
+    val scriptMessageHandler = remember(onJsMessageCallback.value) {
+        if (onJsMessageCallback.value != null) {
+            ScriptMessageHandler { message ->
+                onJsMessageCallback.value?.invoke(message)
+            }
+        } else null
+    }
+
     val density = LocalDensity.current
     val densityScale = density.density
     val densityScaleState = rememberUpdatedState(densityScale)
@@ -129,7 +159,7 @@ actual fun AppWebView(
         }
     }
 
-    val navigationDelegate = remember {
+    val navigationDelegate = remember(scriptMessageHandler) {
         object : NSObject(), WKNavigationDelegateProtocol {
             override fun webView(webView: WKWebView, didFinishNavigation: WKNavigation?) {
                 // 移除导致双击上下翻页的双击手势识别器
@@ -139,6 +169,11 @@ actual fun AppWebView(
                             subview.removeGestureRecognizer(it)
                         }
                     }
+                }
+
+                // 页面加载完成后注入 JS 脚本
+                if (scriptMessageHandler != null) {
+                    webView.evaluateJavaScript(HEIGHT_MONITOR_SCRIPT, null)
                 }
             }
         }
@@ -162,6 +197,19 @@ actual fun AppWebView(
             val config = WKWebViewConfiguration().apply {
                 preferences = WKPreferences().apply {
                     javaScriptEnabled = true
+                }
+
+                // 配置 JS Bridge
+                if (scriptMessageHandler != null) {
+                    val userContentController = WKUserContentController()
+
+                    // 添加消息处理器
+                    userContentController.addScriptMessageHandler(
+                        scriptMessageHandler = scriptMessageHandler,
+                        name = JS_BRIDGE_NAME
+                    )
+
+                    this.userContentController = userContentController
                 }
             }
 
