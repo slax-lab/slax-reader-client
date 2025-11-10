@@ -37,6 +37,7 @@ import com.slax.reader.const.BookmarkRoutes
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.domain.sync.DownloadStatus
 import com.slax.reader.ui.inbox.InboxListViewModel
+import com.slax.reader.utils.platformType
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -297,7 +298,11 @@ fun BookmarkItemRow(
                                     offsetXAnimatable.animateTo(0f, animationSpec = tween(200))
                                 }
                             } else {
-                                navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmark.id))
+                                if (platformType == "ios") {
+                                    navigateToDetail(bookmark.id, bookmark.displayTitle())
+                                } else {
+                                    navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmark.id))
+                                }
                             }
                         }
                     },
@@ -472,3 +477,5 @@ fun BookmarkItemRow(
         }
     }
 }
+
+expect fun navigateToDetail(bookmarkId: String, title: String)

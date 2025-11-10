@@ -1,5 +1,6 @@
 package com.slax.reader.ui.bookmark
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -15,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.NavController
 import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.ui.bookmark.components.*
 import com.slax.reader.utils.AppWebView
@@ -32,15 +32,17 @@ data class WebViewMessage(
     val allImages: List<String>? = null
 )
 
+@SuppressLint("UseKtx")
 @Composable
 actual fun DetailScreen(
-    navController: NavController,
     detailViewModel: BookmarkDetailViewModel,
     detail: UserBookmark,
-    screenState: DetailScreenState
+    screenState: DetailScreenState,
+    onBackClick: (() -> Unit)
 ) {
     var htmlContent by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    val backClickHandler = remember { onBackClick }
 
     LaunchedEffect(detail.id) {
         error = null
@@ -200,8 +202,8 @@ actual fun DetailScreen(
         // 导航栏
         if (manuallyVisible) {
             NavigatorBar(
-                navController = navController,
-                visible = manuallyVisible
+                visible = manuallyVisible,
+                onBackClick = backClickHandler
             )
         }
 

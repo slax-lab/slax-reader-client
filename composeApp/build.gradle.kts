@@ -78,9 +78,6 @@ kotlin {
             linkOnly = true
         }
 
-        pod("SDWebImage") {
-        }
-
         framework {
             baseName = "ComposeApp"
             isStatic = true

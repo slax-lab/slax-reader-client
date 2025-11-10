@@ -16,22 +16,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_sm_back
 
 @Composable
 fun NavigatorBar(
-    navController: NavController?,
     title: String = "",
     showBackButton: Boolean = true,
     visible: Boolean = true,
-    onBackClick: (() -> Unit)? = null,
+    onBackClick: (() -> Unit),
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     println("[watch][UI] recomposition NavigatorBar")
-    
+
     val offsetY by animateDpAsState(
         targetValue = if (visible) 0.dp else (-100).dp,
         animationSpec = tween(durationMillis = 300)
@@ -53,11 +51,7 @@ fun NavigatorBar(
                     .align(Alignment.CenterStart)
                     .size(24.dp)
                     .clickable {
-                        if (onBackClick != null) {
-                            onBackClick()
-                        } else {
-                            navController?.navigateUp()
-                        }
+                        onBackClick()
                     },
                 contentAlignment = Alignment.Center
             ) {

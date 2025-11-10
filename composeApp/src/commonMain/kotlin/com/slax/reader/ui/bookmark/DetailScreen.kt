@@ -7,7 +7,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.navigation.NavController
 import com.slax.reader.data.database.model.UserBookmark
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -24,8 +23,9 @@ data class DetailScreenState(
 )
 
 @Composable
-fun DetailScreen(nav: NavController, bookmarkId: String) {
+fun DetailScreen(bookmarkId: String, onBackClick: (() -> Unit)) {
     val detailView = koinViewModel<BookmarkDetailViewModel>()
+    val backClickHandle = remember { onBackClick }
 
     LaunchedEffect(bookmarkId) {
         detailView.setBookmarkId(bookmarkId)
@@ -54,17 +54,17 @@ fun DetailScreen(nav: NavController, bookmarkId: String) {
     }
 
     DetailScreen(
-        navController = nav,
         detailViewModel = detailView,
         detail = detail,
-        screenState = screenState.copy(overviewBounds = overviewBounds)
+        screenState = screenState.copy(overviewBounds = overviewBounds),
+        onBackClick = backClickHandle
     )
 }
 
 @Composable
 expect fun DetailScreen(
-    navController: NavController,
     detailViewModel: BookmarkDetailViewModel,
     detail: UserBookmark,
-    screenState: DetailScreenState
+    screenState: DetailScreenState,
+    onBackClick: (() -> Unit)
 )
