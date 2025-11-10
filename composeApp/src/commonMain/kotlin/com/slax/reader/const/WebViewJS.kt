@@ -2,8 +2,25 @@ package com.slax.reader.const
 
 const val JS_BRIDGE_NAME = "NativeBridge"
 
-const val HEIGHT_MONITOR_SCRIPT: String = """
+const val INJECTED_SCRIPT: String = """
     (function() {
+        function postToNativeBridge(payload) {
+            const message = JSON.stringify(payload);
+            
+            if (window.NativeBridge?.postMessage) {
+                window.NativeBridge.postMessage(message);
+                return true;
+            }
+            
+            if (window.webkit?.messageHandlers?.NativeBridge) {
+                window.webkit.messageHandlers.NativeBridge.postMessage(message);
+                return true;
+            }
+            
+            console.warn('Native bridge not available');
+            return false;
+        }
+        
         function getContentHeight() {
             return Math.max(
                 document.body.scrollHeight,
@@ -13,39 +30,51 @@ const val HEIGHT_MONITOR_SCRIPT: String = """
                 document.documentElement.offsetHeight
             );
         }
-        
+
         var anchors = document.getElementsByTagName('a')
         for (var i = 0; i < anchors.length; i++) {
             anchors[i].addEventListener('click', (event) => {
               event.preventDefault();
             });
         }
-        
-        var images = document.getElementsByTagName('img');
-        for (var i = 0; i < images.length; i++) {            
-            images[i].style = ''
+
+        function getImageUrl(element) {
+            const tagName = element.tagName.toLowerCase();
             
-            images[i].addEventListener('click', function(event) {
-                // 获取所有图片的URL
-                var allImageUrls = [];
-                for (var j = 0; j < images.length; j++) {
-                    if (images[j].src) {
-                        allImageUrls.push(images[j].src);
-                    }
-                }
-
-                var payload = JSON.stringify({
-                    type: 'imageClick',
-                    src: event.target.src,
-                    allImages: allImageUrls
-                });
-
-                if (window.NativeBridge && window.NativeBridge.postMessage) {
-                    window.NativeBridge.postMessage(payload);
-                } else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.NativeBridge) {
-                    window.webkit.messageHandlers.NativeBridge.postMessage(payload);
-                }
-            });
+            if (tagName === 'img') {
+                return element.currentSrc || element.src || '';
+            }
+            
+            if (tagName === 'image') {
+                return element.href?.baseVal || 
+                       element.getAttribute('href') || 
+                       element.getAttribute('xlink:href') || 
+                       '';
+            }
+            
+            return '';
         }
+        
+        const images = document.querySelectorAll('img, image');
+        images.forEach(img => {
+            img.style.cssText = '';
+            
+            img.addEventListener('click', (event) => {
+                const allImageUrls = Array.from(images)
+                    .map(getImageUrl)
+                    .filter(url => url);
+                
+                const clickedImageUrl = getImageUrl(event.currentTarget);
+                
+                postToNativeBridge({
+                    type: 'imageClick',
+                    src: clickedImageUrl,
+                    allImages: allImageUrls,
+                    index: allImageUrls.indexOf(clickedImageUrl)
+                });
+            });
+        });
+                
+        
     })();
 """

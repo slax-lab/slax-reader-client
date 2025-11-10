@@ -13,7 +13,7 @@ import androidx.compose.ui.viewinterop.UIKitInteropInteractionMode
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
 import app.slax.reader.SlaxConfig
-import com.slax.reader.const.HEIGHT_MONITOR_SCRIPT
+import com.slax.reader.const.INJECTED_SCRIPT
 import com.slax.reader.const.JS_BRIDGE_NAME
 import kotlinx.cinterop.*
 import platform.CoreGraphics.CGPointMake
@@ -129,7 +129,7 @@ actual fun AppWebView(
         }
     }
 
-    val navigationDelegate = remember(scriptMessageHandler) {
+    val navigationDelegate = remember {
         object : NSObject(), WKNavigationDelegateProtocol {
 
             // webview被杀后尝试重载
@@ -147,11 +147,6 @@ actual fun AppWebView(
                             subview.removeGestureRecognizer(it)
                         }
                     }
-                }
-
-                // 页面加载完成后注入 JS 脚本
-                if (scriptMessageHandler != null) {
-                    webView.evaluateJavaScript(HEIGHT_MONITOR_SCRIPT, null)
                 }
             }
         }
@@ -177,7 +172,7 @@ actual fun AppWebView(
                     javaScriptEnabled = true
                 }
 
-                // 配置 JS Bridge
+                // 配置 JS Bridge 和脚本注入
                 if (scriptMessageHandler != null) {
                     val userContentController = WKUserContentController()
 
@@ -186,6 +181,13 @@ actual fun AppWebView(
                         scriptMessageHandler = scriptMessageHandler,
                         name = JS_BRIDGE_NAME
                     )
+
+                    val userScript = WKUserScript(
+                        source = INJECTED_SCRIPT,
+                        injectionTime = WKUserScriptInjectionTime.WKUserScriptInjectionTimeAtDocumentEnd,
+                        forMainFrameOnly = true
+                    )
+                    userContentController.addUserScript(userScript)
 
                     this.userContentController = userContentController
                 }

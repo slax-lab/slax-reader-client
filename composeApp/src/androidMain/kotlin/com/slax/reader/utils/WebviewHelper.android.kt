@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import app.slax.reader.SlaxConfig
-import com.slax.reader.const.HEIGHT_MONITOR_SCRIPT
+import com.slax.reader.const.INJECTED_SCRIPT
 import com.slax.reader.const.JS_BRIDGE_NAME
 import kotlin.math.roundToInt
 
@@ -108,7 +108,7 @@ actual fun AppWebView(
                         super.onPageFinished(view, url)
                         // 页面加载完成后注入 JS 脚本
                         if (onJsMessageCallback != null) {
-                            view?.evaluateJavascript(HEIGHT_MONITOR_SCRIPT, null)
+                            view?.evaluateJavascript(INJECTED_SCRIPT, null)
                         }
                     }
                 }
