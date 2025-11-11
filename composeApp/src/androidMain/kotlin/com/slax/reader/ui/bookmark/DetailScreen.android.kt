@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import com.slax.reader.data.database.model.UserBookmark
@@ -58,12 +59,23 @@ actual fun DetailScreen(
     val scrollY by remember { derivedStateOf { scrollState.value.toFloat() } }
     var manuallyVisible by remember { mutableStateOf(true) }
 
+    val bottomThresholdPx = with(LocalDensity.current) { 100.dp.toPx() }
+
     LaunchedEffect(Unit) {
         snapshotFlow { scrollState.value }
             .collect { scrollValue ->
-                val shouldShow = scrollValue <= 10
-                if (manuallyVisible != shouldShow) {
-                    manuallyVisible = shouldShow
+                val distanceToBottom = scrollState.maxValue - scrollValue
+                val isNearBottom = distanceToBottom < bottomThresholdPx
+
+                if (isNearBottom) {
+                    if (!manuallyVisible) {
+                        manuallyVisible = true
+                    }
+                } else {
+                    val shouldShow = scrollValue <= 10
+                    if (manuallyVisible != shouldShow) {
+                        manuallyVisible = shouldShow
+                    }
                 }
             }
     }
@@ -111,7 +123,14 @@ actual fun DetailScreen(
                     modifier = Modifier.fillMaxWidth(),
                     topContentInsetPx = 0f,
                     onTap = {
-                        manuallyVisible = if (scrollY <= 10f) true else !manuallyVisible
+                        val distanceToBottom = scrollState.maxValue - scrollState.value
+                        val isNearBottom = distanceToBottom < bottomThresholdPx
+
+                        if (isNearBottom) {
+                            manuallyVisible = true
+                        } else {
+                            manuallyVisible = if (scrollY <= 10f) true else !manuallyVisible
+                        }
                     },
                     onScrollChange = null,
                     onJsMessage = { message ->

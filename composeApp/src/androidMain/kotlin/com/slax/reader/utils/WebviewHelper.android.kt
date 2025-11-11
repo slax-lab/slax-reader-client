@@ -30,7 +30,7 @@ actual fun AppWebView(
     modifier: Modifier,
     topContentInsetPx: Float,
     onTap: (() -> Unit)?,
-    onScrollChange: ((scrollY: Float) -> Unit)?,
+    onScrollChange: ((scrollY: Float, contentHeight: Float, visibleHeight: Float) -> Unit)?,
     onJsMessage: ((message: String) -> Unit)?,
 ) {
     println("[watch][UI] recomposition AppWebView")

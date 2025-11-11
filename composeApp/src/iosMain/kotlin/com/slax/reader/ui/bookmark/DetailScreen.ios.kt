@@ -4,14 +4,17 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import com.slax.reader.data.database.model.UserBookmark
@@ -55,6 +58,9 @@ actual fun DetailScreen(
     // WebView 滚动偏移
     val webViewScrollY = remember { mutableFloatStateOf(0f) }
 
+    var contentHeightPx by remember { mutableFloatStateOf(0f) }
+    var visibleHeightPx by remember { mutableFloatStateOf(0f) }
+
     // 顶部内容高度 (px)
     var headerMeasuredHeight by remember { mutableFloatStateOf(0f) }
 
@@ -65,6 +71,8 @@ actual fun DetailScreen(
     )
 
     var manuallyVisible by remember { mutableStateOf(true) }
+
+    val bottomThresholdPx = with(LocalDensity.current) { 100.dp.toPx() }
 
     val headerVisible by remember {
         derivedStateOf {
@@ -96,7 +104,6 @@ actual fun DetailScreen(
             return
         }
 
-
         htmlContent?.let { content ->
             key(detail.id) {
                 AppWebView(
@@ -104,15 +111,36 @@ actual fun DetailScreen(
                     modifier = Modifier.fillMaxSize(),
                     topContentInsetPx = animatedTopContentHeight,
                     onTap = {
-                        manuallyVisible = if (webViewScrollY.floatValue <= 10f) true else !manuallyVisible
+                        val distanceToBottom = contentHeightPx - (webViewScrollY.floatValue + visibleHeightPx) + headerMeasuredHeight
+                        val isNearBottom = distanceToBottom < bottomThresholdPx
+
+
+                        if (isNearBottom) {
+                            manuallyVisible = true
+                        } else {
+                            manuallyVisible = if (webViewScrollY.floatValue <= 10f) true else !manuallyVisible
+                        }
                     },
                     onScrollChange = remember {
-                        { scrollY ->
+                        { scrollY, contentHeight, visibleHeight ->
                             val clampedScroll = max(scrollY, 0f)
                             webViewScrollY.floatValue = clampedScroll
-                            val shouldShow = clampedScroll <= 10f
-                            if (manuallyVisible != shouldShow) {
-                                manuallyVisible = shouldShow
+
+                            contentHeightPx = contentHeight
+                            visibleHeightPx = visibleHeight
+
+                            val distanceToBottom = contentHeight - (scrollY + visibleHeight) + headerMeasuredHeight
+                            val isNearBottom = distanceToBottom < bottomThresholdPx
+
+                            if (isNearBottom) {
+                                if (!manuallyVisible) {
+                                    manuallyVisible = true
+                                }
+                            } else {
+                                val shouldShow = clampedScroll <= 10f
+                                if (manuallyVisible != shouldShow) {
+                                    manuallyVisible = shouldShow
+                                }
                             }
                         }
                     },

@@ -23,7 +23,7 @@ fun wrapHtmlWithCSS(htmlContent: String): String {
                     padding-top: 0px !important;
                     padding-left: 20px !important;
                     padding-right: 20px !important;
-                    padding-bottom: 20px !important;
+                    padding-bottom: 200px !important;
                 }
             </style>
         </head>
@@ -41,7 +41,7 @@ expect fun AppWebView(
     modifier: Modifier = Modifier,
     topContentInsetPx: Float = 0f,
     onTap: (() -> Unit)? = null,
-    onScrollChange: ((scrollY: Float) -> Unit)? = null,
+    onScrollChange: ((scrollY: Float, contentHeight: Float, visibleHeight: Float) -> Unit)? = null,
     onJsMessage: ((message: String) -> Unit)? = null,
 )
 

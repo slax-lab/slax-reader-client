@@ -80,7 +80,7 @@ actual fun AppWebView(
     modifier: Modifier,
     topContentInsetPx: Float,
     onTap: (() -> Unit)?,
-    onScrollChange: ((scrollY: Float) -> Unit)?,
+    onScrollChange: ((scrollY: Float, contentHeight: Float, visibleHeight: Float) -> Unit)?,
     onJsMessage: ((message: String) -> Unit)?,
 ) {
     val tapHandler = remember(onTap) {
@@ -124,7 +124,15 @@ actual fun AppWebView(
                 // 加上当前 contentInset.top 得到实际滚动距离
                 val adjustedOffsetPoints = offsetPoints + insetPoints
                 val offsetPx = max(adjustedOffsetPoints * densityScaleState.value, 0f)
-                onScrollChangeState.value?.invoke(offsetPx)
+
+                // 获取内容高度和可视高度
+                val contentHeightPoints = scrollView.contentSize.useContents { height }.toFloat()
+                val contentHeightPx = contentHeightPoints * densityScaleState.value
+
+                val visibleHeightPoints = scrollView.bounds.useContents { size.height }.toFloat()
+                val visibleHeightPx = visibleHeightPoints * densityScaleState.value
+
+                onScrollChangeState.value?.invoke(offsetPx, contentHeightPx, visibleHeightPx)
             }
         }
     }
