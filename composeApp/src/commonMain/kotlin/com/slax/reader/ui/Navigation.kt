@@ -1,7 +1,5 @@
 package com.slax.reader.ui
 
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -86,10 +84,6 @@ fun SlaxNavigation(
         navController = navCtrl,
         startDestination = startDestination,
         modifier = Modifier.fillMaxSize(),
-        enterTransition = { EnterTransition.None },
-        exitTransition = { ExitTransition.None },
-        popEnterTransition = { EnterTransition.None },
-        popExitTransition = { ExitTransition.None }
     ) {
         composable<LoginRoutes> {
             LoginScreen(
@@ -100,7 +94,9 @@ fun SlaxNavigation(
             val params = backStackEntry.toRoute<BookmarkRoutes>()
             DetailScreen(
                 bookmarkId = params.bookmarkId,
-                nav = navCtrl
+                onBackClick = {
+                    navCtrl.popBackStack()
+                }
             )
         }
         composable<InboxRoutes> {

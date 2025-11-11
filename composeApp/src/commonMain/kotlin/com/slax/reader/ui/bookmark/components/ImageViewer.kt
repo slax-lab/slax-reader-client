@@ -322,24 +322,6 @@ private fun ZoomableImagePage(
             },
         contentAlignment = Alignment.Center
     ) {
-//        ImageShower(
-//            url = imageUrl,
-//            contentDescription = null,
-//            contentScale = ContentScale.Fit,
-//            onImageSize = { size ->
-//                if (size.width > 0f && size.height > 0f) {
-//                    imageSize = size
-//                }
-//            },
-//            modifier = Modifier
-//                .fillMaxSize()
-//                .graphicsLayer {
-//                    scaleX = if (isDoubleTapAnimating) animatedScale else scale
-//                    scaleY = if (isDoubleTapAnimating) animatedScale else scale
-//                    translationX = if (isDoubleTapAnimating) animatedOffsetX else offsetX
-//                    translationY = if (isDoubleTapAnimating) animatedOffsetY else offsetY
-//                }
-//        )
         AsyncImage(
             model = imageUrl,
             contentDescription = null,
