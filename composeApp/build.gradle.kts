@@ -107,6 +107,7 @@ kotlin {
             implementation(libs.coil.network.okhttp)
             implementation(libs.coil.gif)
             implementation(libs.androidx.browser)
+            implementation(libs.kamel.fetcher.resources.android)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -153,6 +154,10 @@ kotlin {
 
             // image
             implementation(libs.coil.compose)
+            implementation(libs.kamel.image)
+            implementation(libs.kamel.image.default)
+            implementation(libs.kamel.decoder.image.bitmap)
+            implementation(libs.kamel.decoder.animated.image)
 
             // firebase
             implementation(libs.firebase.app)

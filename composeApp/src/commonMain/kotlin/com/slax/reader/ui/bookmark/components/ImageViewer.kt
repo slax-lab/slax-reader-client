@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,10 +26,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
-import coil3.compose.AsyncImagePainter
+import io.kamel.image.KamelImage
+import io.kamel.image.asyncPainterResource
 
 /**
  * 图片浏览器组件
@@ -322,26 +325,24 @@ private fun ZoomableImagePage(
             },
         contentAlignment = Alignment.Center
     ) {
-        AsyncImage(
-            model = imageUrl,
-            contentDescription = null,
-            contentScale = ContentScale.Fit,
-            onState = { state ->
-                if (state is AsyncImagePainter.State.Success) {
-                    val intrinsicSize = state.painter.intrinsicSize
-                    if (intrinsicSize.width > 0f && intrinsicSize.height > 0f) {
-                        imageSize = intrinsicSize
-                    }
-                }
+        KamelImage(
+            resource = {
+                asyncPainterResource(imageUrl)
             },
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    scaleX = if (isDoubleTapAnimating) animatedScale else scale
-                    scaleY = if (isDoubleTapAnimating) animatedScale else scale
-                    translationX = if (isDoubleTapAnimating) animatedOffsetX else offsetX
-                    translationY = if (isDoubleTapAnimating) animatedOffsetY else offsetY
-                }
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize().graphicsLayer {
+                scaleX = if (isDoubleTapAnimating) animatedScale else scale
+                scaleY = if (isDoubleTapAnimating) animatedScale else scale
+                translationX = if (isDoubleTapAnimating) animatedOffsetX else offsetX
+                translationY = if (isDoubleTapAnimating) animatedOffsetY else offsetY
+            },
+            contentScale = ContentScale.Fit,
+            onLoading = {
+                CircularProgressIndicator()
+            },
+            onFailure = { exception ->
+                Text(text = "Failed to load image, $exception", style = TextStyle(color = Color.Gray))
+            },
         )
     }
 }

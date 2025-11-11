@@ -25,6 +25,12 @@ import com.slax.reader.utils.LifeCycleHelper
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.analytics.analytics
 import dev.gitlive.firebase.crashlytics.crashlytics
+import io.kamel.core.config.KamelConfig
+import io.kamel.core.config.takeFrom
+import io.kamel.image.config.Default
+import io.kamel.image.config.LocalKamelConfig
+import io.kamel.image.config.animatedImageDecoder
+import io.kamel.image.config.imageBitmapDecoder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
@@ -35,6 +41,14 @@ import org.koin.compose.koinInject
 fun SlaxNavigation(
     navCtrl: NavHostController
 ) {
+    val kamelConfig = remember {
+        KamelConfig {
+            takeFrom(KamelConfig.Default)
+            imageBitmapDecoder()
+            animatedImageDecoder()
+        }
+    }
+
     val authDomain: AuthDomain = koinInject()
     val backgroundDomain: BackgroundDomain = koinInject()
     val coordinator: CoordinatorDomain = koinInject()
@@ -80,39 +94,41 @@ fun SlaxNavigation(
         is AuthState.Loading -> return
     }
 
-    NavHost(
-        navController = navCtrl,
-        startDestination = startDestination,
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        composable<LoginRoutes> {
-            LoginScreen(
-                navController = navCtrl
-            )
-        }
-        composable<BookmarkRoutes> { backStackEntry ->
-            val params = backStackEntry.toRoute<BookmarkRoutes>()
-            DetailScreen(
-                bookmarkId = params.bookmarkId,
-                onBackClick = {
-                    navCtrl.popBackStack()
-                }
-            )
-        }
-        composable<InboxRoutes> {
-            InboxListScreen(navCtrl)
-        }
-        composable<DebugRoutes> {
-            DebugScreen()
-        }
-        composable<SpaceManagerRoutes> {
-            SpaceManager()
-        }
-        composable<SettingsRoutes> {
-            SettingScreen()
-        }
-        composable<AboutRoutes> {
-            AboutScreen()
+    CompositionLocalProvider(LocalKamelConfig provides kamelConfig) {
+        NavHost(
+            navController = navCtrl,
+            startDestination = startDestination,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            composable<LoginRoutes> {
+                LoginScreen(
+                    navController = navCtrl
+                )
+            }
+            composable<BookmarkRoutes> { backStackEntry ->
+                val params = backStackEntry.toRoute<BookmarkRoutes>()
+                DetailScreen(
+                    bookmarkId = params.bookmarkId,
+                    onBackClick = {
+                        navCtrl.popBackStack()
+                    }
+                )
+            }
+            composable<InboxRoutes> {
+                InboxListScreen(navCtrl)
+            }
+            composable<DebugRoutes> {
+                DebugScreen()
+            }
+            composable<SpaceManagerRoutes> {
+                SpaceManager()
+            }
+            composable<SettingsRoutes> {
+                SettingScreen()
+            }
+            composable<AboutRoutes> {
+                AboutScreen()
+            }
         }
     }
 }
