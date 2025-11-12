@@ -47,15 +47,30 @@ fun ImageViewer(
         imageUrls.indexOf(initialImageUrl).coerceAtLeast(0)
     }
 
+    var internalVisible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(visible) {
+        internalVisible = visible
+    }
+
+    LaunchedEffect(internalVisible) {
+        if (!internalVisible) {
+            kotlinx.coroutines.delay(300)
+            onDismiss()
+        }
+    }
+
     AnimatedVisibility(
-        visible = visible,
+        visible = internalVisible,
         enter = fadeIn(animationSpec = tween(300)),
         exit = fadeOut(animationSpec = tween(300))
     ) {
         ImageViewerContent(
             imageUrls = imageUrls,
             initialPage = initialPage,
-            onDismiss = onDismiss,
+            onDismiss = {
+                internalVisible = false
+            },
             modifier = modifier
         )
     }
