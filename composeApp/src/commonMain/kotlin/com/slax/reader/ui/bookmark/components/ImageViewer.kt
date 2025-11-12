@@ -98,9 +98,7 @@ private fun ImageViewerContent(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
             ) {
-                if (userScrollEnabled) {
-                    onDismiss()
-                }
+                onDismiss()
             }
     ) {
         HorizontalPager(
@@ -262,10 +260,7 @@ private fun ZoomableImagePage(
                         }
                     },
                     onTap = {
-                        // 单击且未缩放时关闭
-                        if (scale <= 1f) {
-                            onDismiss()
-                        }
+                        onDismiss()
                     }
                 )
             }
