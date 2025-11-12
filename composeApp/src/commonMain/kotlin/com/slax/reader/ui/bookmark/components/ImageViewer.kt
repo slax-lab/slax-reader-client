@@ -230,6 +230,16 @@ private fun ZoomableImagePage(
         return Pair(maxOffsetX, maxOffsetY)
     }
 
+    val imageResource = asyncPainterResource(imageUrl)
+    LaunchedEffect(imageResource) {
+        if (imageResource is io.kamel.core.Resource.Success) {
+            val intrinsicSize = imageResource.value.intrinsicSize
+            if (intrinsicSize.width > 0f && intrinsicSize.height > 0f) {
+                imageSize = intrinsicSize
+            }
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -321,9 +331,7 @@ private fun ZoomableImagePage(
         contentAlignment = Alignment.Center
     ) {
         KamelImage(
-            resource = {
-                asyncPainterResource(imageUrl)
-            },
+            resource = { imageResource },
             contentDescription = null,
             modifier = Modifier.fillMaxSize().graphicsLayer {
                 scaleX = if (isDoubleTapAnimating) animatedScale else scale
