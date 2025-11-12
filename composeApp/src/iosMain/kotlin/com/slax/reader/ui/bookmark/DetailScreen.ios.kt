@@ -4,10 +4,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -74,6 +72,32 @@ actual fun DetailScreen(
 
     val bottomThresholdPx = with(LocalDensity.current) { 100.dp.toPx() }
 
+    // 距离底部的距离
+    val distanceToBottom by remember {
+        derivedStateOf {
+            contentHeightPx - (webViewScrollY.floatValue + visibleHeightPx) + headerMeasuredHeight
+        }
+    }
+
+    // 是否接近底部
+    val isNearBottom by remember {
+        derivedStateOf {
+            distanceToBottom < bottomThresholdPx
+        }
+    }
+
+    // 统一处理 manuallyVisible 的自动更新逻辑
+    LaunchedEffect(Unit) {
+        snapshotFlow { isNearBottom to webViewScrollY.floatValue }
+            .collect { (nearBottom, scrollY) ->
+                manuallyVisible = when {
+                    nearBottom -> true  // 在底部区域，强制显示
+                    scrollY <= 10f -> true  // 在顶部区域，显示
+                    else -> false  // 中间区域，自动隐藏
+                }
+            }
+    }
+
     val headerVisible by remember {
         derivedStateOf {
             headerMeasuredHeight == 0f || webViewScrollY.floatValue < headerMeasuredHeight
@@ -111,37 +135,17 @@ actual fun DetailScreen(
                     modifier = Modifier.fillMaxSize(),
                     topContentInsetPx = animatedTopContentHeight,
                     onTap = {
-                        val distanceToBottom = contentHeightPx - (webViewScrollY.floatValue + visibleHeightPx) + headerMeasuredHeight
-                        val isNearBottom = distanceToBottom < bottomThresholdPx
-
-
-                        if (isNearBottom) {
-                            manuallyVisible = true
-                        } else {
-                            manuallyVisible = if (webViewScrollY.floatValue <= 10f) true else !manuallyVisible
+                        // 只在非底部且非顶部区域才切换显示状态
+                        if (!isNearBottom && webViewScrollY.floatValue > 10f) {
+                            manuallyVisible = !manuallyVisible
                         }
                     },
                     onScrollChange = remember {
                         { scrollY, contentHeight, visibleHeight ->
-                            val clampedScroll = max(scrollY, 0f)
-                            webViewScrollY.floatValue = clampedScroll
-
+                            // 只负责更新原始状态，manuallyVisible 的更新由 LaunchedEffect 处理
+                            webViewScrollY.floatValue = max(scrollY, 0f)
                             contentHeightPx = contentHeight
                             visibleHeightPx = visibleHeight
-
-                            val distanceToBottom = contentHeight - (scrollY + visibleHeight) + headerMeasuredHeight
-                            val isNearBottom = distanceToBottom < bottomThresholdPx
-
-                            if (isNearBottom) {
-                                if (!manuallyVisible) {
-                                    manuallyVisible = true
-                                }
-                            } else {
-                                val shouldShow = clampedScroll <= 10f
-                                if (manuallyVisible != shouldShow) {
-                                    manuallyVisible = shouldShow
-                                }
-                            }
                         }
                     },
                     onJsMessage = { message ->

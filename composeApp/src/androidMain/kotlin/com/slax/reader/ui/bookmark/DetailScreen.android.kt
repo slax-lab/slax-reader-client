@@ -61,21 +61,28 @@ actual fun DetailScreen(
 
     val bottomThresholdPx = with(LocalDensity.current) { 100.dp.toPx() }
 
-    LaunchedEffect(Unit) {
-        snapshotFlow { scrollState.value }
-            .collect { scrollValue ->
-                val distanceToBottom = scrollState.maxValue - scrollValue
-                val isNearBottom = distanceToBottom < bottomThresholdPx
+    // 距离底部的距离
+    val distanceToBottom by remember {
+        derivedStateOf {
+            scrollState.maxValue - scrollState.value
+        }
+    }
 
-                if (isNearBottom) {
-                    if (!manuallyVisible) {
-                        manuallyVisible = true
-                    }
-                } else {
-                    val shouldShow = scrollValue <= 10
-                    if (manuallyVisible != shouldShow) {
-                        manuallyVisible = shouldShow
-                    }
+    // 是否接近底部
+    val isNearBottom by remember {
+        derivedStateOf {
+            distanceToBottom < bottomThresholdPx
+        }
+    }
+
+    // 统一处理 manuallyVisible 的自动更新逻辑
+    LaunchedEffect(Unit) {
+        snapshotFlow { isNearBottom to scrollState.value }
+            .collect { (nearBottom, scrollValue) ->
+                manuallyVisible = when {
+                    nearBottom -> true  // 在底部区域，强制显示
+                    scrollValue <= 10 -> true  // 在顶部区域，显示
+                    else -> false  // 中间区域，自动隐藏
                 }
             }
     }
@@ -123,13 +130,9 @@ actual fun DetailScreen(
                     modifier = Modifier.fillMaxWidth(),
                     topContentInsetPx = 0f,
                     onTap = {
-                        val distanceToBottom = scrollState.maxValue - scrollState.value
-                        val isNearBottom = distanceToBottom < bottomThresholdPx
-
-                        if (isNearBottom) {
-                            manuallyVisible = true
-                        } else {
-                            manuallyVisible = if (scrollY <= 10f) true else !manuallyVisible
+                        // 只在非底部且非顶部区域才切换显示状态
+                        if (!isNearBottom && scrollY > 10f) {
+                            manuallyVisible = !manuallyVisible
                         }
                     },
                     onScrollChange = null,
