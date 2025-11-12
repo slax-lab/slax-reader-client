@@ -25,6 +25,7 @@ import com.slax.reader.const.SpaceManagerRoutes
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.ui.inbox.compenents.ArticleList
+import com.slax.reader.ui.inbox.compenents.ContinueReading
 import com.slax.reader.ui.inbox.compenents.InboxTitleRow
 import com.slax.reader.ui.inbox.compenents.TitleEditOverlay
 import com.slax.reader.ui.inbox.compenents.UserAvatar
@@ -125,6 +126,9 @@ private fun ContentSection(
 
     var editingBookmark by remember { mutableStateOf<InboxListBookmarkItem?>(null) }
 
+    var showContinueReading by remember { mutableStateOf(false) }
+    var continueReadingTitle by remember { mutableStateOf("") }
+
     Box(
         modifier = Modifier.fillMaxSize().padding(top = 8.dp).clipToBounds()
     ) {
@@ -148,6 +152,23 @@ private fun ContentSection(
                 }
             )
         }
+
+        // ContinueReading 悬浮组件
+        if (showContinueReading) {
+            ContinueReading(
+                visible = showContinueReading,
+                title = continueReadingTitle,
+                onDismiss = {
+                    showContinueReading = false
+                },
+                onClick = {
+                    // TODO: 导航到继续阅读的文章
+                    println("点击了继续阅读")
+                },
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
+
 
         editingBookmark?.let { bookmark ->
             TitleEditOverlay(

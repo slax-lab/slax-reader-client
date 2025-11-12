@@ -65,6 +65,13 @@ fun OverviewDialog(
         internalVisible = visible
     }
 
+    LaunchedEffect(internalVisible) {
+        if (!internalVisible) {
+            kotlinx.coroutines.delay(300)
+            onDismissRequest()
+        }
+    }
+
     val animationProgress by animateFloatAsState(
         targetValue = if (internalVisible) 1f else 0f,
         animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
@@ -98,7 +105,7 @@ fun OverviewDialog(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) {
-                        onDismissRequest()
+                        internalVisible = false
                     }
             )
 
@@ -256,7 +263,7 @@ fun OverviewDialog(
 
                         Surface(
                             onClick = {
-                                onDismissRequest()
+                                internalVisible = false
                             },
                             color = Color.Transparent,
                             modifier = Modifier
