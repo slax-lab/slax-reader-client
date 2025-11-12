@@ -3,7 +3,9 @@ package com.slax.reader.ui.inbox
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Text
@@ -42,6 +44,7 @@ fun InboxListScreen(navCtrl: NavController) {
     val inboxViewModel = koinInject<InboxListViewModel>()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
 
     println("[watch][UI] recomposition InboxListScreen")
 
@@ -64,19 +67,45 @@ fun InboxListScreen(navCtrl: NavController) {
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFFF5F5F3))
-                .statusBarsPadding()
         ) {
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                NavigationBar(onAvatarClick = {
-                    scope.launch {
-                        drawerState.open()
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                ) {
+                    Box(
+                        modifier = Modifier.statusBarsPadding()
+                    ) {
+                        NavigationBar(
+                            onAvatarClick = {
+                                scope.launch {
+                                    drawerState.open()
+                                }
+                            }
+                        )
                     }
-                })
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 20.dp)
+                            .clickable(
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() }
+                            ) {
+                                scope.launch {
+                                    listState.animateScrollToItem(0)
+                                }
+                            }
+                    )
+                }
+
                 ContentSection(
                     navCtrl = navCtrl,
                     inboxViewModel = inboxViewModel,
+                    listState = listState,
                 )
             }
         }
@@ -84,7 +113,9 @@ fun InboxListScreen(navCtrl: NavController) {
 }
 
 @Composable
-private fun NavigationBar(onAvatarClick: () -> Unit = {}) {
+private fun NavigationBar(
+    onAvatarClick: () -> Unit = {}
+) {
     println("[watch][UI] recomposition NavigationBar")
     Box(
         modifier = Modifier
@@ -121,6 +152,7 @@ private fun NavigationBar(onAvatarClick: () -> Unit = {}) {
 private fun ContentSection(
     navCtrl: NavController,
     inboxViewModel: InboxListViewModel,
+    listState: androidx.compose.foundation.lazy.LazyListState,
 ) {
     println("[watch][UI] recomposition ContentSection")
 
@@ -149,7 +181,8 @@ private fun ContentSection(
                 viewModel = inboxViewModel,
                 onEditTitle = { bookmark ->
                     editingBookmark = bookmark
-                }
+                },
+                lazyListState = listState
             )
         }
 

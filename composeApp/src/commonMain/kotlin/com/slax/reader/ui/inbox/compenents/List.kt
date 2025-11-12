@@ -33,13 +33,13 @@ fun ArticleList(
     navCtrl: NavController,
     viewModel: InboxListViewModel,
     onEditTitle: (InboxListBookmarkItem) -> Unit,
+    lazyListState: androidx.compose.foundation.lazy.LazyListState = rememberLazyListState(),
 ) {
     println("[watch][UI] recomposition ArticleList")
 
     val bookmarks by viewModel.bookmarks.collectAsState()
     val iconResource = painterResource(Res.drawable.ic_cell_internet)
     val iconPainter = remember { iconResource }
-    val lazyListState = rememberLazyListState()
     val dividerLine: @Composable () -> Unit = remember {
         { DividerLine() }
     }
