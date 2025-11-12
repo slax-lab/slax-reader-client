@@ -76,19 +76,16 @@ private fun ImageViewerContent(
         pageCount = { imageUrls.size }
     )
 
-    // 记录每个页面的缩放状态，用于控制 Pager 滑动
+    // 记录每个页面的缩放状态
     val scaleStates = remember(imageUrls.size) {
         List(imageUrls.size) { mutableStateOf(1f) }
     }
 
-    // 当前页面是否允许滑动（缩放状态下禁用滑动）
-    val userScrollEnabled = remember {
-        derivedStateOf {
-            val currentScale = scaleStates.getOrNull(pagerState.currentPage)?.value ?: 1f
-            val enabled = currentScale <= 1f
-            enabled
-        }
-    }.value
+    // 始终允许 Pager 滑动，通过手势事件消费机制精确控制
+    val userScrollEnabled = true
+
+    // 监听 Pager 是否正在滚动
+    val isPagerScrolling = pagerState.isScrollInProgress
 
     Box(
         modifier = modifier
@@ -110,6 +107,9 @@ private fun ImageViewerContent(
             ZoomableImagePage(
                 imageUrl = imageUrls[page],
                 scaleState = scaleStates.getOrNull(page) ?: remember { mutableStateOf(1f) },
+                currentPage = page,
+                pageCount = imageUrls.size,
+                isPagerScrolling = isPagerScrolling,
                 onDismiss = onDismiss,
                 modifier = Modifier.fillMaxSize()
             )
@@ -127,22 +127,28 @@ private fun ImageViewerContent(
     }
 
     // 监听页面变化，重置非当前页面的缩放状态
-    LaunchedEffect(pagerState.currentPage) {
-        scaleStates.forEachIndexed { index, state ->
-            if (index != pagerState.currentPage && state.value != 1f) {
-                state.value = 1f
+    // 只在滚动完全停止后才重置，避免翻页动画过程中突变
+    LaunchedEffect(pagerState.currentPage, pagerState.isScrollInProgress) {
+        if (!pagerState.isScrollInProgress) {
+            scaleStates.forEachIndexed { index, state ->
+                if (index != pagerState.currentPage && state.value != 1f) {
+                    state.value = 1f
+                }
             }
         }
     }
 }
 
 /**
- * 图片显示组件
+ * 可缩放的图片页面组件
  */
 @Composable
 private fun ZoomableImagePage(
     imageUrl: String,
     scaleState: MutableState<Float>,
+    currentPage: Int,
+    pageCount: Int,
+    isPagerScrolling: Boolean,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -159,6 +165,9 @@ private fun ZoomableImagePage(
     var animationTargetScale by remember { mutableFloatStateOf(1f) }
     var animationTargetOffsetX by remember { mutableFloatStateOf(0f) }
     var animationTargetOffsetY by remember { mutableFloatStateOf(0f) }
+
+    // 记录是否正在将手势传递给 Pager（用于保持连续的拖拽体验）
+    var isPassingToPager by remember { mutableStateOf(false) }
 
     // 双击时的动画值
     val animatedScale by animateFloatAsState(
@@ -278,12 +287,26 @@ private fun ZoomableImagePage(
                 awaitEachGesture {
                     awaitFirstDown(requireUnconsumed = false)
 
+                    // 手势开始时重置状态
+                    isPassingToPager = false
+
                     do {
                         val event = awaitPointerEvent()
 
                         val pointerCount = event.changes.count { it.pressed }
+
+                        // 如果正在传递给 Pager，继续传递直到手指抬起
+                        if (isPassingToPager) {
+                            // 不消费事件，让 Pager 持续处理
+                            continue
+                        }
+
+                        // 如果 Pager 正在滚动且不是用户主动拖拽，忽略图片手势
+                        if (isPagerScrolling && pointerCount == 0) {
+                            continue
+                        }
+
                         if (pointerCount >= 2 || scale > 1f) {
-                            // 消费事件并处理缩放
                             var zoom = 1f
                             var pan = Offset.Zero
 
@@ -300,32 +323,75 @@ private fun ZoomableImagePage(
                             val hasZoom = zoom != 1f
                             val hasPan = pan != Offset.Zero
 
-                            // 只有在实际进行变换时才停止动画和消费事件
+                            // 只有在实际进行变换时才处理
                             if (hasZoom || hasPan) {
                                 isDoubleTapAnimating = false
 
-                                // 直接应用变换（无动画延迟，实时响应）
+                                // 直接应用缩放
                                 val newScale = (scale * zoom).coerceIn(1f, 5f)
                                 scale = newScale
 
                                 if (newScale > 1f) {
-                                    offsetX += pan.x
-                                    offsetY += pan.y
-
+                                    // 计算拖拽边界
                                     val (maxOffsetX, maxOffsetY) = calculateDragBounds(newScale)
-                                    offsetX = offsetX.coerceIn(-maxOffsetX, maxOffsetX)
-                                    offsetY = offsetY.coerceIn(-maxOffsetY, maxOffsetY)
+
+                                    // 检测是否到达边缘且可以触发翻页
+                                    val canSwipeToPrevious = currentPage > 0
+                                    val canSwipeToNext = currentPage < pageCount - 1
+
+                                    // 边缘阈值（像素）
+                                    val edgeThreshold = 20f
+
+                                    // 检测是否在左边缘且尝试继续向右滑动
+                                    val atLeftEdge = offsetX >= maxOffsetX - edgeThreshold
+                                    val isPanningRight = pan.x > 5f
+
+                                    // 检测是否在右边缘且尝试继续向左滑动
+                                    val atRightEdge = offsetX <= -maxOffsetX + edgeThreshold
+                                    val isPanningLeft = pan.x < -5f
+
+                                    // 检测水平方向是否主导（防止垂直滑动误触发）
+                                    val isHorizontalDominant = kotlin.math.abs(pan.x) > kotlin.math.abs(pan.y) * 1.5f
+
+                                    // 判断是否应该将手势传递给 Pager
+                                    val shouldPassToPager = when {
+                                        // 在左边缘向右滑动，且可以翻到上一张
+                                        atLeftEdge && isPanningRight && isHorizontalDominant && canSwipeToPrevious -> true
+                                        // 在右边缘向左滑动，且可以翻到下一张
+                                        atRightEdge && isPanningLeft && isHorizontalDominant && canSwipeToNext -> true
+                                        else -> false
+                                    }
+
+                                    if (shouldPassToPager) {
+                                        // 标记为正在传递给 Pager，后续事件都不消费
+                                        isPassingToPager = true
+                                        // 不调用 consume()，让 Pager 处理滑动
+                                    } else {
+                                        // 图片内部平移：应用偏移并消费所有事件
+                                        offsetX += pan.x
+                                        offsetY += pan.y
+                                        offsetX = offsetX.coerceIn(-maxOffsetX, maxOffsetX)
+                                        offsetY = offsetY.coerceIn(-maxOffsetY, maxOffsetY)
+
+                                        // 消费事件，防止 Pager 响应
+                                        event.changes.forEach { it.consume() }
+                                    }
                                 } else {
+                                    // 缩放回 1.0 时重置偏移
                                     offsetX = 0f
                                     offsetY = 0f
                                 }
 
-                                if (pointerCount >= 2 || scale > 1f) {
+                                // 双指缩放始终消费事件
+                                if (pointerCount >= 2) {
                                     event.changes.forEach { it.consume() }
                                 }
                             }
                         }
                     } while (event.changes.any { it.pressed })
+
+                    // 手势结束时重置状态
+                    isPassingToPager = false
                 }
             },
         contentAlignment = Alignment.Center
