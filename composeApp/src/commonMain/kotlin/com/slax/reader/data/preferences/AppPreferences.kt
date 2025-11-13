@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 data class AuthInfo(
     val token: String,
@@ -25,6 +27,13 @@ data class PowerSyncAuthInfo(
     val connectUrl: String
 )
 
+@Serializable
+data class ContinueReadingBookmark (
+    val bookmarkId: String,
+    val title: String,
+    val scrollY: Int
+)
+
 class AppPreferences(private val dataStore: DataStore<Preferences>) {
     companion object {
         private val AUTH_TOKEN_KEY = stringPreferencesKey("auth_token")
@@ -34,6 +43,8 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
         private val POWER_SYNC_REFRESH_TIME = longPreferencesKey("powersync_refresh_time")
         private val POWER_SYNC_TOKEN_KEY = stringPreferencesKey("powersync_token")
         private val POWER_SYNC_CONNECT_URL = stringPreferencesKey("powersync_connect_url")
+
+        private val CONTINUE_READING_BOOKMARK_KEY = stringPreferencesKey("continue_reading_bookmark")
     }
 
     suspend fun getLastRefreshTime(): Long? {
@@ -87,6 +98,33 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
         return@withContext dataStore.edit { preferences ->
             preferences[POWER_SYNC_TOKEN_KEY] = token.token
             preferences[POWER_SYNC_REFRESH_TIME] = token.refreshTime
+        }
+    }
+
+    suspend fun getContinueReadingBookmark() = withContext(Dispatchers.IO) {
+        val prefs = dataStore.data.first()
+        val jsonString = prefs[CONTINUE_READING_BOOKMARK_KEY]
+        return@withContext if (jsonString != null) {
+            try {
+                Json.decodeFromString<ContinueReadingBookmark>(jsonString)
+            } catch (_: Exception) {
+                null
+            }
+        } else {
+            null
+        }
+    }
+
+    suspend fun setContinueReadingBookmark(info: ContinueReadingBookmark) = withContext(Dispatchers.IO) {
+        dataStore.edit { preferences ->
+            val jsonString = Json.encodeToString(info)
+            preferences[CONTINUE_READING_BOOKMARK_KEY] = jsonString
+        }
+    }
+
+    suspend fun clearContinueReadingBookmark() = withContext(Dispatchers.IO) {
+        dataStore.edit { preferences ->
+            preferences.remove(CONTINUE_READING_BOOKMARK_KEY)
         }
     }
 }

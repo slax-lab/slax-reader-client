@@ -10,7 +10,8 @@ enum class AppLifecycleState {
     ON_STOP,
     ON_PAUSE,
     ON_RESUME,
-    ON_CREATE
+    ON_CREATE,
+    ON_DESTROY
 }
 
 object LifeCycleHelper : DefaultLifecycleObserver {
@@ -28,6 +29,10 @@ object LifeCycleHelper : DefaultLifecycleObserver {
 
     override fun onPause(owner: LifecycleOwner) {
         updateState(AppLifecycleState.ON_PAUSE)
+    }
+
+    override fun onDestroy(owner: LifecycleOwner) {
+        updateState(AppLifecycleState.ON_DESTROY)
     }
 
     override fun onResume(owner: LifecycleOwner) {
