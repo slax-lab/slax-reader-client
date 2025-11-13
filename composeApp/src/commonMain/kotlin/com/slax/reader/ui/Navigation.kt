@@ -112,7 +112,11 @@ fun SlaxNavigation(
             SettingScreen()
         }
         composable<AboutRoutes> {
-            AboutScreen()
+            AboutScreen(
+                onBackClick = {
+                    navCtrl.popBackStack()
+                }
+            )
         }
     }
 }
