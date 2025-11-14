@@ -82,45 +82,46 @@ fun SlaxNavigation(
         is AuthState.Loading -> return
     }
 
-        NavHost(
-            navController = navCtrl,
-            startDestination = startDestination,
-            modifier = Modifier.fillMaxSize(),
+    NavHost(
+        navController = navCtrl,
+        startDestination = startDestination,
+        modifier = Modifier.fillMaxSize(),
         exitTransition = NavHostTransitionHelper.exitTransition,
         enterTransition = NavHostTransitionHelper.enterTransition,
         popEnterTransition = NavHostTransitionHelper.popEnterTransition,
-        popExitTransition = NavHostTransitionHelper.popExitTransition,) {
-            composable<LoginRoutes> {
-                LoginScreen(
-                    navController = navCtrl
-                )
-            }
-            composable<BookmarkRoutes> { backStackEntry ->
-                val params = backStackEntry.toRoute<BookmarkRoutes>()
-                DetailScreen(
-                    bookmarkId = params.bookmarkId,
-                    onBackClick = {
-                        navCtrl.popBackStack()
-                    }
-                )
-            }
-            composable<InboxRoutes> {
-                InboxListScreen(navCtrl)
-            }
-            composable<DebugRoutes> {
-                DebugScreen()
-            }
-            composable<SpaceManagerRoutes> {
-                SpaceManager()
-            }
-            composable<SettingsRoutes> {
-                SettingScreen()
-            }
-            composable<AboutRoutes> {
-                AboutScreen(onBackClick = {
+        popExitTransition = NavHostTransitionHelper.popExitTransition,
+    ) {
+        composable<LoginRoutes> {
+            LoginScreen(
+                navController = navCtrl
+            )
+        }
+        composable<BookmarkRoutes> { backStackEntry ->
+            val params = backStackEntry.toRoute<BookmarkRoutes>()
+            DetailScreen(
+                bookmarkId = params.bookmarkId,
+                onBackClick = {
                     navCtrl.popBackStack()
-                })
-            }
+                }
+            )
+        }
+        composable<InboxRoutes> {
+            InboxListScreen(navCtrl)
+        }
+        composable<DebugRoutes> {
+            DebugScreen()
+        }
+        composable<SpaceManagerRoutes> {
+            SpaceManager()
+        }
+        composable<SettingsRoutes> {
+            SettingScreen()
+        }
+        composable<AboutRoutes> {
+            AboutScreen(onBackClick = {
+                navCtrl.popBackStack()
+            })
+        }
     }
 }
 
