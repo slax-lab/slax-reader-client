@@ -2,15 +2,19 @@ package com.slax.reader.ui.sidebar
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -92,6 +96,9 @@ private fun DrawerContent(
         placeholder = painterResource(Res.drawable.global_default_avatar)
     )
 
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -104,7 +111,13 @@ private fun DrawerContent(
                 .padding(start = 12.dp)
                 .size(24.dp)
                 .clip(CircleShape)
-                .clickable(onClick = onDismiss),
+                .alpha(if (isPressed) 0.5f else 1f)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null
+                ) {
+                    onDismiss()
+                },
             contentAlignment = Alignment.Center
         ) {
             Icon(

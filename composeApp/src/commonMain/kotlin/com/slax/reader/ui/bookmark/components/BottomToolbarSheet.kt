@@ -12,7 +12,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -70,8 +74,24 @@ fun BottomToolbarSheet(
         )
     }
 
+
+    // 内部动画触发状态
+    var internalVisible by remember { mutableStateOf(false) }
+
+    // 延迟触发动画，确保组件先添加到组合树再开始动画
+    LaunchedEffect(visible) {
+        internalVisible = visible
+    }
+
+    LaunchedEffect(internalVisible) {
+        if (!internalVisible) {
+            kotlinx.coroutines.delay(300)
+            onDismissRequest()
+        }
+    }
+
     AnimatedVisibility(
-        visible = visible,
+        visible = internalVisible,
         enter = fadeIn(animationSpec = tween(300)),
         exit = fadeOut(animationSpec = tween(300))
     ) {
@@ -83,7 +103,7 @@ fun BottomToolbarSheet(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
                 ) {
-                    onDismissRequest()
+                    internalVisible = false
                 }
         )
     }
@@ -93,7 +113,7 @@ fun BottomToolbarSheet(
         contentAlignment = Alignment.BottomCenter
     ) {
         AnimatedVisibility(
-            visible = visible,
+            visible = internalVisible,
             enter = slideInVertically(
                 initialOffsetY = { it },
                 animationSpec = tween(300)

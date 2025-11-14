@@ -102,7 +102,7 @@ fun Menu(
                         modifier = Modifier
                             .matchParentSize()
                             .background(
-                                color = Color(0xD9F5F5F3),
+                                color = Color(0xFFF5F5F3),
                                 shape = RoundedCornerShape(20.dp)
                             )
                     )

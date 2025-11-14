@@ -88,7 +88,7 @@ fun OverviewDialog(
     )
 
     AnimatedVisibility(
-        visible = visible,
+        visible = internalVisible,
         enter = fadeIn(animationSpec = tween(300)),
         exit = fadeOut(animationSpec = tween(300))
     ) {
@@ -103,7 +103,7 @@ fun OverviewDialog(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xCCF5F5F3))
+                    .background(Color(0xFFF5F5F3))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null

@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,8 +12,10 @@ import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -122,6 +125,9 @@ private fun NavigationBar(
     onAvatarClick: () -> Unit = {}
 ) {
     println("[watch][UI] recomposition NavigationBar")
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -136,7 +142,14 @@ private fun NavigationBar(
             Image(
                 painter = painterResource(Res.drawable.ic_inbox_tab),
                 contentDescription = "Menu",
-                modifier = Modifier.size(24.dp, 24.dp).clickable(onClick = onAvatarClick),
+                modifier = Modifier.size(24.dp, 24.dp)
+                    .alpha(if (isPressed) 0.5f else 1f)
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = null
+                    ) {
+                        onAvatarClick()
+                    },
                 contentScale = ContentScale.Fit
             )
             UserAvatar()

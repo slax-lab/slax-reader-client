@@ -91,7 +91,7 @@ fun FloatingActionBar(
                     color = Color.Transparent,
                 ) {
                     Box(
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.CenterStart
                     ) {
                         Icon(
                             painter = painterResource(
@@ -101,7 +101,7 @@ fun FloatingActionBar(
                             ),
                             contentDescription = null,
                             tint = Color.Unspecified,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.padding(start = 17.5.dp).size(20.dp)
                         )
                     }
                 }
@@ -117,13 +117,13 @@ fun FloatingActionBar(
                     color = Color.Transparent,
                 ) {
                     Box(
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.CenterEnd
                     ) {
                         Icon(
                             painter = painterResource(if (detail.archiveStatus == 1) Res.drawable.ic_floating_panel_archieved else Res.drawable.ic_floating_panel_archieve),
                             contentDescription = null,
                             tint = Color.Unspecified,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.padding(end = 17.5.dp).size(20.dp)
                         )
                     }
                 }
