@@ -10,8 +10,6 @@ import com.slax.reader.data.network.dto.OverviewResponse
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.data.preferences.ContinueReadingBookmark
 import com.slax.reader.domain.sync.BackgroundDomain
-import com.slax.reader.utils.AppLifecycleState
-import com.slax.reader.utils.LifeCycleHelper
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.json.Json
@@ -31,7 +29,6 @@ class BookmarkDetailViewModel(
 ) : ViewModel() {
 
     var _bookmarkId = MutableStateFlow<String?>(null)
-    private var overviewCache: String? = null
 
     private val _overviewContent = MutableStateFlow("")
     val overviewContent: StateFlow<String> = _overviewContent.asStateFlow()
@@ -43,31 +40,56 @@ class BookmarkDetailViewModel(
         val bookmarkId = _bookmarkId.value ?: return
 
         viewModelScope.launch {
-            // 如果有缓存，直接使用
-            overviewCache?.let {
-                _overviewContent.value = it
+            // 从数据库读取缓存
+            val localInfo = withContext(Dispatchers.IO) {
+                bookmarkDao.getLocalBookmarkInfo(bookmarkId)
+            }
+
+            // 如果有缓存且不为空，直接使用
+            if (!localInfo?.overview.isNullOrEmpty()) {
+                _overviewContent.value = localInfo.overview
+
+                // 反序列化 keyTakeaways
+                val keyTakeaways = try {
+                    if (!localInfo.keyTakeaways.isNullOrEmpty()) {
+                        Json.decodeFromString<List<String>>(localInfo.keyTakeaways)
+                    } else {
+                        emptyList()
+                    }
+                } catch (e: Exception) {
+                    println("Failed to deserialize keyTakeaways: ${e.message}")
+                    emptyList()
+                }
+
                 _overviewState.update { state ->
-                    state.copy(overview = it, isLoading = false)
+                    state.copy(
+                        overview = localInfo.overview,
+                        keyTakeaways = keyTakeaways,
+                        isLoading = false
+                    )
                 }
                 return@launch
             }
 
-            // 流式加载
             _overviewContent.value = ""
             _overviewState.value = OverviewState(isLoading = true)
+
+            var fullOverview = ""
+            var fullKeyTakeaways = emptyList<String>()
 
             try {
                 apiService.getBookmarkOverview(bookmarkId).collect { response ->
                     when (response) {
                         is OverviewResponse.Overview -> {
-                            overviewCache = (overviewCache ?: "") + response.content
-                            _overviewContent.value = overviewCache!!
+                            fullOverview += response.content
+                            _overviewContent.value = fullOverview
                             _overviewState.update { state ->
-                                state.copy(overview = overviewCache!!, isLoading = true)
+                                state.copy(overview = fullOverview, isLoading = true)
                             }
                         }
 
                         is OverviewResponse.KeyTakeaways -> {
+                            fullKeyTakeaways = response.content
                             _overviewState.update { state ->
                                 state.copy(keyTakeaways = response.content)
                             }
@@ -76,6 +98,22 @@ class BookmarkDetailViewModel(
                         is OverviewResponse.Done -> {
                             _overviewState.update { state ->
                                 state.copy(isLoading = false)
+                            }
+
+                            if (fullOverview.isNotEmpty()) {
+                                withContext(Dispatchers.IO) {
+                                    // 序列化 keyTakeaways 为 JSON 字符串
+                                    val keyTakeawaysJson = if (fullKeyTakeaways.isNotEmpty()) {
+                                        Json.encodeToString(fullKeyTakeaways)
+                                    } else {
+                                        null
+                                    }
+                                    bookmarkDao.saveOverviewCache(
+                                        bookmarkId = bookmarkId,
+                                        overview = fullOverview,
+                                        keyTakeaways = keyTakeawaysJson
+                                    )
+                                }
                             }
                         }
 
@@ -100,7 +138,6 @@ class BookmarkDetailViewModel(
 
     fun setBookmarkId(id: String) {
         _bookmarkId.value = id
-        overviewCache = null
         _overviewContent.value = ""
         _overviewState.value = OverviewState()
     }

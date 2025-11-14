@@ -228,4 +228,137 @@ class BookmarkDao(
             created_at = now
         )
     }
+
+    // ========== 本地书签信息操作（用于 Overview 缓存和下载状态管理） ==========
+
+    /**
+     * 获取本地书签信息
+     * @param bookmarkId 书签 ID
+     * @return LocalBookmarkInfo 或 null（如果不存在）
+     */
+    suspend fun getLocalBookmarkInfo(bookmarkId: String): LocalBookmarkInfo? {
+        return database.getOptional(
+            """
+            SELECT id, overview, key_takeaways, is_downloaded
+            FROM local_bookmark_info
+            WHERE id = ?
+            """.trimIndent(),
+            parameters = listOf(bookmarkId),
+            mapper = { cursor ->
+                mapperToLocalBookmarkInfo(cursor)
+            }
+        )
+    }
+
+    /**
+     * 保存或更新 Overview 缓存
+     * @param bookmarkId 书签 ID
+     * @param overview 概要内容
+     * @param keyTakeaways 关键要点
+     */
+    suspend fun saveOverviewCache(bookmarkId: String, overview: String, keyTakeaways: String? = null) {
+        database.writeTransaction { tx ->
+            // 先查询记录是否存在
+            val existingId: String? = tx.getOptional(
+                "SELECT id FROM local_bookmark_info WHERE id = ?",
+                listOf(bookmarkId),
+                mapper = { cursor -> cursor.getString(0) ?: "" }
+            )
+
+            if (existingId != null && existingId.isNotEmpty()) {
+                // 记录存在，执行更新
+                tx.execute(
+                    "UPDATE local_bookmark_info SET overview = ?, key_takeaways = ? WHERE id = ?",
+                    listOf(overview, keyTakeaways, bookmarkId)
+                )
+            } else {
+                // 记录不存在，执行插入
+                tx.execute(
+                    "INSERT INTO local_bookmark_info (id, overview, key_takeaways, is_downloaded) VALUES (?, ?, ?, 0)",
+                    listOf(bookmarkId, overview, keyTakeaways)
+                )
+            }
+        }
+    }
+
+    /**
+     * 更新下载状态
+     * @param bookmarkId 书签 ID
+     * @param status 下载状态：0=下载中，1=已完成，2=失败
+     */
+    suspend fun updateDownloadStatus(bookmarkId: String, status: Int) {
+        database.writeTransaction { tx ->
+            // 先查询记录是否存在
+            val existingId: String? = tx.getOptional(
+                "SELECT id FROM local_bookmark_info WHERE id = ?",
+                listOf(bookmarkId),
+                mapper = { cursor -> cursor.getString(0) ?: "" }
+            )
+
+            if (existingId != null && existingId.isNotEmpty()) {
+                // 记录存在，执行更新
+                tx.execute(
+                    "UPDATE local_bookmark_info SET is_downloaded = ? WHERE id = ?",
+                    listOf(status, bookmarkId)
+                )
+            } else {
+                // 记录不存在，执行插入
+                tx.execute(
+                    "INSERT INTO local_bookmark_info (id, overview, key_takeaways, is_downloaded) VALUES (?, NULL, NULL, ?)",
+                    listOf(bookmarkId, status)
+                )
+            }
+        }
+    }
+
+    /**
+     * 获取所有已下载的书签 ID
+     * @return 已完成下载的书签 ID 列表
+     */
+    suspend fun getAllDownloadedBookmarkIds(): List<String> {
+        return database.getAll(
+            """
+            SELECT id
+            FROM local_bookmark_info
+            WHERE is_downloaded = ?
+            """.trimIndent(),
+            parameters = listOf(LocalBookmarkInfo.STATUS_COMPLETED),
+            mapper = { cursor ->
+                cursor.getString("id")
+            }
+        )
+    }
+
+    /**
+     * 批量更新下载状态
+     * @param statusMap 书签 ID 到状态的映射
+     */
+    suspend fun updateDownloadStatusBatch(statusMap: Map<String, Int>) {
+        if (statusMap.isEmpty()) return
+
+        database.writeTransaction { tx ->
+            statusMap.forEach { (bookmarkId, status) ->
+                // 先查询记录是否存在
+                val existingId: String? = tx.getOptional(
+                    "SELECT id FROM local_bookmark_info WHERE id = ?",
+                    listOf(bookmarkId),
+                    mapper = { cursor -> cursor.getString(0) ?: "" }
+                )
+
+                if (existingId != null && existingId.isNotEmpty()) {
+                    // 记录存在，执行更新
+                    tx.execute(
+                        "UPDATE local_bookmark_info SET is_downloaded = ? WHERE id = ?",
+                        listOf(status, bookmarkId)
+                    )
+                } else {
+                    // 记录不存在，执行插入
+                    tx.execute(
+                        "INSERT INTO local_bookmark_info (id, overview, key_takeaways, is_downloaded) VALUES (?, NULL, NULL, ?)",
+                        listOf(bookmarkId, status)
+                    )
+                }
+            }
+        }
+    }
 }

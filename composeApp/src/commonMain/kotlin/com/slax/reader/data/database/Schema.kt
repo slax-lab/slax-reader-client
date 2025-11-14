@@ -1,6 +1,8 @@
 package com.slax.reader.data.database
 
 import com.powersync.db.schema.Column
+import com.powersync.db.schema.Index
+import com.powersync.db.schema.IndexedColumn
 import com.powersync.db.schema.Schema
 import com.powersync.db.schema.Table
 import com.powersync.db.schema.TrackPreviousValuesOptions
@@ -122,6 +124,16 @@ val srUserBookmarkTable = Table(
 //    )
 //)
 
+val localBookmarkInfo = Table(
+    name = "local_bookmark_info",
+    localOnly = true,
+    columns = listOf(
+        Column.text("overview"),
+        Column.text("key_takeaways"),
+        Column.integer("is_downloaded")
+    )
+)
+
 val AppSchema = Schema(
     listOf(
         srUserTable,
@@ -134,5 +146,6 @@ val AppSchema = Schema(
         // local only, not sync to server
 //        localWorkerTaskTable,
 //        localFileManager
+        localBookmarkInfo
     )
 )

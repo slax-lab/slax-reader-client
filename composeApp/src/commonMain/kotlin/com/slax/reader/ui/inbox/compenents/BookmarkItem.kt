@@ -343,7 +343,7 @@ fun BookmarkItemRow(
                             Surface(
                                 modifier = Modifier.size(18.dp),
                                 shape = RoundedCornerShape(50),
-                                color = Color(if (isCompleted) 0x0F0F1419 else 0xFFF5F5F3)
+                                color = Color(if (isCompleted) 0xFFC4C4C2 else 0xFFF5F5F3)
                             ) {}
 
                             Image(
