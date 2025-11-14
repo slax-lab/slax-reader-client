@@ -49,5 +49,5 @@ actual fun navigateToDetail(bookmarkId: String, title: String) {
 
     containerViewController.view.backgroundColor = UIColor.whiteColor
 
-    NavigationHelper.pushViewController(containerViewController, animated = true)
+    NavigationHelper.pushViewController(containerViewController, animated = false)
 }
