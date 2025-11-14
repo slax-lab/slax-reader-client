@@ -29,8 +29,14 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import io.kamel.core.config.KamelConfig
+import io.kamel.core.config.takeFrom
 import io.kamel.image.KamelImage
 import io.kamel.image.asyncPainterResource
+import io.kamel.image.config.Default
+import io.kamel.image.config.LocalKamelConfig
+import io.kamel.image.config.animatedImageDecoder
+import io.kamel.image.config.imageBitmapDecoder
 
 /**
  * 图片浏览器组件
@@ -60,19 +66,29 @@ fun ImageViewer(
         }
     }
 
-    AnimatedVisibility(
-        visible = internalVisible,
-        enter = fadeIn(animationSpec = tween(300)),
-        exit = fadeOut(animationSpec = tween(300))
-    ) {
-        ImageViewerContent(
-            imageUrls = imageUrls,
-            initialPage = initialPage,
-            onDismiss = {
-                internalVisible = false
-            },
-            modifier = modifier
-        )
+    val kamelConfig = remember {
+        KamelConfig {
+            takeFrom(KamelConfig.Default)
+            imageBitmapDecoder()
+            animatedImageDecoder()
+        }
+    }
+
+    CompositionLocalProvider(LocalKamelConfig provides kamelConfig) {
+        AnimatedVisibility(
+            visible = internalVisible,
+            enter = fadeIn(animationSpec = tween(300)),
+            exit = fadeOut(animationSpec = tween(300))
+        ) {
+            ImageViewerContent(
+                imageUrls = imageUrls,
+                initialPage = initialPage,
+                onDismiss = {
+                    internalVisible = false
+                },
+                modifier = modifier
+            )
+        }
     }
 }
 

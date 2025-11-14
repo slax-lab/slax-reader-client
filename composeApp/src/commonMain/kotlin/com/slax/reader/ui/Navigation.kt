@@ -26,12 +26,6 @@ import com.slax.reader.utils.NavHostTransitionHelper
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.analytics.analytics
 import dev.gitlive.firebase.crashlytics.crashlytics
-import io.kamel.core.config.KamelConfig
-import io.kamel.core.config.takeFrom
-import io.kamel.image.config.Default
-import io.kamel.image.config.LocalKamelConfig
-import io.kamel.image.config.animatedImageDecoder
-import io.kamel.image.config.imageBitmapDecoder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
@@ -42,13 +36,6 @@ import org.koin.compose.koinInject
 fun SlaxNavigation(
     navCtrl: NavHostController
 ) {
-    val kamelConfig = remember {
-        KamelConfig {
-            takeFrom(KamelConfig.Default)
-            imageBitmapDecoder()
-            animatedImageDecoder()
-        }
-    }
 
     val authDomain: AuthDomain = koinInject()
     val backgroundDomain: BackgroundDomain = koinInject()
@@ -95,7 +82,6 @@ fun SlaxNavigation(
         is AuthState.Loading -> return
     }
 
-    CompositionLocalProvider(LocalKamelConfig provides kamelConfig) {
         NavHost(
             navController = navCtrl,
             startDestination = startDestination,
@@ -135,7 +121,6 @@ fun SlaxNavigation(
                     navCtrl.popBackStack()
                 })
             }
-        }
     }
 }
 
