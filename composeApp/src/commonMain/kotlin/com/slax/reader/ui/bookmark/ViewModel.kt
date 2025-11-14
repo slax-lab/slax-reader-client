@@ -7,7 +7,11 @@ import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.data.database.model.UserTag
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.network.dto.OverviewResponse
+import com.slax.reader.data.preferences.AppPreferences
+import com.slax.reader.data.preferences.ContinueReadingBookmark
 import com.slax.reader.domain.sync.BackgroundDomain
+import com.slax.reader.utils.AppLifecycleState
+import com.slax.reader.utils.LifeCycleHelper
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.json.Json
@@ -23,6 +27,7 @@ class BookmarkDetailViewModel(
     private val bookmarkDao: BookmarkDao,
     private val backgroundDomain: BackgroundDomain,
     private val apiService: ApiService,
+    private val appPreferences: AppPreferences
 ) : ViewModel() {
 
     var _bookmarkId = MutableStateFlow<String?>(null)
@@ -152,5 +157,21 @@ class BookmarkDetailViewModel(
 
     suspend fun createTag(tagName: String): UserTag = withContext(Dispatchers.IO) {
         return@withContext bookmarkDao.createTag(tagName)
+    }
+
+    suspend fun recordContinueBookmark(scrollY: Int) = withContext(Dispatchers.IO) {
+        _bookmarkId.value?.let { id ->
+            val detail = bookmarkDetail.value.firstOrNull { it.id == id } ?: return@withContext
+            val continueBookmark = ContinueReadingBookmark(
+                bookmarkId = id,
+                title = detail.displayTitle,
+                scrollY = scrollY
+            )
+            appPreferences.setContinueReadingBookmark(continueBookmark)
+        }
+    }
+
+    suspend fun clearContinueBookmark() = withContext(Dispatchers.IO) {
+        return@withContext appPreferences.clearContinueReadingBookmark()
     }
 }

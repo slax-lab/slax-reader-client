@@ -16,8 +16,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import com.slax.reader.data.database.model.UserBookmark
+import com.slax.reader.data.preferences.ContinueReadingBookmark
 import com.slax.reader.ui.bookmark.components.*
+import com.slax.reader.utils.AppLifecycleState
 import com.slax.reader.utils.AppWebView
+import com.slax.reader.utils.LifeCycleHelper
 import com.slax.reader.utils.wrapHtmlWithCSS
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -37,11 +40,11 @@ actual fun DetailScreen(
     detailViewModel: BookmarkDetailViewModel,
     detail: UserBookmark,
     screenState: DetailScreenState,
-    onBackClick: (() -> Unit)
+    onBackClick: (() -> Unit),
+    appPreferences: com.slax.reader.data.preferences.AppPreferences
 ) {
     var htmlContent by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
-    val backClickHandler = remember { onBackClick }
 
     LaunchedEffect(detail.id) {
         error = null
@@ -71,6 +74,26 @@ actual fun DetailScreen(
     var manuallyVisible by remember { mutableStateOf(true) }
 
     val bottomThresholdPx = with(LocalDensity.current) { 100.dp.toPx() }
+
+    LaunchedEffect(Unit) {
+        LifeCycleHelper.lifecycleState.collect { state ->
+            // 在独立协程中执行，避免阻塞 collect 循环
+            when (state) {
+                AppLifecycleState.ON_STOP -> {
+                    detailViewModel.viewModelScope.launch {
+                        detailViewModel.recordContinueBookmark(webViewScrollY.floatValue.toInt())
+                    }
+                }
+                AppLifecycleState.ON_RESUME -> {
+                    detailViewModel.viewModelScope.launch {
+                        detailViewModel.clearContinueBookmark()
+                    }
+                }
+                else -> {
+                }
+            }
+        }
+    }
 
     // 距离底部的距离
     val distanceToBottom by remember {
@@ -250,7 +273,7 @@ actual fun DetailScreen(
         if (manuallyVisible) {
             NavigatorBar(
                 visible = manuallyVisible,
-                onBackClick = backClickHandler
+                onBackClick = onBackClick
             )
         }
 

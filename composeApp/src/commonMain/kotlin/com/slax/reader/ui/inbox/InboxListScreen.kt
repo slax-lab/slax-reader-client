@@ -22,9 +22,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.slax.reader.const.AboutRoutes
+import com.slax.reader.const.BookmarkRoutes
 import com.slax.reader.const.SettingsRoutes
 import com.slax.reader.const.SpaceManagerRoutes
 import com.slax.reader.data.database.model.InboxListBookmarkItem
+import com.slax.reader.data.preferences.AppPreferences
+import com.slax.reader.data.preferences.ContinueReadingBookmark
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.ui.inbox.compenents.ArticleList
 import com.slax.reader.ui.inbox.compenents.ContinueReading
@@ -42,6 +45,7 @@ import slax_reader_client.composeapp.generated.resources.ic_inbox_tab
 fun InboxListScreen(navCtrl: NavController) {
     val authDomain: AuthDomain = koinInject()
     val inboxViewModel = koinInject<InboxListViewModel>()
+    val appPreferences: AppPreferences = koinInject()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
@@ -106,6 +110,7 @@ fun InboxListScreen(navCtrl: NavController) {
                     navCtrl = navCtrl,
                     inboxViewModel = inboxViewModel,
                     listState = listState,
+                    appPreferences = appPreferences
                 )
             }
         }
@@ -153,13 +158,24 @@ private fun ContentSection(
     navCtrl: NavController,
     inboxViewModel: InboxListViewModel,
     listState: androidx.compose.foundation.lazy.LazyListState,
+    appPreferences: AppPreferences
 ) {
     println("[watch][UI] recomposition ContentSection")
 
+    val coroutineScope = rememberCoroutineScope()
+    var showContinueData by remember { mutableStateOf<ContinueReadingBookmark?>(null) }
+    LaunchedEffect(Unit) {
+        coroutineScope.launch {
+            val bookmark = appPreferences.getContinueReadingBookmark()
+            if (bookmark != null) {
+                showContinueData = bookmark
+                appPreferences.clearContinueReadingBookmark()
+            }
+        }
+    }
+
     var editingBookmark by remember { mutableStateOf<InboxListBookmarkItem?>(null) }
 
-    var showContinueReading by remember { mutableStateOf(false) }
-    var continueReadingTitle by remember { mutableStateOf("") }
 
     Box(
         modifier = Modifier.fillMaxSize().padding(top = 8.dp).clipToBounds()
@@ -187,16 +203,16 @@ private fun ContentSection(
         }
 
         // ContinueReading 悬浮组件
-        if (showContinueReading) {
+        if (showContinueData != null) {
             ContinueReading(
-                visible = showContinueReading,
-                title = continueReadingTitle,
+                visible = showContinueData != null,
+                title = showContinueData!!.title,
                 onDismiss = {
-                    showContinueReading = false
+                    showContinueData = null
                 },
                 onClick = {
-                    // TODO: 导航到继续阅读的文章
-                    println("点击了继续阅读")
+                    navCtrl.navigate(BookmarkRoutes(bookmarkId = showContinueData!!.bookmarkId))
+                    showContinueData = null
                 },
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
