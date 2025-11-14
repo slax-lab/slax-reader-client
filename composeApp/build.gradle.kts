@@ -126,10 +126,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             // navigation
             implementation(libs.navigation.compose)
-
-            // log
-            implementation(libs.napier)
-
+            
             implementation(libs.datastore.preferences)
 
             // PowerSync

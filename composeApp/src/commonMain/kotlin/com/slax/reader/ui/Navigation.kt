@@ -22,6 +22,7 @@ import com.slax.reader.ui.login.LoginScreen
 import com.slax.reader.ui.setting.SettingScreen
 import com.slax.reader.ui.space.SpaceManager
 import com.slax.reader.utils.LifeCycleHelper
+import com.slax.reader.utils.NavHostTransitionHelper
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.analytics.analytics
 import dev.gitlive.firebase.crashlytics.crashlytics
@@ -99,7 +100,10 @@ fun SlaxNavigation(
             navController = navCtrl,
             startDestination = startDestination,
             modifier = Modifier.fillMaxSize(),
-        ) {
+        exitTransition = NavHostTransitionHelper.exitTransition,
+        enterTransition = NavHostTransitionHelper.enterTransition,
+        popEnterTransition = NavHostTransitionHelper.popEnterTransition,
+        popExitTransition = NavHostTransitionHelper.popExitTransition,) {
             composable<LoginRoutes> {
                 LoginScreen(
                     navController = navCtrl
@@ -127,7 +131,9 @@ fun SlaxNavigation(
                 SettingScreen()
             }
             composable<AboutRoutes> {
-                AboutScreen()
+                AboutScreen(onBackClick = {
+                    navCtrl.popBackStack()
+                })
             }
         }
     }
