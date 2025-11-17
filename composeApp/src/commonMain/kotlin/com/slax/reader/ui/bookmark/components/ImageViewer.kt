@@ -14,8 +14,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,19 +22,11 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import io.kamel.core.config.KamelConfig
-import io.kamel.core.config.takeFrom
-import io.kamel.image.KamelImage
-import io.kamel.image.asyncPainterResource
-import io.kamel.image.config.Default
-import io.kamel.image.config.LocalKamelConfig
-import io.kamel.image.config.animatedImageDecoder
-import io.kamel.image.config.imageBitmapDecoder
+import com.github.panpf.sketch.AsyncImage
+import com.github.panpf.sketch.rememberAsyncImageState
 
 /**
  * 图片浏览器组件
@@ -66,29 +56,21 @@ fun ImageViewer(
         }
     }
 
-    val kamelConfig = remember {
-        KamelConfig {
-            takeFrom(KamelConfig.Default)
-            imageBitmapDecoder()
-            animatedImageDecoder()
-        }
-    }
 
-    CompositionLocalProvider(LocalKamelConfig provides kamelConfig) {
-        AnimatedVisibility(
-            visible = internalVisible,
-            enter = fadeIn(animationSpec = tween(300)),
-            exit = fadeOut(animationSpec = tween(300))
-        ) {
-            ImageViewerContent(
-                imageUrls = imageUrls,
-                initialPage = initialPage,
-                onDismiss = {
-                    internalVisible = false
-                },
-                modifier = modifier
-            )
-        }
+    AnimatedVisibility(
+        visible = internalVisible,
+        enter = fadeIn(animationSpec = tween(300)),
+        exit = fadeOut(animationSpec = tween(300))
+    ) {
+        ImageViewerContent(
+            imageUrls = imageUrls,
+            initialPage = initialPage,
+            onDismiss = {
+                internalVisible = false
+            },
+            modifier = modifier
+        )
+
     }
 }
 
@@ -193,6 +175,8 @@ private fun ZoomableImagePage(
     var containerSize by remember { mutableStateOf(IntSize.Zero) }
     var imageSize by remember { mutableStateOf(Size.Zero) }
 
+    val asyncImageState = rememberAsyncImageState()
+
     var isDoubleTapAnimating by remember { mutableStateOf(false) }
     var animationTargetScale by remember { mutableFloatStateOf(1f) }
     var animationTargetOffsetX by remember { mutableFloatStateOf(0f) }
@@ -271,10 +255,10 @@ private fun ZoomableImagePage(
         return Pair(maxOffsetX, maxOffsetY)
     }
 
-    val imageResource = asyncPainterResource(imageUrl)
-    LaunchedEffect(imageResource) {
-        if (imageResource is io.kamel.core.Resource.Success) {
-            val intrinsicSize = imageResource.value.intrinsicSize
+    LaunchedEffect(asyncImageState.painter) {
+        val painter = asyncImageState.painter
+        if (painter != null) {
+            val intrinsicSize = painter.intrinsicSize
             if (intrinsicSize.width > 0f && intrinsicSize.height > 0f) {
                 imageSize = intrinsicSize
             }
@@ -428,22 +412,16 @@ private fun ZoomableImagePage(
             },
         contentAlignment = Alignment.Center
     ) {
-        KamelImage(
-            resource = { imageResource },
-            contentDescription = null,
+        AsyncImage(
+            uri = imageUrl,
+            contentDescription = "photo",
+            state = asyncImageState,
             modifier = Modifier.fillMaxSize().graphicsLayer {
                 scaleX = if (isDoubleTapAnimating) animatedScale else scale
                 scaleY = if (isDoubleTapAnimating) animatedScale else scale
                 translationX = if (isDoubleTapAnimating) animatedOffsetX else offsetX
                 translationY = if (isDoubleTapAnimating) animatedOffsetY else offsetY
-            },
-            contentScale = ContentScale.Fit,
-            onLoading = {
-                CircularProgressIndicator()
-            },
-            onFailure = { exception ->
-                Text(text = "Failed to load image, $exception", style = TextStyle(color = Color.Gray))
-            },
+            }
         )
     }
 }
