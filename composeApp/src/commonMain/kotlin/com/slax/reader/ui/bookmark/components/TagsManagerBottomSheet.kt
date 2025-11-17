@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.slax.reader.data.database.model.UserTag
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
+import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
 @Composable
@@ -43,17 +44,15 @@ fun TagsManageBottomSheet(
     val removedTags = remember { mutableStateListOf<UserTag>() }
     var showCreatingScreen by remember { mutableStateOf(false) }
 
-    // 内部动画触发状态
     var internalVisible by remember { mutableStateOf(false) }
 
-    // 延迟触发动画，确保组件先添加到组合树再开始动画
     LaunchedEffect(visible) {
         internalVisible = visible
     }
 
     LaunchedEffect(internalVisible) {
         if (!internalVisible) {
-            kotlinx.coroutines.delay(300)
+            delay(300)
             onDismissRequest()
         }
     }
