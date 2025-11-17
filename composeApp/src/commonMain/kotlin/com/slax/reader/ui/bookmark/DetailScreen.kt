@@ -61,7 +61,6 @@ fun DetailScreen(bookmarkId: String, onBackClick: (() -> Unit)) {
         detail = detail,
         screenState = screenState.copy(overviewBounds = overviewBounds),
         onBackClick = backClickHandle,
-        appPreferences = appPreferences
     )
 }
 
@@ -71,5 +70,4 @@ expect fun DetailScreen(
     detail: UserBookmark,
     screenState: DetailScreenState,
     onBackClick: (() -> Unit),
-    appPreferences: AppPreferences
 )

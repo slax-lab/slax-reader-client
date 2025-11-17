@@ -2,17 +2,20 @@ package com.slax.reader.ui.inbox
 
 import androidx.lifecycle.ViewModel
 import com.slax.reader.data.database.dao.BookmarkDao
+import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.database.dao.UserDao
 import com.slax.reader.domain.coordinator.CoordinatorDomain
-import com.slax.reader.domain.sync.BackgroundDomain
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.withContext
 
 class InboxListViewModel(
     private val userDao: UserDao,
     private val bookmarkDao: BookmarkDao,
-    private val backgroundDomain: BackgroundDomain,
+    private val localBookmarkDao: LocalBookmarkDao,
     private val coordinatorDomain: CoordinatorDomain
 ) : ViewModel() {
     val userInfo = userDao.watchUserInfo()
@@ -20,7 +23,14 @@ class InboxListViewModel(
 
     val bookmarks = bookmarkDao.watchUserBookmarkList()
 
-    val bookmarkStatusFlow = backgroundDomain.bookmarkStatusFlow
+    val localBookmarkMap = localBookmarkDao.watchUserLocalBookmarkMap()
+
+    private val _scrollToTopEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val scrollToTopEvent: SharedFlow<Unit> = _scrollToTopEvent.asSharedFlow()
+
+    fun scrollToTop() {
+        _scrollToTopEvent.tryEmit(Unit)
+    }
 
     suspend fun confirmEditTitle(bookmarkId: String, newTitle: String) {
         withContext(Dispatchers.IO) {

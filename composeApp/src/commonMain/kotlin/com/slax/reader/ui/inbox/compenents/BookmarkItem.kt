@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
@@ -35,10 +36,10 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.slax.reader.const.BookmarkRoutes
 import com.slax.reader.data.database.model.InboxListBookmarkItem
-import com.slax.reader.domain.sync.DownloadStatus
 import com.slax.reader.ui.inbox.InboxListViewModel
-import com.slax.reader.utils.platformType
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.*
@@ -59,6 +60,8 @@ fun BookmarkItemRow(
     iconPainter: Painter,
     onEditTitle: (InboxListBookmarkItem) -> Unit,
 ) {
+    println("[watch][UI] recomposition BookmarkItemRow: ${bookmark.displayTitle()}")
+
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
@@ -67,10 +70,11 @@ fun BookmarkItemRow(
     var lastMenuTriggerSource by remember { mutableStateOf(MenuTriggerSource.NONE) }
     val showMenu = menuTriggerSource != MenuTriggerSource.NONE
 
-    val bookmarkStatusMap by viewModel.bookmarkStatusFlow.collectAsState()
-
-    val bookmarkStatus by remember {
-        derivedStateOf { bookmarkStatusMap[bookmark.id] }
+    val downloadStatus by remember(bookmark.id) {
+        derivedStateOf {
+            viewModel.localBookmarkMap
+                .map { it[bookmark.id]?.downloadStatus ?: 0 }
+        }
     }
 
     // 闪烁动画
@@ -124,15 +128,6 @@ fun BookmarkItemRow(
     LaunchedEffect(maxSwipeLeft, maxSwipeRight) {
         offsetXAnimatable.updateBounds(maxSwipeLeft, maxSwipeRight)
         offsetXAnimatable.snapTo(offsetXAnimatable.value.coerceIn(maxSwipeLeft, maxSwipeRight))
-    }
-
-    val swipeProgress by remember {
-        derivedStateOf {
-            val offset = offsetXAnimatable.value
-            if (offset < 0f) {
-                (abs(offset) / abs(maxSwipeLeft)).coerceIn(0f, 1f)
-            } else 0f
-        }
     }
 
     val menuAlpha by remember {
@@ -298,11 +293,7 @@ fun BookmarkItemRow(
                                     offsetXAnimatable.animateTo(0f, animationSpec = tween(200))
                                 }
                             } else {
-                                if (platformType == "ios") {
-                                    navigateToDetail(bookmark.id, bookmark.displayTitle())
-                                } else {
-                                    navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmark.id))
-                                }
+                                navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmark.id))
                             }
                         }
                     },
@@ -337,8 +328,8 @@ fun BookmarkItemRow(
                                 .fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            val isDownloading = bookmarkStatus?.status == DownloadStatus.DOWNLOADING
-                            val isCompleted = bookmarkStatus?.status == DownloadStatus.COMPLETED
+                            val isDownloading = downloadStatus == 1
+                            val isCompleted = downloadStatus == 2
 
                             Surface(
                                 modifier = Modifier.size(18.dp),
@@ -376,7 +367,7 @@ fun BookmarkItemRow(
                 val overlayAlpha = if (isPressed) {
                     0.05f
                 } else {
-                    swipeProgress * 0.05f
+                    menuAlpha * 0.05f
                 }
 
                 if (overlayAlpha > 0f) {
@@ -478,4 +469,3 @@ fun BookmarkItemRow(
     }
 }
 
-expect fun navigateToDetail(bookmarkId: String, title: String)

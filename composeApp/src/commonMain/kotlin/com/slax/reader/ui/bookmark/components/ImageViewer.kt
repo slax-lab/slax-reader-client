@@ -37,6 +37,7 @@ import io.kamel.image.config.Default
 import io.kamel.image.config.LocalKamelConfig
 import io.kamel.image.config.animatedImageDecoder
 import io.kamel.image.config.imageBitmapDecoder
+import kotlinx.coroutines.delay
 
 /**
  * 图片浏览器组件
@@ -61,7 +62,7 @@ fun ImageViewer(
 
     LaunchedEffect(internalVisible) {
         if (!internalVisible) {
-            kotlinx.coroutines.delay(300)
+            delay(300)
             onDismiss()
         }
     }

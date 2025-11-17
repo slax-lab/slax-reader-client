@@ -1,11 +1,5 @@
 package com.slax.reader.ui.inbox.compenents
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -14,16 +8,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -38,15 +28,22 @@ fun ArticleList(
     navCtrl: NavController,
     viewModel: InboxListViewModel,
     onEditTitle: (InboxListBookmarkItem) -> Unit,
-    lazyListState: androidx.compose.foundation.lazy.LazyListState = rememberLazyListState(),
 ) {
     println("[watch][UI] recomposition ArticleList")
 
     val bookmarks by viewModel.bookmarks.collectAsState()
     val iconResource = painterResource(Res.drawable.ic_cell_internet)
     val iconPainter = remember { iconResource }
+
+    val lazyListState = rememberLazyListState()
     val dividerLine: @Composable () -> Unit = remember {
         { DividerLine() }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.scrollToTopEvent.collect {
+            lazyListState.animateScrollToItem(0)
+        }
     }
 
     Box(

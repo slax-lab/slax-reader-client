@@ -42,7 +42,6 @@ actual fun DetailScreen(
     detail: UserBookmark,
     screenState: DetailScreenState,
     onBackClick: (() -> Unit),
-    appPreferences: com.slax.reader.data.preferences.AppPreferences
 ) {
     var htmlContent by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -65,39 +64,32 @@ actual fun DetailScreen(
 
     LaunchedEffect(Unit) {
         LifeCycleHelper.lifecycleState.collect { state ->
-            // 在独立协程中执行，避免阻塞 collect 循环
             when (state) {
                 AppLifecycleState.ON_STOP -> {
                     detailViewModel.viewModelScope.launch {
                         detailViewModel.recordContinueBookmark(scrollState.value)
                     }
                 }
+
                 AppLifecycleState.ON_RESUME -> {
                     detailViewModel.viewModelScope.launch {
                         detailViewModel.clearContinueBookmark()
                     }
                 }
+
                 else -> {
                 }
             }
         }
     }
 
-    // 距离底部的距离
-    val distanceToBottom by remember {
-        derivedStateOf {
-            scrollState.maxValue - scrollState.value
-        }
-    }
-
     // 是否接近底部
     val isNearBottom by remember {
         derivedStateOf {
-            distanceToBottom < bottomThresholdPx
+            scrollState.maxValue - scrollState.value < bottomThresholdPx
         }
     }
 
-    // 统一处理 manuallyVisible 的自动更新逻辑
     LaunchedEffect(Unit) {
         snapshotFlow { isNearBottom to scrollState.value }
             .collect { (nearBottom, scrollValue) ->

@@ -7,7 +7,7 @@ import kotlinx.cinterop.ExperimentalForeignApi
 import platform.UIKit.*
 
 @OptIn(ExperimentalForeignApi::class)
-actual fun navigateToDetail(bookmarkId: String, title: String) {
+fun navigateToDetail(bookmarkId: String, title: String) {
     val composeViewController = ComposeUIViewController {
         DetailScreen(bookmarkId = bookmarkId, onBackClick = {
             NavigationHelper.popViewController(animated = true)

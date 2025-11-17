@@ -11,7 +11,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -31,11 +30,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.OverviewViewBounds
+import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_circle_close_icon
-import slax_reader_client.composeapp.generated.resources.ic_continue_reading_close
-import slax_reader_client.composeapp.generated.resources.ic_xs_blue_down_arrow
 import kotlin.math.roundToInt
 
 /**
@@ -70,7 +68,7 @@ fun OverviewDialog(
 
     LaunchedEffect(internalVisible) {
         if (!internalVisible) {
-            kotlinx.coroutines.delay(300)
+            delay(300)
             onDismissRequest()
         }
     }
