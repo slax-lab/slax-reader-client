@@ -77,7 +77,7 @@ fun OverviewDialog(
 
     val animationProgress by animateFloatAsState(
         targetValue = if (internalVisible) 1f else 0f,
-        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
         label = "dialogAnimation"
     )
 

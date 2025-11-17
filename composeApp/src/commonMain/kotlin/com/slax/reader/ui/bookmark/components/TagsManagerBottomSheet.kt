@@ -1,5 +1,11 @@
 package com.slax.reader.ui.bookmark.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
@@ -23,6 +29,7 @@ import kotlin.math.roundToInt
 @Composable
 fun TagsManageBottomSheet(
     detailViewModel: BookmarkDetailViewModel,
+    visible: Boolean,
     onDismissRequest: () -> Unit,
     enableDrag: Boolean = false,
     onConfirm: (List<UserTag>) -> Unit = {}
@@ -35,6 +42,21 @@ fun TagsManageBottomSheet(
     val addedTags = remember { mutableStateListOf<UserTag>() }
     val removedTags = remember { mutableStateListOf<UserTag>() }
     var showCreatingScreen by remember { mutableStateOf(false) }
+
+    // 内部动画触发状态
+    var internalVisible by remember { mutableStateOf(false) }
+
+    // 延迟触发动画，确保组件先添加到组合树再开始动画
+    LaunchedEffect(visible) {
+        internalVisible = visible
+    }
+
+    LaunchedEffect(internalVisible) {
+        if (!internalVisible) {
+            kotlinx.coroutines.delay(300)
+            onDismissRequest()
+        }
+    }
 
     LaunchedEffect(remoteSelectedTags) {
         removedTags.removeAll { it !in remoteSelectedTags }
@@ -56,21 +78,29 @@ fun TagsManageBottomSheet(
     val density = LocalDensity.current
     var offsetY by remember { mutableFloatStateOf(0f) }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.5f))
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) {
-                if (showCreatingScreen) {
-                    showCreatingScreen = false
-                } else {
-                    onDismissRequest()
+
+    AnimatedVisibility(
+        visible = internalVisible,
+        enter = fadeIn(animationSpec = tween(300)),
+        exit = fadeOut(animationSpec = tween(300))
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) {
+                    if (showCreatingScreen) {
+                        showCreatingScreen = false
+                    } else {
+                        internalVisible = false
+                    }
                 }
-            }
-    )
+        )
+    }
+
 
     Box(
         modifier = Modifier
@@ -78,80 +108,95 @@ fun TagsManageBottomSheet(
         contentAlignment = Alignment.BottomCenter
     ) {
 
-        Surface(
-            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-            color = Color.White,
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-                // 最多占据65%的屏幕
-                .fillMaxHeight(0.65f)
-                .padding(0.dp)
-                .offset { IntOffset(0, offsetY.roundToInt()) }
-                .then(
-                    if (enableDrag) {
-                        Modifier
-                            .draggable(
-                                orientation = Orientation.Vertical,
-                                state = rememberDraggableState { delta ->
-                                    offsetY = (offsetY + delta).coerceAtLeast(0f)
-                                },
-                                onDragStopped = {
-                                    if (offsetY > with(density) { 100.dp.toPx() }) {
-                                        onDismissRequest()
-                                    } else {
-                                        offsetY = 0f
-                                    }
-                                }
-                            )
-                    } else {
-                        Modifier
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) {}
-                    }
-                ),
-            shadowElevation = 8.dp
+        AnimatedVisibility(
+            visible = internalVisible,
+            enter = slideInVertically(
+                initialOffsetY = { it },
+                animationSpec = tween(300)
+            ),
+            exit = slideOutVertically(
+                targetOffsetY = { it },
+                animationSpec = tween(300)
+            )
         ) {
-            if (showCreatingScreen) {
-                TagCreatingScreen(
-                    detailViewModel = detailViewModel,
-                    onTagCreated = { newTag ->
-                        removedTags.remove(newTag)
-                        if (!addedTags.any { it.id == newTag.id }) {
-                            addedTags.add(newTag)
+
+            Surface(
+                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                color = Color.White,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+                    // 最多占据65%的屏幕
+                    .fillMaxHeight(0.65f)
+                    .padding(0.dp)
+                    .offset { IntOffset(0, offsetY.roundToInt()) }
+                    .then(
+                        if (enableDrag) {
+                            Modifier
+                                .draggable(
+                                    orientation = Orientation.Vertical,
+                                    state = rememberDraggableState { delta ->
+                                        offsetY = (offsetY + delta).coerceAtLeast(0f)
+                                    },
+                                    onDragStopped = {
+                                        if (offsetY > with(density) { 100.dp.toPx() }) {
+                                            internalVisible = false
+                                        } else {
+                                            offsetY = 0f
+                                        }
+                                    }
+                                )
+                        } else {
+                            Modifier
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) {}
                         }
-                    },
-                    onBack = {
-                        showCreatingScreen = false
-                    }
-                )
-            } else {
-                TagsManagementContent(
-                    selectedTags = selectedTags,
-                    unselectedTags = unselectedTags,
-                    onTagAdd = { tag ->
-                        removedTags.remove(tag)
-                        if (!addedTags.any { it.id == tag.id } && tag !in remoteSelectedTags) {
-                            addedTags.add(tag)
+                    ),
+                shadowElevation = 8.dp
+            ) {
+                if (showCreatingScreen) {
+                    TagCreatingScreen(
+                        detailViewModel = detailViewModel,
+                        onTagCreated = { newTag ->
+                            removedTags.remove(newTag)
+                            if (!addedTags.any { it.id == newTag.id }) {
+                                addedTags.add(newTag)
+                            }
+                        },
+                        onBack = {
+                            showCreatingScreen = false
                         }
-                    },
-                    onTagRemove = { tag ->
-                        if (addedTags.removeAll { it.id == tag.id }) {
-                        } else if (tag in remoteSelectedTags && tag !in removedTags) {
-                            removedTags.add(tag)
+                    )
+                } else {
+                    TagsManagementContent(
+                        selectedTags = selectedTags,
+                        unselectedTags = unselectedTags,
+                        onTagAdd = { tag ->
+                            removedTags.remove(tag)
+                            if (!addedTags.any { it.id == tag.id } && tag !in remoteSelectedTags) {
+                                addedTags.add(tag)
+                            }
+                        },
+                        onTagRemove = { tag ->
+                            if (addedTags.removeAll { it.id == tag.id }) {
+                            } else if (tag in remoteSelectedTags && tag !in removedTags) {
+                                removedTags.add(tag)
+                            }
+                        },
+                        onCreateNewTag = {
+                            showCreatingScreen = true
+                        },
+                        onConfirm = {
+                            onConfirm(selectedTags)
+                            onDismissRequest()
+                        },
+                        onDismiss = {
+                            internalVisible = false
                         }
-                    },
-                    onCreateNewTag = {
-                        showCreatingScreen = true
-                    },
-                    onConfirm = {
-                        onConfirm(selectedTags)
-                        onDismissRequest()
-                    },
-                    onDismiss = onDismissRequest
-                )
+                    )
+                }
             }
         }
     }

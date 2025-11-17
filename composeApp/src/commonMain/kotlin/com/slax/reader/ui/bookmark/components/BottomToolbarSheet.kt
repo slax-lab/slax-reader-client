@@ -74,7 +74,6 @@ fun BottomToolbarSheet(
         )
     }
 
-
     // 内部动画触发状态
     var internalVisible by remember { mutableStateOf(false) }
 
@@ -146,6 +145,7 @@ fun BottomToolbarSheet(
                         }
 
                         onIconClick(pageId, iconIndex)
+                        internalVisible = false
                     },
                     modifier = Modifier.padding(top = 30.dp)
                 )
