@@ -133,7 +133,8 @@ private fun ImageViewerContent(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
             userScrollEnabled = userScrollEnabled,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            beyondViewportPageCount = 2
         ) { page ->
             ZoomableImagePage(
                 imageUrl = imageUrls[page],
