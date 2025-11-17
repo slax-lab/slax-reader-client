@@ -15,7 +15,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
@@ -38,8 +37,6 @@ import com.slax.reader.const.BookmarkRoutes
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.InboxListViewModel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.*
@@ -72,8 +69,7 @@ fun BookmarkItemRow(
 
     val downloadStatus by remember(bookmark.id) {
         derivedStateOf {
-            viewModel.localBookmarkMap
-                .map { it[bookmark.id]?.downloadStatus ?: 0 }
+            viewModel.localBookmarkMap.value[bookmark.id]?.downloadStatus
         }
     }
 
