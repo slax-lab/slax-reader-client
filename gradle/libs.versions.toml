@@ -18,6 +18,7 @@ okio = "3.16.2"
 powerSyncCore = "1.8.1"
 powerSyncRoom = "1.7.0"
 room = "2.8.0"
+sketchHttp = "4.3.1"
 sqlite = "2.6.1"
 ksp = "2.2.20-2.0.3"
 koinCompose = "4.1.1"
@@ -78,6 +79,11 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 connectivity-core = { module = "dev.jordond.connectivity:connectivity-core", version.ref = "connectivity" }
 connectivity-device = { module = "dev.jordond.connectivity:connectivity-device", version.ref = "connectivity" }
 connectivity-compose-device = { module = "dev.jordond.connectivity:connectivity-compose-device", version.ref = "connectivity" }
+sketch-animated-gif = { module = "io.github.panpf.sketch4:sketch-animated-gif", version.ref = "sketchHttp" }
+sketch-animated-gif-koral = { module = "io.github.panpf.sketch4:sketch-animated-gif-koral", version.ref = "sketchHttp" }
+sketch-compose = { module = "io.github.panpf.sketch4:sketch-compose", version.ref = "sketchHttp" }
+sketch-http = { module = "io.github.panpf.sketch4:sketch-http", version.ref = "sketchHttp" }
+sketch-svg = { module = "io.github.panpf.sketch4:sketch-svg", version.ref = "sketchHttp" }
 
 
 [plugins]

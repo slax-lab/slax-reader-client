@@ -63,12 +63,6 @@ actual fun DetailScreen(
     // 顶部内容高度 (px)
     var headerMeasuredHeight by remember { mutableFloatStateOf(0f) }
 
-    val animatedTopContentHeight by animateFloatAsState(
-        targetValue = headerMeasuredHeight,
-        animationSpec = tween(durationMillis = 220),
-        label = "TopContentInset"
-    )
-
     var manuallyVisible by remember { mutableStateOf(true) }
 
     val bottomThresholdPx = with(LocalDensity.current) { 100.dp.toPx() }
@@ -156,7 +150,7 @@ actual fun DetailScreen(
                 AppWebView(
                     htmlContent = content,
                     modifier = Modifier.fillMaxSize(),
-                    topContentInsetPx = animatedTopContentHeight,
+                    topContentInsetPx = headerMeasuredHeight,
                     onTap = {
                         // 只在非底部且非顶部区域才切换显示状态
                         if (!isNearBottom && webViewScrollY.floatValue > 10f) {
@@ -236,6 +230,7 @@ actual fun DetailScreen(
         if (showTagView) {
             TagsManageBottomSheet(
                 detailViewModel = detailViewModel,
+                visible = showTagView,
                 onDismissRequest = { showTagView = false },
                 enableDrag = false,
                 onConfirm = { selectedTags ->
@@ -265,7 +260,6 @@ actual fun DetailScreen(
                 onDismissRequest = { showToolbar = false },
                 onIconClick = { pageId, iconIndex ->
                     println("点击了页面 $pageId 的第 ${iconIndex + 1} 个图标")
-                    showToolbar = false
                 }
             )
         }

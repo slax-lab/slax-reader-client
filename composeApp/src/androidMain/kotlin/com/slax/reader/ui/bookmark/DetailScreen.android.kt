@@ -192,23 +192,18 @@ actual fun DetailScreen(
 
         // 标签管理界面
         if (showTagView) {
-            AnimatedVisibility(
+            TagsManageBottomSheet(
+                detailViewModel = detailViewModel,
                 visible = showTagView,
-                enter = fadeIn(animationSpec = tween(300)),
-                exit = fadeOut(animationSpec = tween(300))
-            ) {
-                TagsManageBottomSheet(
-                    detailViewModel = detailViewModel,
-                    onDismissRequest = { showTagView = false },
-                    enableDrag = false,
-                    onConfirm = { selectedTags ->
-                        detailViewModel.viewModelScope.launch {
-                            detailViewModel.updateBookmarkTags(bookmarkId = detail.id, selectedTags.map { it.id })
-                        }
-                        showTagView = false
+                onDismissRequest = { showTagView = false },
+                enableDrag = false,
+                onConfirm = { selectedTags ->
+                    detailViewModel.viewModelScope.launch {
+                        detailViewModel.updateBookmarkTags(bookmarkId = detail.id, selectedTags.map { it.id })
                     }
-                )
-            }
+                    showTagView = false
+                }
+            )
         }
 
         // Overview 弹窗
