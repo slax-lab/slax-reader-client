@@ -3,6 +3,7 @@ package com.slax.reader.ui.bookmark
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.slax.reader.data.database.dao.BookmarkDao
+import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.data.database.model.UserTag
 import com.slax.reader.data.network.ApiService
@@ -23,6 +24,7 @@ data class OverviewState(
 
 class BookmarkDetailViewModel(
     private val bookmarkDao: BookmarkDao,
+    private val localBookmarkDao: LocalBookmarkDao,
     private val backgroundDomain: BackgroundDomain,
     private val apiService: ApiService,
     private val appPreferences: AppPreferences
@@ -40,31 +42,16 @@ class BookmarkDetailViewModel(
         val bookmarkId = _bookmarkId.value ?: return
 
         viewModelScope.launch {
-            // 从数据库读取缓存
-            val localInfo = withContext(Dispatchers.IO) {
-                bookmarkDao.getLocalBookmarkInfo(bookmarkId)
+            val (cachedOverview, cachedKeyTakeaways) = withContext(Dispatchers.IO) {
+                localBookmarkDao.getLocalBookmarkOverview(bookmarkId)
             }
 
-            // 如果有缓存且不为空，直接使用
-            if (!localInfo?.overview.isNullOrEmpty()) {
-                _overviewContent.value = localInfo.overview
-
-                // 反序列化 keyTakeaways
-                val keyTakeaways = try {
-                    if (!localInfo.keyTakeaways.isNullOrEmpty()) {
-                        Json.decodeFromString<List<String>>(localInfo.keyTakeaways)
-                    } else {
-                        emptyList()
-                    }
-                } catch (e: Exception) {
-                    println("Failed to deserialize keyTakeaways: ${e.message}")
-                    emptyList()
-                }
-
+            if (!cachedOverview.isNullOrEmpty() && !cachedKeyTakeaways.isNullOrEmpty()) {
+                _overviewContent.value = cachedOverview
                 _overviewState.update { state ->
                     state.copy(
-                        overview = localInfo.overview,
-                        keyTakeaways = keyTakeaways,
+                        keyTakeaways = cachedKeyTakeaways,
+                        overview = cachedOverview,
                         isLoading = false
                     )
                 }
@@ -108,7 +95,7 @@ class BookmarkDetailViewModel(
                                     } else {
                                         null
                                     }
-                                    bookmarkDao.saveOverviewCache(
+                                    localBookmarkDao.updateLocalBookmarkOverview(
                                         bookmarkId = bookmarkId,
                                         overview = fullOverview,
                                         keyTakeaways = keyTakeawaysJson
@@ -124,7 +111,6 @@ class BookmarkDetailViewModel(
                         }
 
                         else -> {
-                            // 忽略其他类型
                         }
                     }
                 }

@@ -6,13 +6,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.*
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -29,14 +27,7 @@ import com.slax.reader.const.BookmarkRoutes
 import com.slax.reader.const.SettingsRoutes
 import com.slax.reader.const.SpaceManagerRoutes
 import com.slax.reader.data.database.model.InboxListBookmarkItem
-import com.slax.reader.data.preferences.AppPreferences
-import com.slax.reader.data.preferences.ContinueReadingBookmark
-import com.slax.reader.domain.auth.AuthDomain
-import com.slax.reader.ui.inbox.compenents.ArticleList
-import com.slax.reader.ui.inbox.compenents.ContinueReading
-import com.slax.reader.ui.inbox.compenents.InboxTitleRow
-import com.slax.reader.ui.inbox.compenents.TitleEditOverlay
-import com.slax.reader.ui.inbox.compenents.UserAvatar
+import com.slax.reader.ui.inbox.compenents.*
 import com.slax.reader.ui.sidebar.Sidebar
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -46,12 +37,9 @@ import slax_reader_client.composeapp.generated.resources.ic_inbox_tab
 
 @Composable
 fun InboxListScreen(navCtrl: NavController) {
-    val authDomain: AuthDomain = koinInject()
     val inboxViewModel = koinInject<InboxListViewModel>()
-    val appPreferences: AppPreferences = koinInject()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    val listState = rememberLazyListState()
 
     println("[watch][UI] recomposition InboxListScreen")
 
@@ -66,9 +54,6 @@ fun InboxListScreen(navCtrl: NavController) {
         onSpaceManagerClick = {
             navCtrl.navigate(SpaceManagerRoutes)
         },
-        onLogout = {
-            authDomain.signOut()
-        }
     ) {
         Box(
             modifier = Modifier
@@ -102,9 +87,7 @@ fun InboxListScreen(navCtrl: NavController) {
                                 indication = null,
                                 interactionSource = remember { MutableInteractionSource() }
                             ) {
-                                scope.launch {
-                                    listState.animateScrollToItem(0)
-                                }
+                                inboxViewModel.scrollToTop()
                             }
                     )
                 }
@@ -112,8 +95,6 @@ fun InboxListScreen(navCtrl: NavController) {
                 ContentSection(
                     navCtrl = navCtrl,
                     inboxViewModel = inboxViewModel,
-                    listState = listState,
-                    appPreferences = appPreferences
                 )
             }
         }
@@ -170,25 +151,10 @@ private fun NavigationBar(
 private fun ContentSection(
     navCtrl: NavController,
     inboxViewModel: InboxListViewModel,
-    listState: androidx.compose.foundation.lazy.LazyListState,
-    appPreferences: AppPreferences
 ) {
     println("[watch][UI] recomposition ContentSection")
 
-    val coroutineScope = rememberCoroutineScope()
-    var showContinueData by remember { mutableStateOf<ContinueReadingBookmark?>(null) }
-    LaunchedEffect(Unit) {
-        coroutineScope.launch {
-            val bookmark = appPreferences.getContinueReadingBookmark()
-            if (bookmark != null) {
-                showContinueData = bookmark
-                appPreferences.clearContinueReadingBookmark()
-            }
-        }
-    }
-
     var editingBookmark by remember { mutableStateOf<InboxListBookmarkItem?>(null) }
-
 
     Box(
         modifier = Modifier.fillMaxSize().padding(top = 8.dp).clipToBounds()
@@ -211,26 +177,15 @@ private fun ContentSection(
                 onEditTitle = { bookmark ->
                     editingBookmark = bookmark
                 },
-                lazyListState = listState
             )
         }
 
-        // ContinueReading 悬浮组件
-        if (showContinueData != null) {
-            ContinueReading(
-                visible = showContinueData != null,
-                title = showContinueData!!.title,
-                onDismiss = {
-                    showContinueData = null
-                },
-                onClick = {
-                    navCtrl.navigate(BookmarkRoutes(bookmarkId = showContinueData!!.bookmarkId))
-                    showContinueData = null
-                },
-                modifier = Modifier.align(Alignment.BottomCenter)
-            )
-        }
-
+        ContinueReading(
+            onClick = { bookmarkId ->
+                navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmarkId))
+            },
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
 
         editingBookmark?.let { bookmark ->
             TitleEditOverlay(

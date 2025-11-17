@@ -21,40 +21,44 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.slax.reader.data.preferences.AppPreferences
+import com.slax.reader.data.preferences.ContinueReadingBookmark
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
-import slax_reader_client.composeapp.generated.resources.*
+import org.koin.compose.koinInject
+import slax_reader_client.composeapp.generated.resources.Res
+import slax_reader_client.composeapp.generated.resources.ic_continue_reading_close
+import slax_reader_client.composeapp.generated.resources.ic_continue_reading_icon
 
-/**
- * 继续阅读组件
- * 悬浮在列表底部，带显示/隐藏动画
- *
- * @param visible 是否显示
- * @param title 显示的标题文字
- * @param onDismiss 点击关闭图标时的回调（在退出动画完成后调用）
- * @param onClick 点击组件时的回调（可选）
- */
 @Composable
 fun ContinueReading(
-    visible: Boolean,
-    title: String,
-    onDismiss: () -> Unit,
-    onClick: (() -> Unit)? = null,
+    onClick: ((bookmarkId: String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    var internalVisible by remember { mutableStateOf(true) }
+    val appPreferences: AppPreferences = koinInject()
+    val coroutineScope = rememberCoroutineScope()
+    var showContinueData by remember { mutableStateOf<ContinueReadingBookmark?>(null) }
+    var internalVisible by remember { mutableStateOf(false) }
 
-    LaunchedEffect(visible) {
-        if (visible) {
-            kotlinx.coroutines.delay(300)
+    LaunchedEffect(Unit) {
+        coroutineScope.launch {
+            val bookmark = appPreferences.getContinueReadingBookmark() ?: return@launch
+
+            showContinueData = bookmark
+            appPreferences.clearContinueReadingBookmark()
+
+            delay(300)
+            internalVisible = true
         }
-
-        internalVisible = visible
     }
+
+    if (showContinueData == null) return
 
     LaunchedEffect(internalVisible) {
         if (!internalVisible) {
-            kotlinx.coroutines.delay(300)
-            onDismiss()
+            delay(300)
+            showContinueData = null
         }
     }
 
@@ -104,7 +108,7 @@ fun ContinueReading(
                     indication = null,
                     enabled = onClick != null
                 ) {
-                    onClick?.invoke()
+                    showContinueData?.let { onClick?.invoke(it.bookmarkId) }
                 }
                 .padding(16.dp)
         ) {
@@ -123,7 +127,7 @@ fun ContinueReading(
                 Spacer(modifier = Modifier.width(6.dp))
 
                 Text(
-                    text = title,
+                    text = showContinueData!!.title,
                     style = TextStyle(
                         fontSize = 15.sp,
                         color = Color(0xFF4d4d4d),

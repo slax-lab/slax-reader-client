@@ -40,7 +40,6 @@ actual fun DetailScreen(
     detail: UserBookmark,
     screenState: DetailScreenState,
     onBackClick: (() -> Unit),
-    appPreferences: com.slax.reader.data.preferences.AppPreferences
 ) {
     var htmlContent by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -77,11 +76,13 @@ actual fun DetailScreen(
                         detailViewModel.recordContinueBookmark(webViewScrollY.floatValue.toInt())
                     }
                 }
+
                 AppLifecycleState.ON_RESUME -> {
                     detailViewModel.viewModelScope.launch {
                         detailViewModel.clearContinueBookmark()
                     }
                 }
+
                 else -> {
                 }
             }

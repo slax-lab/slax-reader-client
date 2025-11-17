@@ -1,6 +1,7 @@
 package com.slax.reader.domain.sync
 
 import com.slax.reader.data.database.dao.BookmarkDao
+import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.data.file.FileManager
 import com.slax.reader.data.network.ApiService
@@ -11,7 +12,9 @@ import kotlinx.atomicfu.getAndUpdate
 import kotlinx.atomicfu.update
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.flatMapMerge
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.ExperimentalTime
@@ -22,15 +25,11 @@ enum class TaskType {
 }
 
 enum class DownloadStatus {
+    NONE,
     DOWNLOADING,
     COMPLETED,
     FAILED
 }
-
-data class BookmarkDownloadStatus(
-    val bookmarkId: String,
-    val status: DownloadStatus
-)
 
 class TaskItem(
     val bookmarkId: String,
@@ -40,6 +39,7 @@ class TaskItem(
 
 class BackgroundDomain(
     private val bookmarkDao: BookmarkDao,
+    private val localBookmarkDao: LocalBookmarkDao,
     private val fileManager: FileManager,
     private val apiService: ApiService,
 ) {
@@ -62,10 +62,6 @@ class BackgroundDomain(
 
     private var downloadQueue: Channel<TaskItem>? = null
 
-    private val _bookmarkStatusMap = MutableStateFlow<Map<String, BookmarkDownloadStatus>>(emptyMap())
-
-    val bookmarkStatusFlow: StateFlow<Map<String, BookmarkDownloadStatus>> = _bookmarkStatusMap.asStateFlow()
-
     @OptIn(ExperimentalTime::class)
     private fun shouldDownload(bookmark: InboxListBookmarkItem): Boolean {
         if (bookmark.metadataStatus != successStatus) return false
@@ -85,20 +81,6 @@ class BackgroundDomain(
     fun startup() {
         workerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         downloadQueue = Channel(100)
-
-        // 从数据库恢复下载状态
-        workerScope!!.launch {
-            try {
-                val downloadedIds = bookmarkDao.getAllDownloadedBookmarkIds()
-                val statusMap = downloadedIds.associate { id ->
-                    id to BookmarkDownloadStatus(id, DownloadStatus.COMPLETED)
-                }
-                _bookmarkStatusMap.value = statusMap
-                println("[BackgroundDomain] 从数据库恢复了 ${downloadedIds.size} 个已下载书签的状态")
-            } catch (e: Exception) {
-                println("[BackgroundDomain] 恢复下载状态失败: ${e.message}")
-            }
-        }
 
         workerScope!!.launch {
             bookmarkDao.watchUserBookmarkList().collect { bookmarkList ->
@@ -156,13 +138,6 @@ class BackgroundDomain(
         val contentInfo = "$bookmarkDir/content.html"
 
         try {
-            // 检查数据库中的下载状态，避免重复下载
-            val localInfo = bookmarkDao.getLocalBookmarkInfo(item.bookmarkId)
-            if (localInfo?.downloadStatus == 1) { // STATUS_COMPLETED
-                println("[BackgroundDomain] 书签 ${item.bookmarkId} 已在数据库中标记为已下载，跳过")
-                return
-            }
-
             fileManager.mkdir("$dataDirectoryPath/$bookmarkDir")
 
             val fileInfo = fileManager.getDataFileInfo(contentInfo)
@@ -211,19 +186,15 @@ class BackgroundDomain(
     }
 
     private suspend fun updateBookmarkStatus(id: String, status: DownloadStatus) {
-        // 更新内存状态
-        _bookmarkStatusMap.update { currentMap ->
-            currentMap + (id to BookmarkDownloadStatus(id, status))
+        val statusCode = when (status) {
+            DownloadStatus.NONE -> 0
+            DownloadStatus.DOWNLOADING -> 1
+            DownloadStatus.COMPLETED -> 2
+            DownloadStatus.FAILED -> 3
         }
-
         // 持久化到数据库
         try {
-            val statusCode = when (status) {
-                DownloadStatus.DOWNLOADING -> 0
-                DownloadStatus.COMPLETED -> 1
-                DownloadStatus.FAILED -> 2
-            }
-            bookmarkDao.updateDownloadStatus(id, statusCode)
+            localBookmarkDao.updateLocalBookmarkDownloadStatus(id, statusCode)
         } catch (e: Exception) {
             println("[BackgroundDomain] 更新下载状态到数据库失败: ${e.message}")
         }

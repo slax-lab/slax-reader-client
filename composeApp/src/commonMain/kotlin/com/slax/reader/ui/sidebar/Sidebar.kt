@@ -7,11 +7,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -22,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.rememberAsyncImagePainter
+import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.coordinator.AppSyncState
 import com.slax.reader.ui.sidebar.compenents.FooterMenu
 import com.slax.reader.ui.sidebar.compenents.SyncStatusBar
@@ -38,9 +35,9 @@ fun Sidebar(
     onSettingsClick: () -> Unit = {},
     onAboutClick: () -> Unit = {},
     onSpaceManagerClick: () -> Unit = {},
-    onLogout: () -> Unit = {},
     content: @Composable () -> Unit
 ) {
+    val authDomain: AuthDomain = koinInject()
     val scope = rememberCoroutineScope()
 
     ModalNavigationDrawer(
@@ -70,7 +67,9 @@ fun Sidebar(
                         }
                         onAboutClick()
                     },
-                    onLogout = onLogout
+                    onLogout = {
+                        authDomain.signOut()
+                    }
                 )
             }
         },

@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.github.panpf.sketch.AsyncImage
 import com.github.panpf.sketch.rememberAsyncImageState
+import kotlinx.coroutines.delay
 
 /**
  * 图片浏览器组件
@@ -51,7 +52,7 @@ fun ImageViewer(
 
     LaunchedEffect(internalVisible) {
         if (!internalVisible) {
-            kotlinx.coroutines.delay(300)
+            delay(300)
             onDismiss()
         }
     }
