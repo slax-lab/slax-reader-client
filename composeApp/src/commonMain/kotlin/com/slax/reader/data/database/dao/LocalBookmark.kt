@@ -30,7 +30,7 @@ class LocalBookmarkDao(
             .map { bookmarkList ->
                 bookmarkList.associateBy { it.id }
             }
-            .stateIn(scope, SharingStarted.Eagerly, emptyMap<String, LocalBookmarkInfo>())
+            .stateIn(scope, SharingStarted.WhileSubscribed(1000), emptyMap())
     }
 
     fun watchUserLocalBookmarkMap(): StateFlow<Map<String, LocalBookmarkInfo>> = _userLocalBookmarkListFlow
