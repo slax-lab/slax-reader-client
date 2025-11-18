@@ -1,5 +1,6 @@
 package com.slax.reader.ui.inbox.compenents
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,27 +26,28 @@ import slax_reader_client.composeapp.generated.resources.ic_cell_internet
 fun ItemStatus(bookmarkId: String, viewModel: InboxListViewModel) {
     val iconResource = painterResource(Res.drawable.ic_cell_internet)
     val iconPainter = remember { iconResource }
-    
+
+    val downloadStatus by remember(bookmarkId) {
+        derivedStateOf {
+            val status = viewModel.localBookmarkMap.value[bookmarkId]?.downloadStatus
+            if (status != null && status != 0) status else null
+        }
+    }
+
     Box(
         modifier = Modifier
             .size(18.dp)
             .fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        val downloadStatus by remember(bookmarkId) {
-            derivedStateOf {
-                val status = viewModel.localBookmarkMap.value[bookmarkId]?.downloadStatus
-                if (status != null && status != 0) status else null
-            }
-        }
-
         val isDownloading = downloadStatus == 1
         val isCompleted = downloadStatus == 2
 
         Surface(
             modifier = Modifier.size(18.dp),
             shape = RoundedCornerShape(50),
-            color = Color(if (isCompleted) 0xFFC4C4C2 else 0xFFF5F5F3)
+            color = Color(0xFFF5F5F3),
+            border = BorderStroke(0.5.dp, if (isCompleted) Color(0xFFC4C4C2) else Color.Transparent)
         ) {}
 
         Image(
