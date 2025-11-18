@@ -11,10 +11,7 @@ pluginManagement {
             }
         }
         mavenCentral()
-        maven(url = "https://maven.mozilla.org/maven2")
-        maven("https://jogamp.org/deployment/maven")
         gradlePluginPortal()
-        maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
     }
 }
 
@@ -28,7 +25,6 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
-        maven("https://maven.mozilla.org/maven2")
     }
 }
 
