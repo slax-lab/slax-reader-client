@@ -110,7 +110,7 @@ fun OverviewDialog(
                     }
             )
 
-            val targetWidth = with(density) { (screenWidth - 24.dp.toPx()) }
+            val targetWidth = with(density) { (screenWidth - 40.dp.toPx()) }
             val maxDialogHeight = screenHeight * 0.8f
             val targetHeight = if (contentHeight > 0f) {
                 minOf(contentHeight, maxDialogHeight)

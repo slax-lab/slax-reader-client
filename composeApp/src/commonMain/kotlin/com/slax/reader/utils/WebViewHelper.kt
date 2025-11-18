@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.slax.reader.const.articleStyle
+import com.slax.reader.const.bottomLineStyle
 import com.slax.reader.const.resetStyle
 
 fun wrapHtmlWithCSS(htmlContent: String): String {
@@ -18,17 +19,21 @@ fun wrapHtmlWithCSS(htmlContent: String): String {
             <style>
                 $articleStyle
                 $resetStyle
+                $bottomLineStyle
 
                 body {
                     padding-top: 0px !important;
                     padding-left: 20px !important;
                     padding-right: 20px !important;
-                    padding-bottom: 200px !important;
+                    padding-bottom: 150px !important;
                 }
             </style>
         </head>
         <body lang="en">
             $htmlContent
+            <div class="bottom-seperator-line">
+              <div class="seperator-line"></div>
+            </div>
         </body>
         </html>
     """.trimIndent()

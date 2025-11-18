@@ -53,78 +53,82 @@ fun FloatingActionBar(
             this.translationY = translationY.value
         }
     ) {
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .offset(y = 10.dp)
-                .shadow(
-                    elevation = 40.dp,
-                    shape = RoundedCornerShape(25.dp),
-                    ambientColor = Color.Black.copy(alpha = 1.0f),
-                    spotColor = Color.Black.copy(alpha = 1.0f)
-                )
-        )
+
 
         Row(
             horizontalArrangement = Arrangement.spacedBy(0.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(25.dp))
-                    .border(
-                        width = 1.dp,
-                        color = Color.White,
-                        shape = RoundedCornerShape(25.dp)
-                    )
-                    .background(Color(0xFFF5F5F5))
-
-            ) {
-                Surface(
-                    onClick = {
-                        detailView.viewModelScope.launch {
-                            detailView.toggleStar(detail.isStarred != 1)
-                        }
-                    },
+            Box {
+                Box(
                     modifier = Modifier
-                        .size(50.dp),
-                    color = Color.Transparent,
-                ) {
-                    Box(
-                        contentAlignment = Alignment.CenterStart
-                    ) {
-                        Icon(
-                            painter = painterResource(
-                                if (detail.isStarred == 1)
-                                    Res.drawable.ic_floating_panel_starred
-                                else Res.drawable.ic_floating_panel_star
-                            ),
-                            contentDescription = null,
-                            tint = Color.Unspecified,
-                            modifier = Modifier.padding(start = 17.5.dp).size(20.dp)
+                        .matchParentSize()
+                        .offset(y = 10.dp)
+                        .shadow(
+                            elevation = 40.dp,
+                            shape = RoundedCornerShape(25.dp),
+                            ambientColor = Color.Black.copy(alpha = 1.0f),
+                            spotColor = Color.Black.copy(alpha = 1.0f)
                         )
+                )
+
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(25.dp))
+                        .border(
+                            width = 1.dp,
+                            color = Color.White,
+                            shape = RoundedCornerShape(25.dp)
+                        )
+                        .background(Color(0xFFFFFFFF))
+
+                ) {
+                    Surface(
+                        onClick = {
+                            detailView.viewModelScope.launch {
+                                detailView.toggleStar(detail.isStarred != 1)
+                            }
+                        },
+                        modifier = Modifier
+                            .size(50.dp),
+                        color = Color.Transparent,
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            Icon(
+                                painter = painterResource(
+                                    if (detail.isStarred == 1)
+                                        Res.drawable.ic_floating_panel_starred
+                                    else Res.drawable.ic_floating_panel_star
+                                ),
+                                contentDescription = null,
+                                tint = Color.Unspecified,
+                                modifier = Modifier.padding(start = 17.5.dp).size(20.dp)
+                            )
+                        }
                     }
-                }
 
-                Surface(
-                    onClick = {
-                        detailView.viewModelScope.launch {
-                            detailView.toggleArchive(detail.archiveStatus != 1)
-                        }
-                    },
-                    modifier = Modifier
-                        .size(50.dp),
-                    color = Color.Transparent,
-                ) {
-                    Box(
-                        contentAlignment = Alignment.CenterEnd
+                    Surface(
+                        onClick = {
+                            detailView.viewModelScope.launch {
+                                detailView.toggleArchive(detail.archiveStatus != 1)
+                            }
+                        },
+                        modifier = Modifier
+                            .size(50.dp),
+                        color = Color.Transparent,
                     ) {
-                        Icon(
-                            painter = painterResource(if (detail.archiveStatus == 1) Res.drawable.ic_floating_panel_archieved else Res.drawable.ic_floating_panel_archieve),
-                            contentDescription = null,
-                            tint = Color.Unspecified,
-                            modifier = Modifier.padding(end = 17.5.dp).size(20.dp)
-                        )
+                        Box(
+                            contentAlignment = Alignment.CenterEnd
+                        ) {
+                            Icon(
+                                painter = painterResource(if (detail.archiveStatus == 1) Res.drawable.ic_floating_panel_archieved else Res.drawable.ic_floating_panel_archieve),
+                                contentDescription = null,
+                                tint = Color.Unspecified,
+                                modifier = Modifier.padding(end = 17.5.dp).size(20.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -135,7 +139,7 @@ fun FloatingActionBar(
                 onClick = onMoreClick,
                 modifier = Modifier
                     .size(50.dp),
-                color = Color(0xFFF5F5F5),
+                color = Color(0xFFFFFFFF),
                 shape = RoundedCornerShape(25.dp),
                 border = BorderStroke(1.dp, Color.White)
             ) {

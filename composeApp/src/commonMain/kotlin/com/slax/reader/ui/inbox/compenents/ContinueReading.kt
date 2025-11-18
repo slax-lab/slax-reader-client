@@ -53,7 +53,7 @@ fun ContinueReading(
         }
     }
 
-    if (showContinueData == null) return
+    if (!internalVisible) return
 
     LaunchedEffect(internalVisible) {
         if (!internalVisible) {
@@ -76,92 +76,110 @@ fun ContinueReading(
                 ),
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp)
-            .padding(bottom = 8.dp)
-            .navigationBarsPadding()
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .shadow(
-                    elevation = 40.dp,
-                    shape = RoundedCornerShape(16.dp),
-                    ambientColor = Color(0x14000000), // rgba(0,0,0,0.08)
-                    spotColor = Color(0x14000000)
-                )
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFFFCF0E9),
-                            Color(0xFFF6F2EF)
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomStart)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xE6FCFCFC),
+                                Color(0xFFFCFCFC)
+                            )
                         )
-                    ),
-                    shape = RoundedCornerShape(16.dp)
-                )
-                .border(
-                    width = 1.dp,
-                    color = Color(0x140F1419),
-                    shape = RoundedCornerShape(16.dp)
-                )
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    enabled = onClick != null
-                ) {
-                    showContinueData?.let { onClick?.invoke(it.bookmarkId) }
-                }
-                .padding(16.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Start,
-                modifier = Modifier.fillMaxWidth()
+                    )
             ) {
-                Image(
-                    painter = painterResource(Res.drawable.ic_continue_reading_icon),
-                    contentDescription = "Continue Reading",
-                    modifier = Modifier.size(14.dp),
-                    contentScale = ContentScale.Fit
-                )
+                Spacer(modifier = Modifier.fillMaxWidth().padding(top = 68.dp).navigationBarsPadding())
+            }
 
-                Spacer(modifier = Modifier.width(6.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+                    .padding(top = 13.dp, bottom = 8.dp)
+                    .navigationBarsPadding()
+                    .shadow(
+                        elevation = 40.dp,
+                        shape = RoundedCornerShape(16.dp),
+                        ambientColor = Color(0x14000000),
+                        spotColor = Color(0x14000000)
+                    )
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xFFFFFFFF),
+                                Color(0xFFFFFFFF),
+                            )
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = Color(0x140F1419),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        enabled = onClick != null
+                    ) {
+                        showContinueData?.let { onClick?.invoke(it.bookmarkId) }
+                    }
+                    .padding(16.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Image(
+                        painter = painterResource(Res.drawable.ic_continue_reading_icon),
+                        contentDescription = "Continue Reading",
+                        modifier = Modifier.size(14.dp),
+                        contentScale = ContentScale.Fit
+                    )
 
-                Text(
-                    text = showContinueData!!.title,
-                    style = TextStyle(
-                        fontSize = 15.sp,
-                        color = Color(0xFF4d4d4d),
-                        lineHeight = 21.sp
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
+                    Spacer(modifier = Modifier.width(6.dp))
 
-                Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = showContinueData!!.title,
+                        style = TextStyle(
+                            fontSize = 15.sp,
+                            color = Color(0xFF4d4d4d),
+                            lineHeight = 21.sp
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
 
-                Box(
-                    modifier = Modifier
-                        .width(1.dp)
-                        .height(16.dp)
-                        .background(Color(0x3DCAA68E))
-                )
+                    Spacer(modifier = Modifier.width(8.dp))
 
-                Spacer(modifier = Modifier.width(12.dp))
+                    Box(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .height(16.dp)
+                            .background(Color(0x3DCAA68E))
+                    )
 
-                Image(
-                    painter = painterResource(Res.drawable.ic_continue_reading_close),
-                    contentDescription = "Close",
-                    modifier = Modifier
-                        .size(12.dp)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {
-                            internalVisible = false
-                        },
-                    contentScale = ContentScale.Fit
-                )
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Image(
+                        painter = painterResource(Res.drawable.ic_continue_reading_close),
+                        contentDescription = "Close",
+                        modifier = Modifier
+                            .size(12.dp)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                internalVisible = false
+                            },
+                        contentScale = ContentScale.Fit
+                    )
+                }
             }
         }
     }
