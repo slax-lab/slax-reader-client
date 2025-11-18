@@ -16,3 +16,12 @@ captures
 !*.xcodeproj/project.xcworkspace/
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
+Pods/
+Podfile.lock
+*.xcworkspace
+.env
+*.jks
+firebase/
+.env.release
+composeApp/google-services.json
+iosApp/iosApp/GoogleService-Info.plist
