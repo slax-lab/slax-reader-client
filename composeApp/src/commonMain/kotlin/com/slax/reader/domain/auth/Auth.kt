@@ -70,8 +70,10 @@ class AuthDomain(
     fun signOut() {
         viewModelScope.launch {
             appPreferences.clearAuthToken()
-            fileManager.deleteDataDirectory("bookmark")
             _authState.value = AuthState.Unauthenticated
+            withContext(Dispatchers.IO) {
+                fileManager.deleteDataDirectory("bookmark")
+            }
         }
         return
     }

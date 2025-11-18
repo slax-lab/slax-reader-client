@@ -31,7 +31,6 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.slax.reader.const.BookmarkRoutes
 import com.slax.reader.data.database.model.InboxListBookmarkItem
@@ -57,8 +56,6 @@ fun BookmarkItemRow(
     iconPainter: Painter,
     onEditTitle: (InboxListBookmarkItem) -> Unit,
 ) {
-    println("[watch][UI] recomposition BookmarkItemRow: ${bookmark.displayTitle()}")
-
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
@@ -270,7 +267,7 @@ fun BookmarkItemRow(
                             change.consume()
                             totalDragDistance += abs(dragAmount)
                             val newOffset = (offsetXAnimatable.value + dragAmount).coerceIn(maxSwipeLeft, maxSwipeRight)
-                            viewModel.viewModelScope.launch {
+                            scope.launch {
                                 offsetXAnimatable.snapTo(newOffset)
                             }
                         }
