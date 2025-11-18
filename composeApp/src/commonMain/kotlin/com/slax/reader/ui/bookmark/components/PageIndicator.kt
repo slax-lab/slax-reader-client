@@ -37,7 +37,7 @@ fun PageIndicator(
                     .width(if (isActive) 12.dp else 6.dp)
                     .height(6.dp)
                     .clip(RoundedCornerShape(3.dp))
-                    .background(if (isActive) Color(0xFF333333) else Color(0xCC333333))
+                    .background(if (isActive) Color(0xFF333333) else Color(0x33333333))
             )
         }
     }
