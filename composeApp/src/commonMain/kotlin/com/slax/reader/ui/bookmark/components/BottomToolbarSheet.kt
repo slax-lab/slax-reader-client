@@ -119,7 +119,7 @@ fun BottomToolbarSheet(
             )
         ) {
             Surface(
-                color = Color(0xF2F5F5F3),
+                color = Color(0xFFF5F5F3),
                 border = BorderStroke(0.5.dp, Color(0x140F1419)),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -127,7 +127,6 @@ fun BottomToolbarSheet(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) { /* 阻止点击事件穿透 */ },
-                shadowElevation = 8.dp
             ) {
                 PagerToolbar(
                     pages = toolbarPages,
@@ -138,7 +137,6 @@ fun BottomToolbarSheet(
                             } else if (pageId == "archive") {
                                 detailView.toggleArchive(detail.archiveStatus != 1)
                             }
-
                         }
 
                         onIconClick(pageId, iconIndex)

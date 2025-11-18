@@ -53,8 +53,6 @@ fun BookmarkItemRow(
     bookmark: InboxListBookmarkItem,
     onEditTitle: (InboxListBookmarkItem) -> Unit,
 ) {
-    println("[watch][UI] recomposition BookmarkItemRow: ${bookmark.displayTitle()}")
-
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
