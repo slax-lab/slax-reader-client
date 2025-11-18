@@ -1,12 +1,12 @@
-import UIKit
-import Social
-import WebKit
 import ComposeApp
+import Social
+import UIKit
+import WebKit
 
 @MainActor
 final class ShareViewController: UIViewController {
-
     // MARK: - UI Components
+
     private lazy var backgroundView: UIView = {
         let view = UIView()
         view.backgroundColor = .clear
@@ -56,6 +56,7 @@ final class ShareViewController: UIViewController {
     }()
 
     // MARK: - Lifecycle
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
@@ -68,40 +69,41 @@ final class ShareViewController: UIViewController {
     }
 
     // MARK: - Setup
+
     private func setupUI() {
         view.addSubview(backgroundView)
         view.addSubview(containerView)
 
-        [loadingIndicator, statusLabel, successImageView].forEach {
-            containerView.addSubview($0)
+        for item in [loadingIndicator, statusLabel, successImageView] {
+            containerView.addSubview(item)
         }
 
         NSLayoutConstraint.activate([
-                                        // Background view
-                                        backgroundView.topAnchor.constraint(equalTo: view.topAnchor),
-                                        backgroundView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-                                        backgroundView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-                                        backgroundView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            // Background view
+            backgroundView.topAnchor.constraint(equalTo: view.topAnchor),
+            backgroundView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            backgroundView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            backgroundView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
-                                        // Container view
-                                        containerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-                                        containerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-                                        containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-                                        containerView.heightAnchor.constraint(equalToConstant: 180),
+            // Container view
+            containerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            containerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            containerView.heightAnchor.constraint(equalToConstant: 180),
 
-                                        // Loading indicator
-                                        loadingIndicator.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
-                                        loadingIndicator.centerYAnchor.constraint(equalTo: containerView.centerYAnchor, constant: -20),
+            // Loading indicator
+            loadingIndicator.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
+            loadingIndicator.centerYAnchor.constraint(equalTo: containerView.centerYAnchor, constant: -20),
 
-                                        // Status label
-                                        statusLabel.topAnchor.constraint(equalTo: loadingIndicator.bottomAnchor, constant: 16),
-                                        statusLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
-                                        statusLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20),
+            // Status label
+            statusLabel.topAnchor.constraint(equalTo: loadingIndicator.bottomAnchor, constant: 16),
+            statusLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
+            statusLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20),
 
-                                        // Success image view
-                                        successImageView.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
-                                        successImageView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor, constant: -20)
-                                    ])
+            // Success image view
+            successImageView.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
+            successImageView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor, constant: -20),
+        ])
 
         animatePresentation()
     }
@@ -123,6 +125,7 @@ final class ShareViewController: UIViewController {
     }
 
     // MARK: - Content Processing
+
     private func processShareContent() async {
         guard let extensionItems = extensionContext?.inputItems as? [NSExtensionItem] else {
             showError(message: nil)
@@ -193,6 +196,7 @@ final class ShareViewController: UIViewController {
     }
 
     // MARK: - UI State Updates
+
     private func showSuccess() {
         let feedbackGenerator = UINotificationFeedbackGenerator()
         feedbackGenerator.notificationOccurred(.success)
@@ -201,10 +205,11 @@ final class ShareViewController: UIViewController {
             self.loadingIndicator.alpha = 0
             self.statusLabel.text = ComposeApp.ShareKt.getShareLabelText(key: "success")
         }) { _ in
-            self.loadingIndicator.isHidden = true
-            self.successImageView.isHidden = false
-            self.animateSuccessIcon()
-            Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
+            Task {
+                self.loadingIndicator.isHidden = true
+                self.successImageView.isHidden = false
+                self.animateSuccessIcon()
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
                 self.dismissExtension()
             }
         }
@@ -223,8 +228,7 @@ final class ShareViewController: UIViewController {
                 self.successImageView.transform = .identity
             }
         ) { _ in
-            UIView.animate(withDuration: 0, delay: 1.0, options: []) {
-            } completion: { _ in
+            UIView.animate(withDuration: 0, delay: 1.0, options: []) {} completion: { _ in
                 self.dismissExtension()
             }
         }
@@ -241,6 +245,7 @@ final class ShareViewController: UIViewController {
     }
 
     // MARK: - Dismissal
+
     @objc private func dismissExtension() {
         UIView.animate(withDuration: 0.3, animations: {
             self.containerView.transform = CGAffineTransform(translationX: 0, y: 200)
@@ -252,6 +257,7 @@ final class ShareViewController: UIViewController {
 }
 
 // MARK: - NSItemProvider Extension
+
 extension NSItemProvider {
     func loadItem(forTypeIdentifier typeIdentifier: String) async throws -> NSSecureCoding? {
         try await withCheckedThrowingContinuation { continuation in
@@ -267,6 +273,7 @@ extension NSItemProvider {
 }
 
 // MARK: - NavigationDelegate
+
 private class NavigationDelegate: NSObject, WKNavigationDelegate {
     private let completion: (Bool) -> Void
 
@@ -275,15 +282,15 @@ private class NavigationDelegate: NSObject, WKNavigationDelegate {
         super.init()
     }
 
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+    func webView(_: WKWebView, didFinish _: WKNavigation!) {
         completion(true)
     }
 
-    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+    func webView(_: WKWebView, didFail _: WKNavigation!, withError _: Error) {
         completion(false)
     }
 
-    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+    func webView(_: WKWebView, didFailProvisionalNavigation _: WKNavigation!, withError _: Error) {
         completion(false)
     }
 }
