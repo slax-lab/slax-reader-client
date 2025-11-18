@@ -44,10 +44,6 @@ import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.*
 import kotlin.math.roundToInt
 
-// ================================================================================================
-// 登录页面
-// ================================================================================================
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(navController: NavHostController) {
@@ -92,9 +88,11 @@ fun LoginScreen(navController: NavHostController) {
     ) {
         // 顶部内容区域
         Column {
-            Spacer(modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(375f / 128f))
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(375f / 128f)
+            )
 
             Text(
                 text = "欢迎来到 \nSlax Reader",

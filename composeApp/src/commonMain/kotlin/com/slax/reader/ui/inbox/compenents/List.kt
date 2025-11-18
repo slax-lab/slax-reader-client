@@ -19,9 +19,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.InboxListViewModel
-import org.jetbrains.compose.resources.painterResource
-import slax_reader_client.composeapp.generated.resources.Res
-import slax_reader_client.composeapp.generated.resources.ic_cell_internet
 
 @Composable
 fun ArticleList(
@@ -32,8 +29,6 @@ fun ArticleList(
     println("[watch][UI] recomposition ArticleList")
 
     val bookmarks by viewModel.bookmarks.collectAsState()
-    val iconResource = painterResource(Res.drawable.ic_cell_internet)
-    val iconPainter = remember { iconResource }
 
     val lazyListState = rememberLazyListState()
     val dividerLine: @Composable () -> Unit = remember {
@@ -64,7 +59,6 @@ fun ArticleList(
                     navCtrl = navCtrl,
                     viewModel = viewModel,
                     bookmark = bookmark,
-                    iconPainter = iconPainter,
                     onEditTitle = onEditTitle
                 )
 

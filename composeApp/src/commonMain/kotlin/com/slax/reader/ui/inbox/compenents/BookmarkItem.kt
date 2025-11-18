@@ -9,7 +9,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -17,7 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -53,9 +51,10 @@ fun BookmarkItemRow(
     navCtrl: NavController,
     viewModel: InboxListViewModel,
     bookmark: InboxListBookmarkItem,
-    iconPainter: Painter,
     onEditTitle: (InboxListBookmarkItem) -> Unit,
 ) {
+    println("[watch][UI] recomposition BookmarkItemRow: ${bookmark.displayTitle()}")
+
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
@@ -63,12 +62,6 @@ fun BookmarkItemRow(
     var menuTriggerSource by remember { mutableStateOf(MenuTriggerSource.NONE) }
     var lastMenuTriggerSource by remember { mutableStateOf(MenuTriggerSource.NONE) }
     val showMenu = menuTriggerSource != MenuTriggerSource.NONE
-
-    val downloadStatus by remember(bookmark.id) {
-        derivedStateOf {
-            viewModel.localBookmarkMap.value[bookmark.id]?.downloadStatus
-        }
-    }
 
     // 闪烁动画
     val flashAlpha = remember { Animatable(0f) }
@@ -315,37 +308,7 @@ fun BookmarkItemRow(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(18.dp)
-                                .fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            val isDownloading = downloadStatus == 1
-                            val isCompleted = downloadStatus == 2
-
-                            Surface(
-                                modifier = Modifier.size(18.dp),
-                                shape = RoundedCornerShape(50),
-                                color = Color(if (isCompleted) 0xFFC4C4C2 else 0xFFF5F5F3)
-                            ) {}
-
-                            Image(
-                                painter = iconPainter,
-                                contentDescription = "Article",
-                                modifier = Modifier.size(12.dp),
-                                contentScale = ContentScale.Fit
-                            )
-
-                            if (isDownloading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(18.dp),
-                                    color = Color(0xFF1DA1F2),
-                                    strokeWidth = 2.dp,
-                                    trackColor = Color.Transparent
-                                )
-                            }
-                        }
+                        ItemStatus(bookmark.id, viewModel)
 
                         Text(
                             text = bookmark.displayTitle(),
