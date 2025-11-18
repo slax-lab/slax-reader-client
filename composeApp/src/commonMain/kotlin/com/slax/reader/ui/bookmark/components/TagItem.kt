@@ -63,7 +63,7 @@ fun TagItem(
         if (showDeleteButton && onDelete != null) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
                     text = tag,
