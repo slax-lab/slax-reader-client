@@ -138,6 +138,7 @@ fun BottomToolbarSheet(
                             } else if (pageId == "archive") {
                                 detailView.toggleArchive(detail.archiveStatus != 1)
                             }
+
                         }
 
                         onIconClick(pageId, iconIndex)

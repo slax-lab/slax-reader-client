@@ -80,7 +80,7 @@ fun FloatingActionBar(
                             color = Color.White,
                             shape = RoundedCornerShape(25.dp)
                         )
-                        .background(Color(0xFFF5F5F5))
+                        .background(Color(0xFFFFFFFF))
 
                 ) {
                     Surface(
@@ -139,7 +139,7 @@ fun FloatingActionBar(
                 onClick = onMoreClick,
                 modifier = Modifier
                     .size(50.dp),
-                color = Color(0xFFF5F5F5),
+                color = Color(0xFFFFFFFF),
                 shape = RoundedCornerShape(25.dp),
                 border = BorderStroke(1.dp, Color.White)
             ) {

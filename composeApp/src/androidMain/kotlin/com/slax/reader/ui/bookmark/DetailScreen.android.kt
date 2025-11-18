@@ -225,7 +225,6 @@ actual fun DetailScreen(
                 onDismissRequest = { showToolbar = false },
                 onIconClick = { pageId, iconIndex ->
                     println("点击了页面 $pageId 的第 ${iconIndex + 1} 个图标")
-                    showToolbar = false
                 }
             )
         }
