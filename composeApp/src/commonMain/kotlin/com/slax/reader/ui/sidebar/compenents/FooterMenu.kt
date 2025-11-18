@@ -42,6 +42,7 @@ fun FooterMenu(
                 modifier = Modifier.size(20.dp)
             )
         },
+        shape = RoundedCornerShape(12.dp),
         selected = false,
         onClick = onSettingsClick,
         colors = NavigationDrawerItemDefaults.colors(
@@ -67,6 +68,7 @@ fun FooterMenu(
                 modifier = Modifier.size(20.dp)
             )
         },
+        shape = RoundedCornerShape(12.dp),
         selected = false,
         onClick = onAboutClick,
         colors = NavigationDrawerItemDefaults.colors(

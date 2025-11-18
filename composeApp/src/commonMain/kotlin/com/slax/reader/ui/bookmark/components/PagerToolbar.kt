@@ -54,13 +54,14 @@ private fun IconGridPage(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.padding(horizontal = 24.dp),
+        modifier = modifier.padding(horizontal = 32.dp).fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // 上面一行4个icon
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
+            modifier = Modifier.widthIn(max = 500.dp).fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             icons.take(4).forEachIndexed { index, icon ->
                 IconButton(
@@ -77,8 +78,8 @@ private fun IconGridPage(
         // 下面一行4个icon
         if (icons.size > 4) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                modifier = Modifier.widthIn(max = 500.dp).fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 icons.drop(4).take(4).forEachIndexed { index, icon ->
                     IconButton(

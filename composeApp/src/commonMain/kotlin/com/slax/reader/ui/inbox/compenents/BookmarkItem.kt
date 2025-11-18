@@ -1,6 +1,7 @@
 package com.slax.reader.ui.inbox.compenents
 
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -327,7 +328,8 @@ fun BookmarkItemRow(
                             Surface(
                                 modifier = Modifier.size(18.dp),
                                 shape = RoundedCornerShape(50),
-                                color = Color(if (isCompleted) 0xFFC4C4C2 else 0xFFF5F5F3)
+                                color = Color(0xFFF5F5F3),
+                                border = BorderStroke(0.5.dp, if (isCompleted) Color(0xFFC4C4C2) else Color.Transparent)
                             ) {}
 
                             Image(
