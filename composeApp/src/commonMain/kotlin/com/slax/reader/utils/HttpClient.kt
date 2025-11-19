@@ -11,17 +11,20 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
 expect fun HttpClientConfig<*>.configureSslPinning(pins: List<String>)
-
 fun getHttpClient(appPreferences: AppPreferences): HttpClient {
     val token = MutableStateFlow<String?>(null)
-    CoroutineScope(Dispatchers.Default).launch {
-        appPreferences.getAuthInfo().collect { info ->
-            token.value = info?.token
-        }
+
+    CoroutineScope(Dispatchers.Default.limitedParallelism(1)).launch {
+        appPreferences.getAuthInfo()
+            .distinctUntilChanged { old, new -> old?.token == new?.token }
+            .collect { info ->
+                token.value = info?.token
+            }
     }
 
     return HttpClient {
