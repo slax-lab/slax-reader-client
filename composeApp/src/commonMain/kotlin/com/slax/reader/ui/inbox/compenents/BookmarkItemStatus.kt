@@ -27,10 +27,9 @@ fun ItemStatus(bookmarkId: String, viewModel: InboxListViewModel) {
     val iconResource = painterResource(Res.drawable.ic_cell_internet)
     val iconPainter = remember { iconResource }
 
-    val downloadStatus by remember(bookmarkId) {
+    val downloadStatus by remember {
         derivedStateOf {
-            val status = viewModel.localBookmarkMap.value[bookmarkId]?.downloadStatus
-            if (status != null && status != 0) status else null
+            viewModel.localBookmarkMap.value[bookmarkId]?.downloadStatus
         }
     }
 
