@@ -2,8 +2,9 @@ package com.slax.reader.data.file
 
 import com.slax.reader.utils.cacheDirectoryPath
 import com.slax.reader.utils.dataDirectoryPath
-import kotlinx.coroutines.flow.Flow
-import okio.*
+import okio.FileMetadata
+import okio.FileSystem
+import okio.Path
 import okio.Path.Companion.toPath
 
 data class FileInfo(
@@ -21,14 +22,12 @@ data class DirectorySize(
 )
 
 class FileManager(val fileSystem: FileSystem) {
-
-    init {
-        mkdir("$dataDirectoryPath/bookmark")
-    }
+    val dataPath by lazy { dataDirectoryPath.toPath() }
+    val cachePath by lazy { cacheDirectoryPath.toPath() }
 
     fun deleteDataFile(fileName: String): Boolean {
         return try {
-            val path = "$dataDirectoryPath/$fileName".toPath()
+            val path = "$dataPath/$fileName".toPath()
             fileSystem.delete(path)
             true
         } catch (e: Exception) {
@@ -39,7 +38,11 @@ class FileManager(val fileSystem: FileSystem) {
 
     fun streamDataFile(fileName: String): ByteArray? {
         return try {
-            val path = "$dataDirectoryPath/$fileName".toPath()
+            val path = "$dataPath/$fileName".toPath()
+
+            path.parent?.let { parentDir ->
+                fileSystem.createDirectories(parentDir)
+            }
             fileSystem.read(path) {
                 readByteArray()
             }
@@ -51,7 +54,10 @@ class FileManager(val fileSystem: FileSystem) {
 
     fun getDataFileInfo(fileName: String): FileMetadata? {
         try {
-            val path = "$dataDirectoryPath/$fileName".toPath()
+            val path = "$dataPath/$fileName".toPath()
+            path.parent?.let { parentDir ->
+                fileSystem.createDirectories(parentDir)
+            }
             return fileSystem.metadata(path = path)
         } catch (e: Exception) {
             println("获取文件信息失败: ${e.message}")
@@ -60,20 +66,18 @@ class FileManager(val fileSystem: FileSystem) {
     }
 
     fun writeDataFile(fileName: String, data: ByteArray) {
-        val path = "$dataDirectoryPath/$fileName".toPath()
+        val path = "$dataPath/$fileName".toPath()
+        path.parent?.let { parentDir ->
+            fileSystem.createDirectories(parentDir)
+        }
         fileSystem.write(path) {
             write(data)
         }
     }
 
-    fun mkdir(dirPath: String) {
-        val path = dirPath.toPath()
-        fileSystem.createDirectories(path, false)
-    }
-
     fun deleteDataDirectory(dirName: String): Boolean {
         return try {
-            val path = "$dataDirectoryPath/$dirName".toPath()
+            val path = "$dataPath/$dirName".toPath()
             deleteRecursively(path)
             true
         } catch (e: Exception) {
@@ -147,7 +151,7 @@ class FileManager(val fileSystem: FileSystem) {
 
     fun clearCache(): Boolean {
         return try {
-            val cachePath = cacheDirectoryPath.toPath()
+            val cachePath = cachePath
             fileSystem.list(cachePath).forEach { child ->
                 deleteRecursively(child)
             }

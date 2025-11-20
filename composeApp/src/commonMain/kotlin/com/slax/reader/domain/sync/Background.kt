@@ -5,7 +5,6 @@ import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.data.file.FileManager
 import com.slax.reader.data.network.ApiService
-import com.slax.reader.utils.dataDirectoryPath
 import com.slax.reader.utils.parseInstant
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.getAndUpdate
@@ -138,8 +137,6 @@ class BackgroundDomain(
         val contentInfo = "$bookmarkDir/content.html"
 
         try {
-            fileManager.mkdir("$dataDirectoryPath/$bookmarkDir")
-
             val fileInfo = fileManager.getDataFileInfo(contentInfo)
             val needDownload = if (fileInfo == null) {
                 // 文件不存在，需要下载
@@ -213,8 +210,6 @@ class BackgroundDomain(
         inQueue.getAndUpdate { it + id }
 
         try {
-            fileManager.mkdir("$dataDirectoryPath/$bookmarkDir")
-
             updateBookmarkStatus(id, DownloadStatus.DOWNLOADING)
 
             val htmlContent = apiService.getBookmarkContent(id)

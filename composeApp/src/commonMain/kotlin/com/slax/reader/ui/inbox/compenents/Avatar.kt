@@ -21,7 +21,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.rememberAsyncImagePainter
+import com.github.panpf.sketch.rememberAsyncImagePainter
+import com.github.panpf.sketch.request.ComposableImageRequest
+import com.github.panpf.sketch.request.placeholder
+import com.github.panpf.sketch.request.error
 import com.slax.reader.domain.coordinator.AppSyncState
 import com.slax.reader.ui.inbox.InboxListViewModel
 import org.jetbrains.compose.resources.DrawableResource
@@ -41,9 +44,10 @@ fun UserAvatar() {
     val syncStatus by viewModel.syncState.collectAsState()
 
     val avatarPainter = rememberAsyncImagePainter(
-        model = userInfo?.picture,
-        error = painterResource(Res.drawable.global_default_avatar),
-        placeholder = painterResource(Res.drawable.global_default_avatar)
+        request = ComposableImageRequest(userInfo?.picture) {
+            placeholder(Res.drawable.global_default_avatar)
+            error(Res.drawable.global_default_avatar)
+        }
     )
 
     LaunchedEffect(syncStatus) {}

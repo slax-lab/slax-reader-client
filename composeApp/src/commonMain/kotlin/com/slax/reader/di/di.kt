@@ -1,5 +1,6 @@
 package com.slax.reader.di
 
+import app.slax.reader.SlaxConfig
 import com.powersync.PowerSyncDatabase
 import com.slax.reader.data.database.AppSchema
 import com.slax.reader.data.database.dao.BookmarkDao
@@ -20,6 +21,8 @@ import com.slax.reader.ui.sidebar.SidebarViewModel
 import com.slax.reader.utils.Connector
 import com.slax.reader.utils.getHttpClient
 import com.slax.reader.utils.platformFileSystem
+import io.kotzilla.sdk.analytics.koin.analytics
+import org.koin.core.KoinApplication
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
@@ -71,4 +74,13 @@ val appModule = module {
         repositoryModule,
         viewModelModule
     )
+}
+
+fun KoinApplication.configureKoin() {
+    modules(appModule)
+
+    analytics {
+        setApiKey(SlaxConfig.KOTZILLA_KEY)
+        setVersion("${SlaxConfig.APP_VERSION_NAME}(${SlaxConfig.APP_VERSION_CODE})")
+    }
 }

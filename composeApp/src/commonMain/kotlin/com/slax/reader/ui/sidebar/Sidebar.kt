@@ -17,7 +17,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.rememberAsyncImagePainter
+import com.github.panpf.sketch.rememberAsyncImagePainter
+import com.github.panpf.sketch.request.ComposableImageRequest
+import com.github.panpf.sketch.request.error
+import com.github.panpf.sketch.request.placeholder
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.coordinator.AppSyncState
 import com.slax.reader.ui.sidebar.compenents.FooterMenu
@@ -90,9 +93,10 @@ private fun DrawerContent(
     val syncStatus by viewModel.syncStatus.collectAsState()
 
     val avatarPainter = rememberAsyncImagePainter(
-        model = userInfo?.picture,
-        error = painterResource(Res.drawable.global_default_avatar),
-        placeholder = painterResource(Res.drawable.global_default_avatar)
+        request = ComposableImageRequest(userInfo?.picture) {
+            placeholder(Res.drawable.global_default_avatar)
+            error(Res.drawable.global_default_avatar)
+        }
     )
 
     val interactionSource = remember { MutableInteractionSource() }
