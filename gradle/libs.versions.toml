@@ -7,59 +7,38 @@ androidx-activity = "1.11.0"
 androidx-lifecycle = "2.9.6"
 atomicfu = "0.29.0"
 browser = "1.9.0"
-coilCompose = "3.3.0"
 composeHotReload = "1.0.0-rc02"
 composeMultiplatform = "1.9.3"
 firebaseAnalytics = "2.4.0"
-kamelImage = "1.0.8"
 kmpauthGoogle = "2.3.1"
 kotlinxDatetime = "0.7.1"
 okio = "3.16.2"
 powerSyncCore = "1.8.1"
-powerSyncRoom = "1.7.0"
 room = "2.8.0"
 sketchHttp = "4.3.1"
-sqlite = "2.6.1"
 ksp = "2.2.20-2.0.3"
 koinCompose = "4.1.1"
 kotlin = "2.2.21"
 ktorClientOkhttp = "3.3.2"
-napier = "2.7.1"
 navigationCompose = "2.9.1"
 datastore = "1.1.7"
 kotlinx-serialization = "1.9.0"
 googleServices = "4.4.4"
 firebaseCrashlytics = "3.0.6"
 connectivity = "2.3.0"
+kotzilla = "1.4.0"
 
 [libraries]
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
 atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu" }
-coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" }
-coil-gif = { module = "io.coil-kt.coil3:coil-gif", version.ref = "coilCompose" }
-coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coilCompose" }
-coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coilCompose" }
 firebase-analytics = { module = "dev.gitlive:firebase-analytics", version.ref = "firebaseAnalytics" }
 firebase-app = { module = "dev.gitlive:firebase-app", version.ref = "firebaseAnalytics" }
 firebase-crashlytics = { module = "dev.gitlive:firebase-crashlytics", version.ref = "firebaseAnalytics" }
-kamel-decoder-animated-image = { module = "media.kamel:kamel-decoder-animated-image", version.ref = "kamelImage" }
-kamel-decoder-image-bitmap = { module = "media.kamel:kamel-decoder-image-bitmap", version.ref = "kamelImage" }
-kamel-decoder-image-bitmap-resizing = { module = "media.kamel:kamel-decoder-image-bitmap-resizing", version.ref = "kamelImage" }
-kamel-decoder-image-vector = { module = "media.kamel:kamel-decoder-image-vector", version.ref = "kamelImage" }
-kamel-decoder-svg-batik = { module = "media.kamel:kamel-decoder-svg-batik", version.ref = "kamelImage" }
-kamel-decoder-svg-std = { module = "media.kamel:kamel-decoder-svg-std", version.ref = "kamelImage" }
-kamel-fetcher-resources-android = { module = "media.kamel:kamel-fetcher-resources-android", version.ref = "kamelImage" }
-kamel-image = { module = "media.kamel:kamel-image", version.ref = "kamelImage" }
-kamel-image-default = { module = "media.kamel:kamel-image-default", version.ref = "kamelImage" }
+kotzilla-sdk = { group = "io.kotzilla", name = "kotzilla-sdk", version.ref = "kotzilla" }
 kmpauth-google = { module = "io.github.mirzemehdi:kmpauth-google", version.ref = "kmpauthGoogle" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
 okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
 powerSyncCore = { module = "com.powersync:core", version.ref = "powerSyncCore" }
-powerSyncRoom = { module = "com.powersync:integration-room", version.ref = "powerSyncRoom" }
-androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koinCompose" }
 koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koinCompose" }
 koin-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koinCompose" }
@@ -98,3 +77,4 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 androidx-room = { id = "androidx.room", version.ref = "room" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
 firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebaseCrashlytics" }
+kotzilla = { id = "io.kotzilla.kotzilla-plugin", version.ref = "kotzilla" }

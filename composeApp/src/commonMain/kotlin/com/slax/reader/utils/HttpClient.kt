@@ -28,9 +28,6 @@ fun getHttpClient(appPreferences: AppPreferences): HttpClient {
     }
 
     return HttpClient {
-        if (SlaxConfig.BUILD_ENV == "release") {
-//            configureSslPinning(SSLPins.allPins)
-        }
         engine {
 
         }

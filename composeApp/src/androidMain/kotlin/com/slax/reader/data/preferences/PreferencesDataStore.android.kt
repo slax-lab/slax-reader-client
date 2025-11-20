@@ -1,5 +1,6 @@
 package com.slax.reader.data.preferences
 
+import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.MultiProcessDataStoreFactory
 import androidx.datastore.core.okio.OkioStorage
@@ -8,25 +9,29 @@ import androidx.datastore.preferences.core.PreferencesSerializer
 import okhttp3.internal.platform.PlatformRegistry.applicationContext
 import okio.FileSystem
 import okio.Path.Companion.toPath
+import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
 actual val preferencesPlatformModule = module {
-    single<AppPreferences> { getPreferences() }
+    single<AppPreferences> { getPreferences(androidContext()) }
 }
 
 actual fun getPreferences(): AppPreferences {
-    return AppPreferences(dataStoreInstance)
+    if (applicationContext == null) throw NullPointerException("Context is null")
+    return AppPreferences(createDataStore(applicationContext!!))
 }
 
-private val dataStoreInstance: DataStore<Preferences> by lazy {
-    if (applicationContext == null) throw NullPointerException("Context is null")
+fun getPreferences(context: Context): AppPreferences {
+    return AppPreferences(createDataStore(context))
+}
 
-    val filePath = applicationContext!!.filesDir
+private fun createDataStore(context: Context): DataStore<Preferences> {
+    val filePath = context.filesDir
         .resolve("user.preferences_pb")
         .absolutePath
         .toPath()
 
-    MultiProcessDataStoreFactory.create(
+    return MultiProcessDataStoreFactory.create(
         storage = OkioStorage(
             fileSystem = FileSystem.SYSTEM,
             serializer = PreferencesSerializer,

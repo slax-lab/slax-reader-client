@@ -9,7 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
-import com.slax.reader.di.appModule
+import com.slax.reader.di.configureKoin
 import com.slax.reader.ui.SlaxNavigation
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.initialize
@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
             startKoin {
                 androidLogger(Level.INFO)
                 androidContext(this@MainActivity.applicationContext)
-                modules(appModule)
+                configureKoin()
             }
         }
 

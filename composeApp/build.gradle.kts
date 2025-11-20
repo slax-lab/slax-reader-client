@@ -29,6 +29,7 @@ plugins {
     kotlin("native.cocoapods")
     id("com.codingfeline.buildkonfig") version "0.17.1"
     id("org.jetbrains.kotlinx.atomicfu") version "0.29.0"
+    alias(libs.plugins.kotzilla)
 }
 
 repositories {
@@ -104,16 +105,11 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.koin.android)
-            implementation(libs.coil.network.okhttp)
-            implementation(libs.coil.gif)
             implementation(libs.androidx.browser)
             implementation(libs.sketch.animated.gif.koral)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
-
-            // Coil network engine for iOS
-            implementation(libs.coil.network.ktor)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -126,7 +122,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             // navigation
             implementation(libs.navigation.compose)
-            
+
             implementation(libs.datastore.preferences)
 
             // PowerSync
@@ -150,11 +146,12 @@ kotlin {
             implementation(libs.kotlinx.datetime)
 
             // image
-            implementation(libs.coil.compose)
             implementation(libs.sketch.compose)
             implementation(libs.sketch.http)
             implementation(libs.sketch.animated.gif)
             implementation(libs.sketch.svg)
+            implementation("io.github.panpf.sketch4:sketch-compose-resources:4.3.1")
+            implementation("io.github.panpf.sketch4:sketch-extensions-compose-resources:4.3.1")
 
             // firebase
             implementation(libs.firebase.app)
@@ -174,6 +171,8 @@ kotlin {
             implementation(libs.connectivity.core)
             implementation(libs.connectivity.device)
             implementation(libs.connectivity.compose.device)
+
+            implementation(libs.kotzilla.sdk)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -257,6 +256,11 @@ buildkonfig {
             "GOOGLE_AUTH_SERVER_ID",
             dotenv.get("GOOGLE_AUTH_SERVER_ID")!!
         )
+        buildConfigField(
+            STRING,
+            "KOTZILLA_KEY",
+            dotenv.get("KOTZILLA_KEY")!!
+        )
     }
 
     defaultConfigs("release") {
@@ -267,6 +271,11 @@ buildkonfig {
             STRING,
             "GOOGLE_AUTH_SERVER_ID",
             dotenv.get("GOOGLE_AUTH_SERVER_ID")!!
+        )
+        buildConfigField(
+            STRING,
+            "KOTZILLA_KEY",
+            dotenv.get("KOTZILLA_KEY")!!
         )
     }
 }

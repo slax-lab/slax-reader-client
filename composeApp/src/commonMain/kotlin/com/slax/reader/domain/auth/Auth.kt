@@ -13,7 +13,7 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -40,12 +40,20 @@ class AuthDomain(
 
     private fun checkAuthStatus() {
         viewModelScope.launch {
-            val authInfo = appPreferences.getAuthInfo().firstOrNull()
-            _authState.value = if (authInfo != null) {
-                AuthState.Authenticated(token = authInfo.token, userId = authInfo.userId)
-            } else {
-                AuthState.Unauthenticated
-            }
+            appPreferences.getAuthInfo()
+                .distinctUntilChanged { old, new -> old?.token == new?.token }
+                .collect { authInfo ->
+                    _authState.value = if (authInfo != null) {
+                        AuthState.Authenticated(token = authInfo.token, userId = authInfo.userId)
+                    } else {
+                        AuthState.Unauthenticated
+                    }
+                    withContext(Dispatchers.IO) {
+                        if (_authState.value is AuthState.Authenticated && authInfo == null) fileManager.deleteDataDirectory(
+                            "bookmark"
+                        )
+                    }
+                }
         }
     }
 
@@ -70,7 +78,6 @@ class AuthDomain(
     fun signOut() {
         viewModelScope.launch {
             appPreferences.clearAuthToken()
-            _authState.value = AuthState.Unauthenticated
             withContext(Dispatchers.IO) {
                 fileManager.deleteDataDirectory("bookmark")
             }
