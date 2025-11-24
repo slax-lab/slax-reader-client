@@ -183,8 +183,8 @@ fun OverviewDialog(
                                         annotatedText,
                                         modifier = Modifier.fillMaxWidth(),
                                         style = TextStyle(
-                                            fontSize = 15.sp,
-                                            lineHeight = 24.sp,
+                                            fontSize = 16.sp,
+                                            lineHeight = 27.sp,
                                             color = Color(0xFF333333)
                                         )
                                     )

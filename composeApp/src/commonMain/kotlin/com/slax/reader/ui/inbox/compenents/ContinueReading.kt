@@ -91,7 +91,30 @@ fun ContinueReading(
                         )
                     )
             ) {
-                Spacer(modifier = Modifier.fillMaxWidth().padding(top = 68.dp).navigationBarsPadding())
+                Column(modifier = Modifier.fillMaxWidth().navigationBarsPadding()) {
+                    Spacer(
+                        modifier = Modifier.fillMaxWidth().height(40.dp)
+                            .background(
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color(0x00FCFCFC),
+                                        Color(0xFFFCFCFC)
+                                    )
+                                )
+                            )
+                    )
+                    Spacer(
+                        modifier = Modifier.fillMaxWidth().height(68.dp)
+                            .background(
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color(0xFFFCFCFC),
+                                        Color(0xFFFCFCFC)
+                                    )
+                                )
+                            )
+                    )
+                }
             }
 
             Box(
