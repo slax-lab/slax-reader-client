@@ -197,4 +197,10 @@ class BookmarkDetailViewModel(
     suspend fun clearContinueBookmark() = withContext(Dispatchers.IO) {
         return@withContext appPreferences.clearContinueReadingBookmark()
     }
+
+    suspend fun updateBookmarkTitle(newTitle: String) = withContext(Dispatchers.IO) {
+        _bookmarkId.value?.let { id ->
+            return@withContext bookmarkDao.updateBookmarkAliasTitle(id, newTitle)
+        }
+    }
 }

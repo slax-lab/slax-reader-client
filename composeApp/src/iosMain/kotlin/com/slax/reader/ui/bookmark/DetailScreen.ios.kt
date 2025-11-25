@@ -124,6 +124,7 @@ actual fun DetailScreen(
     var showTagView by remember { mutableStateOf(false) }
     var showOverviewDialog by remember { mutableStateOf(false) }
     var showToolbar by remember { mutableStateOf(false) }
+    var showEditNameDialog by remember { mutableStateOf(false) }
 
     // 图片浏览器状态
     var showImageViewer by remember { mutableStateOf(false) }
@@ -260,6 +261,9 @@ actual fun DetailScreen(
                 onDismissRequest = { showToolbar = false },
                 onIconClick = { pageId, iconIndex ->
                     println("点击了页面 $pageId 的第 ${iconIndex + 1} 个图标")
+                    if (pageId == "edit_title") {
+                        showEditNameDialog = true
+                    }
                 }
             )
         }
@@ -268,6 +272,16 @@ actual fun DetailScreen(
             NavigatorBar(
                 visible = manuallyVisible,
                 onBackClick = onBackClick
+            )
+        }
+
+        // 编辑标题弹窗
+        if (showEditNameDialog) {
+            EditNameDialog(
+                detail = detail,
+                detailView = detailViewModel,
+                visible = showEditNameDialog,
+                onDismissRequest = { showEditNameDialog = false },
             )
         }
 
