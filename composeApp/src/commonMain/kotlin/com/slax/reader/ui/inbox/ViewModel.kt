@@ -49,4 +49,8 @@ class InboxListViewModel(
     suspend fun deleteBookmark(bookmarkId: String) = withContext(Dispatchers.IO) {
         bookmarkDao.deleteBookmark(bookmarkId)
     }
+
+    suspend fun addLinkBookmark(url: String): String = withContext(Dispatchers.IO) {
+        return@withContext bookmarkDao.createBookmark(url)
+    }
 }

@@ -46,14 +46,11 @@ fun EditNameDialog(
     val inputState = remember { TextFieldState(detail.displayTitle) }
     val focusRequester = remember { FocusRequester() }
 
-    // 内部动画触发状态
     var internalVisible by remember { mutableStateOf(false) }
 
-    // 延迟触发动画，确保组件先添加到组合树再开始动画
     LaunchedEffect(visible) {
         internalVisible = visible
         if (visible) {
-            // 延迟聚焦以确保输入框已渲染
             delay(100)
             focusRequester.requestFocus()
         }

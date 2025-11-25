@@ -34,12 +34,15 @@ import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_inbox_tab
+import slax_reader_client.composeapp.generated.resources.ic_xs_inbox_add
 
 @Composable
 fun InboxListScreen(navCtrl: NavController) {
     val inboxViewModel = koinInject<InboxListViewModel>()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+
+    var showAddLinkDialog by remember { mutableStateOf(false) }
 
     println("[watch][UI] recomposition InboxListScreen")
 
@@ -75,6 +78,9 @@ fun InboxListScreen(navCtrl: NavController) {
                                 scope.launch {
                                     drawerState.open()
                                 }
+                            },
+                            onAddLinkClick = {
+                                showAddLinkDialog = true
                             }
                         )
                     }
@@ -96,14 +102,29 @@ fun InboxListScreen(navCtrl: NavController) {
                     navCtrl = navCtrl,
                     inboxViewModel = inboxViewModel,
                 )
+
             }
         }
+    }
+
+    if (showAddLinkDialog) {
+        AddLinkDialog(
+            inboxView = inboxViewModel,
+            visible = showAddLinkDialog,
+            onDismissRequest = {
+                showAddLinkDialog = false
+            },
+            onViewOriginalArticle = { bookmarkId ->
+                navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmarkId))
+            }
+        )
     }
 }
 
 @Composable
 private fun NavigationBar(
-    onAvatarClick: () -> Unit = {}
+    onAvatarClick: () -> Unit = {},
+    onAddLinkClick: () -> Unit = {}
 ) {
     println("[watch][UI] recomposition NavigationBar")
     val interactionSource = remember { MutableInteractionSource() }
@@ -143,6 +164,20 @@ private fun NavigationBar(
             color = Color(0xFF0F1419),
             textAlign = TextAlign.Center,
             modifier = Modifier.align(Alignment.Center)
+        )
+
+        Image(
+            painter = painterResource(Res.drawable.ic_xs_inbox_add),
+            contentDescription = "Add Link",
+            modifier = Modifier.align(Alignment.CenterEnd).size(24.dp, 24.dp)
+                .alpha(if (isPressed) 0.5f else 1f)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null
+                ) {
+                    onAddLinkClick()
+                },
+            contentScale = ContentScale.Fit
         )
     }
 }
