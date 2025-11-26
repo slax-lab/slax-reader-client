@@ -6,6 +6,8 @@ import androidx.compose.ui.Modifier
 import com.slax.reader.const.articleStyle
 import com.slax.reader.const.bottomLineStyle
 import com.slax.reader.const.resetStyle
+import com.slax.reader.data.preferences.AppPreferences
+import kotlinx.coroutines.runBlocking
 
 fun wrapHtmlWithCSS(htmlContent: String): String {
     return """
@@ -41,8 +43,7 @@ fun wrapHtmlWithCSS(htmlContent: String): String {
 
 @Composable
 expect fun AppWebView(
-    url: String? = null,
-    htmlContent: String? = null,
+    htmlContent: String,
     modifier: Modifier = Modifier,
     topContentInsetPx: Float = 0f,
     onTap: (() -> Unit)? = null,
@@ -51,13 +52,24 @@ expect fun AppWebView(
 )
 
 @Composable
-expect fun OpenInBrowserTab(url: String)
-
-@Composable
 expect fun WebView(
-    url: String? = null,
-    htmlContent: String? = null,
+    url: String,
     modifier: Modifier,
     contentInsets: PaddingValues? = null,
     onScroll: ((x: Double, y: Double) -> Unit)? = null,
 )
+
+@Composable
+expect fun OpenInBrowser(url: String)
+
+fun getDoNotAlertSetting(appPreference: AppPreferences): Boolean {
+    return runBlocking {
+        appPreference.getUserSettingDetailDoNotAlert()
+    }
+}
+
+fun setDoNotAlertSetting(appPreference: AppPreferences) {
+    runBlocking {
+        appPreference.setUserSettingDetailDoNotAlert(true)
+    }
+}
