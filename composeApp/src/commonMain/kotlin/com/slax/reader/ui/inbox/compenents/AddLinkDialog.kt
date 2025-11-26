@@ -40,7 +40,7 @@ fun AddLinkDialog(
     inboxView: InboxListViewModel,
     visible: Boolean,
     onDismissRequest: () -> Unit,
-    onViewOriginalArticle: (bookmarkId: String) -> Unit
+    completeHandler: (bookmarkId: String, url: String) -> Unit
 ) {
     val inputState = remember { TextFieldState("") }
     val focusRequester = remember { FocusRequester() }
@@ -137,7 +137,7 @@ fun AddLinkDialog(
 
                         if (addedBookmarkId.isEmpty()) {
                             Text(
-                                text = "Add link",
+                                text = "添加链接",
                                 modifier = Modifier.align(Alignment.CenterStart),
                                 style = TextStyle(
                                     fontSize = 18.sp,
@@ -232,7 +232,7 @@ fun AddLinkDialog(
                     } else {
                         Spacer(modifier = Modifier.height(20.dp))
                         Text(
-                            text = "The snapshot will be ready in a few minutes. In the mean time, you can read the original ariticle.",
+                            text = "快照将在几分钟内准备就绪。在此期间，您可以阅读原文。",
                             modifier = Modifier.fillMaxWidth(),
                             style = TextStyle(
                                 fontSize = 16.sp,
@@ -261,14 +261,14 @@ fun AddLinkDialog(
                                 if (addedBookmarkId.isEmpty()) {
                                     onConfirm()
                                 } else {
-                                    onViewOriginalArticle(addedBookmarkId)
+                                    completeHandler(addedBookmarkId, inputState.text.toString().trim())
                                     internalVisible = false
                                 }
                             },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = if (addedBookmarkId.isEmpty()) "添加收藏" else "View Original Article",
+                            text = if (addedBookmarkId.isEmpty()) "添加收藏" else "阅读原文",
                             style = TextStyle(
                                 fontSize = 16.sp,
                                 lineHeight = 22.5.sp,

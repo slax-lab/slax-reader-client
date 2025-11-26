@@ -29,6 +29,7 @@ import com.slax.reader.const.SpaceManagerRoutes
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.compenents.*
 import com.slax.reader.ui.sidebar.Sidebar
+import com.slax.reader.utils.OpenInBrowser
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
@@ -43,6 +44,7 @@ fun InboxListScreen(navCtrl: NavController) {
     val scope = rememberCoroutineScope()
 
     var showAddLinkDialog by remember { mutableStateOf(false) }
+    var externalUrl by remember { mutableStateOf<String?>(null) }
 
     println("[watch][UI] recomposition InboxListScreen")
 
@@ -114,10 +116,15 @@ fun InboxListScreen(navCtrl: NavController) {
             onDismissRequest = {
                 showAddLinkDialog = false
             },
-            onViewOriginalArticle = { bookmarkId ->
-                navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmarkId))
+            completeHandler = { bookmarkId, url ->
+                externalUrl = url
             }
         )
+    }
+
+    if (externalUrl != null) {
+        OpenInBrowser(externalUrl!!)
+        externalUrl = null
     }
 }
 
