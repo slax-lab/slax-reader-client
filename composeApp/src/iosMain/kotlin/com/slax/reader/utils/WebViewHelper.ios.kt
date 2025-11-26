@@ -15,6 +15,7 @@ import androidx.compose.ui.viewinterop.UIKitView
 import app.slax.reader.SlaxConfig
 import com.slax.reader.const.INJECTED_SCRIPT
 import com.slax.reader.const.JS_BRIDGE_NAME
+import com.slax.reader.const.LOAD_SELECTION_BRIDGE_SCRIPT
 import kotlinx.cinterop.*
 import platform.CoreGraphics.CGPointMake
 import platform.CoreGraphics.CGRectMake
@@ -190,12 +191,36 @@ actual fun AppWebView(
                         name = JS_BRIDGE_NAME
                     )
 
-                    val userScript = WKUserScript(
+                    // 先注入 bridge adapter (在页面结束时)
+                    val bridgeAdapterScript = WKUserScript(
                         source = INJECTED_SCRIPT,
                         injectionTime = WKUserScriptInjectionTime.WKUserScriptInjectionTimeAtDocumentEnd,
                         forMainFrameOnly = true
                     )
-                    userContentController.addUserScript(userScript)
+                    userContentController.addUserScript(bridgeAdapterScript)
+
+                    // 然后注入 selection bridge JS bundle（从 resources 读取）
+                    try {
+                        val bundlePath = platform.Foundation.NSBundle.mainBundle.pathForResource("slax-selection-bridge", "js", "resources/js")
+                        if (bundlePath != null) {
+                            val selectionBridgeJS = platform.Foundation.NSString.stringWithContentsOfFile(
+                                bundlePath,
+                                encoding = platform.Foundation.NSUTF8StringEncoding,
+                                error = null
+                            ) as? String
+
+                            if (selectionBridgeJS != null) {
+                                val selectionBridgeScript = WKUserScript(
+                                    source = selectionBridgeJS,
+                                    injectionTime = WKUserScriptInjectionTime.WKUserScriptInjectionTimeAtDocumentEnd,
+                                    forMainFrameOnly = true
+                                )
+                                userContentController.addUserScript(selectionBridgeScript)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        println("[SlaxBridge] Failed to load selection bridge JS: ${e.message}")
+                    }
 
                     this.userContentController = userContentController
                 }

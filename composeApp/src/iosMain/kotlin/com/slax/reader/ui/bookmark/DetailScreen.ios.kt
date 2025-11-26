@@ -16,6 +16,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import com.slax.reader.data.database.model.UserBookmark
+import com.slax.reader.data.model.PositionInfo
+import com.slax.reader.data.model.SelectionData
+import com.slax.reader.data.model.MarkData
 import com.slax.reader.ui.bookmark.components.*
 import com.slax.reader.utils.AppLifecycleState
 import com.slax.reader.utils.AppWebView
@@ -29,9 +32,17 @@ import kotlin.math.max
 @Serializable
 data class WebViewMessage(
     val type: String,
+    // For content height
     val height: Int? = null,
+    // For image clicks
     val src: String? = null,
-    val allImages: List<String>? = null
+    val allImages: List<String>? = null,
+    // For selection bridge
+    val data: String? = null,
+    val position: String? = null,
+    val markId: String? = null,
+    val success: Boolean? = null,
+    val error: String? = null
 )
 
 @Composable
@@ -130,6 +141,19 @@ actual fun DetailScreen(
     var currentImageUrl by remember { mutableStateOf("") }
     var allImageUrls by remember { mutableStateOf<List<String>>(emptyList()) }
 
+    // 选择桥接状态
+    var showSelectionMenu by remember { mutableStateOf(false) }
+    var selectionData by remember { mutableStateOf<SelectionData?>(null) }
+    var selectionPosition by remember { mutableStateOf<PositionInfo?>(null) }
+
+    var showMarkMenu by remember { mutableStateOf(false) }
+    var clickedMarkId by remember { mutableStateOf<String?>(null) }
+    var markData by remember { mutableStateOf<MarkData?>(null) }
+    var markPosition by remember { mutableStateOf<PositionInfo?>(null) }
+
+    var showCommentDialog by remember { mutableStateOf(false) }
+    var commentSelectionData by remember { mutableStateOf<SelectionData?>(null) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -182,6 +206,54 @@ actual fun DetailScreen(
                                     }
                                 }
 
+                                "textSelected" -> {
+                                    val dataStr = webViewMessage.data
+                                    val positionStr = webViewMessage.position
+
+                                    if (dataStr != null && positionStr != null) {
+                                        try {
+                                            selectionData = json.decodeFromString<SelectionData>(dataStr)
+                                            selectionPosition = json.decodeFromString<PositionInfo>(positionStr)
+                                            showSelectionMenu = true
+                                        } catch (e: Exception) {
+                                            println("[WebView] Failed to parse selection data: ${e.message}")
+                                        }
+                                    }
+                                }
+
+                                "markClicked" -> {
+                                    val markId = webViewMessage.markId
+                                    val dataStr = webViewMessage.data
+                                    val positionStr = webViewMessage.position
+
+                                    if (markId != null && dataStr != null && positionStr != null) {
+                                        try {
+                                            clickedMarkId = markId
+                                            markData = json.decodeFromString<MarkData>(dataStr)
+                                            markPosition = json.decodeFromString<PositionInfo>(positionStr)
+                                            showMarkMenu = true
+                                        } catch (e: Exception) {
+                                            println("[WebView] Failed to parse mark data: ${e.message}")
+                                        }
+                                    }
+                                }
+
+                                "bridgeInitialized" -> {
+                                    println("[WebView] Selection bridge initialized")
+                                    // TODO: Load existing marks
+                                }
+
+                                "markRendered" -> {
+                                    val markId = webViewMessage.markId
+                                    val success = webViewMessage.success
+                                    println("[WebView] Mark rendered: $markId, success: $success")
+                                }
+
+                                "error" -> {
+                                    val error = webViewMessage.error
+                                    println("[WebView] Bridge error: $error")
+                                }
+
                                 else -> {
                                     println("[WebView] Unknown message type: ${webViewMessage.type}")
                                 }
@@ -193,6 +265,86 @@ actual fun DetailScreen(
                 )
             }
         }
+
+        // 选择菜单
+        if (showSelectionMenu && selectionPosition != null) {
+            SelectionMenu(
+                position = selectionPosition!!,
+                visible = showSelectionMenu,
+                onCopyClick = {
+                    // 复制文本到剪贴板
+                    selectionData?.selection?.let { selections ->
+                        val textItems = selections.mapNotNull { item ->
+                            when (item) {
+                                is com.slax.reader.data.model.SelectionItem.Text -> item.text
+                                else -> null
+                            }
+                        }
+                        val combinedText = textItems.joinToString("")
+                        if (combinedText.isNotEmpty()) {
+                            // iOS 剪贴板操作
+                            platform.UIKit.UIPasteboard.generalPasteboard.string = combinedText
+                        }
+                    }
+                },
+                onHighlightClick = {
+                    // 创建划线标记
+                    selectionData?.let { data ->
+                        // TODO: 获取当前用户 ID
+                        val userId = 1
+                        detailViewModel.createHighlightMark(data, userId)
+                    }
+                },
+                onCommentClick = {
+                    commentSelectionData = selectionData
+                    showCommentDialog = true
+                },
+                onDismiss = {
+                    showSelectionMenu = false
+                }
+            )
+        }
+
+        // 标记菜单
+        if (showMarkMenu && markPosition != null) {
+            MarkMenu(
+                markId = clickedMarkId ?: "",
+                position = markPosition!!,
+                visible = showMarkMenu,
+                onViewClick = {
+                    // TODO: 查看标记详情
+                    println("[Mark] View clicked: $clickedMarkId")
+                },
+                onDeleteClick = {
+                    // 删除标记
+                    clickedMarkId?.let { markId ->
+                        detailViewModel.deleteMark(markId)
+                    }
+                },
+                onDismiss = {
+                    showMarkMenu = false
+                }
+            )
+        }
+
+        // 评论对话框
+        CommentDialog(
+            visible = showCommentDialog,
+            onConfirm = { commentText ->
+                // 创建评论标记
+                commentSelectionData?.let { data ->
+                    // TODO: 获取当前用户 ID
+                    val userId = 1
+                    detailViewModel.createCommentMark(data, commentText, userId)
+                }
+                showCommentDialog = false
+                commentSelectionData = null
+            },
+            onDismiss = {
+                showCommentDialog = false
+                commentSelectionData = null
+            }
+        )
 
         if (headerVisible) {
             Box(

@@ -6,6 +6,9 @@ import com.slax.reader.data.database.dao.BookmarkDao
 import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.data.database.model.UserTag
+import com.slax.reader.data.model.MarkDetail
+import com.slax.reader.data.model.MarkPathItem
+import com.slax.reader.data.model.SelectionData
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.network.dto.OverviewResponse
 import com.slax.reader.data.preferences.AppPreferences
@@ -196,5 +199,178 @@ class BookmarkDetailViewModel(
 
     suspend fun clearContinueBookmark() = withContext(Dispatchers.IO) {
         return@withContext appPreferences.clearContinueReadingBookmark()
+    }
+
+    // ==================== 标记管理功能 ====================
+
+    private var webViewExecutor: WebViewExecutor? = null
+
+    /**
+     * 设置 WebView 执行器
+     * 需要在 DetailScreen 中调用此方法设置 WebView 引用
+     */
+    fun setWebViewExecutor(executor: WebViewExecutor) {
+        webViewExecutor = executor
+    }
+
+    /**
+     * 初始化选择桥接
+     */
+    fun initializeSelectionBridge(userId: Int, containerId: String = "article") {
+        val script = WebViewJsHelper.getInitBridgeScript(userId, containerId)
+        webViewExecutor?.executeJavaScript(script)
+    }
+
+    /**
+     * 启动选择监听
+     */
+    fun startMonitoring() {
+        val script = WebViewJsHelper.getStartMonitoringScript()
+        webViewExecutor?.executeJavaScript(script)
+    }
+
+    /**
+     * 停止选择监听
+     */
+    fun stopMonitoring() {
+        val script = WebViewJsHelper.getStopMonitoringScript()
+        webViewExecutor?.executeJavaScript(script)
+    }
+
+    /**
+     * 加载并绘制所有标记
+     * TODO: 从后端 API 获取标记数据
+     */
+    suspend fun loadAndDrawMarks(bookmarkId: String) = withContext(Dispatchers.IO) {
+        try {
+            // TODO: 调用 API 获取标记数据
+            // val markDetail = apiService.getBookmarkMarks(bookmarkId)
+
+            // 临时使用空数据测试
+            val markDetail = MarkDetail(
+                markList = emptyList(),
+                userList = emptyMap()
+            )
+
+            withContext(Dispatchers.Main) {
+                drawMarks(markDetail)
+            }
+        } catch (e: Exception) {
+            println("[ViewModel] Failed to load marks: ${e.message}")
+        }
+    }
+
+    /**
+     * 绘制所有标记
+     */
+    private fun drawMarks(markDetail: MarkDetail) {
+        val script = WebViewJsHelper.getDrawMarksScript(markDetail)
+        webViewExecutor?.executeJavaScript(script) { result ->
+            println("[ViewModel] DrawMarks result: $result")
+        }
+    }
+
+    /**
+     * 创建划线标记
+     */
+    fun createHighlightMark(selectionData: SelectionData, userId: Int) {
+        viewModelScope.launch {
+            try {
+                // 标记类型：1 = LINE (划线)
+                val markType = 1
+
+                // TODO: 调用后端 API 创建标记
+                // val response = apiService.createMark(
+                //     bookmarkId = _bookmarkId.value ?: return@launch,
+                //     paths = selectionData.paths,
+                //     approx = selectionData.approx,
+                //     markType = markType,
+                //     comment = ""
+                // )
+
+                // 临时生成一个 markId
+                val tempMarkId = "temp_${System.currentTimeMillis()}"
+
+                // 在 WebView 中绘制标记
+                val script = WebViewJsHelper.getDrawMarkScript(
+                    markId = tempMarkId,
+                    paths = selectionData.paths,
+                    markType = markType,
+                    userId = userId,
+                    comment = ""
+                )
+                webViewExecutor?.executeJavaScript(script) { result ->
+                    println("[ViewModel] Highlight mark created: $result")
+                }
+            } catch (e: Exception) {
+                println("[ViewModel] Failed to create highlight mark: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * 创建评论标记
+     */
+    fun createCommentMark(selectionData: SelectionData, comment: String, userId: Int) {
+        viewModelScope.launch {
+            try {
+                // 标记类型：2 = COMMENT (评论)
+                val markType = 2
+
+                // TODO: 调用后端 API 创建标记
+                // val response = apiService.createMark(
+                //     bookmarkId = _bookmarkId.value ?: return@launch,
+                //     paths = selectionData.paths,
+                //     approx = selectionData.approx,
+                //     markType = markType,
+                //     comment = comment
+                // )
+
+                // 临时生成一个 markId
+                val tempMarkId = "temp_${System.currentTimeMillis()}"
+
+                // 在 WebView 中绘制标记
+                val script = WebViewJsHelper.getDrawMarkScript(
+                    markId = tempMarkId,
+                    paths = selectionData.paths,
+                    markType = markType,
+                    userId = userId,
+                    comment = comment
+                )
+                webViewExecutor?.executeJavaScript(script) { result ->
+                    println("[ViewModel] Comment mark created: $result")
+                }
+            } catch (e: Exception) {
+                println("[ViewModel] Failed to create comment mark: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * 删除标记
+     */
+    fun deleteMark(markId: String) {
+        viewModelScope.launch {
+            try {
+                // TODO: 调用后端 API 删除标记
+                // apiService.deleteMark(markId)
+
+                // 从 WebView 中移除标记
+                val script = WebViewJsHelper.getRemoveMarkScript(markId)
+                webViewExecutor?.executeJavaScript(script)
+
+                println("[ViewModel] Mark deleted: $markId")
+            } catch (e: Exception) {
+                println("[ViewModel] Failed to delete mark: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * 清除所有标记
+     */
+    fun clearAllMarks() {
+        val script = WebViewJsHelper.getClearAllMarksScript()
+        webViewExecutor?.executeJavaScript(script)
     }
 }

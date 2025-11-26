@@ -19,6 +19,7 @@ import androidx.core.net.toUri
 import app.slax.reader.SlaxConfig
 import com.slax.reader.const.INJECTED_SCRIPT
 import com.slax.reader.const.JS_BRIDGE_NAME
+import com.slax.reader.const.LOAD_SELECTION_BRIDGE_SCRIPT
 import kotlin.math.roundToInt
 
 
@@ -108,7 +109,10 @@ actual fun AppWebView(
                         super.onPageFinished(view, url)
                         // 页面加载完成后注入 JS 脚本
                         if (onJsMessageCallback != null) {
+                            // First inject the bridge adapter
                             view?.evaluateJavascript(INJECTED_SCRIPT, null)
+                            // Then load the selection bridge JS bundle
+                            view?.evaluateJavascript(LOAD_SELECTION_BRIDGE_SCRIPT, null)
                         }
                     }
                 }

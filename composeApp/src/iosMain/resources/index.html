@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Article Detail</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.8;
+      color: #333;
+      background: #fff;
+      padding: 16px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #content {
+      max-width: 100%;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    #content p {
+      margin: 1em 0;
+    }
+
+    #content h1, #content h2, #content h3 {
+      margin: 1.5em 0 0.5em 0;
+      font-weight: 600;
+    }
+
+    #content img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 1em 0;
+    }
+
+    #content ul, #content ol {
+      margin: 1em 0;
+      padding-left: 2em;
+    }
+
+    #content code {
+      background: #f5f5f5;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.9em;
+    }
+
+    #content pre {
+      background: #f5f5f5;
+      padding: 12px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 1em 0;
+    }
+
+    /* 标记样式 */
+    slax-mark {
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    slax-mark.stroke {
+      background: rgba(255, 235, 59, 0.4);
+      border-bottom: 2px solid #FBC02D;
+    }
+
+    slax-mark.comment {
+      background: rgba(76, 175, 80, 0.3);
+      border-left: 3px solid #4CAF50;
+      padding-left: 2px;
+    }
+
+    slax-mark.stroke.comment {
+      background: rgba(255, 152, 0, 0.3);
+      border-bottom: 2px solid #F57C00;
+      border-left: 3px solid #FF9800;
+    }
+
+    slax-mark.self-stroke {
+      background: rgba(33, 150, 243, 0.3);
+      border-bottom: 2px solid #1976D2;
+    }
+
+    slax-mark.highlighted {
+      background: rgba(255, 87, 34, 0.5) !important;
+      animation: pulse 0.5s ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { background: rgba(255, 87, 34, 0.5); }
+      50% { background: rgba(255, 87, 34, 0.8); }
+    }
+
+    /* 加载状态 */
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-size: 14px;
+      color: #999;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="loading">加载中...</div>
+  <div id="content" class="hidden"></div>
+
+  <!-- 加载 slax-selection-bridge -->
+  <script src="/assets/js/slax-selection-bridge.js"></script>
+
+  <script>
+    // 全局 Bridge 实例
+    let selectionBridge = null;
+
+    // 初始化函数 - 由 Kotlin 调用
+    window.initializeBridge = function(currentUserId) {
+      try {
+        const container = document.getElementById('content');
+
+        selectionBridge = new SlaxSelectionBridge({
+          containerElement: container,
+          currentUserId: currentUserId || 0,
+          debug: true
+        });
+
+        // 开始监听文本选择
+        selectionBridge.startMonitoring();
+
+        console.log('[Bridge] Initialized successfully');
+
+        // 通知 Kotlin 初始化完成
+        if (window.SlaxBridge) {
+          window.SlaxBridge.onBridgeInitialized();
+        }
+
+        return true;
+      } catch (error) {
+        console.error('[Bridge] Initialization failed:', error);
+        if (window.SlaxBridge) {
+          window.SlaxBridge.onError('Bridge initialization failed: ' + error.message);
+        }
+        return false;
+      }
+    };
+
+    // 设置内容 - 由 Kotlin 调用
+    window.setContent = function(htmlContent) {
+      try {
+        const contentElement = document.getElementById('content');
+        const loadingElement = document.getElementById('loading');
+
+        contentElement.innerHTML = htmlContent;
+        contentElement.classList.remove('hidden');
+        loadingElement.classList.add('hidden');
+
+        console.log('[Bridge] Content loaded');
+        return true;
+      } catch (error) {
+        console.error('[Bridge] Failed to set content:', error);
+        if (window.SlaxBridge) {
+          window.SlaxBridge.onError('Failed to set content: ' + error.message);
+        }
+        return false;
+      }
+    };
+
+    // 绘制标记 - 由 Kotlin 调用
+    window.drawMarks = function(markDetailJson) {
+      try {
+        if (!selectionBridge) {
+          throw new Error('Bridge not initialized');
+        }
+
+        const result = selectionBridge.drawMarks(markDetailJson);
+        console.log('[Bridge] Marks drawn:', result);
+        return result;
+      } catch (error) {
+        console.error('[Bridge] Failed to draw marks:', error);
+        if (window.SlaxBridge) {
+          window.SlaxBridge.onError('Failed to draw marks: ' + error.message);
+        }
+        return JSON.stringify({});
+      }
+    };
+
+    // 绘制单个标记 - 由 Kotlin 调用
+    window.drawMark = function(markId, pathsJson, isStroke, hasComment, userId) {
+      try {
+        if (!selectionBridge) {
+          throw new Error('Bridge not initialized');
+        }
+
+        const paths = JSON.parse(pathsJson);
+        const id = selectionBridge.drawMark(markId, paths, isStroke, hasComment, userId);
+        console.log('[Bridge] Mark drawn:', id);
+        return id;
+      } catch (error) {
+        console.error('[Bridge] Failed to draw mark:', error);
+        if (window.SlaxBridge) {
+          window.SlaxBridge.onError('Failed to draw mark: ' + error.message);
+        }
+        return null;
+      }
+    };
+
+    // 删除标记 - 由 Kotlin 调用
+    window.removeMarkByUuid = function(uuid) {
+      try {
+        if (!selectionBridge) {
+          throw new Error('Bridge not initialized');
+        }
+
+        selectionBridge.removeMarkByUuid(uuid);
+        console.log('[Bridge] Mark removed:', uuid);
+        return true;
+      } catch (error) {
+        console.error('[Bridge] Failed to remove mark:', error);
+        if (window.SlaxBridge) {
+          window.SlaxBridge.onError('Failed to remove mark: ' + error.message);
+        }
+        return false;
+      }
+    };
+
+    // 高亮标记 - 由 Kotlin 调用
+    window.highlightMark = function(uuid) {
+      try {
+        if (!selectionBridge) {
+          throw new Error('Bridge not initialized');
+        }
+
+        selectionBridge.highlightMark(uuid);
+        return true;
+      } catch (error) {
+        console.error('[Bridge] Failed to highlight mark:', error);
+        return false;
+      }
+    };
+
+    // 清除所有高亮 - 由 Kotlin 调用
+    window.clearHighlights = function() {
+      try {
+        if (!selectionBridge) {
+          throw new Error('Bridge not initialized');
+        }
+
+        selectionBridge.clearHighlights();
+        return true;
+      } catch (error) {
+        console.error('[Bridge] Failed to clear highlights:', error);
+        return false;
+      }
+    };
+
+    // 清除所有标记 - 由 Kotlin 调用
+    window.clearAllMarks = function() {
+      try {
+        if (!selectionBridge) {
+          throw new Error('Bridge not initialized');
+        }
+
+        selectionBridge.clearAllMarks();
+        console.log('[Bridge] All marks cleared');
+        return true;
+      } catch (error) {
+        console.error('[Bridge] Failed to clear all marks:', error);
+        return false;
+      }
+    };
+
+    // 获取所有标记ID - 由 Kotlin 调用
+    window.getAllMarkIds = function() {
+      try {
+        if (!selectionBridge) {
+          throw new Error('Bridge not initialized');
+        }
+
+        const ids = selectionBridge.getAllMarkIds();
+        return JSON.stringify(ids);
+      } catch (error) {
+        console.error('[Bridge] Failed to get mark IDs:', error);
+        return JSON.stringify([]);
+      }
+    };
+
+    // 页面加载完成
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('[Bridge] Page loaded, waiting for initialization...');
+    });
+  </script>
+</body>
+</html>
