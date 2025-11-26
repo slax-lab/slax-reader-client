@@ -31,13 +31,6 @@ const val INJECTED_SCRIPT: String = """
             );
         }
 
-        var anchors = document.getElementsByTagName('a')
-        for (var i = 0; i < anchors.length; i++) {
-            anchors[i].addEventListener('click', (event) => {
-              event.preventDefault();
-            });
-        }
-
         function getImageUrl(element) {
             const tagName = element.tagName.toLowerCase();
             

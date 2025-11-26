@@ -1,7 +1,5 @@
 package com.slax.reader.ui.bookmark
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -69,7 +67,6 @@ actual fun DetailScreen(
 
     LaunchedEffect(Unit) {
         LifeCycleHelper.lifecycleState.collect { state ->
-            // 在独立协程中执行，避免阻塞 collect 循环
             when (state) {
                 AppLifecycleState.ON_STOP -> {
                     detailViewModel.viewModelScope.launch {

@@ -3,8 +3,7 @@ package com.slax.reader.ui.bookmark.components
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -16,6 +15,7 @@ import androidx.compose.ui.unit.sp
 import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.OverviewViewBounds
+import com.slax.reader.utils.OpenInBrowser
 
 @Composable
 fun HeaderContent(
@@ -30,6 +30,7 @@ fun HeaderContent(
 
     val displayTitle = remember(detail.displayTitle) { detail.displayTitle }
     val displayTime = remember(detail.displayTime) { detail.displayTime }
+    var externalUrl by remember { mutableStateOf<String?>(null) }
 
     Box(
         modifier = Modifier
@@ -69,7 +70,7 @@ fun HeaderContent(
                 Text(
                     "查看原网页",
                     modifier = Modifier.padding(start = 16.dp).clickable {
-                        println("被点击了")
+                        externalUrl = detail.metadataUrl
                     },
                     style = TextStyle(color = Color(0xFF5490C2), fontSize = 14.sp, lineHeight = 20.sp)
                 )
@@ -88,5 +89,10 @@ fun HeaderContent(
                 onBoundsChanged = onOverviewBoundsChanged
             )
         }
+    }
+
+    if (externalUrl != null) {
+        OpenInBrowser(externalUrl!!)
+        externalUrl = null
     }
 }

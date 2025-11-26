@@ -2,31 +2,34 @@ package com.slax.reader.utils
 
 import android.annotation.SuppressLint
 import android.graphics.Color
-import android.webkit.JavascriptInterface
-import android.webkit.WebChromeClient
-import android.webkit.WebSettings
-import android.webkit.WebView
-import android.webkit.WebViewClient
+import android.webkit.*
 import androidx.browser.customtabs.CustomTabsIntent
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import app.slax.reader.SlaxConfig
 import com.slax.reader.const.INJECTED_SCRIPT
 import com.slax.reader.const.JS_BRIDGE_NAME
+import com.slax.reader.data.preferences.AppPreferences
+import org.koin.compose.koinInject
 import kotlin.math.roundToInt
 
 
 @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface", "ClickableViewAccessibility")
 @Composable
 actual fun AppWebView(
-    url: String?,
-    htmlContent: String?,
+    htmlContent: String,
     modifier: Modifier,
     topContentInsetPx: Float,
     onTap: (() -> Unit)?,
@@ -37,6 +40,9 @@ actual fun AppWebView(
 
     val onTapCallback = remember(onTap) { onTap }
     val onJsMessageCallback = remember(onJsMessage) { onJsMessage }
+    var externalUrl by remember { mutableStateOf<String?>(null) }
+    val appPreference: AppPreferences = koinInject()
+    var doNotAlert by remember { mutableStateOf<Boolean?>(null) }
 
     AndroidView(
         modifier = modifier,
@@ -65,9 +71,6 @@ actual fun AppWebView(
                 // 隐藏滚动条
                 isVerticalScrollBarEnabled = false
                 isHorizontalScrollBarEnabled = false
-
-                // 启用调试功能（开发环境）
-                WebView.setWebContentsDebuggingEnabled(SlaxConfig.BUILD_ENV == "dev")
 
                 settings.apply {
                     javaScriptEnabled = true
@@ -106,29 +109,115 @@ actual fun AppWebView(
                 webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
-                        // 页面加载完成后注入 JS 脚本
+
                         if (onJsMessageCallback != null) {
                             view?.evaluateJavascript(INJECTED_SCRIPT, null)
                         }
                     }
+
+                    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                        val url = request?.url?.toString() ?: "null"
+                        if (url.startsWith("http://") || url.startsWith("https://")) {
+                            externalUrl = url
+                        }
+                        return true
+                    }
+
                 }
 
-                if (url != null) {
-                    loadUrl(url)
-                } else if (htmlContent != null) {
-                    loadDataWithBaseURL(null, htmlContent, "text/html", "utf-8", null)
-                }
+                loadDataWithBaseURL(null, htmlContent, "text/html", "utf-8", null)
             }
-        },
+        }
     )
+
+    if (externalUrl != null) {
+        if (doNotAlert == null) {
+            doNotAlert = getDoNotAlertSetting(appPreference)
+        }
+
+        OpenInBrowserTab(
+            url = externalUrl!!,
+            doNotAlert = doNotAlert!!,
+            onDismiss = {
+                externalUrl = null
+            },
+            onDoNotAlert = {
+                doNotAlert = true
+                setDoNotAlertSetting(appPreference)
+            }
+        )
+    }
 }
 
 @Composable
-actual fun OpenInBrowserTab(url: String) {
+fun OpenInBrowserTab(
+    url: String,
+    doNotAlert: Boolean,
+    onDismiss: () -> Unit,
+    onDoNotAlert: () -> Unit,
+) {
     val ctx = LocalContext.current
-    val builder = CustomTabsIntent.Builder()
-    val customTabsIntent = builder.build()
-    customTabsIntent.launchUrl(ctx, url.toUri())
+    val isChecked = remember { mutableStateOf(false) }
+
+    fun openInBrowserTab() {
+        val builder = CustomTabsIntent.Builder()
+        val customTabsIntent = builder.build()
+        customTabsIntent.launchUrl(ctx, url.toUri())
+    }
+
+    if (doNotAlert) {
+        openInBrowserTab()
+        onDismiss()
+        return
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("你即将跳转到第三方页面") },
+        text = {
+            Column {
+                Text("是否确认在浏览器中打开此链接？\n$url")
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .padding(end = 8.dp)
+                ) {
+                    Checkbox(
+                        checked = isChecked.value,
+                        onCheckedChange = { isChecked.value = it }
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "不再提示",
+                        fontSize = 14.sp
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (isChecked.value) {
+                        onDoNotAlert()
+                    }
+                    openInBrowserTab()
+                    onDismiss()
+                }
+            ) {
+                Text("Confirm")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("Dismiss")
+            }
+        }
+    )
 }
 
 fun PaddingValues.setOnWebView(webView: WebView) {
@@ -142,8 +231,7 @@ fun PaddingValues.setOnWebView(webView: WebView) {
 
 @Composable
 actual fun WebView(
-    url: String?,
-    htmlContent: String?,
+    url: String,
     modifier: Modifier,
     contentInsets: PaddingValues?,
     onScroll: ((x: Double, y: Double) -> Unit)?
@@ -177,32 +265,23 @@ actual fun WebView(
                 webViewClient = WebViewClient()
 
                 contentInsets?.setOnWebView(this)
-                when {
-                    url != null -> loadUrl(url)
-                    htmlContent != null -> loadDataWithBaseURL(
-                        null,
-                        htmlContent,
-                        "text/html",
-                        "utf-8",
-                        null
-                    )
-                }
+                loadUrl(url)
             }
         },
         update = { view ->
             view.apply {
                 contentInsets?.setOnWebView(this)
-                when {
-                    url != null -> loadUrl(url)
-                    htmlContent != null -> loadDataWithBaseURL(
-                        null,
-                        htmlContent,
-                        "text/html",
-                        "utf-8",
-                        null
-                    )
-                }
+                loadUrl(url)
             }
         }
     )
+}
+
+@Composable
+actual fun OpenInBrowser(url: String) {
+    val ctx = LocalContext.current
+
+    val builder = CustomTabsIntent.Builder()
+    val customTabsIntent = builder.build()
+    customTabsIntent.launchUrl(ctx, url.toUri())
 }

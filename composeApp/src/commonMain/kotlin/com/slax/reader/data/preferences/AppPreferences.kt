@@ -28,7 +28,7 @@ data class PowerSyncAuthInfo(
 )
 
 @Serializable
-data class ContinueReadingBookmark (
+data class ContinueReadingBookmark(
     val bookmarkId: String,
     val title: String,
     val scrollY: Int
@@ -45,6 +45,8 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
         private val POWER_SYNC_CONNECT_URL = stringPreferencesKey("powersync_connect_url")
 
         private val CONTINUE_READING_BOOKMARK_KEY = stringPreferencesKey("continue_reading_bookmark")
+
+        private val USER_SETTING_DETAIL_DO_NOT_ALERT = stringPreferencesKey("user_setting_detail_do_not_alert")
     }
 
     suspend fun getLastRefreshTime(): Long? {
@@ -125,6 +127,18 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
     suspend fun clearContinueReadingBookmark() = withContext(Dispatchers.IO) {
         dataStore.edit { preferences ->
             preferences.remove(CONTINUE_READING_BOOKMARK_KEY)
+        }
+    }
+
+    suspend fun getUserSettingDetailDoNotAlert(): Boolean = withContext(Dispatchers.IO) {
+        val prefs = dataStore.data.first()
+        val value = prefs[USER_SETTING_DETAIL_DO_NOT_ALERT]
+        return@withContext value?.toBoolean() ?: false
+    }
+    
+    suspend fun setUserSettingDetailDoNotAlert(doNotAlert: Boolean) = withContext(Dispatchers.IO) {
+        dataStore.edit { preferences ->
+            preferences[USER_SETTING_DETAIL_DO_NOT_ALERT] = doNotAlert.toString()
         }
     }
 }
