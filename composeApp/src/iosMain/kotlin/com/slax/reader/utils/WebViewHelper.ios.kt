@@ -15,17 +15,17 @@ import androidx.compose.ui.viewinterop.UIKitView
 import app.slax.reader.SlaxConfig
 import com.slax.reader.const.INJECTED_SCRIPT
 import com.slax.reader.const.JS_BRIDGE_NAME
+import com.slax.reader.data.preferences.AppPreferences
 import kotlinx.cinterop.*
+import org.koin.compose.koinInject
 import platform.CoreGraphics.CGPointMake
 import platform.CoreGraphics.CGRectMake
-import platform.Foundation.NSSelectorFromString
-import platform.Foundation.NSURL
-import platform.Foundation.NSURLRequest
-import platform.Foundation.NSValue
+import platform.Foundation.*
 import platform.SafariServices.SFSafariViewController
 import platform.UIKit.*
 import platform.WebKit.*
 import platform.darwin.NSObject
+import platform.darwin.sel_registerName
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.time.ExperimentalTime
@@ -75,14 +75,14 @@ private class ScriptMessageHandler(
 @Composable
 @Suppress("UNUSED_PARAMETER")
 actual fun AppWebView(
-    url: String?,
-    htmlContent: String?,
+    htmlContent: String,
     modifier: Modifier,
     topContentInsetPx: Float,
     onTap: (() -> Unit)?,
     onScrollChange: ((scrollY: Float, contentHeight: Float, visibleHeight: Float) -> Unit)?,
     onJsMessage: ((message: String) -> Unit)?,
 ) {
+
     val tapHandler = remember(onTap) {
         TapHandler { onTap?.invoke() }
     }
@@ -107,6 +107,10 @@ actual fun AppWebView(
 
     // iOS contentInset 需要完整高度：Column + statusBarsPadding + 视觉间距
     val totalInsetPx = topContentInsetPx + statusBarHeightPx + 16f * density.density
+
+    var externalUrl by remember { mutableStateOf<String?>(null) }
+    val appPreference: AppPreferences = koinInject()
+    var doNotAlert by remember { mutableStateOf<Boolean?>(null) }
 
     val topInsetPoints by remember(totalInsetPx, densityScale) {
         derivedStateOf { (totalInsetPx / densityScale).coerceAtLeast(0f) }
@@ -144,7 +148,7 @@ actual fun AppWebView(
             override fun webViewWebContentProcessDidTerminate(
                 webView: WKWebView
             ) {
-                webView.loadHTMLString(htmlContent!!, baseURL = null)
+                webView.loadHTMLString(htmlContent, baseURL = null)
             }
 
             override fun webView(webView: WKWebView, didFinishNavigation: WKNavigation?) {
@@ -156,6 +160,25 @@ actual fun AppWebView(
                         }
                     }
                 }
+            }
+
+            override fun webView(
+                webView: WKWebView,
+                decidePolicyForNavigationAction: WKNavigationAction,
+                decisionHandler: (WKNavigationActionPolicy) -> Unit
+            ) {
+                val navigationType = decidePolicyForNavigationAction.navigationType
+                val requestUrl = decidePolicyForNavigationAction.request.URL?.absoluteString
+
+                if (navigationType == WKNavigationTypeLinkActivated && requestUrl != null) {
+                    if (requestUrl.startsWith("http://") || requestUrl.startsWith("https://")) {
+                        externalUrl = requestUrl
+                    }
+                    decisionHandler(WKNavigationActionPolicy.WKNavigationActionPolicyCancel)
+                    return
+                }
+                decisionHandler(WKNavigationActionPolicy.WKNavigationActionPolicyAllow)
+                return
             }
         }
     }
@@ -249,12 +272,7 @@ actual fun AppWebView(
             val color = Color(0xFFFCFCFC).toUIColor()
             view.backgroundColor = color
             view.opaque = false
-
-            if (url != null) {
-                view.loadRequest(NSURLRequest(uRL = NSURL(string = url)))
-            } else if (htmlContent != null) {
-                view.loadHTMLString(htmlContent, baseURL = null)
-            }
+            view.loadHTMLString(htmlContent, baseURL = null)
 
             view as UIView
         },
@@ -292,13 +310,143 @@ actual fun AppWebView(
             interactionMode = UIKitInteropInteractionMode.Cooperative()
         )
     )
+
+    if (externalUrl != null) {
+        if (doNotAlert == null) {
+            doNotAlert = getDoNotAlertSetting(appPreference)
+        }
+
+        OpenInBrowserTab(
+            url = externalUrl!!,
+            doNotAlert = doNotAlert!!,
+            onDismiss = {
+                externalUrl = null
+            },
+            onDoNotAlert = {
+                doNotAlert = true
+                setDoNotAlertSetting(appPreference)
+            }
+        )
+    }
 }
 
+private fun getTopViewController(
+    base: UIViewController? = UIApplication.sharedApplication.keyWindow?.rootViewController
+): UIViewController? {
+
+    if (base is UINavigationController) {
+        return getTopViewController(base.visibleViewController)
+    }
+
+    if (base is UITabBarController) {
+        return getTopViewController(base.selectedViewController)
+    }
+
+    if (base?.presentedViewController != null) {
+        return getTopViewController(base.presentedViewController)
+    }
+
+    return base
+}
+
+@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 @Composable
-actual fun OpenInBrowserTab(url: String) {
+fun OpenInBrowserTab(
+    url: String,
+    doNotAlert: Boolean,
+    onDismiss: () -> Unit,
+    onDoNotAlert: () -> Unit,
+) {
     val viewController = LocalUIViewController.current
-    val safariVC = SFSafariViewController(uRL = NSURL(string = url))
-    viewController.presentViewController(safariVC, animated = true, completion = null)
+
+    fun openInBrowserTab() {
+        val safariVC = SFSafariViewController(uRL = NSURL(string = url))
+        viewController.presentViewController(safariVC, animated = true, completion = null)
+    }
+
+    if (doNotAlert) {
+        onDismiss()
+        openInBrowserTab()
+        return
+    }
+
+    val topViewController = getTopViewController() ?: return
+
+    val alertController = UIAlertController.alertControllerWithTitle(
+        title = "你即将跳转到第三方页面",
+        message = "是否确认在浏览器中打开此链接？\n$url",
+        preferredStyle = UIAlertControllerStyleAlert
+    )
+
+    val contentVC = UIViewController()
+    val buttonHeight = 40.0
+
+    contentVC.setPreferredContentSize(platform.CoreGraphics.CGSizeMake(0.0, buttonHeight))
+
+
+    val checkboxButton = UIButton.buttonWithType(UIButtonTypeCustom)
+    checkboxButton.translatesAutoresizingMaskIntoConstraints = false
+    checkboxButton.setTitle(" 不再提示", forState = UIControlStateNormal)
+    checkboxButton.setTitleColor(UIColor.darkGrayColor, forState = UIControlStateNormal)
+    checkboxButton.titleLabel?.font = UIFont.systemFontOfSize(14.0)
+
+    val uncheckedIcon = UIImage.systemImageNamed("square")
+    val checkedIcon = UIImage.systemImageNamed("checkmark.square.fill")
+    checkboxButton.setImage(uncheckedIcon, forState = UIControlStateNormal)
+
+    val checkboxHandler = object : NSObject() {
+        var isChecked = false
+
+        @ObjCAction
+        fun toggle() {
+            isChecked = !isChecked
+            val icon = if (isChecked) checkedIcon else uncheckedIcon
+            checkboxButton.setImage(icon, forState = UIControlStateNormal)
+            val feedback = UIImpactFeedbackGenerator(style = UIImpactFeedbackStyle.UIImpactFeedbackStyleLight)
+            feedback.impactOccurred()
+        }
+    }
+
+    checkboxButton.addTarget(
+        target = checkboxHandler,
+        action = sel_registerName("toggle"),
+        forControlEvents = UIControlEventTouchUpInside
+    )
+
+    contentVC.view.addSubview(checkboxButton)
+    NSLayoutConstraint.activateConstraints(
+        listOf(
+            checkboxButton.centerXAnchor.constraintEqualToAnchor(contentVC.view.centerXAnchor),
+            checkboxButton.centerYAnchor.constraintEqualToAnchor(contentVC.view.centerYAnchor),
+            checkboxButton.heightAnchor.constraintEqualToConstant(buttonHeight)
+        )
+    )
+
+    alertController.setValue(contentVC, forKey = "contentViewController")
+
+    val confirmAction = UIAlertAction.actionWithTitle(
+        title = "确定",
+        style = UIAlertActionStyleDefault
+    ) { _ ->
+        openInBrowserTab()
+        if (checkboxHandler.isChecked) {
+            onDoNotAlert()
+        }
+
+        onDismiss()
+    }
+
+    val cancelAction = UIAlertAction.actionWithTitle(
+        title = "取消",
+        style = UIAlertActionStyleCancel
+    ) { _ ->
+        onDismiss()
+    }
+
+    alertController.addAction(confirmAction)
+    alertController.addAction(cancelAction)
+
+    topViewController.presentViewController(alertController, animated = true, completion = null)
 }
 
 @OptIn(ExperimentalForeignApi::class)
@@ -317,13 +465,11 @@ val PaddingValues.toUIEdgeInsets: CValue<UIEdgeInsets>
 @OptIn(ExperimentalForeignApi::class)
 @Composable
 actual fun WebView(
-    url: String?,
-    htmlContent: String?,
+    url: String,
     modifier: Modifier,
     contentInsets: PaddingValues?,
     onScroll: ((x: Double, y: Double) -> Unit)?
 ) {
-
     val scrollDelegate = remember {
         object : NSObject(), UIScrollViewDelegateProtocol {
             override fun scrollViewDidScroll(scrollView: UIScrollView) {
@@ -361,10 +507,7 @@ actual fun WebView(
                 scrollView.delegate = scrollDelegate
 
                 scrollView.contentInset = contentInsets?.toUIEdgeInsets ?: UIEdgeInsets_zero
-                when {
-                    url != null -> loadRequest(NSURLRequest(uRL = NSURL(string = url)))
-                    htmlContent != null -> loadHTMLString(htmlContent, baseURL = null)
-                }
+                loadRequest(NSURLRequest(uRL = NSURL(string = url)))
             }
         },
         update = { view ->
@@ -373,4 +516,11 @@ actual fun WebView(
             }
         }
     )
+}
+
+@Composable
+actual fun OpenInBrowser(url: String) {
+    val viewController = LocalUIViewController.current
+    val safariVC = SFSafariViewController(uRL = NSURL(string = url))
+    viewController.presentViewController(safariVC, animated = true, completion = null)
 }

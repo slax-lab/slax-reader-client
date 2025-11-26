@@ -1,5 +1,5 @@
 BUNDLE_SHORT_VERSION_STRING = 1.0.1
-BUNDLE_VERSION = 624
+BUNDLE_VERSION = 645
 GID_CLIENT_ID = 506971027225-oi61lhg08hn3o6p66nem2llsr2a2bn5k.apps.googleusercontent.com
 GID_SERVER_CLIENT_ID = 506971027225-cr82pukdmcjafrnlca8rga71k75fthj7.apps.googleusercontent.com
 GID_REVERSED_CLIENT_ID = com.googleusercontent.apps.506971027225-oi61lhg08hn3o6p66nem2llsr2a2bn5k
