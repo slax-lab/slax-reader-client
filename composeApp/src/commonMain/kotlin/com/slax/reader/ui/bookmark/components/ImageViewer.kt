@@ -27,7 +27,9 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.github.panpf.sketch.AsyncImage
 import com.github.panpf.sketch.rememberAsyncImageState
-import kotlinx.coroutines.delay
+import com.slax.reader.const.component.rememberDismissableVisibility
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 
 /**
  * 图片浏览器组件
@@ -36,7 +38,6 @@ import kotlinx.coroutines.delay
 fun ImageViewer(
     imageUrls: List<String>,
     initialImageUrl: String,
-    visible: Boolean,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -44,22 +45,14 @@ fun ImageViewer(
         imageUrls.indexOf(initialImageUrl).coerceAtLeast(0)
     }
 
-    var internalVisible by remember { mutableStateOf(false) }
-
-    LaunchedEffect(visible) {
-        internalVisible = visible
-    }
-
-    LaunchedEffect(internalVisible) {
-        if (!internalVisible) {
-            delay(300)
-            onDismiss()
-        }
-    }
-
+    val (visible, dismiss) = rememberDismissableVisibility(
+        scope = CoroutineScope(Dispatchers.Default),
+        animationDuration = 300L,
+        onDismissRequest = onDismiss
+    )
 
     AnimatedVisibility(
-        visible = internalVisible,
+        visible = visible,
         enter = fadeIn(animationSpec = tween(300)),
         exit = fadeOut(animationSpec = tween(300))
     ) {
@@ -67,7 +60,7 @@ fun ImageViewer(
             imageUrls = imageUrls,
             initialPage = initialPage,
             onDismiss = {
-                internalVisible = false
+                dismiss()
             },
             modifier = modifier
         )

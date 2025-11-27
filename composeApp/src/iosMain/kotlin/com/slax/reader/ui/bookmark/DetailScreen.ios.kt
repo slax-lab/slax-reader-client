@@ -229,7 +229,6 @@ actual fun DetailScreen(
         if (showTagView) {
             TagsManageBottomSheet(
                 detailViewModel = detailViewModel,
-                visible = showTagView,
                 onDismissRequest = { showTagView = false },
                 enableDrag = false,
                 onConfirm = { selectedTags ->
@@ -245,7 +244,6 @@ actual fun DetailScreen(
         if (showOverviewDialog) {
             OverviewDialog(
                 detailView = detailViewModel,
-                visible = showOverviewDialog,
                 onDismissRequest = { showOverviewDialog = false },
                 sourceBounds = screenState.overviewBounds
             )
@@ -255,7 +253,6 @@ actual fun DetailScreen(
             BottomToolbarSheet(
                 detail = detail,
                 detailView = detailViewModel,
-                visible = showToolbar,
                 onDismissRequest = { showToolbar = false },
                 onIconClick = { pageId, iconIndex ->
                     println("点击了页面 $pageId 的第 ${iconIndex + 1} 个图标")
@@ -287,14 +284,14 @@ actual fun DetailScreen(
         }
 
         // 图片浏览器
-        ImageViewer(
-            imageUrls = allImageUrls,
-            initialImageUrl = currentImageUrl,
-            visible = showImageViewer,
-            onDismiss = {
-                println("[ImageViewer] Dismissed")
-                showImageViewer = false
-            }
-        )
+        if (showImageViewer) {
+            ImageViewer(
+                imageUrls = allImageUrls,
+                initialImageUrl = currentImageUrl,
+                onDismiss = {
+                    showImageViewer = false
+                }
+            )
+        }
     }
 }

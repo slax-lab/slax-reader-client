@@ -1,10 +1,6 @@
 package com.slax.reader.ui.bookmark
 
 import android.annotation.SuppressLint
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -196,7 +192,6 @@ actual fun DetailScreen(
         if (showTagView) {
             TagsManageBottomSheet(
                 detailViewModel = detailViewModel,
-                visible = showTagView,
                 onDismissRequest = { showTagView = false },
                 enableDrag = false,
                 onConfirm = { selectedTags ->
@@ -212,7 +207,6 @@ actual fun DetailScreen(
         if (showOverviewDialog) {
             OverviewDialog(
                 detailView = detailViewModel,
-                visible = showOverviewDialog,
                 onDismissRequest = { showOverviewDialog = false },
                 sourceBounds = screenState.overviewBounds
             )
@@ -223,7 +217,6 @@ actual fun DetailScreen(
             BottomToolbarSheet(
                 detail = detail,
                 detailView = detailViewModel,
-                visible = showToolbar,
                 onDismissRequest = { showToolbar = false },
                 onIconClick = { pageId, iconIndex ->
                     println("点击了页面 $pageId 的第 ${iconIndex + 1} 个图标")
@@ -260,7 +253,6 @@ actual fun DetailScreen(
             ImageViewer(
                 imageUrls = allImageUrls,
                 initialImageUrl = currentImageUrl,
-                visible = showImageViewer,
                 onDismiss = {
                     println("[ImageViewer] Dismissed")
                     showImageViewer = false

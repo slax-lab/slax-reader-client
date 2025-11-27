@@ -53,8 +53,6 @@ fun FloatingActionBar(
             this.translationY = translationY.value
         }
     ) {
-
-
         Row(
             horizontalArrangement = Arrangement.spacedBy(0.dp),
             verticalAlignment = Alignment.CenterVertically

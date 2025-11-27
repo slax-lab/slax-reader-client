@@ -1,11 +1,7 @@
 package com.slax.reader.ui.bookmark.components
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
@@ -22,15 +18,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewModelScope
+import com.slax.reader.const.component.rememberDismissableVisibility
 import com.slax.reader.data.database.model.UserTag
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
-import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
 @Composable
 fun TagsManageBottomSheet(
     detailViewModel: BookmarkDetailViewModel,
-    visible: Boolean,
     onDismissRequest: () -> Unit,
     enableDrag: Boolean = false,
     onConfirm: (List<UserTag>) -> Unit = {}
@@ -44,18 +40,11 @@ fun TagsManageBottomSheet(
     val removedTags = remember { mutableStateListOf<UserTag>() }
     var showCreatingScreen by remember { mutableStateOf(false) }
 
-    var internalVisible by remember { mutableStateOf(false) }
-
-    LaunchedEffect(visible) {
-        internalVisible = visible
-    }
-
-    LaunchedEffect(internalVisible) {
-        if (!internalVisible) {
-            delay(300)
-            onDismissRequest()
-        }
-    }
+    val (visible, dismiss) = rememberDismissableVisibility(
+        scope = detailViewModel.viewModelScope,
+        animationDuration = 300L,
+        onDismissRequest = onDismissRequest
+    )
 
     LaunchedEffect(remoteSelectedTags) {
         removedTags.removeAll { it !in remoteSelectedTags }
@@ -79,7 +68,7 @@ fun TagsManageBottomSheet(
 
 
     AnimatedVisibility(
-        visible = internalVisible,
+        visible = visible,
         enter = fadeIn(animationSpec = tween(300)),
         exit = fadeOut(animationSpec = tween(300))
     ) {
@@ -94,12 +83,11 @@ fun TagsManageBottomSheet(
                     if (showCreatingScreen) {
                         showCreatingScreen = false
                     } else {
-                        internalVisible = false
+                        dismiss()
                     }
                 }
         )
     }
-
 
     Box(
         modifier = Modifier
@@ -108,7 +96,7 @@ fun TagsManageBottomSheet(
     ) {
 
         AnimatedVisibility(
-            visible = internalVisible,
+            visible = visible,
             enter = slideInVertically(
                 initialOffsetY = { it },
                 animationSpec = tween(300)
@@ -139,7 +127,7 @@ fun TagsManageBottomSheet(
                                     },
                                     onDragStopped = {
                                         if (offsetY > with(density) { 100.dp.toPx() }) {
-                                            internalVisible = false
+                                            dismiss()
                                         } else {
                                             offsetY = 0f
                                         }
@@ -192,7 +180,7 @@ fun TagsManageBottomSheet(
                             onDismissRequest()
                         },
                         onDismiss = {
-                            internalVisible = false
+                            dismiss()
                         }
                     )
                 }
