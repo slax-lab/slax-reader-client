@@ -1,4 +1,4 @@
-package com.slax.reader.ui.bookmark.components
+package com.slax.reader.const.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -38,26 +38,26 @@ import slax_reader_client.composeapp.generated.resources.ic_xs_dialog_close
 
 @Composable
 fun EditNameDialog(
-    detail: UserBookmark,
-    detailView: BookmarkDetailViewModel,
-    visible: Boolean,
+    initialTitle: String,
+    onConfim: (String) -> Unit,
     onDismissRequest: () -> Unit,
 ) {
-    val inputState = remember { TextFieldState(detail.displayTitle) }
+    val inputState = remember { TextFieldState(initialTitle) }
     val focusRequester = remember { FocusRequester() }
 
-    var internalVisible by remember { mutableStateOf(false) }
+    val (visible, dismiss) = rememberDismissableVisibility(
+        scope = rememberCoroutineScope(),
+        animationDuration = 300L,
+        onDismissRequest = onDismissRequest
+    )
 
-    LaunchedEffect(visible) {
-        internalVisible = visible
-        if (visible) {
-            delay(100)
-            focusRequester.requestFocus()
-        }
+    LaunchedEffect(Unit) {
+        delay(100)
+        focusRequester.requestFocus()
     }
 
-    LaunchedEffect(internalVisible) {
-        if (!internalVisible) {
+    LaunchedEffect(visible) {
+        if (!visible) {
             delay(300)
             onDismissRequest()
         }
@@ -66,15 +66,13 @@ fun EditNameDialog(
     fun onConfirm() {
         val text = inputState.text.toString().trim()
         if (text.isNotEmpty()) {
-            detailView.viewModelScope.launch {
-                detailView.updateBookmarkTitle(text)
-            }
-            internalVisible = false
+            onConfim(text)
+            dismiss()
         }
     }
 
     AnimatedVisibility(
-        visible = internalVisible,
+        visible = visible,
         enter = fadeIn(animationSpec = tween(300)),
         exit = fadeOut(animationSpec = tween(300))
     ) {
@@ -89,7 +87,7 @@ fun EditNameDialog(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) {
-                        internalVisible = false
+                        dismiss()
                     }
             )
 
@@ -132,7 +130,7 @@ fun EditNameDialog(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
                                 ) {
-                                    internalVisible = false
+                                    dismiss()
                                 }
                         )
                     }
