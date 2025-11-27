@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.ui.inbox.InboxListViewModel
+import com.slax.reader.utils.OpenInBrowser
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
@@ -30,12 +31,11 @@ import slax_reader_client.composeapp.generated.resources.ic_xs_dialog_close
 @Composable
 fun ProcessingDialog(
     inboxView: InboxListViewModel,
-    viewOriginalHandler: (String) -> Unit
 ) {
     var url by remember { mutableStateOf("") }
+    var externalUrl by remember { mutableStateOf<String?>(null) }
     var visible by remember { mutableStateOf(false) }
 
-    // 监听 URL 收集事件
     LaunchedEffect(Unit) {
         inboxView.processingUrlEvent.collect { newUrl ->
             url = newUrl
@@ -133,8 +133,8 @@ fun ProcessingDialog(
                                 interactionSource = confirmButtonInteractionSource,
                                 indication = null
                             ) {
-                                viewOriginalHandler(url)
                                 visible = false
+                                externalUrl = url
                             },
                         contentAlignment = Alignment.Center
                     ) {
@@ -151,5 +151,10 @@ fun ProcessingDialog(
                 }
             }
         }
+    }
+    
+    if (externalUrl != null) {
+        OpenInBrowser(externalUrl!!)
+        externalUrl = null
     }
 }
