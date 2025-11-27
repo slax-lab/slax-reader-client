@@ -104,7 +104,6 @@ fun InboxListScreen(navCtrl: NavController) {
                     navCtrl = navCtrl,
                     inboxViewModel = inboxViewModel,
                 )
-
             }
         }
     }
@@ -117,6 +116,13 @@ fun InboxListScreen(navCtrl: NavController) {
             }
         )
     }
+
+    ProcessingDialog(
+        inboxView = inboxViewModel,
+        viewOriginalHandler = { url ->
+            externalUrl = url
+        }
+    )
 
     if (externalUrl != null) {
         OpenInBrowser(externalUrl!!)
