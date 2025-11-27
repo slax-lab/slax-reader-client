@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -177,16 +178,19 @@ fun EditNameDialog(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
+                    val confirmButtonInteractionSource = remember { MutableInteractionSource() }
+                    val isPressed by confirmButtonInteractionSource.collectIsPressedAsState()
+
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp)
                             .background(
-                                color = Color(0xFF16b998),
+                                color = if (isPressed) Color(0xFF14A68F) else Color(0xFF16b998),
                                 shape = RoundedCornerShape(12.dp)
                             )
                             .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
+                                interactionSource = confirmButtonInteractionSource,
                                 indication = null
                             ) {
                                 onConfirm()
