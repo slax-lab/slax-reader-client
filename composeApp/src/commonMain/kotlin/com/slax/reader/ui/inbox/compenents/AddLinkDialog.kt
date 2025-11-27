@@ -153,7 +153,7 @@ fun AddLinkDialog(
                     ) {
 
                         Text(
-                            text = "Add link",
+                            text = "添加链接",
                             modifier = Modifier.align(Alignment.CenterStart),
                             style = TextStyle(
                                 fontSize = 18.sp,
