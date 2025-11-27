@@ -163,7 +163,7 @@ class BookmarkDao(
     }
 
     @OptIn(ExperimentalUuidApi::class, ExperimentalTime::class)
-    suspend fun createBookmark(url: String): String {
+    suspend fun createBookmark(url: String) {
         val bookmarkId = Uuid.random().toString()
         val now = Clock.System.now().toString()
 
@@ -189,7 +189,7 @@ class BookmarkDao(
                             share = null,
                             bookmark = BookmarkDetails(
                                 uuid = bookmarkId,
-                                title = "New Bookmark",
+                                title = url,
                                 byline = "",
                                 status = "pending",
                                 host_url = url,
@@ -206,8 +206,6 @@ class BookmarkDao(
                 )
             )
         }
-
-        return bookmarkId
     }
 
     @OptIn(ExperimentalUuidApi::class, ExperimentalTime::class)

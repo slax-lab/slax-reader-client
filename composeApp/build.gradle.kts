@@ -266,7 +266,7 @@ buildkonfig {
 
     defaultConfigs("release") {
         buildConfigField(STRING, "BUILD_ENV", buildFlavor)
-        buildConfigField(STRING, "API_BASE_URL", "https://api-reader-beta.slax.com")
+        buildConfigField(STRING, "API_BASE_URL", "https://api-reader.slax.com")
         buildConfigField(STRING, "WEB_BASE_URL", "https://r.slax.com")
         buildConfigField(STRING, "LOG_LEVEL", "ERROR")
         buildConfigField(

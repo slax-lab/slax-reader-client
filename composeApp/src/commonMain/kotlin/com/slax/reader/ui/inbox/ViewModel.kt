@@ -50,7 +50,7 @@ class InboxListViewModel(
         bookmarkDao.deleteBookmark(bookmarkId)
     }
 
-    suspend fun addLinkBookmark(url: String): String = withContext(Dispatchers.IO) {
+    suspend fun addLinkBookmark(url: String) = withContext(Dispatchers.IO) {
         return@withContext bookmarkDao.createBookmark(url)
     }
 }

@@ -110,12 +110,8 @@ fun InboxListScreen(navCtrl: NavController) {
     if (showAddLinkDialog) {
         AddLinkDialog(
             inboxView = inboxViewModel,
-            visible = showAddLinkDialog,
             onDismissRequest = {
                 showAddLinkDialog = false
-            },
-            onViewOriginalArticle = { bookmarkId ->
-                navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmarkId))
             }
         )
     }
