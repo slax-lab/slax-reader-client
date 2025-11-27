@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewModelScope
+import com.slax.reader.const.component.rememberDismissableVisibility
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.utils.getText
 import kotlinx.coroutines.delay
@@ -51,7 +52,11 @@ fun AddLinkDialog(
     val inputState = remember { TextFieldState("") }
     val focusRequester = remember { FocusRequester() }
     val clipboard = LocalClipboard.current
-    var visible by remember { mutableStateOf(false) }
+    val (visible, dismiss) = rememberDismissableVisibility(
+        scope = rememberCoroutineScope(),
+        animationDuration = 300L,
+        onDismissRequest = onDismissRequest
+    )
 
     var errorMessage by remember { mutableStateOf<ShowErrorMessage?>(null) }
     val matchRegexp = remember {
@@ -59,7 +64,6 @@ fun AddLinkDialog(
     }
 
     LaunchedEffect(Unit) {
-        visible = true
         delay(100)
         focusRequester.requestFocus()
 
@@ -74,13 +78,6 @@ fun AddLinkDialog(
             errorMessage = ShowErrorMessage("剪贴板发现多个链接，请手动处理", Color(0xfff3b336))
         } else {
             inputState.setTextAndPlaceCursorAtEnd(res.firstOrNull()!!.value)
-        }
-    }
-
-    LaunchedEffect(visible) {
-        if (!visible) {
-            delay(300)
-            onDismissRequest()
         }
     }
 
@@ -113,9 +110,7 @@ fun AddLinkDialog(
     ) {
         DisposableEffect(Unit) {
             onDispose {
-                if (!visible) {
-                    onDismissRequest()
-                }
+                dismiss()
             }
         }
 
@@ -130,7 +125,7 @@ fun AddLinkDialog(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) {
-                        visible = false
+                        dismiss()
                     }
             )
 
@@ -174,7 +169,7 @@ fun AddLinkDialog(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
                                 ) {
-                                    visible = false
+                                    dismiss()
                                 }
                         )
                     }
@@ -205,7 +200,7 @@ fun AddLinkDialog(
                         cursorBrush = SolidColor(Color(0xFF16b998)),
                         onKeyboardAction = {
                             onConfirm()
-                            visible = false
+                            dismiss()
                         },
                         decorator = { innerTextField ->
                             Box(
@@ -263,7 +258,7 @@ fun AddLinkDialog(
                                 indication = null
                             ) {
                                 onConfirm()
-                                visible = false
+                                dismiss()
                             },
                         contentAlignment = Alignment.Center
                     ) {

@@ -27,7 +27,7 @@ import com.slax.reader.const.AboutRoutes
 import com.slax.reader.const.BookmarkRoutes
 import com.slax.reader.const.SettingsRoutes
 import com.slax.reader.const.SpaceManagerRoutes
-import com.slax.reader.const.components.EditNameDialog
+import com.slax.reader.const.component.EditNameDialog
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.compenents.*
 import com.slax.reader.ui.sidebar.Sidebar
@@ -130,12 +130,12 @@ fun InboxListScreen(navCtrl: NavController) {
         }
     )
 
-    editingBookmark?.let { bookmark ->
+    if (editingBookmark != null) {
         EditNameDialog(
-            initialTitle = bookmark.displayTitle(),
-            onConfim = {title ->
+            initialTitle = editingBookmark!!.displayTitle(),
+            onConfirm = { title ->
                 inboxViewModel.viewModelScope.launch {
-                    inboxViewModel.confirmEditTitle(bookmark.id, title)
+                    inboxViewModel.confirmEditTitle(editingBookmark!!.id, title)
                 }
             },
             onDismissRequest = {

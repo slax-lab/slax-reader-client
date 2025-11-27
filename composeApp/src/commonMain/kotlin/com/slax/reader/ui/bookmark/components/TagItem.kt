@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,7 +35,7 @@ fun TagItem(
     val fontSize = if (isLargeStyle) 15.sp else 12.sp
     val lineHeight = if (isLargeStyle) 21.sp else 15.sp
     val horizontalPadding = if (isLargeStyle) 6.dp else 4.dp
-    val endPadding = if (isLargeStyle && showDeleteButton) 8.dp else if (showDeleteButton) 8.dp else horizontalPadding
+    val endPadding = if (isLargeStyle || showDeleteButton) 8.dp else horizontalPadding
 
     Box(
         modifier = Modifier

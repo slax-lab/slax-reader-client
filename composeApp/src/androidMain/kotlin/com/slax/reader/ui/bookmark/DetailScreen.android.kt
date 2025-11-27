@@ -14,7 +14,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import com.slax.reader.data.database.model.UserBookmark
-import com.slax.reader.const.components.EditNameDialog
+import com.slax.reader.const.component.EditNameDialog
 import com.slax.reader.ui.bookmark.components.*
 import com.slax.reader.utils.AppLifecycleState
 import com.slax.reader.utils.AppWebView
@@ -239,7 +239,7 @@ actual fun DetailScreen(
         if (showEditNameDialog) {
             EditNameDialog(
                 initialTitle = detail.displayTitle,
-                onConfim = { title ->
+                onConfirm = { title ->
                     detailViewModel.viewModelScope.launch {
                         detailViewModel.updateBookmarkTitle(title)
                     }

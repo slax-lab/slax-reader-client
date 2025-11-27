@@ -1,4 +1,4 @@
-package com.slax.reader.const.components
+package com.slax.reader.const.component
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -28,11 +28,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewModelScope
-import com.slax.reader.data.database.model.UserBookmark
-import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_xs_dialog_close
@@ -40,7 +36,7 @@ import slax_reader_client.composeapp.generated.resources.ic_xs_dialog_close
 @Composable
 fun EditNameDialog(
     initialTitle: String,
-    onConfim: (String) -> Unit,
+    onConfirm: (String) -> Unit,
     onDismissRequest: () -> Unit,
 ) {
     val inputState = remember { TextFieldState(initialTitle) }
@@ -55,21 +51,6 @@ fun EditNameDialog(
     LaunchedEffect(Unit) {
         delay(100)
         focusRequester.requestFocus()
-    }
-
-    LaunchedEffect(visible) {
-        if (!visible) {
-            delay(300)
-            onDismissRequest()
-        }
-    }
-
-    fun onConfirm() {
-        val text = inputState.text.toString().trim()
-        if (text.isNotEmpty()) {
-            onConfim(text)
-            dismiss()
-        }
     }
 
     AnimatedVisibility(
@@ -162,7 +143,11 @@ fun EditNameDialog(
                         lineLimits = TextFieldLineLimits.SingleLine,
                         cursorBrush = SolidColor(Color(0xFF16b998)),
                         onKeyboardAction = {
-                            onConfirm()
+                            val text = inputState.text.toString().trim()
+                            if (text.isNotEmpty()) {
+                                onConfirm(text)
+                                dismiss()
+                            }
                         },
                         decorator = { innerTextField ->
                             Box(
@@ -193,7 +178,11 @@ fun EditNameDialog(
                                 interactionSource = confirmButtonInteractionSource,
                                 indication = null
                             ) {
-                                onConfirm()
+                                val text = inputState.text.toString().trim()
+                                if (text.isNotEmpty()) {
+                                    onConfirm(text)
+                                    dismiss()
+                                }
                             },
                         contentAlignment = Alignment.Center
                     ) {
