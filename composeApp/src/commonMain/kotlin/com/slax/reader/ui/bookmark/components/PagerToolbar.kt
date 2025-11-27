@@ -29,7 +29,7 @@ fun PagerToolbar(
         // 页面内容
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier.fillMaxWidth().height(173.dp),
+            modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 173.dp),
             verticalAlignment = Alignment.Top
         ) { page ->
             IconGridPage(

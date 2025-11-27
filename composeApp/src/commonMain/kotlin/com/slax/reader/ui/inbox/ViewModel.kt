@@ -28,8 +28,15 @@ class InboxListViewModel(
     private val _scrollToTopEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val scrollToTopEvent: SharedFlow<Unit> = _scrollToTopEvent.asSharedFlow()
 
+    private val _processingUrlEvent = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val processingUrlEvent: SharedFlow<String> = _processingUrlEvent.asSharedFlow()
+
     fun scrollToTop() {
         _scrollToTopEvent.tryEmit(Unit)
+    }
+
+    fun emitProcessingUrl(url: String) {
+        _processingUrlEvent.tryEmit(url)
     }
 
     suspend fun confirmEditTitle(bookmarkId: String, newTitle: String) {
@@ -48,5 +55,9 @@ class InboxListViewModel(
 
     suspend fun deleteBookmark(bookmarkId: String) = withContext(Dispatchers.IO) {
         bookmarkDao.deleteBookmark(bookmarkId)
+    }
+
+    suspend fun addLinkBookmark(url: String) = withContext(Dispatchers.IO) {
+        return@withContext bookmarkDao.createBookmark(url)
     }
 }

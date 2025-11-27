@@ -44,6 +44,12 @@ import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.*
 import kotlin.math.roundToInt
 
+// 协议类型枚举
+enum class AgreementType {
+    TERMS,      // 用户协议
+    PRIVACY     // 隐私政策
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(navController: NavHostController) {
@@ -54,7 +60,7 @@ fun LoginScreen(navController: NavHostController) {
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     var isAgreed by remember { mutableStateOf(false) }
-    var showAgreement by remember { mutableStateOf(false) }
+    var agreementType by remember { mutableStateOf<AgreementType?>(null) }
     var pendingLoginAction by remember { mutableStateOf<(() -> Unit)?>(null) }
 
     val scope = rememberCoroutineScope()
@@ -149,7 +155,7 @@ fun LoginScreen(navController: NavHostController) {
                     onClick = {
                         if (!isAgreed) {
                             pendingLoginAction = { this.onClick() }
-                            showAgreement = true
+                            agreementType = AgreementType.TERMS
                         } else {
                             this.onClick()
                         }
@@ -178,7 +184,7 @@ fun LoginScreen(navController: NavHostController) {
                                     )
                                 }
                             }
-                            showAgreement = true
+                            agreementType = AgreementType.PRIVACY
                         } else {
                             scope.launch {
                                 val result = appleProvider.signIn()
@@ -198,27 +204,32 @@ fun LoginScreen(navController: NavHostController) {
                 agreed = isAgreed,
                 modifier = Modifier.padding(top = 30.dp),
                 onAgreedClick = { isAgreed = !it },
-                onPrivacyPolicyClick = { showAgreement = true },
-                onUserAgreementClick = { showAgreement = true }
+                onPrivacyPolicyClick = {
+                    agreementType = AgreementType.PRIVACY
+                },
+                onUserAgreementClick = {
+                    agreementType = AgreementType.TERMS
+                }
             )
         }
     }
 
     // 用户协议弹窗
     AgreementBottomSheet(
-        visible = showAgreement,
+        visible = agreementType != null,
+        initialType = agreementType,
         onDismiss = {
-            showAgreement = false
+            agreementType = null
             pendingLoginAction = null
         },
         onAgree = {
-            showAgreement = false
+            agreementType = null
             isAgreed = true
             pendingLoginAction?.invoke()
             pendingLoginAction = null
         },
         onDisagree = {
-            showAgreement = false
+            agreementType = null
             isAgreed = false
             pendingLoginAction = null
         }
@@ -397,10 +408,31 @@ private fun AgreementText(
 @Composable
 private fun AgreementBottomSheet(
     visible: Boolean,
+    initialType: AgreementType?,
     onDismiss: () -> Unit,
     onAgree: () -> Unit,
     onDisagree: () -> Unit
 ) {
+    // 0 = 用户协议，1 = 隐私政策
+    var selectedTabIndex by remember { mutableStateOf(0) }
+
+    LaunchedEffect(visible, initialType) {
+        if (visible && initialType != null) {
+            selectedTabIndex = when (initialType) {
+                AgreementType.TERMS -> 0
+                AgreementType.PRIVACY -> 1
+            }
+        }
+    }
+
+    val currentUrl = remember(selectedTabIndex) {
+        if (selectedTabIndex == 0) {
+            "${SlaxConfig.WEB_BASE_URL}/terms"
+        } else {
+            "${SlaxConfig.WEB_BASE_URL}/privacy"
+        }
+    }
+
     CustomModalBottomSheet(
         visible = visible,
         onDismissRequest = onDismiss,
@@ -414,26 +446,64 @@ private fun AgreementBottomSheet(
                 .padding(top = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "用户协议与隐私政策",
-                style = TextStyle(
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    lineHeight = 20.sp,
-                    color = Color(0xFF0F1419)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(40.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "用户协议",
+                    style = TextStyle(
+                        fontSize = 16.sp,
+                        fontWeight = if (selectedTabIndex == 0) FontWeight.SemiBold else FontWeight.Normal,
+                        lineHeight = 20.sp,
+                        color = if (selectedTabIndex == 0) Color(0xFF0F1419) else Color(0xFF999999)
+                    ),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            selectedTabIndex = 0
+                        }
+                        .padding(vertical = 8.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
-            )
+
+                Text(
+                    text = "隐私政策",
+                    style = TextStyle(
+                        fontSize = 16.sp,
+                        fontWeight = if (selectedTabIndex == 1) FontWeight.SemiBold else FontWeight.Normal,
+                        lineHeight = 20.sp,
+                        color = if (selectedTabIndex == 1) Color(0xFF0F1419) else Color(0xFF999999)
+                    ),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            selectedTabIndex = 1
+                        }
+                        .padding(vertical = 8.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 20.dp)
+                    .padding(top = 8.dp)
                     .height(1.dp)
                     .background(Color(0x14333333))
             )
 
             WebView(
-                url = "https://slax.com/blog.html",
+                url = currentUrl,
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight(fraction = 0.7F)

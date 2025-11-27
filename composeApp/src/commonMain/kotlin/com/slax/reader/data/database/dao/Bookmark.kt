@@ -189,7 +189,7 @@ class BookmarkDao(
                             share = null,
                             bookmark = BookmarkDetails(
                                 uuid = bookmarkId,
-                                title = "New Bookmark",
+                                title = url,
                                 byline = "",
                                 status = "pending",
                                 host_url = url,

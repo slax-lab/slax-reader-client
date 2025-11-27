@@ -28,9 +28,10 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewModelScope
+import com.slax.reader.const.component.rememberDismissableVisibility
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.OverviewViewBounds
-import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_circle_close_icon
@@ -42,7 +43,6 @@ import kotlin.math.roundToInt
 @Composable
 fun OverviewDialog(
     detailView: BookmarkDetailViewModel,
-    visible: Boolean,
     onDismissRequest: () -> Unit,
     sourceBounds: OverviewViewBounds
 ) {
@@ -58,35 +58,26 @@ fun OverviewDialog(
     var screenHeight by remember { mutableStateOf(0f) }
     var contentHeight by remember { mutableStateOf(0f) }
 
-    // 内部动画触发状态
-    var internalVisible by remember { mutableStateOf(false) }
-
-    // 延迟触发动画，确保组件先添加到组合树再开始动画
-    LaunchedEffect(visible) {
-        internalVisible = visible
-    }
-
-    LaunchedEffect(internalVisible) {
-        if (!internalVisible) {
-            delay(300)
-            onDismissRequest()
-        }
-    }
+    val (visible, dismiss) = rememberDismissableVisibility(
+        scope = detailView.viewModelScope,
+        animationDuration = 300L,
+        onDismissRequest = onDismissRequest
+    )
 
     val animationProgress by animateFloatAsState(
-        targetValue = if (internalVisible) 1f else 0f,
+        targetValue = if (visible) 1f else 0f,
         animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
         label = "dialogAnimation"
     )
 
     val alpha by animateFloatAsState(
-        targetValue = if (internalVisible) 1f else 0f,
+        targetValue = if (visible) 1f else 0f,
         animationSpec = tween(durationMillis = 300),
         label = "alphaAnimation"
     )
 
     AnimatedVisibility(
-        visible = internalVisible,
+        visible = visible,
         enter = fadeIn(animationSpec = tween(300)),
         exit = fadeOut(animationSpec = tween(300))
     ) {
@@ -106,7 +97,7 @@ fun OverviewDialog(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) {
-                        internalVisible = false
+                        dismiss()
                     }
             )
 
@@ -183,8 +174,8 @@ fun OverviewDialog(
                                         annotatedText,
                                         modifier = Modifier.fillMaxWidth(),
                                         style = TextStyle(
-                                            fontSize = 15.sp,
-                                            lineHeight = 24.sp,
+                                            fontSize = 16.sp,
+                                            lineHeight = 27.sp,
                                             color = Color(0xFF333333)
                                         )
                                     )
@@ -278,7 +269,7 @@ fun OverviewDialog(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
                                 ) {
-                                    internalVisible = false
+                                    dismiss()
                                 },
                             contentScale = ContentScale.Fit
                         )

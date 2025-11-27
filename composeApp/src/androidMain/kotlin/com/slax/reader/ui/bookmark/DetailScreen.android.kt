@@ -1,10 +1,6 @@
 package com.slax.reader.ui.bookmark
 
 import android.annotation.SuppressLint
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -18,6 +14,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import com.slax.reader.data.database.model.UserBookmark
+import com.slax.reader.const.component.EditNameDialog
 import com.slax.reader.ui.bookmark.components.*
 import com.slax.reader.utils.AppLifecycleState
 import com.slax.reader.utils.AppWebView
@@ -104,6 +101,7 @@ actual fun DetailScreen(
     var showTagView by remember { mutableStateOf(false) }
     var showOverviewDialog by remember { mutableStateOf(false) }
     var showToolbar by remember { mutableStateOf(false) }
+    var showEditNameDialog by remember { mutableStateOf(false) }
 
     // 图片浏览器状态
     var showImageViewer by remember { mutableStateOf(false) }
@@ -194,7 +192,6 @@ actual fun DetailScreen(
         if (showTagView) {
             TagsManageBottomSheet(
                 detailViewModel = detailViewModel,
-                visible = showTagView,
                 onDismissRequest = { showTagView = false },
                 enableDrag = false,
                 onConfirm = { selectedTags ->
@@ -210,7 +207,6 @@ actual fun DetailScreen(
         if (showOverviewDialog) {
             OverviewDialog(
                 detailView = detailViewModel,
-                visible = showOverviewDialog,
                 onDismissRequest = { showOverviewDialog = false },
                 sourceBounds = screenState.overviewBounds
             )
@@ -221,10 +217,12 @@ actual fun DetailScreen(
             BottomToolbarSheet(
                 detail = detail,
                 detailView = detailViewModel,
-                visible = showToolbar,
                 onDismissRequest = { showToolbar = false },
                 onIconClick = { pageId, iconIndex ->
                     println("点击了页面 $pageId 的第 ${iconIndex + 1} 个图标")
+                    if (pageId == "edit_title") {
+                        showEditNameDialog = true
+                    }
                 }
             )
         }
@@ -237,12 +235,24 @@ actual fun DetailScreen(
             )
         }
 
+        // 编辑标题弹窗
+        if (showEditNameDialog) {
+            EditNameDialog(
+                initialTitle = detail.displayTitle,
+                onConfirm = { title ->
+                    detailViewModel.viewModelScope.launch {
+                        detailViewModel.updateBookmarkTitle(title)
+                    }
+                },
+                onDismissRequest = { showEditNameDialog = false }
+            )
+        }
+
         // 图片浏览器
         if (showImageViewer) {
             ImageViewer(
                 imageUrls = allImageUrls,
                 initialImageUrl = currentImageUrl,
-                visible = showImageViewer,
                 onDismiss = {
                     println("[ImageViewer] Dismissed")
                     showImageViewer = false

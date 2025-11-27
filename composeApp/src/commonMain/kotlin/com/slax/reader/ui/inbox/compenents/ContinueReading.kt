@@ -39,7 +39,7 @@ fun ContinueReading(
     val appPreferences: AppPreferences = koinInject()
     val coroutineScope = rememberCoroutineScope()
     var showContinueData by remember { mutableStateOf<ContinueReadingBookmark?>(null) }
-    var internalVisible by remember { mutableStateOf(false) }
+    var visible by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
@@ -49,21 +49,21 @@ fun ContinueReading(
             appPreferences.clearContinueReadingBookmark()
 
             delay(300)
-            internalVisible = true
+            visible = true
         }
     }
 
-    if (!internalVisible) return
+    if (!visible) return
 
-    LaunchedEffect(internalVisible) {
-        if (!internalVisible) {
+    LaunchedEffect(visible) {
+        if (!visible) {
             delay(300)
             showContinueData = null
         }
     }
 
     AnimatedVisibility(
-        visible = internalVisible,
+        visible = visible,
         enter = fadeIn(animationSpec = tween(300)) +
                 slideInVertically(
                     initialOffsetY = { it / 2 },
@@ -91,7 +91,30 @@ fun ContinueReading(
                         )
                     )
             ) {
-                Spacer(modifier = Modifier.fillMaxWidth().padding(top = 68.dp).navigationBarsPadding())
+                Column(modifier = Modifier.fillMaxWidth().navigationBarsPadding()) {
+                    Spacer(
+                        modifier = Modifier.fillMaxWidth().height(40.dp)
+                            .background(
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color(0x00FCFCFC),
+                                        Color(0xFFFCFCFC)
+                                    )
+                                )
+                            )
+                    )
+                    Spacer(
+                        modifier = Modifier.fillMaxWidth().height(68.dp)
+                            .background(
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color(0xFFFCFCFC),
+                                        Color(0xFFFCFCFC)
+                                    )
+                                )
+                            )
+                    )
+                }
             }
 
             Box(
@@ -175,7 +198,7 @@ fun ContinueReading(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
                             ) {
-                                internalVisible = false
+                                visible = false
                             },
                         contentScale = ContentScale.Fit
                     )

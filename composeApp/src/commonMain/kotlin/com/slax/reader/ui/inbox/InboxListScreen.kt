@@ -21,11 +21,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.slax.reader.const.AboutRoutes
 import com.slax.reader.const.BookmarkRoutes
 import com.slax.reader.const.SettingsRoutes
 import com.slax.reader.const.SpaceManagerRoutes
+import com.slax.reader.const.component.EditNameDialog
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.compenents.*
 import com.slax.reader.ui.sidebar.Sidebar
@@ -34,12 +36,16 @@ import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_inbox_tab
+import slax_reader_client.composeapp.generated.resources.ic_xs_inbox_add
 
 @Composable
 fun InboxListScreen(navCtrl: NavController) {
     val inboxViewModel = koinInject<InboxListViewModel>()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+
+    var showAddLinkDialog by remember { mutableStateOf(false) }
+    var editingBookmark by remember { mutableStateOf<InboxListBookmarkItem?>(null) }
 
     println("[watch][UI] recomposition InboxListScreen")
 
@@ -75,6 +81,9 @@ fun InboxListScreen(navCtrl: NavController) {
                                 scope.launch {
                                     drawerState.open()
                                 }
+                            },
+                            onAddLinkClick = {
+                                showAddLinkDialog = true
                             }
                         )
                     }
@@ -95,15 +104,46 @@ fun InboxListScreen(navCtrl: NavController) {
                 ContentSection(
                     navCtrl = navCtrl,
                     inboxViewModel = inboxViewModel,
+                    onEditTitle = { bookmark ->
+                        editingBookmark = bookmark
+                    }
                 )
             }
         }
+    }
+
+    if (showAddLinkDialog) {
+        AddLinkDialog(
+            inboxView = inboxViewModel,
+            onDismissRequest = {
+                showAddLinkDialog = false
+            }
+        )
+    }
+
+    ProcessingDialog(
+        inboxView = inboxViewModel,
+    )
+
+    if (editingBookmark != null) {
+        EditNameDialog(
+            initialTitle = editingBookmark!!.displayTitle(),
+            onConfirm = { title ->
+                inboxViewModel.viewModelScope.launch {
+                    inboxViewModel.confirmEditTitle(editingBookmark!!.id, title)
+                }
+            },
+            onDismissRequest = {
+                editingBookmark = null
+            }
+        )
     }
 }
 
 @Composable
 private fun NavigationBar(
-    onAvatarClick: () -> Unit = {}
+    onAvatarClick: () -> Unit = {},
+    onAddLinkClick: () -> Unit = {}
 ) {
     println("[watch][UI] recomposition NavigationBar")
     val interactionSource = remember { MutableInteractionSource() }
@@ -144,6 +184,20 @@ private fun NavigationBar(
             textAlign = TextAlign.Center,
             modifier = Modifier.align(Alignment.Center)
         )
+
+        Image(
+            painter = painterResource(Res.drawable.ic_xs_inbox_add),
+            contentDescription = "Add Link",
+            modifier = Modifier.align(Alignment.CenterEnd).size(24.dp, 24.dp)
+                .alpha(if (isPressed) 0.5f else 1f)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null
+                ) {
+                    onAddLinkClick()
+                },
+            contentScale = ContentScale.Fit
+        )
     }
 }
 
@@ -151,10 +205,9 @@ private fun NavigationBar(
 private fun ContentSection(
     navCtrl: NavController,
     inboxViewModel: InboxListViewModel,
+    onEditTitle: (bookmark: InboxListBookmarkItem) -> Unit = { _ -> }
 ) {
     println("[watch][UI] recomposition ContentSection")
-
-    var editingBookmark by remember { mutableStateOf<InboxListBookmarkItem?>(null) }
 
     Box(
         modifier = Modifier.fillMaxSize().padding(top = 8.dp).clipToBounds()
@@ -174,9 +227,7 @@ private fun ContentSection(
             ArticleList(
                 navCtrl = navCtrl,
                 viewModel = inboxViewModel,
-                onEditTitle = { bookmark ->
-                    editingBookmark = bookmark
-                },
+                onEditTitle = onEditTitle,
             )
         }
 
@@ -187,14 +238,5 @@ private fun ContentSection(
             modifier = Modifier.align(Alignment.BottomCenter)
         )
 
-        editingBookmark?.let { bookmark ->
-            TitleEditOverlay(
-                bookmark = bookmark,
-                viewModel = inboxViewModel,
-                onDismiss = {
-                    editingBookmark = null
-                }
-            )
-        }
     }
 }

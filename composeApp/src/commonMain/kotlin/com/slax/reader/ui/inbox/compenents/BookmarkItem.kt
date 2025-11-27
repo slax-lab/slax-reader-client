@@ -277,7 +277,13 @@ fun BookmarkItemRow(
                                     offsetXAnimatable.animateTo(0f, animationSpec = tween(200))
                                 }
                             } else {
-                                navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmark.id))
+                                if (bookmark.metadataStatus == "success") {
+                                    navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmark.id))
+                                } else {
+                                    bookmark.metadataUrl?.let {
+                                        viewModel.emitProcessingUrl(it)
+                                    }
+                                }
                             }
                         }
                     },
