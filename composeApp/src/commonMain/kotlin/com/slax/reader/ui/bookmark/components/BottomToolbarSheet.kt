@@ -11,15 +11,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
+import com.slax.reader.const.component.rememberDismissableVisibility
 import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import slax_reader_client.composeapp.generated.resources.*
@@ -38,7 +39,6 @@ data class ToolbarIcon(
 fun BottomToolbarSheet(
     detail: UserBookmark,
     detailView: BookmarkDetailViewModel,
-    visible: Boolean,
     onDismissRequest: () -> Unit,
     onIconClick: (pageId: String, iconIndex: Int) -> Unit
 ) {
@@ -70,23 +70,14 @@ fun BottomToolbarSheet(
         )
     }
 
-    // 内部动画触发状态
-    var internalVisible by remember { mutableStateOf(false) }
-
-    // 延迟触发动画，确保组件先添加到组合树再开始动画
-    LaunchedEffect(visible) {
-        internalVisible = visible
-    }
-
-    LaunchedEffect(internalVisible) {
-        if (!internalVisible) {
-            delay(300)
-            onDismissRequest()
-        }
-    }
+    val (visible, dismiss) = rememberDismissableVisibility(
+        scope = detailView.viewModelScope,
+        animationDuration = 300L,
+        onDismissRequest = onDismissRequest
+    )
 
     AnimatedVisibility(
-        visible = internalVisible,
+        visible = visible,
         enter = fadeIn(animationSpec = tween(300)),
         exit = fadeOut(animationSpec = tween(300))
     ) {
@@ -98,7 +89,7 @@ fun BottomToolbarSheet(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
                 ) {
-                    internalVisible = false
+                    dismiss()
                 }
         )
     }
@@ -108,7 +99,7 @@ fun BottomToolbarSheet(
         contentAlignment = Alignment.BottomCenter
     ) {
         AnimatedVisibility(
-            visible = internalVisible,
+            visible = visible,
             enter = slideInVertically(
                 initialOffsetY = { it },
                 animationSpec = tween(300)
@@ -140,7 +131,7 @@ fun BottomToolbarSheet(
                         }
 
                         onIconClick(pageId, iconIndex)
-                        internalVisible = false
+                        dismiss()
                     },
                     modifier = Modifier.padding(top = 30.dp)
                 )
