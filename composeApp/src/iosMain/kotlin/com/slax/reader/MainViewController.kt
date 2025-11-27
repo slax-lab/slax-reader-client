@@ -1,5 +1,7 @@
 package com.slax.reader
 
+import androidx.compose.foundation.ComposeFoundationFlags
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeUIViewController
 import androidx.navigation.compose.rememberNavController
@@ -12,8 +14,10 @@ import platform.UIKit.UIColor
 import platform.UIKit.UINavigationController
 import platform.UIKit.UIViewController
 
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalForeignApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalForeignApi::class, ExperimentalFoundationApi::class)
 fun MainViewController(): UIViewController {
+    ComposeFoundationFlags.isNewContextMenuEnabled = true
+
     startKoin {
         configureKoin()
     }
