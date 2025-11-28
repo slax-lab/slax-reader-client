@@ -511,9 +511,16 @@ actual fun WebView(
             }
         },
         update = { view ->
-            view.apply {
-                scrollView.contentInset = contentInsets?.toUIEdgeInsets ?: UIEdgeInsets_zero
+            val webView = view as WKWebView
+
+            // 检测 URL 变化并重新加载
+            val currentUrl = webView.URL?.absoluteString
+            if (currentUrl != url) {
+                webView.loadRequest(NSURLRequest(uRL = NSURL(string = url)))
             }
+
+            // 更新 contentInset
+            webView.scrollView.contentInset = contentInsets?.toUIEdgeInsets ?: UIEdgeInsets_zero
         }
     )
 }
