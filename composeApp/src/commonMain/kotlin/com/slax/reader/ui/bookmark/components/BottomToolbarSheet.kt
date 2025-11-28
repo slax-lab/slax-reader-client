@@ -46,8 +46,8 @@ fun BottomToolbarSheet(
     val toolbarPages = remember(detail.isStarred, detail.archiveStatus) {
         listOf(
             listOf(
-                ToolbarIcon("chat", "Chat", Res.drawable.ic_bottom_panel_chatbot),
-                ToolbarIcon("summary", "总结全文", Res.drawable.ic_bottom_panel_summary),
+//                ToolbarIcon("chat", "Chat", Res.drawable.ic_bottom_panel_chatbot),
+//                ToolbarIcon("summary", "总结全文", Res.drawable.ic_bottom_panel_summary),
                 ToolbarIcon(
                     "star",
                     "加星",
@@ -58,14 +58,14 @@ fun BottomToolbarSheet(
                     "归档",
                     if (detail.archiveStatus == 1) Res.drawable.ic_bottom_panel_archieved else Res.drawable.ic_bottom_panel_archieve
                 ),
-                ToolbarIcon("underline", "划线", Res.drawable.ic_bottom_panel_underline),
-                ToolbarIcon("comment", "评论", Res.drawable.ic_bottom_panel_comment),
+//                ToolbarIcon("underline", "划线", Res.drawable.ic_bottom_panel_underline),
+//                ToolbarIcon("comment", "评论", Res.drawable.ic_bottom_panel_comment),
                 ToolbarIcon("edit_title", "改标题", Res.drawable.ic_bottom_panel_edittitle),
-                ToolbarIcon("share", "分享", Res.drawable.ic_bottom_panel_share)
+//                ToolbarIcon("share", "分享", Res.drawable.ic_bottom_panel_share)
             ),
             listOf(
-                ToolbarIcon("feedback", "反馈", Res.drawable.ic_bottom_panel_feedback),
-                ToolbarIcon("delete", "删除", Res.drawable.ic_bottom_panel_delete),
+//                ToolbarIcon("feedback", "反馈", Res.drawable.ic_bottom_panel_feedback),
+//                ToolbarIcon("delete", "删除", Res.drawable.ic_bottom_panel_delete),
             )
         )
     }
