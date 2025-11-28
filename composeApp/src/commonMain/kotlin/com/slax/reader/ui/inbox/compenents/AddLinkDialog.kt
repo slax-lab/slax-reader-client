@@ -64,7 +64,7 @@ fun AddLinkDialog(
     }
 
     LaunchedEffect(Unit) {
-        delay(100)
+        delay(350)
         focusRequester.requestFocus()
 
         val clipEntry = clipboard.getClipEntry()
