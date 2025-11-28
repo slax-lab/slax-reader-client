@@ -44,11 +44,12 @@ suspend fun collectionShare(content: String, title: String?, body: String?): Str
     val apiSvc = ApiService(httpClient)
 
     try {
-        if (body == null) {
-            apiSvc.addBookmarkUrl(url, title)
-        } else {
-            apiSvc.addBookmarkWithContent(url, title, body)
-        }
+        apiSvc.addBookmarkUrl(url, title)
+//        if (body == null) {
+//            apiSvc.addBookmarkUrl(url, title)
+//        } else {
+//            apiSvc.addBookmarkWithContent(url, title, body)
+//        }
         return "ok"
     } catch (e: Exception) {
         println("Collection failed: ${e.message}")
