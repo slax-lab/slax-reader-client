@@ -172,14 +172,8 @@ fun OverviewDialog(
                                 Spacer(modifier = Modifier.height(20.dp))
 
                                 if (overview.isNotEmpty()) {
-                                    val annotatedText = remember(overview) {
-                                        buildAnnotatedString {
-                                            append(overview)
-                                        }
-                                    }
-
                                     Text(
-                                        annotatedText,
+                                        overview,
                                         modifier = Modifier.fillMaxWidth(),
                                         style = TextStyle(
                                             fontSize = 16.sp,

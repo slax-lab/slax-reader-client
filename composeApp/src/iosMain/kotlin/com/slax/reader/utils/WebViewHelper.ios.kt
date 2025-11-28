@@ -470,6 +470,9 @@ actual fun WebView(
     contentInsets: PaddingValues?,
     onScroll: ((x: Double, y: Double) -> Unit)?
 ) {
+    // 持有 WebView 引用
+    val webViewRef = remember { mutableStateOf<WKWebView?>(null) }
+
     val scrollDelegate = remember {
         object : NSObject(), UIScrollViewDelegateProtocol {
             override fun scrollViewDidScroll(scrollView: UIScrollView) {
@@ -507,22 +510,18 @@ actual fun WebView(
                 scrollView.delegate = scrollDelegate
 
                 scrollView.contentInset = contentInsets?.toUIEdgeInsets ?: UIEdgeInsets_zero
-                loadRequest(NSURLRequest(uRL = NSURL(string = url)))
+
+                webViewRef.value = this
             }
         },
         update = { view ->
-            val webView = view as WKWebView
-
-            // 检测 URL 变化并重新加载
-            val currentUrl = webView.URL?.absoluteString
-            if (currentUrl != url) {
-                webView.loadRequest(NSURLRequest(uRL = NSURL(string = url)))
-            }
-
-            // 更新 contentInset
-            webView.scrollView.contentInset = contentInsets?.toUIEdgeInsets ?: UIEdgeInsets_zero
+            view.scrollView.contentInset = contentInsets?.toUIEdgeInsets ?: UIEdgeInsets_zero
         }
     )
+
+    LaunchedEffect(url, webViewRef) {
+        webViewRef.value?.loadRequest(NSURLRequest(uRL = NSURL(string = url)))
+    }
 }
 
 @Composable
