@@ -10,9 +10,11 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.FrameRateCategory
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,7 +47,7 @@ fun ArticleList(
         Modifier.fillMaxSize()
     ) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().preferredFrameRate(FrameRateCategory.High),
             verticalArrangement = Arrangement.spacedBy(0.dp),
             contentPadding = PaddingValues(bottom = 0.dp),
             state = lazyListState
