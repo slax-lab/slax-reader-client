@@ -140,19 +140,22 @@ fun InboxListScreen(navCtrl: NavController) {
     }
 }
 
+
 @Composable
 private fun NavigationBar(
     onAvatarClick: () -> Unit = {},
     onAddLinkClick: () -> Unit = {}
 ) {
     println("[watch][UI] recomposition NavigationBar")
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
+    val tabInteractionSource = remember { MutableInteractionSource() }
+    val isTabPressed by tabInteractionSource.collectIsPressedAsState()
+
+    val addInteractionSource = remember { MutableInteractionSource() }
+    val isAddPressed by addInteractionSource.collectIsPressedAsState()
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 10.dp)
     ) {
         Row(
             modifier = Modifier
@@ -160,19 +163,25 @@ private fun NavigationBar(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painter = painterResource(Res.drawable.ic_inbox_tab),
-                contentDescription = "Menu",
-                modifier = Modifier.size(24.dp, 24.dp)
-                    .alpha(if (isPressed) 0.5f else 1f)
+
+            Box(
+                modifier = Modifier
+                    .alpha(if (isTabPressed) 0.5f else 1f)
                     .clickable(
-                        interactionSource = interactionSource,
+                        interactionSource = tabInteractionSource,
                         indication = null
                     ) {
                         onAvatarClick()
                     },
-                contentScale = ContentScale.Fit
-            )
+            ) {
+                Image(
+                    painter = painterResource(Res.drawable.ic_inbox_tab),
+                    contentDescription = "Menu",
+                    modifier = Modifier.padding(start = 24.dp).padding(vertical = 10.dp).size(24.dp, 24.dp),
+                    contentScale = ContentScale.Fit
+                )
+            }
+
             UserAvatar()
         }
 
@@ -185,19 +194,24 @@ private fun NavigationBar(
             modifier = Modifier.align(Alignment.Center)
         )
 
-        Image(
-            painter = painterResource(Res.drawable.ic_xs_inbox_add),
-            contentDescription = "Add Link",
-            modifier = Modifier.align(Alignment.CenterEnd).size(24.dp, 24.dp)
-                .alpha(if (isPressed) 0.5f else 1f)
+        Box(
+            modifier = Modifier.align(Alignment.CenterEnd)
+                .alpha(if (isAddPressed) 0.5f else 1f)
                 .clickable(
-                    interactionSource = interactionSource,
+                    interactionSource = addInteractionSource,
                     indication = null
                 ) {
                     onAddLinkClick()
-                },
-            contentScale = ContentScale.Fit
-        )
+                }
+        ) {
+            Image(
+                painter = painterResource(Res.drawable.ic_xs_inbox_add),
+                contentDescription = "Add Link",
+                modifier = Modifier.align(Alignment.CenterEnd).padding(horizontal = 24.dp, vertical = 10.dp)
+                    .size(24.dp, 24.dp),
+                contentScale = ContentScale.Fit
+            )
+        }
     }
 }
 
