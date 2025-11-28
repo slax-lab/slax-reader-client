@@ -101,6 +101,8 @@ fun AddLinkDialog(
             delay(100)
             inboxView.scrollToTop()
         }
+
+        dismiss()
     }
 
     AnimatedVisibility(
@@ -200,7 +202,6 @@ fun AddLinkDialog(
                         cursorBrush = SolidColor(Color(0xFF16b998)),
                         onKeyboardAction = {
                             onConfirm()
-                            dismiss()
                         },
                         decorator = { innerTextField ->
                             Box(
@@ -258,7 +259,6 @@ fun AddLinkDialog(
                                 indication = null
                             ) {
                                 onConfirm()
-                                dismiss()
                             },
                         contentAlignment = Alignment.Center
                     ) {
