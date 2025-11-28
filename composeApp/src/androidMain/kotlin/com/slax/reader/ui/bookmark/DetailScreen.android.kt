@@ -8,13 +8,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.FrameRateCategory
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
-import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.const.component.EditNameDialog
+import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.ui.bookmark.components.*
 import com.slax.reader.utils.AppLifecycleState
 import com.slax.reader.utils.AppWebView
@@ -139,7 +141,9 @@ actual fun DetailScreen(
             htmlContent?.let { content ->
                 AppWebView(
                     htmlContent = content,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .preferredFrameRate(FrameRateCategory.High),
                     topContentInsetPx = 0f,
                     onTap = {
                         // 只在非底部且非顶部区域才切换显示状态
