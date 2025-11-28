@@ -470,7 +470,6 @@ actual fun WebView(
     contentInsets: PaddingValues?,
     onScroll: ((x: Double, y: Double) -> Unit)?
 ) {
-    // 持有 WebView 引用
     val webViewRef = remember { mutableStateOf<WKWebView?>(null) }
 
     val scrollDelegate = remember {
@@ -515,7 +514,9 @@ actual fun WebView(
             }
         },
         update = { view ->
-            view.scrollView.contentInset = contentInsets?.toUIEdgeInsets ?: UIEdgeInsets_zero
+            view.apply {
+                scrollView.contentInset = contentInsets?.toUIEdgeInsets ?: UIEdgeInsets_zero
+            }
         }
     )
 
