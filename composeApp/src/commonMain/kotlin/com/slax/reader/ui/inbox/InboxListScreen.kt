@@ -207,7 +207,7 @@ private fun NavigationBar(
             Image(
                 painter = painterResource(Res.drawable.ic_xs_inbox_add),
                 contentDescription = "Add Link",
-                modifier = Modifier.align(Alignment.CenterEnd).padding(horizontal = 24.dp, vertical = 10.dp)
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp)
                     .size(24.dp, 24.dp),
                 contentScale = ContentScale.Fit
             )
