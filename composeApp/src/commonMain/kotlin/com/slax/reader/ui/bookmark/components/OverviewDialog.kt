@@ -159,19 +159,21 @@ fun OverviewDialog(
                                     },
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                if (overview.isNotEmpty()) {
-                                    val annotatedText = remember(overview) {
-                                        buildAnnotatedString {
-                                            // 灰色前缀
-                                            withStyle(style = SpanStyle(color = Color(0xFF999999))) {
-                                                append("全文概要: ")
-                                            }
-                                            append(overview)
-                                        }
-                                    }
+                                Text(
+                                    "全文概要：",
+                                    modifier = Modifier.fillMaxWidth(),
+                                    style = TextStyle(
+                                        fontSize = 14.sp,
+                                        lineHeight = 20.sp,
+                                        color = Color(0xFF999999)
+                                    )
+                                )
 
+                                Spacer(modifier = Modifier.height(20.dp))
+
+                                if (overview.isNotEmpty()) {
                                     Text(
-                                        annotatedText,
+                                        overview,
                                         modifier = Modifier.fillMaxWidth(),
                                         style = TextStyle(
                                             fontSize = 16.sp,

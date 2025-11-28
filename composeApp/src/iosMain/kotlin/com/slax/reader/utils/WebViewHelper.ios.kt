@@ -470,6 +470,8 @@ actual fun WebView(
     contentInsets: PaddingValues?,
     onScroll: ((x: Double, y: Double) -> Unit)?
 ) {
+    val webViewRef = remember { mutableStateOf<WKWebView?>(null) }
+
     val scrollDelegate = remember {
         object : NSObject(), UIScrollViewDelegateProtocol {
             override fun scrollViewDidScroll(scrollView: UIScrollView) {
@@ -507,7 +509,8 @@ actual fun WebView(
                 scrollView.delegate = scrollDelegate
 
                 scrollView.contentInset = contentInsets?.toUIEdgeInsets ?: UIEdgeInsets_zero
-                loadRequest(NSURLRequest(uRL = NSURL(string = url)))
+
+                webViewRef.value = this
             }
         },
         update = { view ->
@@ -516,6 +519,10 @@ actual fun WebView(
             }
         }
     )
+
+    LaunchedEffect(url, webViewRef) {
+        webViewRef.value?.loadRequest(NSURLRequest(uRL = NSURL(string = url)))
+    }
 }
 
 @Composable
