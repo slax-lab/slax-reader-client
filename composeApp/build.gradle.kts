@@ -271,8 +271,12 @@ buildkonfig {
             "KOTZILLA_KEY",
             dotenv.get("KOTZILLA_KEY")!!
         )
+        buildConfigField(
+            STRING,
+            "REVENUE_CAT_API_KEY",
+            dotenv.get("REVENUE_CAT_API_KEY")!!
+        )
     }
-
     defaultConfigs("release") {
         buildConfigField(STRING, "BUILD_ENV", buildFlavor)
         buildConfigField(STRING, "API_BASE_URL", "https://api-reader.slax.com")
@@ -287,6 +291,11 @@ buildkonfig {
             STRING,
             "KOTZILLA_KEY",
             dotenv.get("KOTZILLA_KEY")!!
+        )
+        buildConfigField(
+            STRING,
+            "REVENUE_CAT_API_KEY",
+            dotenv.get("REVENUE_CAT_API_KEY")!!
         )
     }
 }
