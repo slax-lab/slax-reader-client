@@ -70,6 +70,7 @@ fun SettingScreen(onBackClick: () -> Unit) {
                 ) {
                     SettingItem(
                         title = "删除账号",
+                        color = Color(0xFFF45454),
                         onClick = {
                             urlToOpen = "${SlaxConfig.WEB_BASE_URL}/how-do-i-delete-my-account"
                         }
@@ -88,6 +89,7 @@ fun SettingScreen(onBackClick: () -> Unit) {
 @Composable
 private fun SettingItem(
     title: String,
+    color: Color = Color(0xFF0F1419),
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -108,7 +110,7 @@ private fun SettingItem(
             text = title,
             fontSize = 16.sp,
             fontWeight = FontWeight.Normal,
-            color = Color(0xFF0F1419)
+            color = color
         )
     }
 }
