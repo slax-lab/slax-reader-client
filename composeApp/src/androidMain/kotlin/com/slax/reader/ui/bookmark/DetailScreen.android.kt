@@ -104,6 +104,7 @@ actual fun DetailScreen(
     var showOverviewDialog by remember { mutableStateOf(false) }
     var showToolbar by remember { mutableStateOf(false) }
     var showEditNameDialog by remember { mutableStateOf(false) }
+    var showSummaryDialog by remember { mutableStateOf(false) }
 
     // 图片浏览器状态
     var showImageViewer by remember { mutableStateOf(false) }
@@ -224,8 +225,9 @@ actual fun DetailScreen(
                 onDismissRequest = { showToolbar = false },
                 onIconClick = { pageId, iconIndex ->
                     println("点击了页面 $pageId 的第 ${iconIndex + 1} 个图标")
-                    if (pageId == "edit_title") {
-                        showEditNameDialog = true
+                    when (pageId) {
+                        "edit_title" -> showEditNameDialog = true
+                        "summary" -> showSummaryDialog = true
                     }
                 }
             )
@@ -261,6 +263,15 @@ actual fun DetailScreen(
                     println("[ImageViewer] Dismissed")
                     showImageViewer = false
                 }
+            )
+        }
+
+        // 总结全文弹窗
+        if (showSummaryDialog) {
+            SummaryDialog(
+                detailViewModel = detailViewModel,
+                initialState = SummaryDialogState.EXPANDED,
+                onDismissRequest = { showSummaryDialog = false }
             )
         }
     }
