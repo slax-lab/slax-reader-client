@@ -115,7 +115,9 @@ fun SlaxNavigation(
             SpaceManager()
         }
         composable<SettingsRoutes> {
-            SettingScreen()
+            SettingScreen(onBackClick = {
+                navCtrl.popBackStack()
+            })
         }
         composable<AboutRoutes> {
             AboutScreen(onBackClick = {
