@@ -150,8 +150,8 @@ kotlin {
             implementation(libs.sketch.http)
             implementation(libs.sketch.animated.gif)
             implementation(libs.sketch.svg)
-            implementation("io.github.panpf.sketch4:sketch-compose-resources:4.3.1")
-            implementation("io.github.panpf.sketch4:sketch-extensions-compose-resources:4.3.1")
+            implementation(libs.sketch.compose.resources)
+            implementation(libs.sketch.extensions.compose.resources)
 
             // firebase
             implementation(libs.firebase.app)
@@ -173,9 +173,18 @@ kotlin {
             implementation(libs.connectivity.compose.device)
 
             implementation(libs.kotzilla.sdk)
+
+            // IAP
+            implementation(libs.purchases.core)
+            implementation(libs.purchases.result)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+        }
+        named { it.lowercase().startsWith("ios") }.configureEach {
+            languageSettings {
+                optIn("kotlinx.cinterop.ExperimentalForeignApi")
+            }
         }
     }
 }
