@@ -184,9 +184,18 @@ kotlin {
             implementation(libs.connectivity.compose.device)
 
             implementation(libs.kotzilla.sdk)
+
+            // IAP
+            implementation(libs.purchases.core)
+            implementation(libs.purchases.result)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+        }
+        named { it.lowercase().startsWith("ios") }.configureEach {
+            languageSettings {
+                optIn("kotlinx.cinterop.ExperimentalForeignApi")
+            }
         }
     }
 }
