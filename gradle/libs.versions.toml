@@ -25,8 +25,11 @@ googleServices = "4.4.4"
 firebaseCrashlytics = "3.0.6"
 connectivity = "2.3.0"
 kotzilla = "1.4.0"
+purchases-kmp = "2.2.11+17.21.0"
 
 [libraries]
+purchases-core = { module = "com.revenuecat.purchases:purchases-kmp-core", version.ref = "purchases-kmp" }
+purchases-result = { module = "com.revenuecat.purchases:purchases-kmp-result", version.ref = "purchases-kmp" }
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
 atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu" }
 firebase-analytics = { module = "dev.gitlive:firebase-analytics", version.ref = "firebaseAnalytics" }
