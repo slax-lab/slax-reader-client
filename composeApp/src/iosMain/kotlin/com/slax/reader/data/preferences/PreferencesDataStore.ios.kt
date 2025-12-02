@@ -17,19 +17,17 @@ fun getPreferencesPath(): String {
     return sharedContainerURL.path + "/user.preferences_pb"
 }
 
+private val dataStoreInstance: DataStore<Preferences> by lazy {
+    PreferenceDataStoreFactory.createWithPath(
+        produceFile = { getPreferencesPath().toPath() }
+    )
+}
+
 actual val preferencesPlatformModule = module {
-    single<DataStore<Preferences>> {
-        PreferenceDataStoreFactory.createWithPath(
-            produceFile = { getPreferencesPath().toPath() }
-        )
-    }
+    single<DataStore<Preferences>> { dataStoreInstance }
     single<AppPreferences> { AppPreferences(get()) }
 }
 
 actual fun getPreferences(): AppPreferences {
-    return AppPreferences(
-        PreferenceDataStoreFactory.createWithPath(
-            produceFile = { getPreferencesPath().toPath() }
-        )
-    )
+    return AppPreferences(dataStoreInstance)
 }

@@ -13,7 +13,6 @@
 		8A9B3B002EA78B4100F25AB6 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 8A9B3AFF2EA78B4100F25AB6 /* FirebaseMessaging */; };
 		8A9B3B022EA78B4900F25AB6 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 8A9B3B012EA78B4900F25AB6 /* FirebaseMessaging */; };
 		8A9D0BAD2E8A989900FFDE17 /* share.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8AD22C002E83ED490035EA6E /* share.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		8AC258C62E83C6AF00FE5645 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8AC258C52E83C6AF00FE5645 /* StoreKit.framework */; };
 		8AC37B072E9D0BE2005395D2 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 8AC37B062E9D0BE2005395D2 /* FirebaseAuth */; };
 		8AC37B092E9D0BEB005395D2 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 8AC37B082E9D0BEB005395D2 /* FirebaseAuth */; };
 		8ACC80432E9CA0E90078F1FF /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 8ACC80422E9CA0E90078F1FF /* GoogleSignIn */; };
@@ -54,7 +53,6 @@
 		0CCD5020CCDB585F6F508724 /* Pods_iosApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_iosApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		7E6A546446BC10899355DC8F /* Pods-share.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-share.debug.xcconfig"; path = "Target Support Files/Pods-share/Pods-share.debug.xcconfig"; sourceTree = "<group>"; };
 		824E651F0113D77B8A9B160C /* Pods-iosApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-iosApp.release.xcconfig"; path = "Target Support Files/Pods-iosApp/Pods-iosApp.release.xcconfig"; sourceTree = "<group>"; };
-		8AC258C52E83C6AF00FE5645 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		8AD22C002E83ED490035EA6E /* share.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = share.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A80729D73D88F9A2693DCB2E /* Pods_share.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_share.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		B3D95CCEA2E69139FF9B1B06 /* Pods-share.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-share.release.xcconfig"; path = "Target Support Files/Pods-share/Pods-share.release.xcconfig"; sourceTree = "<group>"; };
@@ -129,7 +127,6 @@
 				8A1CC81E2E9A6F9300F7C101 /* FirebaseCrashlytics in Frameworks */,
 				8ACC80432E9CA0E90078F1FF /* GoogleSignIn in Frameworks */,
 				8A1CC81C2E9A6F9300F7C101 /* FirebaseAnalytics in Frameworks */,
-				8AC258C62E83C6AF00FE5645 /* StoreKit.framework in Frameworks */,
 				C1665E8A5E5844C45F5B2807 /* Pods_iosApp.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -140,7 +137,6 @@
 		23DC1AB1B1A60E53AD4B7574 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				8AC258C52E83C6AF00FE5645 /* StoreKit.framework */,
 				0CCD5020CCDB585F6F508724 /* Pods_iosApp.framework */,
 				A80729D73D88F9A2693DCB2E /* Pods_share.framework */,
 			);
@@ -697,11 +693,14 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Slax Reader";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportsDocumentBrowser = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 14;
 				KOTLIN_FRAMEWORK_BUILD_TYPE = Debug;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -734,11 +733,14 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Slax Reader";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportsDocumentBrowser = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 14;
 				KOTLIN_FRAMEWORK_BUILD_TYPE = Release;
 				LD_RUNPATH_SEARCH_PATHS = (

@@ -12,19 +12,6 @@ import okio.Path.Companion.toPath
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
-actual val preferencesPlatformModule = module {
-    single<AppPreferences> { getPreferences(androidContext()) }
-}
-
-actual fun getPreferences(): AppPreferences {
-    if (applicationContext == null) throw NullPointerException("Context is null")
-    return AppPreferences(createDataStore(applicationContext!!))
-}
-
-fun getPreferences(context: Context): AppPreferences {
-    return AppPreferences(createDataStore(context))
-}
-
 private fun createDataStore(context: Context): DataStore<Preferences> {
     val filePath = context.filesDir
         .resolve("user.preferences_pb")
@@ -39,4 +26,28 @@ private fun createDataStore(context: Context): DataStore<Preferences> {
             filePath
         },
     )
+}
+
+private object DataStoreHolder {
+    @Volatile
+    private var INSTANCE: DataStore<Preferences>? = null
+
+    fun getInstance(context: Context): DataStore<Preferences> {
+        return INSTANCE ?: synchronized(this) {
+            INSTANCE ?: createDataStore(context.applicationContext).also { INSTANCE = it }
+        }
+    }
+}
+
+actual val preferencesPlatformModule = module {
+    single<AppPreferences> { getPreferences(androidContext()) }
+}
+
+actual fun getPreferences(): AppPreferences {
+    if (applicationContext == null) throw NullPointerException("Context is null")
+    return AppPreferences(DataStoreHolder.getInstance(applicationContext!!))
+}
+
+fun getPreferences(context: Context): AppPreferences {
+    return AppPreferences(DataStoreHolder.getInstance(context))
 }
