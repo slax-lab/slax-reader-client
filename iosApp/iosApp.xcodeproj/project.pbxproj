@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		4BB6C1386807A9E29D6E1BA3 /* Pods_share.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A80729D73D88F9A2693DCB2E /* Pods_share.framework */; };
+		8A0008BB2EDE917F007D6334 /* PurchasesHybridCommon in Frameworks */ = {isa = PBXBuildFile; productRef = 8A0008BA2EDE917F007D6334 /* PurchasesHybridCommon */; };
+		8A0008D92EDE91A0007D6334 /* PurchasesHybridCommon in Frameworks */ = {isa = PBXBuildFile; productRef = 8A0008D82EDE91A0007D6334 /* PurchasesHybridCommon */; };
 		8A1CC81C2E9A6F9300F7C101 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 8A1CC81B2E9A6F9300F7C101 /* FirebaseAnalytics */; };
 		8A1CC81E2E9A6F9300F7C101 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 8A1CC81D2E9A6F9300F7C101 /* FirebaseCrashlytics */; };
 		8A9B3B002EA78B4100F25AB6 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 8A9B3AFF2EA78B4100F25AB6 /* FirebaseMessaging */; };
@@ -95,8 +97,6 @@
 		};
 		B9DA98002DC14AA900A4DA20 /* Configuration */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = Configuration;
 			sourceTree = "<group>";
 		};
@@ -113,6 +113,7 @@
 				8ACC804A2E9CA6C70078F1FF /* FirebaseCrashlytics in Frameworks */,
 				8ACC804C2E9CA6CB0078F1FF /* GoogleSignIn in Frameworks */,
 				8ACC804E2E9CA6CD0078F1FF /* GoogleSignInSwift in Frameworks */,
+				8A0008D92EDE91A0007D6334 /* PurchasesHybridCommon in Frameworks */,
 				4BB6C1386807A9E29D6E1BA3 /* Pods_share.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -127,6 +128,7 @@
 				8A1CC81E2E9A6F9300F7C101 /* FirebaseCrashlytics in Frameworks */,
 				8ACC80432E9CA0E90078F1FF /* GoogleSignIn in Frameworks */,
 				8A1CC81C2E9A6F9300F7C101 /* FirebaseAnalytics in Frameworks */,
+				8A0008BB2EDE917F007D6334 /* PurchasesHybridCommon in Frameworks */,
 				C1665E8A5E5844C45F5B2807 /* Pods_iosApp.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -259,6 +261,7 @@
 			packageReferences = (
 				8A1CC81A2E9A6F9300F7C101 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				8ACC80412E9CA0E90078F1FF /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				8A0008B92EDE917F007D6334 /* XCRemoteSwiftPackageReference "purchases-hybrid-common" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B9DA97B22DC1472C00A4DA20 /* Products */;
@@ -297,9 +300,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -314,9 +321,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -331,9 +342,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-share/Pods-share-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-share/Pods-share-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -789,6 +804,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		8A0008B92EDE917F007D6334 /* XCRemoteSwiftPackageReference "purchases-hybrid-common" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-hybrid-common";
+			requirement = {
+				kind = exactVersion;
+				version = 17.21.0;
+			};
+		};
 		8A1CC81A2E9A6F9300F7C101 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
@@ -808,6 +831,16 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		8A0008BA2EDE917F007D6334 /* PurchasesHybridCommon */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8A0008B92EDE917F007D6334 /* XCRemoteSwiftPackageReference "purchases-hybrid-common" */;
+			productName = PurchasesHybridCommon;
+		};
+		8A0008D82EDE91A0007D6334 /* PurchasesHybridCommon */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8A0008B92EDE917F007D6334 /* XCRemoteSwiftPackageReference "purchases-hybrid-common" */;
+			productName = PurchasesHybridCommon;
+		};
 		8A1CC81B2E9A6F9300F7C101 /* FirebaseAnalytics */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8A1CC81A2E9A6F9300F7C101 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
