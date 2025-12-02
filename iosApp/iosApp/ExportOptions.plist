@@ -12,5 +12,9 @@
         <false/>
         <key>signingStyle</key>
         <string>automatic</string>
+        <key>manageAppVersionAndBuildNumber</key>
+        <false/>
+        <key>signingCertificate</key>
+        <string>Apple Distribution</string>
     </dict>
 </plist>

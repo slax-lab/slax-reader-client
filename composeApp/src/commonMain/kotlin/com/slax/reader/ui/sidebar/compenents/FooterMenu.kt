@@ -25,30 +25,30 @@ fun FooterMenu(
 ) {
     println("[watch][UI] FooterMenu recomposed")
     // 设置菜单项
-//    NavigationDrawerItem(
-//        label = {
-//            Text(
-//                text = "设置",
-//                fontSize = 16.sp,
-//                lineHeight = 20.sp,
-//                color = Color(0xFF333333)
-//            )
-//        },
-//        icon = {
-//            Icon(
-//                painter = painterResource(Res.drawable.ic_xs_sidebar_config),
-//                contentDescription = null,
-//                tint = Color.Unspecified,
-//                modifier = Modifier.size(20.dp)
-//            )
-//        },
-//        shape = RoundedCornerShape(12.dp),
-//        selected = false,
-//        onClick = onSettingsClick,
-//        colors = NavigationDrawerItemDefaults.colors(
-//            unselectedContainerColor = Color.Transparent
-//        )
-//    )
+    NavigationDrawerItem(
+        label = {
+            Text(
+                text = "设置",
+                fontSize = 16.sp,
+                lineHeight = 20.sp,
+                color = Color(0xFF333333)
+            )
+        },
+        icon = {
+            Icon(
+                painter = painterResource(Res.drawable.ic_xs_sidebar_config),
+                contentDescription = null,
+                tint = Color.Unspecified,
+                modifier = Modifier.size(20.dp)
+            )
+        },
+        shape = RoundedCornerShape(12.dp),
+        selected = false,
+        onClick = onSettingsClick,
+        colors = NavigationDrawerItemDefaults.colors(
+            unselectedContainerColor = Color.Transparent
+        )
+    )
 
     // 关于菜单项
     NavigationDrawerItem(
