@@ -51,15 +51,7 @@ fun InboxListScreen(navCtrl: NavController) {
 
     Sidebar(
         drawerState = drawerState,
-        onSettingsClick = {
-            navCtrl.navigate(SettingsRoutes)
-        },
-        onAboutClick = {
-            navCtrl.navigate(AboutRoutes)
-        },
-        onSpaceManagerClick = {
-            navCtrl.navigate(SpaceManagerRoutes)
-        },
+        navCtrl = navCtrl,
     ) {
         Box(
             modifier = Modifier

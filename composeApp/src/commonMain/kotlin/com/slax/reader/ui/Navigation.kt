@@ -21,6 +21,7 @@ import com.slax.reader.ui.inbox.InboxListScreen
 import com.slax.reader.ui.login.LoginScreen
 import com.slax.reader.ui.setting.SettingScreen
 import com.slax.reader.ui.space.SpaceManager
+import com.slax.reader.ui.subscription.SubscriptionManagerScreen
 import com.slax.reader.utils.LifeCycleHelper
 import com.slax.reader.utils.NavHostTransitionHelper
 import dev.gitlive.firebase.Firebase
@@ -123,6 +124,9 @@ fun SlaxNavigation(
             AboutScreen(onBackClick = {
                 navCtrl.popBackStack()
             })
+        }
+        composable<SubscriptionManagerRoutes> {
+            SubscriptionManagerScreen()
         }
     }
 }

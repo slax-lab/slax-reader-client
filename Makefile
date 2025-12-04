@@ -15,3 +15,8 @@ gen-privacy:
 
 config:
 	./gradlew generateBuildKonfig -Pbuildkonfig.flavor=dev
+
+bridge:
+	./gradlew :composeApp:swiftklibStoreKitWrapperIosArm64
+	./gradlew :composeApp:swiftklibStoreKitWrapperIosSimulatorArm64
+	./gradlew :composeApp:swiftklibStoreKitWrapperIosX64
