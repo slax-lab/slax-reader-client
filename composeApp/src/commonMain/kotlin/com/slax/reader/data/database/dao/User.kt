@@ -2,6 +2,7 @@ package com.slax.reader.data.database.dao
 
 import com.powersync.PowerSyncDatabase
 import com.powersync.db.getString
+import com.powersync.db.getStringOptional
 import com.slax.reader.data.database.model.UserInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,16 +29,16 @@ class UserDao(
             mapper = { cursor ->
                 UserInfo(
                     email = cursor.getString("email"),
-                    name = cursor.getString("name"),
-                    picture = cursor.getString("picture"),
-                    given_name = cursor.getString("given_name"),
-                    family_name = cursor.getString("family_name"),
+                    name = cursor.getStringOptional("name") ?: "",
+                    picture = cursor.getStringOptional("picture") ?: "",
+                    given_name = cursor.getStringOptional("given_name") ?: "",
+                    family_name = cursor.getStringOptional("family_name") ?: "",
                     lang = cursor.getString("lang"),
-                    ai_lang = cursor.getString("ai_lang"),
+                    ai_lang = cursor.getStringOptional("ai_lang") ?: "",
                     timezone = cursor.getString("timezone"),
-                    account = cursor.getString("account"),
-                    last_read_at = cursor.getString("last_read_at"),
-                    invite_code = cursor.getString("invite_code"),
+                    account = cursor.getStringOptional("account") ?: "",
+                    last_read_at = cursor.getStringOptional("last_read_at") ?: "",
+                    invite_code = cursor.getStringOptional("invite_code") ?: "",
                 )
             }
         ).map { it.firstOrNull() }
