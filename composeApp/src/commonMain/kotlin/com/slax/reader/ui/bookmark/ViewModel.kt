@@ -7,6 +7,7 @@ import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.data.database.model.UserTag
 import com.slax.reader.data.network.ApiService
+import com.slax.reader.data.network.dto.OutlineResponse
 import com.slax.reader.data.network.dto.OverviewResponse
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.data.preferences.ContinueReadingBookmark
@@ -18,6 +19,12 @@ import kotlinx.serialization.json.Json
 data class OverviewState(
     val overview: String = "",
     val keyTakeaways: List<String> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null
+)
+
+data class OutlineState(
+    val outline: String = "",
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -35,8 +42,16 @@ class BookmarkDetailViewModel(
     private val _overviewContent = MutableStateFlow("")
     val overviewContent: StateFlow<String> = _overviewContent.asStateFlow()
 
+
     private val _overviewState = MutableStateFlow(OverviewState())
     val overviewState: StateFlow<OverviewState> = _overviewState.asStateFlow()
+
+
+    private val _outlineContent = MutableStateFlow("")
+    val outlineContent: StateFlow<String> = _outlineContent.asStateFlow()
+
+    private val _outlineState = MutableStateFlow(OutlineState())
+    val outlineState: StateFlow<OutlineState> = _outlineState.asStateFlow()
 
     fun loadOverview() {
         val bookmarkId = _bookmarkId.value ?: return
@@ -116,6 +131,93 @@ class BookmarkDetailViewModel(
                 }
             } catch (e: Exception) {
                 _overviewState.update { state ->
+                    state.copy(error = e.message ?: "Unknown error", isLoading = false)
+                }
+            }
+        }
+    }
+
+    fun loadOutlines() {
+        val bookmarkId = _bookmarkId.value ?: return
+        viewModelScope.launch {
+            _outlineContent.value = ""
+            _outlineState.value = OutlineState(isLoading = true)
+
+            var fullOutline = ""
+
+            try {
+                val resp = apiService.getBookmarkOutlines(bookmarkId)
+                val data = resp.data?.data
+                val firstOverview = data?.firstOrNull()?.content ?: ""
+
+                if (firstOverview.isNotEmpty()) {
+                    fullOutline += firstOverview
+                    _outlineContent.value = fullOutline
+                    _outlineState.update { state ->
+                        state.copy(outline = fullOutline, isLoading = false)
+                    }
+                } else {
+                    _outlineState.update { state ->
+                        state.copy(isLoading = false)
+                    }
+                }
+
+            } catch (e: Exception) {
+                println("[BookmarkDetailViewModel] loadOutlines error: ${e.message}")
+                _outlineState.update { state ->
+                    state.copy(error = e.message ?: "Unknown error", isLoading = false)
+                }
+            }
+        }
+    }
+
+    fun loadOutline() {
+        val bookmarkId = _bookmarkId.value ?: return
+        viewModelScope.launch {
+            _outlineContent.value = ""
+            _outlineState.value = OutlineState(isLoading = true)
+
+            var fullOutline = ""
+
+            try {
+                apiService.getBookmarkOutline(bookmarkId).collect { response ->
+                    when (response) {
+                        is OutlineResponse.Outline -> {
+                            fullOutline += response.content
+                            _outlineContent.value = fullOutline
+                            _outlineState.update { state ->
+                                state.copy(outline = fullOutline, isLoading = true)
+                            }
+                        }
+
+                        is OutlineResponse.Done -> {
+                            _outlineState.update { state ->
+                                state.copy(isLoading = false)
+                            }
+
+                            if (fullOutline.isNotEmpty()) {
+//                                withContext(Dispatchers.IO) {
+//                                    localBookmarkDao.updateLocalBookmarkOverview(
+//                                        bookmarkId = bookmarkId,
+//                                        overview = fullOverview,
+//                                        keyTakeaways = keyTakeawaysJson
+//                                    )
+//                                }
+                            }
+                        }
+
+                        is OutlineResponse.Error -> {
+                            _outlineState.update { state ->
+                                state.copy(error = response.message, isLoading = false)
+                            }
+                        }
+
+                        else -> {
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                _outlineState.update { state ->
                     state.copy(error = e.message ?: "Unknown error", isLoading = false)
                 }
             }

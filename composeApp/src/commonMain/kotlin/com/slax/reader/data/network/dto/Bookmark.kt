@@ -65,6 +65,24 @@ data class BookmarkOverviewParam(
 )
 
 @Serializable
+data class BookmarkOutlineItem(
+    val content: String,
+    val updated_at: String,
+    val is_self: Boolean = false
+)
+
+
+@Serializable
+data class BookmarkOutlinesResult(
+    val data: List<BookmarkOutlineItem> = emptyList(),
+)
+
+@Serializable
+data class BookmarkOutlineParam(
+    val bookmark_uid: String,
+    val force: Boolean = false
+)
+@Serializable
 data class TagInfo(
     val id: Long,
     val name: String
@@ -93,4 +111,10 @@ sealed class OverviewResponse {
     data class KeyTakeaways(val content: List<String>) : OverviewResponse()
     data object Done : OverviewResponse()
     data class Error(val message: String) : OverviewResponse()
+}
+
+sealed class OutlineResponse {
+    data class Outline(val content: String) : OutlineResponse()
+    data object Done : OutlineResponse()
+    data class Error(val message: String) : OutlineResponse()
 }

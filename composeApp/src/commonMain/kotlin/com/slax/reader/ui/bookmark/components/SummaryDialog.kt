@@ -39,6 +39,10 @@ fun SummaryDialog(
 ) {
     println("[watch][UI] recomposition SummaryDialog")
 
+    LaunchedEffect(detailViewModel._bookmarkId) {
+        detailViewModel.loadOutlines()
+    }
+
     var currentState by remember { mutableStateOf(SummaryDialogState.HIDDEN) }
     var visible by remember { mutableStateOf(false) }
 

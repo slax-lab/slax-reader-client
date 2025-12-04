@@ -176,4 +176,33 @@ class ApiService(
             }
         }
     }.flowOn(Dispatchers.IO)
+
+
+    suspend fun getBookmarkOutlines(bookmarkId: String): HttpData<BookmarkOutlinesResult> {
+        return get(
+//            "/v1/bookmark/summaries", query = mapOf("bookmark_uid" to bookmarkId)
+        )
+    }
+
+    fun getBookmarkOutline(bookmarkId: String): Flow<OutlineResponse> = flow {
+        val url = buildUrl("/v1/aigc/summaries")
+
+        httpClient.preparePost(url) {
+            headers {
+                append(HttpHeaders.ContentType, "application/json")
+                append(HttpHeaders.Accept, "text/event-stream")
+            }
+            setBody(BookmarkOutlineParam(bookmarkId))
+        }.execute { response ->
+            val channel = response.bodyAsChannel()
+
+            while (!channel.isClosedForRead) {
+                val line = channel.readUTF8Line() ?: break
+                if (line.isEmpty()) continue
+                emit(OutlineResponse.Outline(line))
+            }
+
+            emit(OutlineResponse.Done)
+        }
+    }.flowOn(Dispatchers.IO)
 }
