@@ -3,17 +3,22 @@ import io.github.cdimascio.dotenv.dotenv
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
 import java.util.*
+import io.github.ttypic.swiftklib.*
 
 buildscript {
     repositories {
         google()
         mavenCentral()
         gradlePluginPortal()
+        maven {
+            url = uri("https://plugins.gradle.org/m2/")
+        }
     }
     dependencies {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.0")
         classpath("com.codingfeline.buildkonfig:buildkonfig-gradle-plugin:0.17.1")
         classpath("io.github.cdimascio:dotenv-kotlin:6.5.1")
+        classpath("io.github.ttypic:plugin:0.6.4")
     }
 }
 
@@ -29,6 +34,7 @@ plugins {
     kotlin("native.cocoapods")
     id("com.codingfeline.buildkonfig") version "0.17.1"
     id("org.jetbrains.kotlinx.atomicfu") version "0.29.0"
+    id("io.github.ttypic.swiftklib") version "0.6.4"
     alias(libs.plugins.kotzilla)
 }
 
@@ -94,8 +100,13 @@ kotlin {
     }
 
     listOf(iosArm64(), iosSimulatorArm64()).forEach { target ->
-        target.compilations.getByName("main") {
-            val nskeyvalueobserving by cinterops.creating
+        target.compilations {
+            val main by getting {
+                cinterops {
+                    create("StoreKitWrapper")
+                    create("nskeyvalueobserving")
+                }
+            }
         }
     }
 
@@ -173,18 +184,9 @@ kotlin {
             implementation(libs.connectivity.compose.device)
 
             implementation(libs.kotzilla.sdk)
-
-            // IAP
-            implementation(libs.purchases.core)
-            implementation(libs.purchases.result)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
-        }
-        named { it.lowercase().startsWith("ios") }.configureEach {
-            languageSettings {
-                optIn("kotlinx.cinterop.ExperimentalForeignApi")
-            }
         }
     }
 }
@@ -377,4 +379,12 @@ tasks.named("preBuild").configure {
 tasks.matching { it.name.contains("embedAndSign") && it.name.contains("FrameworkForXcode") }.configureEach {
     dependsOn(syncFirebaseIOS)
     dependsOn(syncXcodeVersionConfig)
+}
+
+swiftklib {
+    create("StoreKitWrapper") {
+        path = file("src/nativeInterop/storekit")
+        packageName("app.slax.reader.storekit")
+        minIos = 14
+    }
 }

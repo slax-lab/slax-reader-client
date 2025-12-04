@@ -13,12 +13,14 @@ import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.preferences.preferencesPlatformModule
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.coordinator.CoordinatorDomain
+import com.slax.reader.domain.purchases.PurchasesDomain
 import com.slax.reader.domain.sync.BackgroundDomain
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.ui.login.LoginViewModel
 import com.slax.reader.ui.setting.SettingViewModel
 import com.slax.reader.ui.sidebar.SidebarViewModel
+import com.slax.reader.ui.subscription.SubscriptionViewModel
 import com.slax.reader.utils.Connector
 import com.slax.reader.utils.getHttpClient
 import com.slax.reader.utils.platformFileSystem
@@ -57,12 +59,14 @@ val viewModelModule = module {
     viewModelOf(::LoginViewModel)
     viewModelOf(::SidebarViewModel)
     viewModelOf(::SettingViewModel)
+    viewModelOf(::SubscriptionViewModel)
 }
 
 val domainModule = module {
     single { AuthDomain(get(), get(), get()) }
     single { BackgroundDomain(get(), get(), get(), get()) }
     single { CoordinatorDomain(get(), get(), get()) }
+    single { PurchasesDomain() }
 }
 
 val appModule = module {
