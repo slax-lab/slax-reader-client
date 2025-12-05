@@ -64,7 +64,11 @@ class LoginViewModel(
         onSuccess: () -> Unit,
         onError: (err: String) -> Unit
     ) {
-        if (result == null || result.idToken == "") {
+        if (result == null) {
+            return
+        }
+
+        if (result.idToken == "") {
             onError("Failed to get Google ID token")
             return
         }
