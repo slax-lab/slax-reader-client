@@ -89,16 +89,13 @@ fun LoginScreen(navController: NavHostController) {
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().background(Color.White).windowInsetsPadding(WindowInsets.navigationBars),
-        verticalArrangement = Arrangement.SpaceBetween
+        modifier = Modifier.fillMaxSize().background(Color.White).windowInsetsPadding(WindowInsets.navigationBars)
     ) {
         // 顶部内容区域
-        Column {
-            Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(375f / 128f)
-            )
+        Column(
+            modifier = Modifier.weight(1f, fill = false)
+        ) {
+            Spacer(modifier = Modifier.heightIn(min = 48.dp, max = 128.dp).fillMaxWidth().weight(0.15f))
 
             Text(
                 text = "欢迎来到 \nSlax Reader",
@@ -134,9 +131,15 @@ fun LoginScreen(navController: NavHostController) {
             }
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
         // 底部登录按钮区域
         Column(modifier = Modifier.padding(bottom = 30.dp)) {
             GoogleButtonUiContainer(onGoogleSignInResult = { googleUser ->
+                if (googleUser == null) {
+                    return@GoogleButtonUiContainer
+                }
+
                 scope.launch {
                     viewModel.googleSignIn(
                         googleUser,
@@ -176,6 +179,13 @@ fun LoginScreen(navController: NavHostController) {
                             pendingLoginAction = {
                                 scope.launch {
                                     val result = appleProvider.signIn()
+                                    if (result.isFailure) {
+                                        val error = result.exceptionOrNull()
+                                        if (!error?.message.orEmpty().contains("canceled", ignoreCase = true)) {
+                                            errorMessage = error?.message
+                                        }
+                                        return@launch
+                                    }
                                     viewModel.appleSignIn(
                                         result = result,
                                         onSuccess = successHandle,
@@ -188,6 +198,13 @@ fun LoginScreen(navController: NavHostController) {
                         } else {
                             scope.launch {
                                 val result = appleProvider.signIn()
+                                if (result.isFailure) {
+                                    val error = result.exceptionOrNull()
+                                    if (!error?.message.orEmpty().contains("canceled", ignoreCase = true)) {
+                                        errorMessage = error?.message
+                                    }
+                                    return@launch
+                                }
                                 viewModel.appleSignIn(
                                     result = result,
                                     onSuccess = successHandle,
