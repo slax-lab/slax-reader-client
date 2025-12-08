@@ -12,7 +12,8 @@ import platform.darwin.NSObject
 /**
  * iOS WebView URL Scheme Handler
  *
- * 用于拦截并处理自定义域名（https://appassets.local/）的资源请求
+ * 用于拦截并处理自定义域名（appassets://local/）的资源请求
+ * 注意：iOS不允许拦截原生的https scheme，因此必须使用自定义scheme
  */
 @OptIn(ExperimentalForeignApi::class)
 class IOSWebViewURLSchemeHandler : NSObject(), WKURLSchemeHandlerProtocol {
@@ -104,7 +105,7 @@ class IOSWebViewURLSchemeHandler : NSObject(), WKURLSchemeHandlerProtocol {
      */
     private fun extractResourcePath(url: String): String {
         // 移除域名部分，例如：
-        // https://appassets.local/js/webview-bridge.js -> js/webview-bridge.js
+        // appassets://local/js/webview-bridge.js -> js/webview-bridge.js
         return url.removePrefix(WebViewAssets.ASSET_DOMAIN).removePrefix("/")
     }
 

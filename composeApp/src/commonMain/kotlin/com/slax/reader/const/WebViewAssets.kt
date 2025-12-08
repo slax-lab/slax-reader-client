@@ -3,35 +3,44 @@ package com.slax.reader.const
 /**
  * WebView资源URL常量
  *
- * 使用自定义域名 https://appassets.local/ 来加载本地资源
- * Android: 通过 WebViewAssetLoader 拦截请求
- * iOS: 通过 WKURLSchemeHandler 拦截请求
+ * 使用自定义域名来加载本地资源
+ * Android: 使用 https://appassets.local，通过 WebViewAssetLoader 拦截请求
+ * iOS: 使用 appassets://local，通过 WKURLSchemeHandler 拦截请求
  */
 object WebViewAssets {
     /**
      * 自定义域名，用于加载本地资源
+     * 平台特定实现：
+     * - Android: https://appassets.local
+     * - iOS: appassets://local
      */
-    const val ASSET_DOMAIN = "https://appassets.local"
+    val ASSET_DOMAIN: String
+        get() = getAssetDomain()
 
     /**
      * HTML模板URL
      */
-    const val HTML_TEMPLATE_URL = "$ASSET_DOMAIN/html/webview-template.html"
+    val HTML_TEMPLATE_URL: String
+        get() = "$ASSET_DOMAIN/html/webview-template.html"
 
     /**
      * CSS文件URLs
      */
     object CSS {
-        const val RESET = "$ASSET_DOMAIN/css/reset.css"
-        const val ARTICLE = "$ASSET_DOMAIN/css/article.css"
-        const val BOTTOM_LINE = "$ASSET_DOMAIN/css/bottom-line.css"
+        val RESET: String
+            get() = "${ASSET_DOMAIN}/css/reset.css"
+        val ARTICLE: String
+            get() = "${ASSET_DOMAIN}/css/article.css"
+        val BOTTOM_LINE: String
+            get() = "${ASSET_DOMAIN}/css/bottom-line.css"
     }
 
     /**
      * JavaScript文件URLs
      */
     object JS {
-        const val BRIDGE = "$ASSET_DOMAIN/js/webview-bridge.js"
+        val BRIDGE: String
+            get() = "${ASSET_DOMAIN}/js/webview-bridge.js"
     }
 
     /**
@@ -45,3 +54,9 @@ object WebViewAssets {
         const val JS_BRIDGE = "files/js/webview-bridge.js"
     }
 }
+
+/**
+ * 获取平台特定的资源域名
+ * 需要在各平台实现
+ */
+expect fun getAssetDomain(): String

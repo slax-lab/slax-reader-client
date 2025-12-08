@@ -15,6 +15,7 @@ import androidx.compose.ui.viewinterop.UIKitView
 import app.slax.reader.SlaxConfig
 import com.slax.reader.const.INJECTED_SCRIPT
 import com.slax.reader.const.JS_BRIDGE_NAME
+import com.slax.reader.const.WebViewAssets
 import com.slax.reader.data.preferences.AppPreferences
 import kotlinx.cinterop.*
 import org.koin.compose.koinInject
@@ -206,8 +207,9 @@ actual fun AppWebView(
                     javaScriptEnabled = true
                 }
 
-                // 注册自定义URL Scheme Handler（用于处理 https://appassets.local/ 请求）
-                setURLSchemeHandler(urlSchemeHandler, forURLScheme = "https")
+                // 注册自定义URL Scheme Handler（用于处理 appassets://local/ 请求）
+                // 注意：iOS不允许拦截原生的https scheme，因此必须使用自定义scheme
+                setURLSchemeHandler(urlSchemeHandler, forURLScheme = "appassets")
 
                 // 配置 JS Bridge 消息处理器
                 if (scriptMessageHandler != null) {
@@ -274,10 +276,11 @@ actual fun AppWebView(
             view.backgroundColor = color
             view.opaque = false
 
-            // 使用自定义域名作为baseURL加载HTML
+            // 使用平台特定的自定义域名作为baseURL加载HTML
+            // iOS: appassets://local，Android: https://appassets.local
             view.loadHTMLString(
                 htmlContent,
-                baseURL = NSURL(string = "https://appassets.local/")
+                baseURL = NSURL(string = WebViewAssets.ASSET_DOMAIN + "/")
             )
 
             view as UIView
