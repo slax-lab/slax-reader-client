@@ -113,6 +113,18 @@ sealed class OverviewResponse {
     data class Error(val message: String) : OverviewResponse()
 }
 
+@Serializable
+data class OutlineDataWrapper(
+    val outline: String? = null,
+    val done: Boolean? = null
+)
+
+@Serializable
+data class OutlineEventData(
+    val type: String,
+    val data: OutlineDataWrapper? = null,
+    val message: String? = null
+)
 sealed class OutlineResponse {
     data class Outline(val content: String) : OutlineResponse()
     data object Done : OutlineResponse()

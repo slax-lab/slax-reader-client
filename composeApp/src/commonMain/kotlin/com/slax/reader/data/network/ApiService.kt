@@ -186,7 +186,7 @@ class ApiService(
     }
 
     fun getBookmarkOutline(bookmarkId: String): Flow<OutlineResponse> = flow {
-        val url = buildUrl("/v1/aigc/summaries")
+        val url = buildUrl("/v1/bookmark/outline")
 
         httpClient.preparePost(url) {
             headers {
@@ -200,10 +200,17 @@ class ApiService(
             while (!channel.isClosedForRead) {
                 val line = channel.readUTF8Line() ?: break
                 if (line.isEmpty()) continue
-                emit(OutlineResponse.Outline(line))
-            }
 
-            emit(OutlineResponse.Done)
+                val itemData = Json.decodeFromString<OutlineEventData>(line)
+                val data = itemData.data ?: continue
+
+                if (data.done == true) {
+                    emit(OutlineResponse.Done)
+                    continue
+                }
+
+                data.outline?.let { emit(OutlineResponse.Outline(it)) }
+            }
         }
     }.flowOn(Dispatchers.IO)
 }
