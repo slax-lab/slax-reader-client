@@ -97,6 +97,9 @@ actual fun AppWebView(
         } else null
     }
 
+    // 创建URL Scheme Handler
+    val urlSchemeHandler = remember { IOSWebViewURLSchemeHandler() }
+
     val density = LocalDensity.current
     val densityScale = density.density
     val densityScaleState = rememberUpdatedState(densityScale)
@@ -203,7 +206,10 @@ actual fun AppWebView(
                     javaScriptEnabled = true
                 }
 
-                // 配置 JS Bridge 和脚本注入
+                // 注册自定义URL Scheme Handler（用于处理 https://appassets.local/ 请求）
+                setURLSchemeHandler(urlSchemeHandler, forURLScheme = "https")
+
+                // 配置 JS Bridge 消息处理器
                 if (scriptMessageHandler != null) {
                     val userContentController = WKUserContentController()
 
@@ -213,12 +219,7 @@ actual fun AppWebView(
                         name = JS_BRIDGE_NAME
                     )
 
-                    val userScript = WKUserScript(
-                        source = INJECTED_SCRIPT,
-                        injectionTime = WKUserScriptInjectionTime.WKUserScriptInjectionTimeAtDocumentEnd,
-                        forMainFrameOnly = true
-                    )
-                    userContentController.addUserScript(userScript)
+                    // 注意：移除了WKUserScript注入，因为JS现在通过HTML模板中的<script src>标签加载
 
                     this.userContentController = userContentController
                 }
@@ -272,7 +273,12 @@ actual fun AppWebView(
             val color = Color(0xFFFCFCFC).toUIColor()
             view.backgroundColor = color
             view.opaque = false
-            view.loadHTMLString(htmlContent, baseURL = null)
+
+            // 使用自定义域名作为baseURL加载HTML
+            view.loadHTMLString(
+                htmlContent,
+                baseURL = NSURL(string = "https://appassets.local/")
+            )
 
             view as UIView
         },

@@ -38,16 +38,20 @@ actual fun AppWebView(
 ) {
     println("[watch][UI] recomposition AppWebView")
 
+    val context = LocalContext.current
     val onTapCallback = remember(onTap) { onTap }
     val onJsMessageCallback = remember(onJsMessage) { onJsMessage }
     var externalUrl by remember { mutableStateOf<String?>(null) }
     val appPreference: AppPreferences = koinInject()
     var doNotAlert by remember { mutableStateOf<Boolean?>(null) }
 
+    // 创建资源加载器
+    val assetLoader = remember { AndroidWebViewAssetLoader(context) }
+
     AndroidView(
         modifier = modifier,
-        factory = { context ->
-            object : WebView(context) {
+        factory = { ctx ->
+            object : WebView(ctx) {
                 override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
                     val newHeightMeasureSpec = MeasureSpec.makeMeasureSpec(
                         0,
@@ -107,25 +111,48 @@ actual fun AppWebView(
 
                 webChromeClient = WebChromeClient()
                 webViewClient = object : WebViewClient() {
+                    override fun shouldInterceptRequest(
+                        view: WebView?,
+                        request: WebResourceRequest
+                    ): WebResourceResponse? {
+                        // 拦截资源请求，使用WebViewAssetLoader处理
+                        return assetLoader.shouldInterceptRequest(request)
+                            ?: super.shouldInterceptRequest(view, request)
+                    }
+
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
-
-                        if (onJsMessageCallback != null) {
-                            view?.evaluateJavascript(INJECTED_SCRIPT, null)
-                        }
+                        println("[Android WebView] 页面加载完成: $url")
+                        // 注意：JS代码现在通过HTML模板中的<script src>标签加载
+                        // 不再需要evaluateJavascript注入
                     }
 
                     override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                         val url = request?.url?.toString() ?: "null"
+
+                        // 允许加载自定义域名的资源
+                        if (url.startsWith("https://appassets.local")) {
+                            return false
+                        }
+
+                        // 拦截外部链接
                         if (url.startsWith("http://") || url.startsWith("https://")) {
                             externalUrl = url
+                            return true
                         }
-                        return true
-                    }
 
+                        return false
+                    }
                 }
 
-                loadDataWithBaseURL(null, htmlContent, "text/html", "utf-8", null)
+                // 使用自定义域名加载HTML
+                loadDataWithBaseURL(
+                    "https://appassets.local/",
+                    htmlContent,
+                    "text/html",
+                    "utf-8",
+                    null
+                )
             }
         }
     )

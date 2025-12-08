@@ -181,6 +181,7 @@ class ApiService(
     suspend fun getBookmarkOutlines(bookmarkId: String): HttpData<BookmarkOutlinesResult> {
         return get(
 //            "/v1/bookmark/summaries", query = mapOf("bookmark_uid" to bookmarkId)
+            "/v1/bookmark/summaries", query = mapOf("bookmark_id" to "512216348274")
         )
     }
 

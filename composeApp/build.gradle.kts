@@ -106,6 +106,7 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
             implementation(libs.koin.android)
             implementation(libs.androidx.browser)
+            implementation(libs.androidx.webkit)
             implementation(libs.sketch.animated.gif.koral)
         }
         iosMain.dependencies {

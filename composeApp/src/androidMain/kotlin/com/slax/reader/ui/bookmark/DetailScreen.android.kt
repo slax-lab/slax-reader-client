@@ -21,7 +21,7 @@ import com.slax.reader.ui.bookmark.components.*
 import com.slax.reader.utils.AppLifecycleState
 import com.slax.reader.utils.AppWebView
 import com.slax.reader.utils.LifeCycleHelper
-import com.slax.reader.utils.wrapHtmlWithCSS
+import com.slax.reader.utils.generateHtmlWithExternalResources
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -49,7 +49,8 @@ actual fun DetailScreen(
         error = null
         try {
             htmlContent = detailViewModel.getBookmarkContent(detail.id)
-            htmlContent = htmlContent?.let { wrapHtmlWithCSS(it) }
+            // 使用新的HTML生成函数（支持外部CSS和JS引用）
+            htmlContent = htmlContent?.let { generateHtmlWithExternalResources(it) }
         } catch (e: Exception) {
             error = e.message ?: "加载失败"
         }
