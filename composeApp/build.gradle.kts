@@ -246,33 +246,37 @@ buildkonfig {
     }
 
     defaultConfigs {
+        // 基础配置
         buildConfigField(STRING, "APP_NAME", "Slax Reader")
         buildConfigField(STRING, "APP_VERSION_NAME", appVersionName)
         buildConfigField(STRING, "APP_VERSION_CODE", appVersionCode)
-    }
 
-    defaultConfigs("dev") {
+        // 环境配置 - 根据 buildFlavor 动态设置
         buildConfigField(STRING, "BUILD_ENV", buildFlavor)
-        buildConfigField(STRING, "API_BASE_URL", "https://reader-api.slax.dev")
-        buildConfigField(STRING, "WEB_BASE_URL", "https://r.slax.dev")
-        buildConfigField(STRING, "LOG_LEVEL", "DEBUG")
-        buildConfigField(
-            STRING,
-            "GOOGLE_AUTH_SERVER_ID",
-            dotenv.get("GOOGLE_AUTH_SERVER_ID")!!
-        )
-        buildConfigField(
-            STRING,
-            "KOTZILLA_KEY",
-            dotenv.get("KOTZILLA_KEY")!!
-        )
-    }
 
-    defaultConfigs("release") {
-        buildConfigField(STRING, "BUILD_ENV", buildFlavor)
-        buildConfigField(STRING, "API_BASE_URL", "https://api-reader.slax.com")
-        buildConfigField(STRING, "WEB_BASE_URL", "https://r.slax.com")
-        buildConfigField(STRING, "LOG_LEVEL", "ERROR")
+        // 根据 flavor 设置不同的值
+        val apiBaseUrl = if (buildFlavor == "release") {
+            "https://api-reader.slax.com"
+        } else {
+            "https://reader-api.slax.dev"
+        }
+        buildConfigField(STRING, "API_BASE_URL", apiBaseUrl)
+
+        val webBaseUrl = if (buildFlavor == "release") {
+            "https://r.slax.com"
+        } else {
+            "https://r.slax.dev"
+        }
+        buildConfigField(STRING, "WEB_BASE_URL", webBaseUrl)
+
+        val logLevel = if (buildFlavor == "release") {
+            "ERROR"
+        } else {
+            "DEBUG"
+        }
+        buildConfigField(STRING, "LOG_LEVEL", logLevel)
+
+        // 从 .env 文件读取敏感配置
         buildConfigField(
             STRING,
             "GOOGLE_AUTH_SERVER_ID",
