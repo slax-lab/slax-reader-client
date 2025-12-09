@@ -15,8 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,7 +40,7 @@ import slax_reader_client.composeapp.generated.resources.ic_outline_dialog_shrin
  */
 enum class OutlineDialogState {
     HIDDEN,      // 隐藏
-    EXPANDED,    // 展开（全屏弹窗）ƒ
+    EXPANDED,    // 展开（全屏弹窗）
     COLLAPSED    // 收缩（小banner）
 }
 
@@ -61,6 +62,12 @@ fun OutlineDialog(
 
     var currentState by remember { mutableStateOf(OutlineDialogState.HIDDEN) }
     var visible by remember { mutableStateOf(false) }
+
+    // 计算弹窗需要向上移动的距离（dp）
+    val density = LocalDensity.current
+    val moveUpDistancePx = remember {
+        with(density) { 28.dp.toPx() } // 36dp - 8dp = 28dp
+    }
 
     // 初始化时延迟显示，确保动画生效
     LaunchedEffect(Unit) {
@@ -115,24 +122,10 @@ fun OutlineDialog(
                     initialOffsetY = { it },
                     animationSpec = tween(300)
                 ),
-                exit = if (currentState == OutlineDialogState.COLLAPSED) {
-                    // 收缩：向上缩小消失（变成banner）
-                    slideOutVertically(
-                        targetOffsetY = { -it },
-                        animationSpec = tween(350)
-                    ) + scaleOut(
-                        targetScale = 0.3f,
-                        animationSpec = tween(350)
-                    ) + fadeOut(
-                        animationSpec = tween(250)
-                    )
-                } else {
-                    // 关闭：向下滑出
-                    slideOutVertically(
-                        targetOffsetY = { it },
-                        animationSpec = tween(300)
-                    )
-                }
+                exit = slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = tween(300)
+                )
             ) {
                 ExpandedOutlineDialog(
                     detailViewModel = detailViewModel,
@@ -502,7 +495,7 @@ private fun EmptyView() {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "暂无大纲内容",
+            text = "暂无内容",
             fontSize = 14.sp,
             color = Color(0xFF999999)
         )

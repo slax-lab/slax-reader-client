@@ -203,7 +203,6 @@ private fun CustomListItem(
                     .width(24.dp)
             )
         } else {
-            // 无序列表：自定义 bullet 点：5dp 圆形
             Box(
                 modifier = Modifier
                     .padding(top = 8.5.dp)
