@@ -67,6 +67,20 @@ actual fun DetailScreen(
 
     var manuallyVisible by remember { mutableStateOf(true) }
 
+    // JS 命令状态（用于执行 WebView 中的 JavaScript）
+    var jsCommand by remember { mutableStateOf<String?>(null) }
+
+    // 监听锚点滚动事件
+    LaunchedEffect(Unit) {
+        detailViewModel.scrollToAnchorEvent.collect { anchorText ->
+            println("[DetailScreen iOS] 收到锚点滚动事件: $anchorText")
+            jsCommand = "window.SlaxWebViewBridge.scrollToAnchor('$anchorText')"
+            // 执行后清空命令
+            kotlinx.coroutines.delay(100)
+            jsCommand = null
+        }
+    }
+
     val bottomThresholdPx = with(LocalDensity.current) { 100.dp.toPx() }
 
     LaunchedEffect(Unit) {
@@ -192,7 +206,8 @@ actual fun DetailScreen(
                         } catch (e: Exception) {
                             println("[WebView] Failed to parse message: $message, error: ${e.message}")
                         }
-                    }
+                    },
+                    evaluateJsCommand = jsCommand  // 新增：传递 JS 执行命令
                 )
             }
         }

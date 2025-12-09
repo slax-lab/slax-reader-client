@@ -13,6 +13,7 @@ import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.data.preferences.ContinueReadingBookmark
 import com.slax.reader.domain.sync.BackgroundDomain
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.json.Json
 
@@ -52,6 +53,21 @@ class BookmarkDetailViewModel(
 
     private val _outlineState = MutableStateFlow(OutlineState())
     val outlineState: StateFlow<OutlineState> = _outlineState.asStateFlow()
+
+    // 锚点滚动事件流（使用 SharedFlow 确保事件不丢失）
+    private val _scrollToAnchorEvent = MutableSharedFlow<String>(
+        replay = 0,
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val scrollToAnchorEvent: SharedFlow<String> = _scrollToAnchorEvent.asSharedFlow()
+
+    // 触发锚点滚动
+    fun scrollToAnchor(anchorText: String) {
+        viewModelScope.launch {
+            _scrollToAnchorEvent.emit(anchorText)
+        }
+    }
 
     fun loadOverview() {
         val bookmarkId = _bookmarkId.value ?: return
@@ -196,13 +212,13 @@ class BookmarkDetailViewModel(
                             }
 
                             if (fullOutline.isNotEmpty()) {
-//                                withContext(Dispatchers.IO) {
+                                withContext(Dispatchers.IO) {
 //                                    localBookmarkDao.updateLocalBookmarkOverview(
 //                                        bookmarkId = bookmarkId,
 //                                        overview = fullOverview,
 //                                        keyTakeaways = keyTakeawaysJson
 //                                    )
-//                                }
+                                }
                             }
                         }
 

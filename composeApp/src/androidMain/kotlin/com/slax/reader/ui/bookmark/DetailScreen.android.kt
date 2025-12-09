@@ -31,7 +31,8 @@ data class WebViewMessage(
     val type: String,
     val height: Int? = null,
     val src: String? = null,
-    val allImages: List<String>? = null
+    val allImages: List<String>? = null,
+    val position: Int? = null  // 新增：滚动位置
 )
 
 @SuppressLint("UseKtx")
@@ -59,6 +60,27 @@ actual fun DetailScreen(
     val scrollState = rememberScrollState()
     val scrollY by remember { derivedStateOf { scrollState.value.toFloat() } }
     var manuallyVisible by remember { mutableStateOf(true) }
+
+    // 获取设备密度（用于 CSS pixels → 物理像素 转换）
+    val density = LocalDensity.current.density
+
+    // 记录 HeaderContent 的高度（px）
+    var headerHeightPx by remember { mutableFloatStateOf(0f) }
+
+    // JS 命令状态（用于执行 WebView 中的 JavaScript）
+    var jsCommand by remember { mutableStateOf<String?>(null) }
+    val coroutineScope = rememberCoroutineScope()
+
+    // 监听锚点滚动事件
+    LaunchedEffect(Unit) {
+        detailViewModel.scrollToAnchorEvent.collect { anchorText ->
+            println("[DetailScreen Android] 收到锚点滚动事件: $anchorText")
+            jsCommand = "window.SlaxWebViewBridge.scrollToAnchor('$anchorText')"
+            // 执行后清空命令
+            kotlinx.coroutines.delay(100)
+            jsCommand = null
+        }
+    }
 
     val bottomThresholdPx = with(LocalDensity.current) { 100.dp.toPx() }
 
@@ -133,7 +155,10 @@ actual fun DetailScreen(
         ) {
             HeaderContent(
                 detail = detail,
-                onHeightChanged = {},
+                onHeightChanged = { height ->
+                    headerHeightPx = height
+                    println("[Android DetailScreen] HeaderContent 高度: $height px")
+                },
                 onTagClick = { showTagView = true },
                 onOverviewExpand = { showOverviewDialog = true },
                 onOverviewBoundsChanged = screenState.onOverviewBoundsChanged,
@@ -171,6 +196,23 @@ actual fun DetailScreen(
                                     }
                                 }
 
+                                "scrollToPosition" -> {
+                                    val webViewPositionCssPx = webViewMessage.position ?: 0
+                                    // WebView 的 CSS pixels 转换为物理像素
+                                    val webViewPositionPx = webViewPositionCssPx * density
+                                    // Column 的滚动位置 = HeaderContent 高度（物理像素）+ WebView 内部位置（物理像素）
+                                    val targetPosition = (headerHeightPx + webViewPositionPx).toInt()
+                                    println("[Android WebView] WebView CSS pixels: $webViewPositionCssPx")
+                                    println("[Android WebView] 设备密度: $density")
+                                    println("[Android WebView] WebView 物理像素: $webViewPositionPx px")
+                                    println("[Android WebView] HeaderContent 高度: $headerHeightPx px")
+                                    println("[Android WebView] 目标滚动位置: $targetPosition px")
+                                    // 使用 Compose 的 ScrollState 滚动
+                                    coroutineScope.launch {
+                                        scrollState.animateScrollTo(targetPosition)
+                                    }
+                                }
+
                                 else -> {
                                     println("[WebView] Unknown message type: ${webViewMessage.type}")
                                 }
@@ -178,7 +220,8 @@ actual fun DetailScreen(
                         } catch (e: Exception) {
                             println("[WebView] Failed to parse message: $message, error: ${e.message}")
                         }
-                    }
+                    },
+                    evaluateJsCommand = jsCommand  // 新增：传递 JS 执行命令
                 )
             }
         }

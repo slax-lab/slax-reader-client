@@ -287,8 +287,18 @@ private fun ExpandedOutlineDialog(
                     }
                     else -> {
                         // 已加载：显示 markdown 内容
-                        MarkdownRenderer(content = outlineContent, onLinkClick = {
-                            println("click link in outline: $it")
+                        MarkdownRenderer(content = outlineContent, onLinkClick = { url ->
+                            println("[OutlineDialog] 点击链接: $url")
+                            if (url.startsWith("#")) {
+                                // 锚点链接：提取锚点文本并触发滚动
+                                val anchorText = url.removePrefix("#")
+                                detailViewModel.scrollToAnchor(anchorText)
+                                println("[OutlineDialog] 触发锚点滚动: $anchorText")
+
+                                onClose()
+                            } else {
+                                println("[OutlineDialog] 非锚点链接，暂不处理: $url")
+                            }
                         })
                     }
                 }

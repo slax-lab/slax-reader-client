@@ -35,6 +35,7 @@ actual fun AppWebView(
     onTap: (() -> Unit)?,
     onScrollChange: ((scrollY: Float, contentHeight: Float, visibleHeight: Float) -> Unit)?,
     onJsMessage: ((message: String) -> Unit)?,
+    evaluateJsCommand: String?,  // 新增：JS 执行命令
 ) {
     println("[watch][UI] recomposition AppWebView")
 
@@ -47,6 +48,18 @@ actual fun AppWebView(
 
     // 创建资源加载器
     val assetLoader = remember { AndroidWebViewAssetLoader(context) }
+
+    // 缓存 WebView 引用
+    var webViewRef by remember { mutableStateOf<WebView?>(null) }
+
+    // 监听 JS 命令变化并执行
+    LaunchedEffect(evaluateJsCommand) {
+        if (evaluateJsCommand != null && webViewRef != null) {
+            webViewRef?.evaluateJavascript(evaluateJsCommand) { result ->
+                println("[Android WebView] JS 执行结果: $result")
+            }
+        }
+    }
 
     AndroidView(
         modifier = modifier,
@@ -64,6 +77,9 @@ actual fun AppWebView(
                     scrollTo(0, 0)
                 }
             }.apply {
+                // 保存引用
+                webViewRef = this
+
                 setBackgroundColor(Color.TRANSPARENT)
 
                 // 启用硬件加速以提升滚动性能

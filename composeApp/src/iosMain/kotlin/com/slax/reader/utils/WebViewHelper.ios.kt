@@ -82,6 +82,7 @@ actual fun AppWebView(
     onTap: (() -> Unit)?,
     onScrollChange: ((scrollY: Float, contentHeight: Float, visibleHeight: Float) -> Unit)?,
     onJsMessage: ((message: String) -> Unit)?,
+    evaluateJsCommand: String?,  // 新增：JS 执行命令
 ) {
 
     val tapHandler = remember(onTap) {
@@ -187,6 +188,22 @@ actual fun AppWebView(
         }
     }
 
+    // 缓存 WKWebView 引用
+    var webViewRef by remember { mutableStateOf<WKWebView?>(null) }
+
+    // 监听 JS 命令变化并执行
+    LaunchedEffect(evaluateJsCommand) {
+        if (evaluateJsCommand != null && webViewRef != null) {
+            webViewRef?.evaluateJavaScript(evaluateJsCommand) { result, error ->
+                if (error != null) {
+                    println("[iOS WebView] JS 执行失败: ${error.localizedDescription}")
+                } else {
+                    println("[iOS WebView] JS 执行结果: $result")
+                }
+            }
+        }
+    }
+
     DisposableEffect(scrollObserver, observedScrollView) {
         val scrollView = observedScrollView
         if (scrollView != null) {
@@ -228,6 +245,10 @@ actual fun AppWebView(
             }
 
             val view = WKWebView(frame = CGRectMake(0.0, 0.0, 0.0, 0.0), configuration = config)
+
+            // 保存引用
+            webViewRef = view
+
             if (available("16.4")) {
                 view.inspectable = SlaxConfig.BUILD_ENV == "dev"
             }
@@ -287,6 +308,10 @@ actual fun AppWebView(
         },
         update = { uiView ->
             val webView = uiView as WKWebView
+
+            // 更新引用
+            webViewRef = webView
+
             val scrollView = webView.scrollView
             val currentInsetPoints = scrollView.contentInset.useContents { top }.toFloat()
             if (abs(currentInsetPoints - topInsetPoints) > 0.1f) {

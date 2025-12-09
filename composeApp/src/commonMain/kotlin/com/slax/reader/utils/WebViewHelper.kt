@@ -73,6 +73,7 @@ expect fun AppWebView(
     onTap: (() -> Unit)? = null,
     onScrollChange: ((scrollY: Float, contentHeight: Float, visibleHeight: Float) -> Unit)? = null,
     onJsMessage: ((message: String) -> Unit)? = null,
+    evaluateJsCommand: String? = null,  // 新增：JS 执行命令
 )
 
 @Composable
