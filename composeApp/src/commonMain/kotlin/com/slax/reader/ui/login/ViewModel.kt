@@ -23,7 +23,7 @@ class LoginViewModel(
         try {
             result.onSuccess { appleResult ->
                 val authResult = withContext(Dispatchers.IO) {
-                    authDomain.signIn(code = appleResult.code, type = "ios")
+                    authDomain.signIn(code = appleResult.code, type = "apple")
                 }
                 authResult.onSuccess {
                     withContext(Dispatchers.Main) { onSuccess() }
@@ -64,7 +64,11 @@ class LoginViewModel(
         onSuccess: () -> Unit,
         onError: (err: String) -> Unit
     ) {
-        if (result == null || result.idToken == "") {
+        if (result == null) {
+            return
+        }
+
+        if (result.idToken == "") {
             onError("Failed to get Google ID token")
             return
         }

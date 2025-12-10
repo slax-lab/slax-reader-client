@@ -1,5 +1,6 @@
 package com.slax.reader.data.network.dto
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -130,3 +131,40 @@ sealed class OutlineResponse {
     data object Done : OutlineResponse()
     data class Error(val message: String) : OutlineResponse()
 }
+
+/**
+ * 删除账号失败的原因枚举
+ */
+@Serializable
+enum class DeleteAccountReason {
+    /** 有活跃的订阅 */
+    @SerialName("active_subscription")
+    ACTIVE_SUBSCRIPTION,
+
+    /** 存在 Stripe Connect 连接 */
+    @SerialName("stripe_connect_exists")
+    STRIPE_CONNECT_EXISTS,
+
+    /** 集合有订阅者 */
+    @SerialName("collection_has_subscribers")
+    COLLECTION_HAS_SUBSCRIBERS,
+
+    /** 有活跃的集合订阅 */
+    @SerialName("active_collection_subscription")
+    ACTIVE_COLLECTION_SUBSCRIPTION,
+
+    /** 有免费订阅历史 */
+    @SerialName("has_free_subscription_history")
+    HAS_FREE_SUBSCRIPTION_HISTORY
+}
+
+/**
+ * 删除账号响应数据
+ * @param canDelete 是否可以删除账号
+ * @param reason 不能删除的原因（仅在 canDelete=false 时返回）
+ */
+@Serializable
+data class DeleteAccountData(
+    val canDelete: Boolean = false,
+    val reason: DeleteAccountReason? = null
+)

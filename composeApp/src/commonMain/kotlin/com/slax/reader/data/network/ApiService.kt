@@ -177,7 +177,6 @@ class ApiService(
         }
     }.flowOn(Dispatchers.IO)
 
-
     suspend fun getBookmarkOutlines(bookmarkId: String): HttpData<BookmarkOutlinesResult> {
         return get(
 //            "/v1/bookmark/summaries", query = mapOf("bookmark_uid" to bookmarkId)
@@ -213,4 +212,8 @@ class ApiService(
             }
         }
     }.flowOn(Dispatchers.IO)
+
+    suspend fun deleteAccount(): HttpData<DeleteAccountData> = withContext(Dispatchers.IO) {
+        return@withContext post<DeleteAccountData>("/v1/user/delete_my_account")
+    }
 }

@@ -277,7 +277,7 @@ actual fun WebView(
     url: String,
     modifier: Modifier,
     contentInsets: PaddingValues?,
-    onScroll: ((x: Double, y: Double) -> Unit)?
+    onScroll: ((scrollX: Double, scrollY: Double, contentHeight: Double, visibleHeight: Double) -> Unit)?
 ) {
     AndroidView(
         modifier = modifier,
@@ -300,12 +300,37 @@ actual fun WebView(
                 }
 
                 // 添加滚动监听器
-                setOnScrollChangeListener { _, scrollX, scrollY, _, _ ->
-                    onScroll?.invoke(scrollX.toDouble(), scrollY.toDouble())
+                setOnScrollChangeListener { view, scrollX, scrollY, _, _ ->
+                    val webView = view as? WebView ?: return@setOnScrollChangeListener
+                    val contentHeight = (webView.contentHeight * webView.scale).toDouble()
+                    val visibleHeight = webView.height.toDouble()
+                    onScroll?.invoke(
+                        scrollX.toDouble(),
+                        scrollY.toDouble(),
+                        contentHeight,
+                        visibleHeight
+                    )
                 }
 
                 webChromeClient = WebChromeClient()
-                webViewClient = WebViewClient()
+                webViewClient = object : WebViewClient() {
+                    override fun onPageFinished(view: WebView?, url: String?) {
+                        super.onPageFinished(view, url)
+                        // 页面加载完成后，延迟一小段时间等待渲染完成，然后手动触发一次滚动检查
+                        view?.postDelayed({
+                            view.let {
+                                val contentHeight = (it.contentHeight * it.scale).toDouble()
+                                val visibleHeight = it.height.toDouble()
+                                onScroll?.invoke(
+                                    it.scrollX.toDouble(),
+                                    it.scrollY.toDouble(),
+                                    contentHeight,
+                                    visibleHeight
+                                )
+                            }
+                        }, 300) // 延迟300ms等待页面渲染完成
+                    }
+                }
 
                 contentInsets?.setOnWebView(this)
                 loadUrl(url)

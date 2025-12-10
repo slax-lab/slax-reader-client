@@ -26,6 +26,9 @@ import platform.SafariServices.SFSafariViewController
 import platform.UIKit.*
 import platform.WebKit.*
 import platform.darwin.NSObject
+import platform.darwin.dispatch_after
+import platform.darwin.dispatch_get_main_queue
+import platform.darwin.dispatch_time
 import platform.darwin.sel_registerName
 import kotlin.math.abs
 import kotlin.math.max
@@ -502,7 +505,7 @@ actual fun WebView(
     url: String,
     modifier: Modifier,
     contentInsets: PaddingValues?,
-    onScroll: ((x: Double, y: Double) -> Unit)?
+    onScroll: ((scrollX: Double, scrollY: Double, contentHeight: Double, visibleHeight: Double) -> Unit)?
 ) {
     val webViewRef = remember { mutableStateOf<WKWebView?>(null) }
 
@@ -510,10 +513,31 @@ actual fun WebView(
         object : NSObject(), UIScrollViewDelegateProtocol {
             override fun scrollViewDidScroll(scrollView: UIScrollView) {
                 val contentOffset = scrollView.contentOffset
-                onScroll?.invoke(
-                    contentOffset.useContents { x },
-                    contentOffset.useContents { y }
-                )
+                val scrollX = contentOffset.useContents { x }
+                val scrollY = contentOffset.useContents { y }
+                val contentHeight = scrollView.contentSize.useContents { height }
+                val visibleHeight = scrollView.bounds.useContents { size.height }
+                onScroll?.invoke(scrollX, scrollY, contentHeight, visibleHeight)
+            }
+        }
+    }
+
+    val navigationDelegate = remember {
+        object : NSObject(), WKNavigationDelegateProtocol {
+            override fun webView(webView: WKWebView, didFinishNavigation: WKNavigation?) {
+                // 页面加载完成后，延迟一小段时间等待渲染完成，然后手动触发一次滚动检查
+                dispatch_after(
+                    dispatch_time(platform.darwin.DISPATCH_TIME_NOW, 300_000_000L), // 300ms in nanoseconds
+                    dispatch_get_main_queue()
+                ) {
+                    val scrollView = webView.scrollView
+                    val contentOffset = scrollView.contentOffset
+                    val scrollX = contentOffset.useContents { x }
+                    val scrollY = contentOffset.useContents { y }
+                    val contentHeight = scrollView.contentSize.useContents { height }
+                    val visibleHeight = scrollView.bounds.useContents { size.height }
+                    onScroll?.invoke(scrollX, scrollY, contentHeight, visibleHeight)
+                }
             }
         }
     }
@@ -544,6 +568,7 @@ actual fun WebView(
 
                 scrollView.contentInset = contentInsets?.toUIEdgeInsets ?: UIEdgeInsets_zero
 
+                this.navigationDelegate = navigationDelegate
                 webViewRef.value = this
             }
         },

@@ -13,7 +13,12 @@ actual class AppleSignInProvider {
     actual suspend fun signIn(): Result<AppleSignInResult> =
         suspendCancellableCoroutine { continuation ->
             val provider = ASAuthorizationAppleIDProvider()
-            val request = provider.createRequest()
+            val request = provider.createRequest().apply {
+                requestedScopes = listOf(
+                    ASAuthorizationScopeFullName,
+                    ASAuthorizationScopeEmail
+                )
+            }
 
             val controller = ASAuthorizationController(
                 authorizationRequests = listOf(request)
@@ -52,8 +57,17 @@ actual class AppleSignInProvider {
                     controller: ASAuthorizationController,
                     didCompleteWithError: NSError
                 ) {
+                    if (didCompleteWithError.code < 1002L) {
+                        return
+                    }
+                    val errorMessage = when (didCompleteWithError.code) {
+                        1002L -> "Authorization request not handled"
+                        1003L -> "Authorization request failed"
+                        1004L -> "Authorization request not interactive"
+                        else -> didCompleteWithError.localizedDescription
+                    }
                     continuation.resume(
-                        Result.failure(Exception(didCompleteWithError.localizedDescription))
+                        Result.failure(Exception(errorMessage))
                     )
                 }
             }
