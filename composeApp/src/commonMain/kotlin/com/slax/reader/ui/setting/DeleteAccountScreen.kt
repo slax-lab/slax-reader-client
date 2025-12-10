@@ -84,7 +84,7 @@ fun DeleteAccountScreen(onBackClick: () -> Unit) {
                     )
                 ) {
                     Text(
-                        text = "删除账户",
+                        text = "删除账号",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium
                     )
