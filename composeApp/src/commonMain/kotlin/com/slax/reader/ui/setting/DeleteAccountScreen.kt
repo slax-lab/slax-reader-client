@@ -100,7 +100,6 @@ fun DeleteAccountScreen(onBackClick: () -> Unit) {
                     hasScrolled = true
                 }
 
-                println("ScrollY: $scrollY, ContentHeight: $contentHeight, VisibleHeight: $visibleHeight")
                 // 判断是否曾经滚动到底部（一旦激活就永久保持激活）
                 if (!hasScrolledToBottom) {
                     // 确保内容高度和可见高度都已经正确初始化（大于0）
