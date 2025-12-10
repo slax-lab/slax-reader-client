@@ -290,6 +290,8 @@ actual fun AppWebView(
                     bottom = 0.0,
                     right = 0.0
                 )
+
+                tintColor = Color(0x33ffd999).toUIColor()
             }
 
             if (observedScrollView !== view.scrollView) {
