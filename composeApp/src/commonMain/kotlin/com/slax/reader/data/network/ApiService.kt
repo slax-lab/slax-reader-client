@@ -177,7 +177,7 @@ class ApiService(
         }
     }.flowOn(Dispatchers.IO)
 
-    suspend fun deleteAccount(): HttpData<DeleteAccountData> {
-        return post("/v1/user/delete_my_account")
+    suspend fun deleteAccount(): HttpData<DeleteAccountData> = withContext(Dispatchers.IO) {
+        return@withContext post<DeleteAccountData>("/v1/user/delete_my_account")
     }
 }

@@ -31,10 +31,7 @@ class SettingViewModel(private val apiService: ApiService) : ViewModel() {
         _deleteAccountState.value = DeleteAccountState.Loading
 
         try {
-            val result = withContext(Dispatchers.IO) {
-                apiService.deleteAccount()
-            }
-
+            val result = apiService.deleteAccount()
             val deleteData = result.data!!
 
             // 检查是否可以删除
