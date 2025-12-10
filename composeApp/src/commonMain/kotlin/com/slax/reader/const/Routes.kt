@@ -23,3 +23,6 @@ object SettingsRoutes
 @Serializable
 object AboutRoutes
 
+@Serializable
+object DeleteAccountRoutes
+

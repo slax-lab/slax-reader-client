@@ -19,6 +19,7 @@ import com.slax.reader.ui.bookmark.DetailScreen
 import com.slax.reader.ui.debug.DebugScreen
 import com.slax.reader.ui.inbox.InboxListScreen
 import com.slax.reader.ui.login.LoginScreen
+import com.slax.reader.ui.setting.DeleteAccountScreen
 import com.slax.reader.ui.setting.SettingScreen
 import com.slax.reader.ui.space.SpaceManager
 import com.slax.reader.utils.LifeCycleHelper
@@ -115,12 +116,20 @@ fun SlaxNavigation(
             SpaceManager()
         }
         composable<SettingsRoutes> {
-            SettingScreen(onBackClick = {
-                navCtrl.popBackStack()
-            })
+            SettingScreen(
+                onBackClick = {
+                    navCtrl.popBackStack()
+                },
+                navController = navCtrl
+            )
         }
         composable<AboutRoutes> {
             AboutScreen(onBackClick = {
+                navCtrl.popBackStack()
+            })
+        }
+        composable<DeleteAccountRoutes> {
+            DeleteAccountScreen(onBackClick = {
                 navCtrl.popBackStack()
             })
         }

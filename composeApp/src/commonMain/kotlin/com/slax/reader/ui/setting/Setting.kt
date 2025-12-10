@@ -5,6 +5,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -12,16 +13,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.slax.reader.SlaxConfig
-import com.slax.reader.utils.OpenInBrowser
+import androidx.navigation.NavHostController
+import com.slax.reader.const.DeleteAccountRoutes
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_sm_back
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingScreen(onBackClick: () -> Unit) {
-    var urlToOpen by remember { mutableStateOf<String?>(null) }
+fun SettingScreen(
+    onBackClick: () -> Unit,
+    navController: NavHostController
+) {
 
     Scaffold(
         topBar = {
@@ -72,17 +75,12 @@ fun SettingScreen(onBackClick: () -> Unit) {
                         title = "删除账号",
                         color = Color(0xFFF45454),
                         onClick = {
-                            urlToOpen = "${SlaxConfig.WEB_BASE_URL}/how-do-i-delete-my-account"
+                            navController.navigate(DeleteAccountRoutes)
                         }
                     )
                 }
             }
         }
-    }
-
-    urlToOpen?.let { url ->
-        OpenInBrowser(url)
-        urlToOpen = null
     }
 }
 
@@ -98,7 +96,7 @@ private fun SettingItem(
             .fillMaxWidth()
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = null
+                indication = ripple(color = Color.Gray)
             ) {
                 onClick()
             }
