@@ -12,7 +12,8 @@ sealed class AppError : Exception() {
     sealed class ApiException : AppError() {
         data class HttpError(
             val code: Int,
-            override val message: String
+            override val message: String,
+            val data: Any? = null
         ) : ApiException()
 
         data class NetworkError(override val message: String) : ApiException()

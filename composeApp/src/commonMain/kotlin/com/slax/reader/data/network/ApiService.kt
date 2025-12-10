@@ -31,15 +31,16 @@ class ApiService(
 
     private suspend inline fun <reified T> processResult(response: HttpResponse): HttpData<T> {
         if (response.status != HttpStatusCode.OK && response.status != HttpStatusCode.NoContent) {
-            val errorMessage = try {
-                val errorBody = response.body<ErrorResponse>()
-                errorBody.message
+            val (errorMessage, errorData) = try {
+                val errorBody = response.body<ErrorResponse<T>>()
+                errorBody.message to errorBody.data
             } catch (e: Exception) {
-                "Error: ${response.status}"
+                "Error: ${response.status}" to null
             }
             throw AppError.ApiException.HttpError(
                 code = response.status.value,
-                message = errorMessage
+                message = errorMessage,
+                data = errorData
             )
         }
 

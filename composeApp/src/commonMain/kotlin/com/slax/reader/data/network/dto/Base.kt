@@ -10,7 +10,8 @@ data class HttpData<T>(
 )
 
 @Serializable
-data class ErrorResponse(
+data class ErrorResponse<T>(
     val message: String = "",
-    val code: Int = 0
+    val code: Int = 0,
+    val data: T?
 )
