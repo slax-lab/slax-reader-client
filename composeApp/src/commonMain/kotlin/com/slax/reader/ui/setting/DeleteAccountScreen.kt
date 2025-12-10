@@ -10,8 +10,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.slax.reader.SlaxConfig
+import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.utils.WebView
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
@@ -21,6 +25,7 @@ import slax_reader_client.composeapp.generated.resources.ic_sm_back
 @Composable
 fun DeleteAccountScreen(onBackClick: () -> Unit) {
     val viewModel: SettingViewModel = koinInject()
+    val authDomain: AuthDomain = koinInject()
     val scope = rememberCoroutineScope()
 
     // 状态管理
@@ -90,7 +95,7 @@ fun DeleteAccountScreen(onBackClick: () -> Unit) {
         }
     ) { paddingValues ->
         WebView(
-            url = "${SlaxConfig.WEB_BASE_URL}/how-do-i-delete-my-account",
+            url = "${SlaxConfig.WEB_BASE_URL}/delete-account-notice",
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
@@ -149,7 +154,7 @@ fun DeleteAccountScreen(onBackClick: () -> Unit) {
                             viewModel.deleteAccount(
                                 onLoading = { isDeleting = it },
                                 onSuccess = {
-                                    // 删除成功后会自动退出登录，导航到登录页
+                                    authDomain.signOut()
                                 },
                                 onError = { error ->
                                     errorMessage = error

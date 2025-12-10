@@ -4,14 +4,12 @@ import androidx.lifecycle.ViewModel
 import com.slax.reader.const.AppError
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.network.dto.DeleteAccountReason
-import com.slax.reader.domain.auth.AuthDomain
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 
 class SettingViewModel(
-    private val apiService: ApiService,
-    private val authDomain: AuthDomain
+    private val apiService: ApiService
 ) : ViewModel() {
 
     /**
@@ -42,10 +40,6 @@ class SettingViewModel(
 
                 // 检查是否可以删除
                 if (deleteData.canDelete) {
-                    // 删除成功后，清除本地认证状态
-                    withContext(Dispatchers.IO) {
-                        authDomain.signOut()
-                    }
                     withContext(Dispatchers.Main) { onSuccess() }
                 } else {
                     // 不能删除，根据原因生成友好的错误消息
