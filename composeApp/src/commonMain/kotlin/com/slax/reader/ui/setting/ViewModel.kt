@@ -34,7 +34,6 @@ class SettingViewModel(private val apiService: ApiService) : ViewModel() {
             val deleteData = result.data!!
             processDeleteAccountData(deleteData)
         } catch (e: Exception) {
-            // 增加判断是否有e.data,以及e.data是否是DeleteAccountData类型
             if (e is AppError.ApiException.HttpError && e.data is DeleteAccountData) {
                 processDeleteAccountData(e.data)
             } else {
@@ -48,7 +47,6 @@ class SettingViewModel(private val apiService: ApiService) : ViewModel() {
         if (deleteData.canDelete) {
             _deleteAccountState.value = DeleteAccountState.Success
         } else {
-            // 不能删除，根据原因生成友好的错误消息
             val errorMessage = when (deleteData.reason) {
                 DeleteAccountReason.ACTIVE_SUBSCRIPTION ->
                     "无法删除账号：您有正在进行的订阅，请先取消订阅后再试"
