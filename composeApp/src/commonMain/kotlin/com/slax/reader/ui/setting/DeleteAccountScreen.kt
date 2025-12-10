@@ -12,10 +12,7 @@ import androidx.compose.ui.unit.sp
 import app.slax.reader.SlaxConfig
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.utils.WebView
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
@@ -26,6 +23,8 @@ import slax_reader_client.composeapp.generated.resources.ic_sm_back
 fun DeleteAccountScreen(onBackClick: () -> Unit) {
     val viewModel: SettingViewModel = koinInject()
     val authDomain: AuthDomain = koinInject()
+    val deleteAccountState by viewModel.deleteAccountState.collectAsState()
+
     val scope = rememberCoroutineScope()
 
     // 状态管理
@@ -33,7 +32,6 @@ fun DeleteAccountScreen(onBackClick: () -> Unit) {
     var hasScrolled by remember { mutableStateOf(false) }
     var showConfirmDialog by remember { mutableStateOf(false) }
     var isDeleting by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = {
@@ -151,15 +149,7 @@ fun DeleteAccountScreen(onBackClick: () -> Unit) {
                     onClick = {
                         showConfirmDialog = false
                         scope.launch {
-                            viewModel.deleteAccount(
-                                onLoading = { isDeleting = it },
-                                onSuccess = {
-                                    authDomain.signOut()
-                                },
-                                onError = { error ->
-                                    errorMessage = error
-                                }
-                            )
+                            viewModel.deleteAccount()
                         }
                     },
                     enabled = !isDeleting
@@ -194,36 +184,49 @@ fun DeleteAccountScreen(onBackClick: () -> Unit) {
         )
     }
 
-    // 错误提示对话框
-    errorMessage?.let { error ->
-        AlertDialog(
-            onDismissRequest = { errorMessage = null },
-            containerColor = Color.White,
-            title = {
-                Text(
-                    text = "删除失败",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            },
-            text = {
-                Text(
-                    text = error,
-                    fontSize = 16.sp,
-                    lineHeight = 24.sp
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = { errorMessage = null }
-                ) {
+    when (val state = deleteAccountState) {
+        is DeleteAccountState.Loading -> {
+            isDeleting = true
+        }
+        is DeleteAccountState.Error -> {
+            isDeleting = false
+            val error = state.message
+            AlertDialog(
+                onDismissRequest = { },
+                containerColor = Color.White,
+                title = {
                     Text(
-                        text = "确定",
-                        color = Color(0xFF333333),
-                        fontSize = 16.sp
+                        text = "删除失败",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold
                     )
+                },
+                text = {
+                    Text(
+                        text = error,
+                        fontSize = 16.sp,
+                        lineHeight = 24.sp
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.resetState()
+                        }
+                    ) {
+                        Text(
+                            text = "确定",
+                            color = Color(0xFF333333),
+                            fontSize = 16.sp
+                        )
+                    }
                 }
-            }
-        )
+            )
+        }
+        is DeleteAccountState.Success -> {
+            isDeleting = false
+            authDomain.signOut()
+        }
+        else -> {}
     }
 }
