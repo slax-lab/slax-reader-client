@@ -22,6 +22,7 @@ import com.slax.reader.ui.bookmark.components.*
 import com.slax.reader.utils.AppLifecycleState
 import com.slax.reader.utils.AppWebView
 import com.slax.reader.utils.LifeCycleHelper
+import com.slax.reader.utils.escapeJsTemplateString
 import com.slax.reader.utils.generateHtmlWithExternalResources
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -80,7 +81,9 @@ actual fun DetailScreen(
     LaunchedEffect(Unit) {
         detailViewModel.scrollToAnchorEvent.collect { anchorText ->
             println("[DetailScreen Android] 收到锚点滚动事件: $anchorText")
-            jsCommand = "window.SlaxWebViewBridge.scrollToAnchor('$anchorText')"
+            // 转义特殊字符，防止 JS 注入和语法错误
+            val escapedAnchor = escapeJsTemplateString(anchorText)
+            jsCommand = "window.SlaxWebViewBridge.scrollToAnchor(`$escapedAnchor`)"
             // 执行后清空命令
             kotlinx.coroutines.delay(100)
             jsCommand = null
@@ -206,7 +209,7 @@ actual fun DetailScreen(
                                     // WebView 的 CSS pixels 转换为物理像素
                                     val webViewPositionPx = webViewPositionCssPx * density
                                     // Column 的滚动位置 = HeaderContent 高度（物理像素）+ WebView 内部位置（物理像素）+ 屏幕高度的1/4
-                                    val targetPosition = (headerHeightPx + webViewPositionPx + screenHeightPx / 4).toInt()
+                                    val targetPosition = (headerHeightPx + webViewPositionPx - screenHeightPx / 4).toInt()
                                     println("[Android WebView] WebView CSS pixels: $webViewPositionCssPx")
                                     println("[Android WebView] 设备密度: $density")
                                     println("[Android WebView] WebView 物理像素: $webViewPositionPx px")

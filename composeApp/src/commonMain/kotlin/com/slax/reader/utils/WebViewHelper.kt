@@ -98,3 +98,29 @@ fun setDoNotAlertSetting(appPreference: AppPreferences) {
         appPreference.setUserSettingDetailDoNotAlert(true)
     }
 }
+
+/**
+ * 转义 JavaScript 模板字符串中的特殊字符
+ *
+ * 用于将任意字符串安全地嵌入到 JavaScript 模板字符串（反引号包围的字符串）中，
+ * 防止注入攻击和语法错误。
+ *
+ * @param input 需要转义的原始字符串
+ * @return 转义后的安全字符串
+ *
+ * @example
+ * ```kotlin
+ * val anchorText = "Section `1.0` test"
+ * val escaped = escapeJsTemplateString(anchorText)  // "Section \`1.0\` test"
+ * val jsCommand = "window.SlaxWebViewBridge.scrollToAnchor(`$escaped`)"
+ * ```
+ */
+fun escapeJsTemplateString(input: String): String {
+    return input
+        .replace("\\", "\\\\")  // 反斜杠必须最先处理，避免二次转义
+        .replace("`", "\\`")     // 反引号（模板字符串分隔符）
+        .replace("$", "\\$")     // 美元符号（模板字符串插值）
+        .replace("\n", "\\n")    // 换行符
+        .replace("\r", "\\r")    // 回车符
+        .replace("\t", "\\t")    // 制表符
+}

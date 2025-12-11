@@ -4,13 +4,60 @@
  * 功能：
  * 1. 提供统一的Native Bridge通信接口
  * 2. 处理图片点击事件并通知Native
- * 3. 支持Android和iOS平台
+ * 3. 支持锚点跳转和元素高亮显示
+ * 4. 递归查找DOM元素（支持嵌套结构的精确定位）
+ * 5. 支持Android和iOS平台
+ *
+ * 元素查找策略：
+ * - 优先级1：通过 ID 和 name 属性精确匹配
+ * - 优先级2：递归遍历 DOM 树，从文本节点开始查找
+ * - 优先级3：优先返回标题元素（h1-h6）
+ * - 特性：自动过滤隐藏元素，支持多结果去重
  *
  * @author Slax Reader
+ * @version 2.0
  */
 
 (function() {
     'use strict';
+
+    // CSS.escape polyfill（兼容旧浏览器）
+    if (!window.CSS || !CSS.escape) {
+        window.CSS = window.CSS || {};
+        CSS.escape = function(value) {
+            if (arguments.length === 0) {
+                throw new TypeError('`CSS.escape` 需要一个参数。');
+            }
+            var string = String(value);
+            var length = string.length;
+            var index = -1;
+            var codeUnit;
+            var result = '';
+            var firstCodeUnit = string.charCodeAt(0);
+            while (++index < length) {
+                codeUnit = string.charCodeAt(index);
+                // 注意：处理代理对等复杂情况
+                if (codeUnit === 0x0000) {
+                    result += '\uFFFD';
+                    continue;
+                }
+                if (
+                    // 如果字符是 [0-9A-Za-z_-]
+                    (codeUnit >= 0x0030 && codeUnit <= 0x0039) ||
+                    (codeUnit >= 0x0041 && codeUnit <= 0x005A) ||
+                    (codeUnit >= 0x0061 && codeUnit <= 0x007A) ||
+                    codeUnit === 0x005F ||
+                    codeUnit === 0x002D
+                ) {
+                    result += string.charAt(index);
+                    continue;
+                }
+                // 转义其他字符
+                result += '\\' + string.charAt(index);
+            }
+            return result;
+        };
+    }
 
     /**
      * 向Native发送消息
@@ -110,50 +157,123 @@
     }
 
     /**
-     * 查找匹配的元素
+     * 查找所有匹配的元素（递归遍历 DOM 树）
+     * @param {string} text - 搜索文本
+     * @param {Element} [dom] - 搜索根节点，默认 document.body
+     * @returns {HTMLElement[]} - 匹配的元素数组
+     */
+    function findAllMatchingElements(text, dom) {
+        const normalizedText = text.trim().replace(/\s+/g, ' ');
+        const matchedElements = [];
+        const visited = new Set(); // 使用 Set 防止重复添加（兼容性更好）
+
+        /**
+         * 递归搜索节点
+         * @param {Node} node - 当前节点
+         * @returns {HTMLElement[]|null} - 匹配的元素数组
+         */
+        function searchNodes(node) {
+            // 文本节点：直接匹配内容
+            if (node.nodeType === Node.TEXT_NODE) {
+                if (node.nodeValue && node.nodeValue.includes(normalizedText) && node.parentElement) {
+                    const parent = node.parentElement;
+                    // 过滤隐藏元素
+                    if (parent.offsetHeight > 0 && parent.offsetWidth > 0) {
+                        return [parent];
+                    }
+                }
+                return null;
+            }
+
+            // 元素节点：递归遍历子节点
+            if (node.nodeType === Node.ELEMENT_NODE) {
+                const foundChildren = [];
+
+                // 遍历所有子节点
+                node.childNodes.forEach(child => {
+                    const result = searchNodes(child);
+                    if (result && result.length > 0) {
+                        foundChildren.push(...result);
+                    }
+                });
+
+                // 如果在子节点中找到匹配，返回子节点结果
+                if (foundChildren.length > 0) {
+                    return foundChildren;
+                }
+
+                // 子节点未找到，检查当前元素的文本内容
+                const textContent = node.textContent;
+                const innerText = node instanceof HTMLElement ? node.innerText : null;
+
+                if (textContent && textContent.includes(normalizedText)) {
+                    return [node];
+                } else if (innerText && innerText.includes(normalizedText)) {
+                    return [node];
+                }
+            }
+
+            return null;
+        }
+
+        // 执行搜索
+        const foundElements = searchNodes(dom || document.body);
+
+        // 去重并添加到结果数组
+        if (foundElements) {
+            foundElements.forEach(element => {
+                if (element && !visited.has(element)) {
+                    matchedElements.push(element);
+                    visited.add(element);
+                }
+            });
+        }
+
+        return matchedElements;
+    }
+
+    /**
+     * 查找匹配的元素（返回单个最佳匹配）
      * @param {string} anchorText - 锚点文本（已解码的中文或英文）
      * @returns {HTMLElement|null} - 匹配的元素
      */
     function findMatchingElement(anchorText) {
-        // 标准化锚点文本：去除多余空格，统一小写
-        const normalizedAnchor = anchorText.trim().toLowerCase().replace(/\s+/g, ' ');
+        const normalizedAnchor = anchorText.trim().replace(/\s+/g, ' ');
 
-        // 1. 尝试通过 ID 查找（精确匹配）
+        // 1. 优先通过 ID 查找（精确匹配）
         const elementById = document.getElementById(anchorText);
         if (elementById) {
             console.log(`[WebView Bridge] 通过 ID 找到元素: ${elementById.tagName}`);
             return elementById;
         }
 
-        // 2. 遍历所有标题元素（h1-h6）
-        const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
-        for (const heading of headings) {
-            const headingText = heading.textContent.trim().toLowerCase().replace(/\s+/g, ' ');
-
-            // 精确匹配
-            if (headingText === normalizedAnchor) {
-                console.log(`[WebView Bridge] 通过标题精确匹配找到元素: ${heading.tagName}`);
-                return heading;
-            }
-
-            // 模糊匹配：标题包含锚点文本
-            if (headingText.includes(normalizedAnchor) || normalizedAnchor.includes(headingText)) {
-                console.log(`[WebView Bridge] 通过标题模糊匹配找到元素: ${heading.tagName}`);
-                return heading;
-            }
+        // 2. 优先通过 name 属性查找
+        const elementByName = document.querySelector(`[name="${CSS.escape(anchorText)}"]`);
+        if (elementByName) {
+            console.log(`[WebView Bridge] 通过 name 属性找到元素: ${elementByName.tagName}`);
+            return elementByName;
         }
 
-        // 3. 遍历所有段落和列表项（兜底策略）
-        const allElements = document.querySelectorAll('p, li, div[class*="content"]');
-        for (const element of allElements) {
-            const elementText = element.textContent.trim().toLowerCase().replace(/\s+/g, ' ');
-            if (elementText.includes(normalizedAnchor)) {
-                console.log(`[WebView Bridge] 通过内容匹配找到元素: ${element.tagName}`);
-                return element;
-            }
+        // 3. 使用递归搜索查找所有匹配
+        const matches = findAllMatchingElements(normalizedAnchor);
+
+        if (matches.length === 0) {
+            console.warn(`[WebView Bridge] 未找到匹配元素: ${anchorText}`);
+            return null;
         }
 
-        return null;
+        console.log(`[WebView Bridge] 找到 ${matches.length} 个匹配元素`);
+
+        // 4. 优先返回标题元素（h1-h6）
+        const heading = matches.find(el => /^H[1-6]$/.test(el.tagName));
+        if (heading) {
+            console.log(`[WebView Bridge] 优先返回标题元素: ${heading.tagName}`);
+            return heading;
+        }
+
+        // 5. 返回第一个匹配的元素
+        console.log(`[WebView Bridge] 返回第一个匹配元素: ${matches[0].tagName}`);
+        return matches[0];
     }
 
     /**
