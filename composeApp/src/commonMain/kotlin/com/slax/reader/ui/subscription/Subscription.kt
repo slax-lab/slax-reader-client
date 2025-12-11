@@ -63,9 +63,7 @@ fun SubscriptionManagerScreen() {
 
             Button(
                 onClick = {
-                    runBlocking {
-                        viewmodel.purchase()
-                    }
+                    viewmodel.purchase()
                 },
                 enabled = paymentState is PaymentState.Idle,
                 modifier = Modifier

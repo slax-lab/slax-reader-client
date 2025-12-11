@@ -37,6 +37,7 @@ import StoreKit
     @objc public var success: Bool = false
     @objc public var productId: String = ""
     @objc public var transactionId: String = ""
+    @objc public var appAccountToken: UUID?
     @objc public var errorMessage: String = ""
     @objc public var isPending: Bool = false
     @objc public var isCancelled: Bool = false
@@ -49,6 +50,7 @@ import StoreKit
         success: Bool,
         productId: String,
         transactionId: String,
+        appAccountToken: UUID,
         errorMessage: String,
         isPending: Bool,
         isCancelled: Bool
@@ -56,6 +58,7 @@ import StoreKit
         self.success = success
         self.productId = productId
         self.transactionId = transactionId
+        self.appAccountToken = appAccountToken
         self.errorMessage = errorMessage
         self.isPending = isPending
         self.isCancelled = isCancelled
@@ -142,7 +145,7 @@ public class StoreKitBridge: NSObject {
         return products.values.map { convertProduct($0) }
     }
 
-    @objc public func purchase(_ productId: String) {
+    @objc public func purchase(_ productId: String, appAccountToken: UUID) {
         Task {
             guard let product = products[productId] else {
                 await MainActor.run {
@@ -150,6 +153,7 @@ public class StoreKitBridge: NSObject {
                         success: false,
                         productId: productId,
                         transactionId: "",
+                        appAccountToken: appAccountToken,
                         errorMessage: "Product not found: \(productId)",
                         isPending: false,
                         isCancelled: false
@@ -160,7 +164,9 @@ public class StoreKitBridge: NSObject {
             }
 
             do {
-                let purchaseResult = try await product.purchase()
+                let purchaseResult = try await product.purchase(options: [
+                    .appAccountToken(appAccountToken)
+                ])
 
                 await MainActor.run {
                     switch purchaseResult {
@@ -174,6 +180,7 @@ public class StoreKitBridge: NSObject {
                                 success: true,
                                 productId: productId,
                                 transactionId: String(transaction.id),
+                                appAccountToken: transaction.appAccountToken ?? appAccountToken,
                                 errorMessage: "",
                                 isPending: false,
                                 isCancelled: false
@@ -185,6 +192,7 @@ public class StoreKitBridge: NSObject {
                                 success: false,
                                 productId: productId,
                                 transactionId: "",
+                                appAccountToken: appAccountToken,
                                 errorMessage: "Verification failed: \(verificationError.localizedDescription)",
                                 isPending: false,
                                 isCancelled: false
@@ -197,6 +205,7 @@ public class StoreKitBridge: NSObject {
                             success: false,
                             productId: productId,
                             transactionId: "",
+                            appAccountToken: appAccountToken,
                             errorMessage: "",
                             isPending: true,
                             isCancelled: false
@@ -208,6 +217,7 @@ public class StoreKitBridge: NSObject {
                             success: false,
                             productId: productId,
                             transactionId: "",
+                            appAccountToken: appAccountToken,
                             errorMessage: "",
                             isPending: false,
                             isCancelled: true
@@ -219,6 +229,7 @@ public class StoreKitBridge: NSObject {
                             success: false,
                             productId: productId,
                             transactionId: "",
+                            appAccountToken: appAccountToken,
                             errorMessage: "Unknown result",
                             isPending: false,
                             isCancelled: false
@@ -232,6 +243,7 @@ public class StoreKitBridge: NSObject {
                         success: false,
                         productId: productId,
                         transactionId: "",
+                        appAccountToken: appAccountToken,
                         errorMessage: error.localizedDescription,
                         isPending: false,
                         isCancelled: false
@@ -272,9 +284,11 @@ public class StoreKitBridge: NSObject {
             }
         }
 
+        let finalIds = ids
+
         await MainActor.run {
-            self.purchasedIds = ids
-            self.callback?.onEntitlementsUpdated(Array(ids))
+            self.purchasedIds = finalIds
+            self.callback?.onEntitlementsUpdated(Array(finalIds))
         }
     }
 
@@ -287,7 +301,6 @@ public class StoreKitBridge: NSObject {
     }
 
     @objc public func canMakePayments() -> Bool {
-        // StoreKit 1 API, 但仍然可用
         return SKPaymentQueue.canMakePayments()
     }
 

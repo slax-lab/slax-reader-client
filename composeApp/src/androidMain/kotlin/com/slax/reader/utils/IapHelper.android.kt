@@ -9,7 +9,7 @@ actual class IAPManager actual constructor() {
         TODO("Not yet implemented")
     }
 
-    actual fun purchase(productId: String) {
+    actual fun purchase(productId: String, orderId: String) {
         TODO("Not yet implemented")
     }
 
