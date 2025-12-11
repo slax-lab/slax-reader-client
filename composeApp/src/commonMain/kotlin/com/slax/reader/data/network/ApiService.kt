@@ -3,6 +3,7 @@ package com.slax.reader.data.network
 import app.slax.reader.SlaxConfig
 import com.slax.reader.const.AppError
 import com.slax.reader.data.network.dto.*
+import com.slax.reader.utils.platformType
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -142,6 +143,18 @@ class ApiService(
             "/v1/bookmark/add_url", body = CollectionBookmarkParam(
                 target_url = url, content = content, target_title = title
             )
+        )
+    }
+
+    suspend fun createIapOrderId(productId: String): HttpData<CreateIapOrderResult> {
+        return post(
+            "/v1/subscription/create_inapp_purchase", body = CreateIapOrderParam(productId, platform = platformType)
+        )
+    }
+
+    suspend fun checkIapResult(ticketId: String, productId: String) : HttpData<CheckIapResult> {
+        return post(
+            "/v1/subscription/check_inapp_purchase", body = CheckIapParam(ticketId, productId, platformType)
         )
     }
 

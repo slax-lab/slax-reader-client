@@ -61,6 +61,28 @@ data class CollectionBookmarkResult(
 )
 
 @Serializable
+data class CreateIapOrderResult(
+    val orderId: String
+)
+
+data class CheckIapParam(
+    val ticket_id: String,
+    val product_id: String,
+    val platform: String
+)
+
+@Serializable
+data class CheckIapResult(
+    val ok: Boolean
+)
+
+@Serializable
+data class CreateIapOrderParam(
+    val product_id: String,
+    val platform: String
+)
+
+@Serializable
 data class BookmarkOverviewParam(
     val bookmark_uid: String,
     val force: Boolean = false

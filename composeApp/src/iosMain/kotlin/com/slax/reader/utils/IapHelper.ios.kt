@@ -5,11 +5,13 @@ import app.slax.reader.storekit.SKPurchaseResult
 import app.slax.reader.storekit.StoreKitBridge
 import app.slax.reader.storekit.StoreKitCallbackProtocol
 import kotlinx.cinterop.ExperimentalForeignApi
+import platform.Foundation.NSUUID
 import platform.darwin.NSObject
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalForeignApi::class)
 actual class IAPManager actual constructor() {
-
     private val bridge = StoreKitBridge.shared()
     private var callback: IAPCallback? = null
 
@@ -47,8 +49,9 @@ actual class IAPManager actual constructor() {
         bridge.loadProducts(productIds)
     }
 
-    actual fun purchase(productId: String) {
-        bridge.purchase(productId)
+    @OptIn(ExperimentalUuidApi::class)
+    actual fun purchase(productId: String, orderId: String) {
+        bridge.purchase(productId, NSUUID(orderId))
     }
 
     actual fun restorePurchases() {
@@ -61,11 +64,7 @@ actual class IAPManager actual constructor() {
 
     actual fun getPurchasedIds(): List<String> {
         val ids = bridge.getPurchasedIds()
-        return if (ids != null) {
-            ids.filterIsInstance<String>()
-        } else {
-            emptyList()
-        }
+        return ids.filterIsInstance<String>()
     }
 
     actual fun canMakePayments(): Boolean {
@@ -74,11 +73,7 @@ actual class IAPManager actual constructor() {
 
     actual fun getProducts(): List<IAPProduct> {
         val infos = bridge.getProducts()
-        return if (infos != null) {
-            infos.filterIsInstance<SKProductInfo>().map { it.toIAPProduct() }
-        } else {
-            emptyList()
-        }
+        return infos.filterIsInstance<SKProductInfo>().map { it.toIAPProduct() }
     }
 }
 
