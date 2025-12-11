@@ -18,32 +18,6 @@ object WebViewAssets {
         get() = getAssetDomain()
 
     /**
-     * HTML模板URL
-     */
-    val HTML_TEMPLATE_URL: String
-        get() = "$ASSET_DOMAIN/html/webview-template.html"
-
-    /**
-     * CSS文件URLs
-     */
-    object CSS {
-        val RESET: String
-            get() = "${ASSET_DOMAIN}/css/reset.css"
-        val ARTICLE: String
-            get() = "${ASSET_DOMAIN}/css/article.css"
-        val BOTTOM_LINE: String
-            get() = "${ASSET_DOMAIN}/css/bottom-line.css"
-    }
-
-    /**
-     * JavaScript文件URLs
-     */
-    object JS {
-        val BRIDGE: String
-            get() = "${ASSET_DOMAIN}/js/webview-bridge.js"
-    }
-
-    /**
      * 资源文件路径（相对于composeResources/files/）
      */
     object Paths {

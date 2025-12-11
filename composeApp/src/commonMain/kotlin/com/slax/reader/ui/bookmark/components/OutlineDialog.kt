@@ -277,14 +277,17 @@ private fun ExpandedOutlineDialog(
                         // 加载状态：显示动画
                         LoadingAnimation()
                     }
+
                     outlineState.error != null -> {
                         // 错误状态：显示错误信息
                         ErrorView(error = outlineState.error!!)
                     }
+
                     outlineContent.isEmpty() -> {
                         // 空状态：显示提示信息
                         EmptyView()
                     }
+
                     else -> {
                         // 已加载：显示 markdown 内容
                         MarkdownRenderer(content = outlineContent, onLinkClick = { url ->
@@ -327,7 +330,9 @@ private fun CollapsedOutlineBanner(
 
     // 根据状态确定显示内容
     val isLoading = outlineState.isLoading
-    val isCompleted = !isLoading && outlineContent.isNotEmpty() && outlineState.error == null
+    val isCompleted by remember(isLoading, outlineContent, outlineState.error) {
+        mutableStateOf(!isLoading && outlineContent.isNotEmpty() && outlineState.error == null)
+    }
 
     Surface(
         shape = RoundedCornerShape(16.dp),

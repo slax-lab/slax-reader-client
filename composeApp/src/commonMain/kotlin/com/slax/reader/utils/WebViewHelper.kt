@@ -11,7 +11,7 @@ import com.slax.reader.data.preferences.AppPreferences
 import kotlinx.coroutines.runBlocking
 
 /**
- * 使用内联CSS的方式包装HTML内容（旧方案，保留作为fallback）
+ * 使用内联CSS的方式包装HTML内容（fallback）
  */
 fun wrapHtmlWithCSS(htmlContent: String): String {
     return """
@@ -46,7 +46,7 @@ fun wrapHtmlWithCSS(htmlContent: String): String {
 }
 
 /**
- * 使用外部资源文件的方式生成HTML（新方案）
+ * 使用外部资源文件的方式生成HTML
  *
  * @param contentHtml 文章内容HTML
  * @return 完整的HTML字符串，包含外部CSS和JS引用
@@ -59,8 +59,8 @@ suspend fun generateHtmlWithExternalResources(contentHtml: String): String {
         // 替换内容占位符
         template.replace("{{CONTENT}}", contentHtml)
     } catch (e: Exception) {
-        println("[WebViewHelper] 读取HTML模板失败，使用fallback方案: ${e.message}")
-        // 如果读取失败，回退到旧方案
+        println("[WebViewHelper] 读取HTML模板失败，使用fallback: ${e.message}")
+        // fallback
         wrapHtmlWithCSS(contentHtml)
     }
 }

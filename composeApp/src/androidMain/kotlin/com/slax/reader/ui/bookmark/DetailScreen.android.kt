@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.FrameRateCategory
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.unit.dp
@@ -63,6 +64,10 @@ actual fun DetailScreen(
 
     // 获取设备密度（用于 CSS pixels → 物理像素 转换）
     val density = LocalDensity.current.density
+
+    // 获取屏幕高度（用于计算滚动偏移）
+    val configuration = LocalConfiguration.current
+    val screenHeightPx = with(LocalDensity.current) { configuration.screenHeightDp.dp.toPx() }
 
     // 记录 HeaderContent 的高度（px）
     var headerHeightPx by remember { mutableFloatStateOf(0f) }
@@ -200,8 +205,8 @@ actual fun DetailScreen(
                                     val webViewPositionCssPx = webViewMessage.position ?: 0
                                     // WebView 的 CSS pixels 转换为物理像素
                                     val webViewPositionPx = webViewPositionCssPx * density
-                                    // Column 的滚动位置 = HeaderContent 高度（物理像素）+ WebView 内部位置（物理像素）
-                                    val targetPosition = (headerHeightPx + webViewPositionPx).toInt()
+                                    // Column 的滚动位置 = HeaderContent 高度（物理像素）+ WebView 内部位置（物理像素）+ 屏幕高度的1/4
+                                    val targetPosition = (headerHeightPx + webViewPositionPx + screenHeightPx / 4).toInt()
                                     println("[Android WebView] WebView CSS pixels: $webViewPositionCssPx")
                                     println("[Android WebView] 设备密度: $density")
                                     println("[Android WebView] WebView 物理像素: $webViewPositionPx px")

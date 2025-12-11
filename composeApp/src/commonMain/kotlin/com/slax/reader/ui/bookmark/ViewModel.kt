@@ -153,40 +153,6 @@ class BookmarkDetailViewModel(
         }
     }
 
-    fun loadOutlines() {
-        val bookmarkId = _bookmarkId.value ?: return
-        viewModelScope.launch {
-            _outlineContent.value = ""
-            _outlineState.value = OutlineState(isLoading = true)
-
-            var fullOutline = ""
-
-            try {
-                val resp = apiService.getBookmarkOutlines(bookmarkId)
-                val data = resp.data?.data
-                val firstOverview = data?.firstOrNull()?.content ?: ""
-
-                if (firstOverview.isNotEmpty()) {
-                    fullOutline += firstOverview
-                    _outlineContent.value = fullOutline
-                    _outlineState.update { state ->
-                        state.copy(outline = fullOutline, isLoading = false)
-                    }
-                } else {
-                    _outlineState.update { state ->
-                        state.copy(isLoading = false)
-                    }
-                }
-
-            } catch (e: Exception) {
-                println("[BookmarkDetailViewModel] loadOutlines error: ${e.message}")
-                _outlineState.update { state ->
-                    state.copy(error = e.message ?: "Unknown error", isLoading = false)
-                }
-            }
-        }
-    }
-
     fun loadOutline() {
         val bookmarkId = _bookmarkId.value ?: return
         viewModelScope.launch {

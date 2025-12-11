@@ -204,9 +204,6 @@
             return;
         }
 
-        // 高亮显示目标元素（3秒后自动取消）
-        highlightElement(element, 3000);
-
         // 获取元素在文档中的绝对位置
         const rect = element.getBoundingClientRect();
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
@@ -221,7 +218,7 @@
         // WebView 内部也执行滚动（iOS 需要）
         element.scrollIntoView({
             behavior: 'smooth',
-            block: 'start',
+            block: 'center',
             inline: 'nearest'
         });
 
@@ -242,6 +239,7 @@
         const targetElement = findMatchingElement(decodedAnchor);
         if (targetElement) {
             scrollToElement(targetElement);
+            highlightElement(targetElement, 3000);
             return true;
         } else {
             console.warn(`[WebView Bridge] 未找到匹配元素: ${anchorText}`);

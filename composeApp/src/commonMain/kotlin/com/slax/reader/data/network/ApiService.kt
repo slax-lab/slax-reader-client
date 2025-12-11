@@ -177,13 +177,6 @@ class ApiService(
         }
     }.flowOn(Dispatchers.IO)
 
-    suspend fun getBookmarkOutlines(bookmarkId: String): HttpData<BookmarkOutlinesResult> {
-        return get(
-//            "/v1/bookmark/summaries", query = mapOf("bookmark_uid" to bookmarkId)
-            "/v1/bookmark/summaries", query = mapOf("bookmark_id" to "512216348274")
-        )
-    }
-
     fun getBookmarkOutline(bookmarkId: String): Flow<OutlineResponse> = flow {
         val url = buildUrl("/v1/bookmark/outline")
 
