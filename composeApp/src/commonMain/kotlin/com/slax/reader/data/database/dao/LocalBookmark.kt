@@ -104,4 +104,39 @@ class LocalBookmarkDao(
         ) ?: Pair(null, null)
         return result
     }
+
+    suspend fun updateLocalBookmarkOutline(
+        bookmarkId: String,
+        outline: String,
+    ) = withContext(Dispatchers.IO) {
+        database.writeTransaction { tx ->
+            tx.execute(
+                """
+                INSERT INTO ps_data_local__local_bookmark_info (id, data)
+                VALUES (?, json_object('outline', ?))
+                ON CONFLICT(id) DO UPDATE SET
+                data = json_set(
+                    ps_data_local__local_bookmark_info.data,
+                    '$.outline', json_extract(excluded.data, '$.outline')
+                );
+            """.trimIndent(),
+                parameters = listOf(bookmarkId, outline)
+            )
+        }
+    }
+
+    suspend fun getLocalBookmarkOutline(bookmarkId: String): String? {
+        return database.getOptional(
+            """
+            SELECT
+                json_extract(data, '$.outline') AS outline
+            FROM ps_data_local__local_bookmark_info
+            WHERE id = ?
+            """.trimIndent(),
+            parameters = listOf(bookmarkId),
+            mapper = { cursor ->
+                cursor.getStringOptional("outline")?.takeIf { it.isNotEmpty() } ?: ""
+            }
+        )?.takeIf { it.isNotEmpty() }
+    }
 }
