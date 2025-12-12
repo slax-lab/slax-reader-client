@@ -65,6 +65,7 @@ data class CreateIapOrderResult(
     val orderId: String
 )
 
+@Serializable
 data class CheckIapParam(
     val ticket_id: String,
     val product_id: String,
