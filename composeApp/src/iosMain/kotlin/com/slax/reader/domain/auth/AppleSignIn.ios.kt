@@ -9,6 +9,10 @@ import platform.darwin.NSObject
 import kotlin.coroutines.resume
 
 actual class AppleSignInProvider {
+    private var currentController: ASAuthorizationController? = null
+    private var currentDelegate: NSObject? = null
+    private var currentPresentationDelegate: NSObject? = null
+
     @OptIn(ExperimentalForeignApi::class)
     actual suspend fun signIn(): Result<AppleSignInResult> =
         suspendCancellableCoroutine { continuation ->
@@ -38,8 +42,11 @@ actual class AppleSignInProvider {
                         val authCode = credential.authorizationCode
                             ?.toKotlinString() ?: ""
 
+                        val idToken = credential.identityToken
+                            ?.toKotlinString() ?: ""
+
                         if (authCode.isNotEmpty()) {
-                            val result = AppleSignInResult(code = authCode)
+                            val result = AppleSignInResult(authCode, idToken)
                             continuation.resume(Result.success(result))
                         } else {
                             continuation.resume(
@@ -57,7 +64,11 @@ actual class AppleSignInProvider {
                     controller: ASAuthorizationController,
                     didCompleteWithError: NSError
                 ) {
-                    if (didCompleteWithError.code < 1002L) {
+                    cleanup()
+                    if (didCompleteWithError.code == 1001L) {
+                        continuation.resume(
+                            Result.failure(Exception("User canceled"))
+                        )
                         return
                     }
                     val errorMessage = when (didCompleteWithError.code) {
@@ -72,8 +83,6 @@ actual class AppleSignInProvider {
                 }
             }
 
-            controller.delegate = delegate
-
             val window = UIApplication.sharedApplication.keyWindow
             val presentationDelegate = object : NSObject(),
                 ASAuthorizationControllerPresentationContextProvidingProtocol {
@@ -82,11 +91,24 @@ actual class AppleSignInProvider {
                 ) = window!!
             }
 
+            currentController = controller
+            currentDelegate = delegate
+            currentPresentationDelegate = presentationDelegate
+
+            controller.delegate = delegate
             controller.presentationContextProvider = presentationDelegate
             controller.performRequests()
 
-            continuation.invokeOnCancellation {}
+            continuation.invokeOnCancellation {
+                cleanup()
+            }
         }
+
+    private fun cleanup() {
+        currentController = null
+        currentDelegate = null
+        currentPresentationDelegate = null
+    }
 
     actual fun isAvailable(): Boolean = true
 }
