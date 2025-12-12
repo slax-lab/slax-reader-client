@@ -44,9 +44,9 @@ fun MarkdownRenderer(
     content: String,
     onLinkClick: (String) -> Unit = {}
 ) {
-    // 解析 markdown
+    val preprocessedContent = preprocessMarkdownLinks(content)
     val flavour = CommonMarkFlavourDescriptor()
-    val parsedTree = MarkdownParser(flavour).buildMarkdownTreeFromString(content)
+    val parsedTree = MarkdownParser(flavour).buildMarkdownTreeFromString(preprocessedContent)
 
     Column(
         modifier = Modifier
@@ -55,11 +55,26 @@ fun MarkdownRenderer(
             .padding(top = 4.dp)
     ) {
         RenderMarkdownNode(
-            content = content,
+            content = preprocessedContent,
             node = parsedTree,
             isRoot = true,
             onLinkClick = onLinkClick
         )
+    }
+}
+
+/**
+ * 预处理 Markdown 链接
+ * CommonMark 规范，链接 URL 中如果包含空格，需要：
+ * - 使用 <> 包裹 URL，例如：[text](<#url with spaces>)
+ * - 或者将空格编码为 %20，例如：[text](#url%20with%20spaces)
+ */
+private fun preprocessMarkdownLinks(content: String): String {
+    val linkPattern = Regex("""\[([^\]]+)\]\(([^)<>\s]+(?:\s+[^)<>]+)+)\)""")
+    return linkPattern.replace(content) { matchResult ->
+        val text = matchResult.groupValues[1]
+        val url = matchResult.groupValues[2]
+        "[$text](<$url>)"
     }
 }
 
@@ -551,11 +566,13 @@ private fun CustomLinkButton(
         ?.removeSurrounding("[", "]")
         ?: node.getTextInNode(content).toString()
 
-    // 提取链接 URL
+    // 提取链接 URL，并去除可能存在的尖括号包裹
+    // 例如：<#url with spaces> -> #url with spaces
     val linkUrl = node.children
         .firstOrNull { it.type.toString() == "Markdown:LINK_DESTINATION" }
         ?.getTextInNode(content)
         ?.toString()
+        ?.removeSurrounding("<", ">")
         ?: ""
 
     Box(
