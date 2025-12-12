@@ -93,11 +93,12 @@ private fun SKProductInfo.toIAPProduct() = IAPProduct(
     }
 )
 
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class, ExperimentalUuidApi::class)
 private fun SKPurchaseResult.toPurchaseResult() = PurchaseResult(
     success = this.success(),
     productId = this.productId(),
     transactionId = this.transactionId().takeIf { it.isNotEmpty() },
+    appAccountToken = this.appAccountToken()?.let { Uuid.parse(it.UUIDString()) },
     error = this.errorMessage().takeIf { it.isNotEmpty() },
     isPending = this.isPending(),
     isCancelled = this.isCancelled()

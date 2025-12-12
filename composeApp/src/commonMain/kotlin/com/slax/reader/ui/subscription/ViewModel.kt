@@ -1,6 +1,7 @@
 package com.slax.reader.ui.subscription
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.utils.IAPCallback
 import com.slax.reader.utils.IAPManager
@@ -10,6 +11,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlin.uuid.ExperimentalUuidApi
 
@@ -69,19 +71,22 @@ class SubscriptionViewModel(private val apiService: ApiService) : ViewModel() {
         }
 
         fun startCheckTransactionStatus(productId: String, ticketId: String) {
-            repeat(10) {
-                val result = runBlocking {
-                    apiService.checkIapResult(ticketId, productId)
+            viewModelScope.launch {
+                repeat(10) {
+                    try {
+                        val result = apiService.checkIapResult(ticketId, productId)
+                        if (result.data?.ok == true) {
+                            _paymentState.value = PaymentState.Success
+                            return@launch
+                        }
+                        delay(1000L)
+                    } catch (e: Exception) {
+                        _paymentState.value = PaymentState.Error(e.message ?: "Failed to verify transaction")
+                        return@launch
+                    }
                 }
-                if (result.data?.ok == true) {
-                    _paymentState.value = PaymentState.Success
-                    return@repeat
-                }
-                runBlocking {
-                    delay(1000L)
-                }
+                _paymentState.value = PaymentState.Error("Transaction verification timed out")
             }
-            _paymentState.value = PaymentState.Error("Transaction verification timed out")
         }
     }
 
