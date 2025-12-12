@@ -23,7 +23,7 @@ class LoginViewModel(
         try {
             result.onSuccess { appleResult ->
                 val authResult = withContext(Dispatchers.IO) {
-                    authDomain.signIn(code = appleResult.code, type = "apple")
+                    authDomain.signIn(code = appleResult.code, type = "apple", idToken = appleResult.idToken)
                 }
                 authResult.onSuccess {
                     withContext(Dispatchers.Main) { onSuccess() }
