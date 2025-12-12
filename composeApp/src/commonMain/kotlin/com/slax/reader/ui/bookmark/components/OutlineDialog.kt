@@ -15,8 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -51,7 +49,8 @@ enum class OutlineDialogState {
 @Composable
 fun OutlineDialog(
     detailViewModel: BookmarkDetailViewModel,
-    initialState: OutlineDialogState = OutlineDialogState.HIDDEN,
+    currentState: OutlineDialogState,
+    onStateChange: (OutlineDialogState) -> Unit,
     onDismissRequest: () -> Unit
 ) {
     println("[watch][UI] recomposition OutlineDialog")
@@ -60,30 +59,35 @@ fun OutlineDialog(
         detailViewModel.loadOutline()
     }
 
-    var currentState by remember { mutableStateOf(OutlineDialogState.HIDDEN) }
     var visible by remember { mutableStateOf(false) }
-
-    // 计算弹窗需要向上移动的距离（dp）
-    val density = LocalDensity.current
-    val moveUpDistancePx = remember {
-        with(density) { 28.dp.toPx() } // 36dp - 8dp = 28dp
-    }
+    // 用于延迟触发动画的内部状态
+    var animatedState by remember { mutableStateOf(OutlineDialogState.HIDDEN) }
 
     // 初始化时延迟显示，确保动画生效
     LaunchedEffect(Unit) {
-        if (initialState != OutlineDialogState.HIDDEN) {
+        if (currentState != OutlineDialogState.HIDDEN) {
             visible = true
-            delay(50L) // 短暂延迟，确保动画触发
-            currentState = initialState
+            delay(50L) // 给 Compose 时间准备动画初始状态
+            animatedState = currentState
         }
     }
 
     // 监听状态变化
     LaunchedEffect(currentState) {
-        if (currentState == OutlineDialogState.HIDDEN) {
-            delay(300L) // 等待动画完成
-            visible = false
-            onDismissRequest()
+        when {
+            currentState == OutlineDialogState.HIDDEN -> {
+                animatedState = OutlineDialogState.HIDDEN
+                delay(300L) // 等待动画完成
+                visible = false
+                onDismissRequest()
+            }
+            visible -> {
+                // 已经显示时，直接同步状态（用于收缩⇄展开的切换）
+                animatedState = currentState
+            }
+            else -> {
+                // 首次显示，已在 LaunchedEffect(Unit) 中处理
+            }
         }
     }
 
@@ -94,7 +98,7 @@ fun OutlineDialog(
     Box(modifier = Modifier.fillMaxSize()) {
         // 半透明背景（仅在EXPANDED状态显示）
         AnimatedVisibility(
-            visible = currentState == OutlineDialogState.EXPANDED,
+            visible = animatedState == OutlineDialogState.EXPANDED,
             enter = fadeIn(animationSpec = tween(300)),
             exit = fadeOut(animationSpec = tween(300))
         ) {
@@ -106,7 +110,7 @@ fun OutlineDialog(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) {
-                        currentState = OutlineDialogState.HIDDEN
+                        onStateChange(OutlineDialogState.HIDDEN)
                     }
             )
         }
@@ -117,7 +121,7 @@ fun OutlineDialog(
             contentAlignment = Alignment.BottomCenter
         ) {
             AnimatedVisibility(
-                visible = currentState == OutlineDialogState.EXPANDED,
+                visible = animatedState == OutlineDialogState.EXPANDED,
                 enter = slideInVertically(
                     initialOffsetY = { it },
                     animationSpec = tween(300)
@@ -129,8 +133,8 @@ fun OutlineDialog(
             ) {
                 ExpandedOutlineDialog(
                     detailViewModel = detailViewModel,
-                    onCollapse = { currentState = OutlineDialogState.COLLAPSED },
-                    onClose = { currentState = OutlineDialogState.HIDDEN }
+                    onCollapse = { onStateChange(OutlineDialogState.COLLAPSED) },
+                    onClose = { onStateChange(OutlineDialogState.HIDDEN) }
                 )
             }
         }
@@ -141,7 +145,7 @@ fun OutlineDialog(
             contentAlignment = Alignment.TopCenter
         ) {
             AnimatedVisibility(
-                visible = currentState == OutlineDialogState.COLLAPSED,
+                visible = animatedState == OutlineDialogState.COLLAPSED,
                 enter = scaleIn(
                     initialScale = 0.3f,
                     animationSpec = tween(350, delayMillis = 100)
@@ -171,8 +175,8 @@ fun OutlineDialog(
             ) {
                 CollapsedOutlineBanner(
                     detailViewModel = detailViewModel,
-                    onExpand = { currentState = OutlineDialogState.EXPANDED },
-                    onClose = { currentState = OutlineDialogState.HIDDEN }
+                    onExpand = { onStateChange(OutlineDialogState.EXPANDED) },
+                    onClose = { onStateChange(OutlineDialogState.HIDDEN) }
                 )
             }
         }

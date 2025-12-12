@@ -60,21 +60,40 @@
     }
 
     /**
+     * 检测当前运行的平台
+     * @returns {'android'|'ios'|'unknown'} - 平台类型
+     */
+    function detectPlatform() {
+        // Android平台：检查是否存在 NativeBridge.postMessage
+        if (window.NativeBridge?.postMessage) {
+            return 'android';
+        }
+
+        // iOS平台：检查是否存在 webkit.messageHandlers.NativeBridge
+        if (window.webkit?.messageHandlers?.NativeBridge) {
+            return 'ios';
+        }
+
+        return 'unknown';
+    }
+
+    /**
      * 向Native发送消息
      * @param {Object} payload - 消息负载
      * @returns {boolean} - 是否成功发送
      */
     function postToNativeBridge(payload) {
         const message = JSON.stringify(payload);
+        const platform = detectPlatform();
 
         // Android平台
-        if (window.NativeBridge?.postMessage) {
+        if (platform === 'android') {
             window.NativeBridge.postMessage(message);
             return true;
         }
 
         // iOS平台
-        if (window.webkit?.messageHandlers?.NativeBridge) {
+        if (platform === 'ios') {
             window.webkit.messageHandlers.NativeBridge.postMessage(message);
             return true;
         }
@@ -324,25 +343,25 @@
             return;
         }
 
+        const platform = detectPlatform();
+
         // 获取元素在文档中的绝对位置
         const rect = element.getBoundingClientRect();
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
         const elementTop = rect.top + scrollTop;
 
-        // 通知 Native 滚动到指定位置（Android 需要）
-        postToNativeBridge({
-            type: 'scrollToPosition',
-            position: Math.round(elementTop)
-        });
-
-        // WebView 内部也执行滚动（iOS 需要）
-        element.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center',
-            inline: 'nearest'
-        });
-
-        console.log(`[WebView Bridge] 已滚动到元素: ${element.tagName}, 位置: ${Math.round(elementTop)}px`);
+        if (platform === 'android') {
+            postToNativeBridge({
+                type: 'scrollToPosition',
+                position: Math.round(elementTop)
+            });
+        } else if (platform === 'ios') {
+            element.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+                inline: 'nearest'
+            });
+        }
     }
 
     /**
