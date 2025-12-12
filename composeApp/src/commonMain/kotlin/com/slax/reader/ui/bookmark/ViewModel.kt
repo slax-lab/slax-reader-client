@@ -156,6 +156,21 @@ class BookmarkDetailViewModel(
     fun loadOutline() {
         val bookmarkId = _bookmarkId.value ?: return
         viewModelScope.launch {
+            val cacheOutline = withContext(Dispatchers.IO) {
+                localBookmarkDao.getLocalBookmarkOutline(bookmarkId)
+            }
+
+            if (!cacheOutline.isNullOrEmpty()) {
+                _outlineContent.value = cacheOutline
+                _outlineState.update { state ->
+                    state.copy(
+                        outline = cacheOutline,
+                        isLoading = false
+                    )
+                }
+                return@launch
+            }
+
             _outlineContent.value = ""
             _outlineState.value = OutlineState(isLoading = true)
 
@@ -179,11 +194,10 @@ class BookmarkDetailViewModel(
 
                             if (fullOutline.isNotEmpty()) {
                                 withContext(Dispatchers.IO) {
-//                                    localBookmarkDao.updateLocalBookmarkOverview(
-//                                        bookmarkId = bookmarkId,
-//                                        overview = fullOverview,
-//                                        keyTakeaways = keyTakeawaysJson
-//                                    )
+                                    localBookmarkDao.updateLocalBookmarkOutline(
+                                        bookmarkId = bookmarkId,
+                                        outline = fullOutline
+                                    )
                                 }
                             }
                         }
