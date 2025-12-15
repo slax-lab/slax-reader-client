@@ -318,7 +318,7 @@ actual fun DetailScreen(
             )
         }
 
-        // 大纲弹窗
+        // Outline弹窗
         if (outlineDialogState != OutlineDialogState.HIDDEN) {
             OutlineDialog(
                 detailViewModel = detailViewModel,

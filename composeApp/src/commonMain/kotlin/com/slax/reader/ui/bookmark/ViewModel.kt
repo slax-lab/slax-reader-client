@@ -154,6 +154,10 @@ class BookmarkDetailViewModel(
     }
 
     fun loadOutline() {
+        if (_outlineState.value.isLoading) {
+            return
+        }
+
         val bookmarkId = _bookmarkId.value ?: return
         viewModelScope.launch {
             val cacheOutline = withContext(Dispatchers.IO) {

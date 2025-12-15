@@ -22,6 +22,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewModelScope
+import com.slax.reader.const.component.rememberDismissableVisibility
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
@@ -34,17 +36,16 @@ import slax_reader_client.composeapp.generated.resources.ic_outline_dialog_close
 import slax_reader_client.composeapp.generated.resources.ic_outline_dialog_shrink
 
 /**
- * 大纲弹窗的三种状态
+ * Outline弹窗的三种状态
  */
 enum class OutlineDialogState {
     HIDDEN,      // 隐藏
-    EXPANDED,    // 展开（全屏弹窗）
+    EXPANDED,    // 展开弹窗
     COLLAPSED    // 收缩（小banner）
 }
 
 /**
- * 大纲弹窗组件
- * 支持三种状态：隐藏、全屏弹窗、收缩为小banner
+ * Outline弹窗组件
  */
 @Composable
 fun OutlineDialog(
@@ -59,46 +60,27 @@ fun OutlineDialog(
         detailViewModel.loadOutline()
     }
 
-    var visible by remember { mutableStateOf(false) }
-    // 用于延迟触发动画的内部状态
-    var animatedState by remember { mutableStateOf(OutlineDialogState.HIDDEN) }
+    var internalVisible by remember { mutableStateOf(false) }
+    var animatedState by remember { mutableStateOf(currentState) }
 
-    // 初始化时延迟显示，确保动画生效
-    LaunchedEffect(Unit) {
-        if (currentState != OutlineDialogState.HIDDEN) {
-            visible = true
-            delay(50L) // 给 Compose 时间准备动画初始状态
-            animatedState = currentState
-        }
-    }
-
-    // 监听状态变化
     LaunchedEffect(currentState) {
-        when {
-            currentState == OutlineDialogState.HIDDEN -> {
-                animatedState = OutlineDialogState.HIDDEN
-                delay(300L) // 等待动画完成
-                visible = false
-                onDismissRequest()
-            }
-            visible -> {
-                // 已经显示时，直接同步状态（用于收缩⇄展开的切换）
-                animatedState = currentState
-            }
-            else -> {
-                // 首次显示，已在 LaunchedEffect(Unit) 中处理
-            }
+        internalVisible = currentState != OutlineDialogState.HIDDEN
+        animatedState = currentState
+    }
+
+    LaunchedEffect(internalVisible) {
+        if (!internalVisible) {
+            animatedState = OutlineDialogState.HIDDEN
+            delay(300L)
+            onDismissRequest()
+            onStateChange(OutlineDialogState.HIDDEN)
         }
     }
 
-    if (!visible) {
-        return
-    }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // 半透明背景（仅在EXPANDED状态显示）
         AnimatedVisibility(
-            visible = animatedState == OutlineDialogState.EXPANDED,
+            visible = internalVisible && animatedState == OutlineDialogState.EXPANDED,
             enter = fadeIn(animationSpec = tween(300)),
             exit = fadeOut(animationSpec = tween(300))
         ) {
@@ -110,18 +92,17 @@ fun OutlineDialog(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) {
-                        onStateChange(OutlineDialogState.HIDDEN)
+                        internalVisible = false
                     }
             )
         }
 
-        // 全屏弹窗（底部对齐）
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.BottomCenter
         ) {
             AnimatedVisibility(
-                visible = animatedState == OutlineDialogState.EXPANDED,
+                visible = internalVisible && animatedState == OutlineDialogState.EXPANDED,
                 enter = slideInVertically(
                     initialOffsetY = { it },
                     animationSpec = tween(300)
@@ -134,18 +115,19 @@ fun OutlineDialog(
                 ExpandedOutlineDialog(
                     detailViewModel = detailViewModel,
                     onCollapse = { onStateChange(OutlineDialogState.COLLAPSED) },
-                    onClose = { onStateChange(OutlineDialogState.HIDDEN) }
+                    onClose = {
+                        internalVisible = false
+                    }
                 )
             }
         }
 
-        // 小banner（顶部对齐）
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.TopCenter
         ) {
             AnimatedVisibility(
-                visible = animatedState == OutlineDialogState.COLLAPSED,
+                visible = internalVisible && animatedState == OutlineDialogState.COLLAPSED,
                 enter = scaleIn(
                     initialScale = 0.3f,
                     animationSpec = tween(350, delayMillis = 100)
@@ -176,7 +158,9 @@ fun OutlineDialog(
                 CollapsedOutlineBanner(
                     detailViewModel = detailViewModel,
                     onExpand = { onStateChange(OutlineDialogState.EXPANDED) },
-                    onClose = { onStateChange(OutlineDialogState.HIDDEN) }
+                    onClose = {
+                        internalVisible = false
+                    }
                 )
             }
         }
@@ -203,8 +187,8 @@ private fun ExpandedOutlineDialog(
         modifier = Modifier
             .fillMaxWidth()
             .fillMaxHeight()
-            .statusBarsPadding() // 避开状态栏
-            .padding(top = 36.dp) // 距离状态栏底部 36dp
+            .statusBarsPadding()
+            .padding(top = 36.dp)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
@@ -215,7 +199,6 @@ private fun ExpandedOutlineDialog(
                 .fillMaxSize()
                 .padding(horizontal = 0.dp)
         ) {
-            // 顶部控制栏
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -223,7 +206,6 @@ private fun ExpandedOutlineDialog(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // 收缩按钮
                 val collapseInteractionSource = remember { MutableInteractionSource() }
                 val isCollapsePressed by collapseInteractionSource.collectIsPressedAsState()
 
@@ -246,7 +228,6 @@ private fun ExpandedOutlineDialog(
                     )
                 }
 
-                // 关闭按钮
                 val closeInteractionSource = remember { MutableInteractionSource() }
                 val isClosePressed by closeInteractionSource.collectIsPressedAsState()
 

@@ -378,7 +378,7 @@
         const targetElement = findMatchingElement(decodedAnchor);
         if (targetElement) {
             scrollToElement(targetElement);
-            highlightElement(targetElement, 3000);
+            highlightElement(targetElement, 0);
             return true;
         } else {
             console.warn(`[WebView Bridge] 未找到匹配元素: ${anchorText}`);
