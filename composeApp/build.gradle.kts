@@ -271,35 +271,18 @@ buildkonfig {
         // 环境配置 - 根据 buildFlavor 动态设置
         buildConfigField(STRING, "BUILD_ENV", buildFlavor)
 
-        // 根据 flavor 设置不同的值
-        val apiBaseUrl = if (buildFlavor == "release") {
-            "https://api-reader.slax.com"
-        } else {
-            "https://reader-api.slax.dev"
+        if (buildFlavor == "release") {
+            buildConfigField(STRING, "API_BASE_URL", "https://api-reader.slax.com")
+            buildConfigField(STRING, "WEB_BASE_URL", "https://r.slax.com")
+            buildConfigField(STRING, "WEB_DOMAIN", ".slax.com")
+            buildConfigField(STRING, "LOG_LEVEL", "ERROR")
+        } else if (buildFlavor == "dev") {
+            buildConfigField(STRING, "API_BASE_URL", "https://reader-api.slax.dev")
+            buildConfigField(STRING, "WEB_BASE_URL", "https://r.slax.dev")
+            buildConfigField(STRING, "WEB_DOMAIN", ".slax.dev")
+            buildConfigField(STRING, "LOG_LEVEL", "DEBUG")
         }
-        buildConfigField(STRING, "API_BASE_URL", apiBaseUrl)
-
-        val webBaseUrl = if (buildFlavor == "release") {
-            "https://r.slax.com"
-        } else {
-            "https://r.slax.dev"
-        }
-        buildConfigField(STRING, "WEB_BASE_URL", webBaseUrl)
-
-        val webDomain = if (buildFlavor == "release") {
-            ".slax.com"
-        } else {
-            ".slax.dev"
-        }
-        buildConfigField(STRING, "WEB_DOMAIN", webDomain)
-
-        val logLevel = if (buildFlavor == "release") {
-            "ERROR"
-        } else {
-            "DEBUG"
-        }
-        buildConfigField(STRING, "LOG_LEVEL", logLevel)
-
+        
         // 从 .env 文件读取敏感配置
         buildConfigField(
             STRING,
