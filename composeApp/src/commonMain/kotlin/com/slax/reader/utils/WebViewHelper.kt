@@ -82,6 +82,8 @@ expect fun WebView(
     modifier: Modifier,
     contentInsets: PaddingValues? = null,
     onScroll: ((scrollX: Double, scrollY: Double, contentHeight: Double, visibleHeight: Double) -> Unit)? = null,
+    onPageLoaded: (() -> Unit)? = null,
+    injectUser: Boolean = false,
 )
 
 @Composable

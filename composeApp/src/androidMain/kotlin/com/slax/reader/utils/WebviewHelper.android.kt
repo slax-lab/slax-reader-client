@@ -1,9 +1,11 @@
 package com.slax.reader.utils
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.graphics.Color
 import android.webkit.*
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.webkit.WebViewCompat
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
@@ -19,11 +21,38 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import app.slax.reader.SlaxConfig
-import com.slax.reader.const.INJECTED_SCRIPT
 import com.slax.reader.const.JS_BRIDGE_NAME
 import com.slax.reader.data.preferences.AppPreferences
 import org.koin.compose.koinInject
 import kotlin.math.roundToInt
+
+/**
+ * 生成Android端自定义UserAgent
+ * 格式: com.slax.reader/版本号 (Android 系统版本; 语言; 设备型号; Build/构建号; Webkit/版本)
+ *
+ * @param context Android Context，用于获取WebView包信息
+ * @param format UserAgent格式
+ * @return 自定义UserAgent字符串
+ */
+private fun generateAndroidUserAgent(context: Context, format: String = "Android"): String {
+    val androidVersion = android.os.Build.VERSION.RELEASE
+    val deviceModel = android.os.Build.MODEL
+    val locale = java.util.Locale.getDefault().toString()
+
+    // 使用 WebViewCompat 获取 WebView 内核版本（更好的兼容性）
+    val webkitVersion = try {
+        val webViewPackage = WebViewCompat.getCurrentWebViewPackage(context)
+        webViewPackage?.versionName ?: "0.0.0"
+    } catch (e: Exception) {
+        println("[Android WebView] 获取 WebKit 版本失败: ${e.message}")
+        "0.0.0"
+    }
+
+    val prefix = if (format == "Linux") "Linux; U; " else ""
+    return "com.slax.reader/${SlaxConfig.APP_VERSION_NAME} " +
+            "($prefix$format $androidVersion; $locale; $deviceModel; " +
+            "Build/${SlaxConfig.APP_VERSION_CODE}; Webkit/$webkitVersion)"
+}
 
 
 @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface", "ClickableViewAccessibility")
@@ -104,6 +133,9 @@ actual fun AppWebView(
                     // 性能优化配置
                     @Suppress("DEPRECATION")
                     setRenderPriority(WebSettings.RenderPriority.HIGH)
+
+                    // 设置自定义 UserAgent
+                    userAgentString = generateAndroidUserAgent(ctx, "Android")
                 }
 
                 // 添加 JavaScript Interface 用于接收来自 JS 的消息
@@ -277,8 +309,11 @@ actual fun WebView(
     url: String,
     modifier: Modifier,
     contentInsets: PaddingValues?,
-    onScroll: ((scrollX: Double, scrollY: Double, contentHeight: Double, visibleHeight: Double) -> Unit)?
+    onScroll: ((scrollX: Double, scrollY: Double, contentHeight: Double, visibleHeight: Double) -> Unit)?,
+    onPageLoaded: (() -> Unit)?,
+    injectUser: Boolean,
 ) {
+    val appPreference: AppPreferences = koinInject()
     AndroidView(
         modifier = modifier,
         factory = { context ->
@@ -297,6 +332,9 @@ actual fun WebView(
                     allowFileAccess = false
                     allowContentAccess = false
                     cacheMode = WebSettings.LOAD_DEFAULT
+
+                    // 设置自定义 UserAgent
+                    userAgentString = generateAndroidUserAgent(context, "Android")
                 }
 
                 // 添加滚动监听器
@@ -316,7 +354,8 @@ actual fun WebView(
                 webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
-                        // 页面加载完成后，延迟一小段时间等待渲染完成，然后手动触发一次滚动检查
+
+                        onPageLoaded?.invoke()
                         view?.postDelayed({
                             view.let {
                                 val contentHeight = (it.contentHeight * it.scale).toDouble()
@@ -329,6 +368,31 @@ actual fun WebView(
                                 )
                             }
                         }, 300) // 延迟300ms等待页面渲染完成
+                    }
+                }
+
+                // 如果需要注入用户Cookie
+                if (injectUser) {
+                    val token = kotlinx.coroutines.runBlocking { appPreference.getAuthInfoSuspend() }
+                    if (token.isNullOrEmpty()) {
+                        println("[Android WebView] Token为空，跳过Cookie注入")
+                        return@apply
+                    }
+
+                    val cookieManager = CookieManager.getInstance().apply { setAcceptCookie(true) }
+                    val supportsThirdPartyCookies =
+                        android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP
+
+                    if (supportsThirdPartyCookies) {
+                        cookieManager.setAcceptThirdPartyCookies(this, true)
+                    }
+
+                    val cookieString =
+                        "token=$token; Domain=${SlaxConfig.WEB_DOMAIN}; Path=/; Secure; SameSite=None"
+                    cookieManager.setCookie(url, cookieString)
+
+                    if (supportsThirdPartyCookies) {
+                        cookieManager.flush()
                     }
                 }
 
