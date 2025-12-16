@@ -76,42 +76,37 @@ val srUserBookmarkTable = Table(
     )
 )
 
-//val localWorkerTaskTable = Table(
-//    name = "local_worker_task",
-//    localOnly = true,
-//    columns = listOf(
-//        Column.text("type"),
-//        Column.text("status"),
-//        Column.text("params"),
-//        Column.text("result"),
-//        Column.text("created_at"),
-//        Column.text("updated_at"),
-//    )
-//)
-//
-//val localFileManager = Table(
-//    name = "local_file_manager",
-//    localOnly = true,
-//    columns = listOf(
-//        // e.g. xxx.html
-//        Column.text("type"),
-//        // e.g. /bookmarks/xxx.html
-//        Column.text("path"),
-//        Column.integer("size"),
-//        // image / video / audio / document
-//        Column.text("type"),
-//        // document's media source, e.g. bookmark id
-//        Column.text("source_id"),
-//        Column.text("created_at"),
-//    ),
-//    indexes = listOf(
-//        Index(
-//            "", listOf(
-//                IndexedColumn("")
-//            )
-//        )
-//    )
-//)
+val srUserSubscriptionTable = Table(
+    name = "sr_user_subscription",
+    columns = listOf(
+        Column.text("stripe_subscription_id"),
+        Column.text("stripe_customer_id"),
+        Column.text("stripe_stripe_currency"),
+        Column.integer("first_subscription_time"),
+        Column.integer("subscription_end_time"),
+        Column.integer("next_invoice_time"),
+        Column.integer("auto_renew"),
+        Column.integer("stripe_credit"),
+        Column.integer("subscribed"),
+        Column.text("apple_original_transaction_id"),
+        Column.text("source_type")
+    )
+)
+
+val srBookmarkComment = Table(
+    name = "sr_bookmark_comment",
+    columns = listOf(
+        Column.integer("type"),
+        Column.text("source"),
+        Column.text("user_bookmark_uuid"),
+        Column.text("comment"),
+        Column.text("approx_source"),
+        Column.text("content"),
+        Column.integer("is_deleted"),
+        Column.text("created_at"),
+        Column.text("metadata"),
+    )
+)
 
 val localBookmarkInfo = Table(
     name = "local_bookmark_info",
@@ -130,10 +125,10 @@ val AppSchema = Schema(
         srPlatformBindTable,
         srUserNotificationTable,
         srUserBookmarkTable,
+        srUserSubscriptionTable,
+        srBookmarkComment,
 
         // local only, not sync to server
-//        localWorkerTaskTable,
-//        localFileManager
         localBookmarkInfo
     )
 )

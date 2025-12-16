@@ -8,8 +8,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.slax.reader.data.database.model.UserBookmark
-import com.slax.reader.data.preferences.AppPreferences
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 data class OverviewViewBounds(
@@ -27,7 +25,6 @@ data class DetailScreenState(
 @Composable
 fun DetailScreen(bookmarkId: String, onBackClick: (() -> Unit)) {
     val detailView = koinViewModel<BookmarkDetailViewModel>()
-    val appPreferences: AppPreferences = koinInject()
     val backClickHandle = remember { onBackClick }
 
     LaunchedEffect(bookmarkId) {
