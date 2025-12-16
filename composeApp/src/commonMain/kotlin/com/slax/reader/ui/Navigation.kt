@@ -19,7 +19,6 @@ import com.slax.reader.ui.bookmark.DetailScreen
 import com.slax.reader.ui.debug.DebugScreen
 import com.slax.reader.ui.inbox.InboxListScreen
 import com.slax.reader.ui.login.LoginScreen
-import com.slax.reader.ui.me.SubscribeScreen
 import com.slax.reader.ui.setting.DeleteAccountScreen
 import com.slax.reader.ui.setting.SettingScreen
 import com.slax.reader.ui.space.SpaceManager
@@ -136,14 +135,10 @@ fun SlaxNavigation(
             })
         }
 
-        composable<SubscribeRoutes> {
-            SubscribeScreen(onBackClick = {
+        composable<SubscriptionManagerRoutes> {
+            SubscriptionManagerScreen(onBackClick = {
                 navCtrl.popBackStack()
             })
-        }
-
-        composable<SubscriptionManagerRoutes> {
-            SubscriptionManagerScreen()
         }
     }
 }

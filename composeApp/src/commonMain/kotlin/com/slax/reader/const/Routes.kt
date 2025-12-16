@@ -27,8 +27,5 @@ object AboutRoutes
 object DeleteAccountRoutes
 
 @Serializable
-object SubscribeRoutes
-
-@Serializable
 object SubscriptionManagerRoutes
 
