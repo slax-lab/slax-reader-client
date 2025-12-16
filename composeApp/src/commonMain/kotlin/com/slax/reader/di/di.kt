@@ -14,7 +14,6 @@ import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.preferences.preferencesPlatformModule
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.coordinator.CoordinatorDomain
-import com.slax.reader.domain.purchases.PurchasesDomain
 import com.slax.reader.domain.sync.BackgroundDomain
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.CommentViewModel
@@ -70,7 +69,6 @@ val domainModule = module {
     single { AuthDomain(get(), get(), get()) }
     single { BackgroundDomain(get(), get(), get(), get()) }
     single { CoordinatorDomain(get(), get(), get()) }
-    single { PurchasesDomain() }
 }
 
 val appModule = module {
