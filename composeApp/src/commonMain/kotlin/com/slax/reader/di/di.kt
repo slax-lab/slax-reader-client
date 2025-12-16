@@ -3,6 +3,7 @@ package com.slax.reader.di
 import app.slax.reader.SlaxConfig
 import com.powersync.PowerSyncDatabase
 import com.slax.reader.data.database.AppSchema
+import com.slax.reader.data.database.dao.BookmarkCommentDao
 import com.slax.reader.data.database.dao.BookmarkDao
 import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.database.dao.PowerSyncDao
@@ -16,6 +17,7 @@ import com.slax.reader.domain.coordinator.CoordinatorDomain
 import com.slax.reader.domain.purchases.PurchasesDomain
 import com.slax.reader.domain.sync.BackgroundDomain
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
+import com.slax.reader.ui.bookmark.CommentViewModel
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.ui.login.LoginViewModel
 import com.slax.reader.ui.setting.SettingViewModel
@@ -51,6 +53,7 @@ val repositoryModule = module {
     single { UserDao(get()) }
     single { LocalBookmarkDao(get()) }
     single { PowerSyncDao(get()) }
+    single { BookmarkCommentDao(get()) }
 }
 
 val viewModelModule = module {
@@ -60,6 +63,7 @@ val viewModelModule = module {
     viewModelOf(::SidebarViewModel)
     viewModelOf(::SettingViewModel)
     viewModelOf(::SubscriptionViewModel)
+    viewModelOf(::CommentViewModel)
 }
 
 val domainModule = module {
