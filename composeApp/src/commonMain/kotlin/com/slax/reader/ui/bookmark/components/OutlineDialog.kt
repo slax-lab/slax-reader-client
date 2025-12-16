@@ -258,7 +258,7 @@ private fun ExpandedOutlineDialog(
                     .fillMaxWidth()
             ) {
                 when {
-                    outlineState.isLoading -> {
+                    outlineState.isLoading && outlineContent.isEmpty() -> {
                         // 加载状态：显示动画
                         LoadingAnimation()
                     }

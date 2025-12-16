@@ -184,7 +184,7 @@ class BookmarkDetailViewModel(
                 apiService.getBookmarkOutline(bookmarkId).collect { response ->
                     when (response) {
                         is OutlineResponse.Outline -> {
-                            fullOutline += response.content
+                            fullOutline = response.content
                             _outlineContent.value = fullOutline
                             _outlineState.update { state ->
                                 state.copy(outline = fullOutline, isLoading = true)
