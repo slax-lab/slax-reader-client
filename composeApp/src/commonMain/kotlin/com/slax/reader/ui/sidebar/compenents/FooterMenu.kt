@@ -192,36 +192,4 @@ fun FooterMenu(
             unselectedContainerColor = Color.Transparent
         )
     )
-
-//    Column(
-//        modifier = Modifier.padding(horizontal = 16.dp).padding(top = 60.dp).fillMaxWidth()
-//    ) {
-//        Button(
-//            onClick = onLogout,
-//            modifier = Modifier.fillMaxWidth().height(50.dp),
-//            shape = RoundedCornerShape(12.dp),
-//            contentPadding = PaddingValues(),
-//            colors = ButtonDefaults.outlinedButtonColors(
-//                containerColor = Color.White
-//            )
-//        ) {
-//            Row(
-//                modifier = Modifier.fillMaxSize().background(Color.White),
-//                horizontalArrangement = Arrangement.Center,
-//                verticalAlignment = Alignment.CenterVertically
-//            ) {
-//
-//                Text(
-//                    "退出登录",
-//                    style = TextStyle(
-//                        fontSize = 16.sp,
-//                        lineHeight = 22.5.sp,
-//                        fontWeight = FontWeight.Medium,
-//                        color = Color(0xFF333333)
-//                    )
-//                )
-//            }
-//        }
-//    }
-
 }
