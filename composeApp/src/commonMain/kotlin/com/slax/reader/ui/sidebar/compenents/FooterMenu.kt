@@ -16,14 +16,43 @@ import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_xs_sidebar_about
 import slax_reader_client.composeapp.generated.resources.ic_xs_sidebar_config
+import slax_reader_client.composeapp.generated.resources.ic_xs_sidebar_logout
+import slax_reader_client.composeapp.generated.resources.ic_xs_sidebar_subscribe
 
 @Composable
 fun FooterMenu(
+    onSubscribeClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onAboutClick: () -> Unit,
     onLogout: () -> Unit
 ) {
     println("[watch][UI] FooterMenu recomposed")
+    // 会员管理菜单项
+    NavigationDrawerItem(
+        label = {
+            Text(
+                text = "会员管理",
+                fontSize = 16.sp,
+                lineHeight = 20.sp,
+                color = Color(0xFF333333)
+            )
+        },
+        icon = {
+            Icon(
+                painter = painterResource(Res.drawable.ic_xs_sidebar_subscribe),
+                contentDescription = null,
+                tint = Color.Unspecified,
+                modifier = Modifier.size(20.dp)
+            )
+        },
+        shape = RoundedCornerShape(12.dp),
+        selected = false,
+        onClick = onSubscribeClick,
+        colors = NavigationDrawerItemDefaults.colors(
+            unselectedContainerColor = Color.Transparent
+        )
+    )
+
     // 设置菜单项
     NavigationDrawerItem(
         label = {
@@ -77,35 +106,62 @@ fun FooterMenu(
     )
 
 
-    Column(
-        modifier = Modifier.padding(horizontal = 16.dp).padding(top = 60.dp).fillMaxWidth()
-    ) {
-        Button(
-            onClick = onLogout,
-            modifier = Modifier.fillMaxWidth().height(50.dp),
-            shape = RoundedCornerShape(12.dp),
-            contentPadding = PaddingValues(),
-            colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = Color.White
-            )
-        ) {
-            Row(
-                modifier = Modifier.fillMaxSize().background(Color.White),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
 
-                Text(
-                    "退出登录",
-                    style = TextStyle(
-                        fontSize = 16.sp,
-                        lineHeight = 22.5.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF333333)
-                    )
-                )
-            }
-        }
-    }
+    // 退出登录菜单项
+    NavigationDrawerItem(
+        label = {
+            Text(
+                text = "退出登录",
+                fontSize = 16.sp,
+                lineHeight = 20.sp,
+                color = Color(0xFF333333)
+            )
+        },
+        icon = {
+            Icon(
+                painter = painterResource(Res.drawable.ic_xs_sidebar_logout),
+                contentDescription = null,
+                tint = Color.Unspecified,
+                modifier = Modifier.size(20.dp)
+            )
+        },
+        shape = RoundedCornerShape(12.dp),
+        selected = false,
+        onClick = onLogout,
+        colors = NavigationDrawerItemDefaults.colors(
+            unselectedContainerColor = Color.Transparent
+        )
+    )
+
+//    Column(
+//        modifier = Modifier.padding(horizontal = 16.dp).padding(top = 60.dp).fillMaxWidth()
+//    ) {
+//        Button(
+//            onClick = onLogout,
+//            modifier = Modifier.fillMaxWidth().height(50.dp),
+//            shape = RoundedCornerShape(12.dp),
+//            contentPadding = PaddingValues(),
+//            colors = ButtonDefaults.outlinedButtonColors(
+//                containerColor = Color.White
+//            )
+//        ) {
+//            Row(
+//                modifier = Modifier.fillMaxSize().background(Color.White),
+//                horizontalArrangement = Arrangement.Center,
+//                verticalAlignment = Alignment.CenterVertically
+//            ) {
+//
+//                Text(
+//                    "退出登录",
+//                    style = TextStyle(
+//                        fontSize = 16.sp,
+//                        lineHeight = 22.5.sp,
+//                        fontWeight = FontWeight.Medium,
+//                        color = Color(0xFF333333)
+//                    )
+//                )
+//            }
+//        }
+//    }
 
 }

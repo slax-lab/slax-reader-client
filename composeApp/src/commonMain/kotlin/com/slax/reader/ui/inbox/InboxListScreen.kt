@@ -27,6 +27,7 @@ import com.slax.reader.const.AboutRoutes
 import com.slax.reader.const.BookmarkRoutes
 import com.slax.reader.const.SettingsRoutes
 import com.slax.reader.const.SpaceManagerRoutes
+import com.slax.reader.const.SubscribeRoutes
 import com.slax.reader.const.component.EditNameDialog
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.compenents.*
@@ -51,6 +52,9 @@ fun InboxListScreen(navCtrl: NavController) {
 
     Sidebar(
         drawerState = drawerState,
+        onSubscribeClick = {
+            navCtrl.navigate(SubscribeRoutes)
+        },
         onSettingsClick = {
             navCtrl.navigate(SettingsRoutes)
         },

@@ -26,3 +26,6 @@ object AboutRoutes
 @Serializable
 object DeleteAccountRoutes
 
+@Serializable
+object SubscribeRoutes
+

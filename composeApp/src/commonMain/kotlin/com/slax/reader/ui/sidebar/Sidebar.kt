@@ -35,6 +35,7 @@ import slax_reader_client.composeapp.generated.resources.ic_xs_sidebar_close
 @Composable
 fun Sidebar(
     drawerState: DrawerState,
+    onSubscribeClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onAboutClick: () -> Unit = {},
     onSpaceManagerClick: () -> Unit = {},
@@ -57,6 +58,12 @@ fun Sidebar(
                         scope.launch {
                             drawerState.close()
                         }
+                    },
+                    onSubscribeClick = {
+                        scope.launch {
+                            drawerState.close()
+                        }
+                        onSubscribeClick()
                     },
                     onSettingsClick = {
                         scope.launch {
@@ -83,6 +90,7 @@ fun Sidebar(
 @Composable
 private fun DrawerContent(
     onDismiss: () -> Unit,
+    onSubscribeClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onAboutClick: () -> Unit,
     onLogout: () -> Unit
@@ -173,6 +181,7 @@ private fun DrawerContent(
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             FooterMenu(
+                onSubscribeClick = onSubscribeClick,
                 onSettingsClick = onSettingsClick,
                 onAboutClick = onAboutClick,
                 onLogout = onLogout
