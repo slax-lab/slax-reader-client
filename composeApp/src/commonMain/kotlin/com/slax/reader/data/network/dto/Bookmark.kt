@@ -39,7 +39,8 @@ data class AuthParams(
     val code: String,
     val redirect_uri: String,
     val platform: String,
-    val type: String
+    val type: String,
+    val id_token: String? = null
 )
 
 @Serializable

@@ -57,14 +57,15 @@ class AuthDomain(
         }
     }
 
-    suspend fun signIn(code: String, type: String, redirectUrl: String = ""): Result<Unit> {
+    suspend fun signIn(code: String, type: String, redirectUrl: String = "", idToken: String = ""): Result<Unit> {
         return try {
             val result = apiService.login(
                 AuthParams(
                     code = code,
                     redirect_uri = redirectUrl,
                     platform = platformType,
-                    type = type
+                    type = type,
+                    id_token = idToken
                 )
             )
             appPreferences.setAuthInfo(result.data!!.token, result.data.user_id)

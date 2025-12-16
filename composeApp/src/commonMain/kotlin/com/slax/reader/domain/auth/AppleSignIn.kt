@@ -1,7 +1,8 @@
 package com.slax.reader.domain.auth
 
 data class AppleSignInResult(
-    val code: String
+    val code: String,
+    val idToken: String
 )
 
 expect class AppleSignInProvider() {
