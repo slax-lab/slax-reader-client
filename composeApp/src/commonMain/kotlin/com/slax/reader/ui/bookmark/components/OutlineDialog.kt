@@ -7,7 +7,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -22,8 +25,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewModelScope
-import com.slax.reader.const.component.rememberDismissableVisibility
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
@@ -259,35 +260,54 @@ private fun ExpandedOutlineDialog(
             ) {
                 when {
                     outlineState.isLoading && outlineContent.isEmpty() -> {
-                        // 加载状态：显示动画
                         LoadingAnimation()
                     }
 
                     outlineState.error != null -> {
-                        // 错误状态：显示错误信息
                         ErrorView(error = outlineState.error!!)
                     }
 
                     outlineContent.isEmpty() -> {
-                        // 空状态：显示提示信息
                         EmptyView()
                     }
 
                     else -> {
-                        // 已加载：显示 markdown 内容
-                        MarkdownRenderer(content = outlineContent, onLinkClick = { url ->
-                            println("[OutlineDialog] 点击链接: $url")
-                            if (url.startsWith("#")) {
-                                // 锚点链接：提取锚点文本并触发滚动
-                                val anchorText = url.removePrefix("#")
-                                detailViewModel.scrollToAnchor(anchorText)
-                                println("[OutlineDialog] 触发锚点滚动: $anchorText")
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(top = 4.dp)
+                            ) {
+                                MarkdownRenderer(
+                                    content = outlineContent,
+                                    onLinkClick = { url ->
+                                        println("[OutlineDialog] 点击链接: $url")
+                                        if (url.startsWith("#")) {
+                                            // 锚点链接：提取锚点文本并触发滚动
+                                            val anchorText = url.removePrefix("#")
+                                            detailViewModel.scrollToAnchor(anchorText)
+                                            println("[OutlineDialog] 触发锚点滚动: $anchorText")
 
-                                onClose()
-                            } else {
-                                println("[OutlineDialog] 非锚点链接，暂不处理: $url")
+                                            onClose()
+                                        } else {
+                                            println("[OutlineDialog] 非锚点链接，暂不处理: $url")
+                                        }
+                                    }
+                                )
+
+                                if (outlineState.isLoading) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        DotLoadingAnimation()
+                                    }
+
+                                }
                             }
-                        })
+                        }
                     }
                 }
             }
@@ -525,6 +545,64 @@ private fun ErrorView(error: String) {
                 text = error,
                 fontSize = 12.sp,
                 color = Color(0xFF999999)
+            )
+        }
+    }
+}
+
+/**
+ * 圆点加载组件
+ */
+@Composable
+private fun DotLoadingAnimation() {
+    val infiniteTransition = rememberInfiniteTransition(label = "dotLoadingAnimation")
+
+    val dotColors = listOf(
+        Color(0xFF16B998),
+        Color(0xFFFFC255),
+        Color(0xFF56CAF2),
+        Color(0xFFFB8F6C)
+    )
+
+    val delays = listOf(0, 250, 500, 750)
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.height(8.dp) // 留出上下移动的空间
+    ) {
+        dotColors.forEachIndexed { index, color ->
+            val offsetY by infiniteTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = 0f,
+                animationSpec = infiniteRepeatable(
+                    animation = keyframes {
+                        durationMillis = 1400
+                        // 0%, 100%
+                        0f at 0
+                        // 25%
+                        -2.4f at 350  // 1400 * 0.25
+                        // 75%
+                        2.4f at 1050  // 1400 * 0.75
+                        // 100%
+                        0f at 1400
+                    },
+                    repeatMode = RepeatMode.Restart,
+                    initialStartOffset = StartOffset(delays[index])
+                ),
+                label = "offsetY$index"
+            )
+
+            Box(
+                modifier = Modifier
+                    .size(4.dp)
+                    .graphicsLayer {
+                        translationY = offsetY
+                    }
+                    .background(
+                        color = color,
+                        shape = RoundedCornerShape(50)
+                    )
             )
         }
     }

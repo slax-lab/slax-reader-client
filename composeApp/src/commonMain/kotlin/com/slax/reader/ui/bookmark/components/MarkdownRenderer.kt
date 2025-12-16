@@ -47,20 +47,12 @@ fun MarkdownRenderer(
     val preprocessedContent = preprocessMarkdownLinks(content)
     val flavour = CommonMarkFlavourDescriptor()
     val parsedTree = MarkdownParser(flavour).buildMarkdownTreeFromString(preprocessedContent)
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(top = 4.dp)
-    ) {
-        RenderMarkdownNode(
-            content = preprocessedContent,
-            node = parsedTree,
-            isRoot = true,
-            onLinkClick = onLinkClick
-        )
-    }
+    RenderMarkdownNode(
+        content = preprocessedContent,
+        node = parsedTree,
+        isRoot = true,
+        onLinkClick = onLinkClick
+    )
 }
 
 /**
