@@ -269,6 +269,13 @@ buildkonfig {
         }
         buildConfigField(STRING, "WEB_BASE_URL", webBaseUrl)
 
+        val webDomain = if (buildFlavor == "release") {
+            ".slax.com"
+        } else {
+            ".slax.dev"
+        }
+        buildConfigField(STRING, "WEB_DOMAIN", webDomain)
+
         val logLevel = if (buildFlavor == "release") {
             "ERROR"
         } else {

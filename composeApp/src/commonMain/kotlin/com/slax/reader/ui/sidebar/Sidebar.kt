@@ -181,6 +181,7 @@ private fun DrawerContent(
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             FooterMenu(
+                isSubscribed = true,
                 onSubscribeClick = onSubscribeClick,
                 onSettingsClick = onSettingsClick,
                 onAboutClick = onAboutClick,
