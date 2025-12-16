@@ -184,10 +184,6 @@ kotlin {
             implementation(libs.connectivity.compose.device)
 
             implementation(libs.kotzilla.sdk)
-
-            // IAP
-            implementation(libs.purchases.core)
-            implementation(libs.purchases.result)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -265,6 +261,7 @@ buildkonfig {
         buildConfigField(STRING, "APP_NAME", "Slax Reader")
         buildConfigField(STRING, "APP_VERSION_NAME", appVersionName)
         buildConfigField(STRING, "APP_VERSION_CODE", appVersionCode)
+        buildConfigField(STRING, "APP_BUNDLE_ID", "com.slax.reader")
     }
 
     defaultConfigs("dev") {

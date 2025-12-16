@@ -267,7 +267,6 @@
 			packageReferences = (
 				8A1CC81A2E9A6F9300F7C101 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				8ACC80412E9CA0E90078F1FF /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
-				8A0008B92EDE917F007D6334 /* XCRemoteSwiftPackageReference "purchases-hybrid-common" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B9DA97B22DC1472C00A4DA20 /* Products */;

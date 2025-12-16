@@ -13,7 +13,7 @@ firebaseAnalytics = "2.4.0"
 kmpauthGoogle = "2.3.1"
 kotlinxDatetime = "0.7.1"
 okio = "3.16.4"
-powerSyncCore = "1.8.1"
+powerSyncCore = "1.10.0"
 sketchHttp = "4.3.1"
 koinCompose = "4.1.1"
 kotlin = "2.2.21"
@@ -24,12 +24,9 @@ kotlinx-serialization = "1.9.0"
 googleServices = "4.4.4"
 firebaseCrashlytics = "3.0.6"
 connectivity = "2.3.0"
-kotzilla = "1.4.0"
-purchases-kmp = "2.2.11+17.21.0"
+kotzilla = "1.4.1"
 
 [libraries]
-purchases-core = { module = "com.revenuecat.purchases:purchases-kmp-core", version.ref = "purchases-kmp" }
-purchases-result = { module = "com.revenuecat.purchases:purchases-kmp-result", version.ref = "purchases-kmp" }
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
 atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu" }
 firebase-analytics = { module = "dev.gitlive:firebase-analytics", version.ref = "firebaseAnalytics" }
