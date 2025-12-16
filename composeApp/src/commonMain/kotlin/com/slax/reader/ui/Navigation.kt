@@ -23,6 +23,7 @@ import com.slax.reader.ui.me.SubscribeScreen
 import com.slax.reader.ui.setting.DeleteAccountScreen
 import com.slax.reader.ui.setting.SettingScreen
 import com.slax.reader.ui.space.SpaceManager
+import com.slax.reader.ui.subscription.SubscriptionManagerScreen
 import com.slax.reader.utils.LifeCycleHelper
 import com.slax.reader.utils.NavHostTransitionHelper
 import dev.gitlive.firebase.Firebase
@@ -134,10 +135,15 @@ fun SlaxNavigation(
                 navCtrl.popBackStack()
             })
         }
+
         composable<SubscribeRoutes> {
             SubscribeScreen(onBackClick = {
                 navCtrl.popBackStack()
             })
+        }
+
+        composable<SubscriptionManagerRoutes> {
+            SubscriptionManagerScreen()
         }
     }
 }

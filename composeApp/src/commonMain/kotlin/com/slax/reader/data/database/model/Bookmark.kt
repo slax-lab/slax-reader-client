@@ -49,6 +49,32 @@ data class BookmarkDetails(
 
 @Immutable
 @Serializable
+data class BookmarkCommentPO(
+    val id: String,
+
+    val userBookmarkUuid: String,
+    val type: Int,
+    val source: String,
+    val comment: String,
+    val approx_source: String,
+    val content: String,
+    val is_deleted: Int,
+    val created_at: String,
+    val metadataObj: BookmarkCommentMetadata?
+)
+
+@Immutable
+@Serializable
+data class BookmarkCommentMetadata(
+    val root_id: String,
+    val user_id: String,
+    val parent_id: String?,
+    val source_id: String,
+    val bookmark_id: String
+)
+
+@Immutable
+@Serializable
 data class UserTag(
     val id: String,
     val tag_name: String,
@@ -154,5 +180,29 @@ fun mapperToInboxListBookmarkItem(cursor: SqlCursor): InboxListBookmarkItem {
         metadataTitle = cursor.getString("metadata_title"),
         metadataUrl = cursor.getString("metadata_url"),
         metadataStatus = cursor.getString("metadata_status"),
+    )
+}
+
+fun mappingToBookmarkComment(cursor: SqlCursor): BookmarkCommentPO {
+    return BookmarkCommentPO(
+        id = cursor.getString("id"),
+        userBookmarkUuid = cursor.getString("user_bookmark_uuid"),
+        type = cursor.getString("type").toIntOrNull() ?: 0,
+        source = cursor.getString("source"),
+        comment = cursor.getString("comment"),
+        approx_source = cursor.getString("approx_source"),
+        content = cursor.getString("content"),
+        is_deleted = cursor.getString("is_deleted").toIntOrNull() ?: 0,
+        created_at = cursor.getString("created_at"),
+        metadataObj = try {
+            val metadataStr = cursor.getString("metadata")
+            if (metadataStr.isNotEmpty()) {
+                Json.decodeFromString<BookmarkCommentMetadata>(metadataStr)
+            } else {
+                null
+            }
+        } catch (_: Exception) {
+            null
+        }
     )
 }

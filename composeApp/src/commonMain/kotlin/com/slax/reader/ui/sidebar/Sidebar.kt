@@ -17,10 +17,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.github.panpf.sketch.rememberAsyncImagePainter
 import com.github.panpf.sketch.request.ComposableImageRequest
 import com.github.panpf.sketch.request.error
 import com.github.panpf.sketch.request.placeholder
+import com.slax.reader.const.AboutRoutes
+import com.slax.reader.const.SettingsRoutes
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.coordinator.AppSyncState
 import com.slax.reader.ui.sidebar.compenents.FooterMenu
@@ -34,14 +37,10 @@ import slax_reader_client.composeapp.generated.resources.ic_xs_sidebar_close
 
 @Composable
 fun Sidebar(
+    navCtrl: NavController,
     drawerState: DrawerState,
-    onSubscribeClick: () -> Unit = {},
-    onSettingsClick: () -> Unit = {},
-    onAboutClick: () -> Unit = {},
-    onSpaceManagerClick: () -> Unit = {},
     content: @Composable () -> Unit
 ) {
-    val authDomain: AuthDomain = koinInject()
     val scope = rememberCoroutineScope()
 
     ModalNavigationDrawer(
@@ -54,31 +53,11 @@ fun Sidebar(
                 drawerContainerColor = Color(0xFFF5F5F3)
             ) {
                 DrawerContent(
+                    navCtrl = navCtrl,
                     onDismiss = {
                         scope.launch {
                             drawerState.close()
                         }
-                    },
-                    onSubscribeClick = {
-                        scope.launch {
-                            drawerState.close()
-                        }
-                        onSubscribeClick()
-                    },
-                    onSettingsClick = {
-                        scope.launch {
-                            drawerState.close()
-                        }
-                        onSettingsClick()
-                    },
-                    onAboutClick = {
-                        scope.launch {
-                            drawerState.close()
-                        }
-                        onAboutClick()
-                    },
-                    onLogout = {
-                        authDomain.signOut()
                     }
                 )
             }
@@ -89,11 +68,8 @@ fun Sidebar(
 
 @Composable
 private fun DrawerContent(
-    onDismiss: () -> Unit,
-    onSubscribeClick: () -> Unit,
-    onSettingsClick: () -> Unit,
-    onAboutClick: () -> Unit,
-    onLogout: () -> Unit
+    navCtrl: NavController,
+    onDismiss: () -> Unit
 ) {
     val viewModel = koinInject<SidebarViewModel>()
 
@@ -181,11 +157,8 @@ private fun DrawerContent(
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             FooterMenu(
-                isSubscribed = true,
-                onSubscribeClick = onSubscribeClick,
-                onSettingsClick = onSettingsClick,
-                onAboutClick = onAboutClick,
-                onLogout = onLogout
+                navCtrl = navCtrl,
+                onDismiss = onDismiss
             )
         }
     }

@@ -14,7 +14,7 @@ firebaseAnalytics = "2.4.0"
 kmpauthGoogle = "2.3.1"
 kotlinxDatetime = "0.7.1"
 okio = "3.16.4"
-powerSyncCore = "1.8.1"
+powerSyncCore = "1.10.0"
 sketchHttp = "4.3.1"
 koinCompose = "4.1.1"
 kotlin = "2.2.21"
@@ -25,7 +25,7 @@ kotlinx-serialization = "1.9.0"
 googleServices = "4.4.4"
 firebaseCrashlytics = "3.0.6"
 connectivity = "2.3.0"
-kotzilla = "1.4.0"
+kotzilla = "1.4.1"
 markdownRenderer = "0.38.1"
 
 [libraries]
@@ -62,6 +62,8 @@ connectivity-compose-device = { module = "dev.jordond.connectivity:connectivity-
 sketch-animated-gif = { module = "io.github.panpf.sketch4:sketch-animated-gif", version.ref = "sketchHttp" }
 sketch-animated-gif-koral = { module = "io.github.panpf.sketch4:sketch-animated-gif-koral", version.ref = "sketchHttp" }
 sketch-compose = { module = "io.github.panpf.sketch4:sketch-compose", version.ref = "sketchHttp" }
+sketch-extensions-compose-resources = { module = "io.github.panpf.sketch4:sketch-extensions-compose-resources", version.ref = "sketchHttp" }
+sketch-compose-resources = { module = "io.github.panpf.sketch4:sketch-compose-resources", version.ref = "sketchHttp" }
 sketch-http = { module = "io.github.panpf.sketch4:sketch-http", version.ref = "sketchHttp" }
 sketch-svg = { module = "io.github.panpf.sketch4:sketch-svg", version.ref = "sketchHttp" }
 markdown-renderer-m3 = { module = "com.mikepenz:multiplatform-markdown-renderer-m3", version.ref = "markdownRenderer" }
