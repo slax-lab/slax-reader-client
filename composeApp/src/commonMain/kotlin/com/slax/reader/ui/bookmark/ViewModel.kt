@@ -54,7 +54,7 @@ class BookmarkDetailViewModel(
     private val _outlineState = MutableStateFlow(OutlineState())
     val outlineState: StateFlow<OutlineState> = _outlineState.asStateFlow()
 
-    // 锚点滚动事件流（使用 SharedFlow 确保事件不丢失）
+    // 锚点滚动事件流
     private val _scrollToAnchorEvent = MutableSharedFlow<String>(
         replay = 0,
         extraBufferCapacity = 1,

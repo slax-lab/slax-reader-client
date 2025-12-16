@@ -210,7 +210,7 @@ actual fun DetailScreen(
                             println("[WebView] Failed to parse message: $message, error: ${e.message}")
                         }
                     },
-                    evaluateJsCommand = jsCommand  // 新增：传递 JS 执行命令
+                    evaluateJsCommand = jsCommand
                 )
             }
         }
@@ -317,7 +317,7 @@ actual fun DetailScreen(
             )
         }
 
-        // 大纲弹窗
+        // Outline弹窗
         if (outlineDialogState != OutlineDialogState.HIDDEN) {
             OutlineDialog(
                 detailViewModel = detailViewModel,

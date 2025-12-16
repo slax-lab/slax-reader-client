@@ -210,11 +210,6 @@ actual fun DetailScreen(
                                     val webViewPositionPx = webViewPositionCssPx * density
                                     // Column 的滚动位置 = HeaderContent 高度（物理像素）+ WebView 内部位置（物理像素）+ 屏幕高度的1/4
                                     val targetPosition = (headerHeightPx + webViewPositionPx - screenHeightPx / 4).toInt()
-                                    println("[Android WebView] WebView CSS pixels: $webViewPositionCssPx")
-                                    println("[Android WebView] 设备密度: $density")
-                                    println("[Android WebView] WebView 物理像素: $webViewPositionPx px")
-                                    println("[Android WebView] HeaderContent 高度: $headerHeightPx px")
-                                    println("[Android WebView] 目标滚动位置: $targetPosition px")
                                     // 使用 Compose 的 ScrollState 滚动
                                     coroutineScope.launch {
                                         scrollState.animateScrollTo(targetPosition)
@@ -229,7 +224,7 @@ actual fun DetailScreen(
                             println("[WebView] Failed to parse message: $message, error: ${e.message}")
                         }
                     },
-                    evaluateJsCommand = jsCommand  // 新增：传递 JS 执行命令
+                    evaluateJsCommand = jsCommand
                 )
             }
         }
