@@ -125,7 +125,6 @@ actual fun AppWebView(
     val topInsetPoints by remember(totalInsetPx, densityScale) {
         derivedStateOf { (totalInsetPx / densityScale).coerceAtLeast(0f) }
     }
-    val onScrollChangeState = rememberUpdatedState(webState.onScrollChange)
     var observedScrollView by remember { mutableStateOf<UIScrollView?>(null) }
     val scrollObserver = remember {
         KVOObserver { keyPath, newValue, _ ->
@@ -146,7 +145,7 @@ actual fun AppWebView(
                 val visibleHeightPoints = scrollView.bounds.useContents { size.height }.toFloat()
                 val visibleHeightPx = visibleHeightPoints * densityScaleState.value
 
-                onScrollChangeState.value?.invoke(offsetPx, contentHeightPx, visibleHeightPx)
+                webState.dispatchEvent(WebViewEvent.ScrollChange(offsetPx, contentHeightPx, visibleHeightPx))
             }
         }
     }

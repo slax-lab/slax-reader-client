@@ -143,15 +143,6 @@ actual fun DetailScreen(
         webViewState.topContentInsetPx = headerMeasuredHeight
     }
 
-    // 设置滚动回调
-    LaunchedEffect(Unit) {
-        webViewState.onScrollChange = { scrollY, contentHeight, visibleHeight ->
-            webViewScrollY.floatValue = max(scrollY, 0f)
-            contentHeightPx = contentHeight
-            visibleHeightPx = visibleHeight
-        }
-    }
-
     // 监听 WebView 事件
     LaunchedEffect(webViewState) {
         webViewState.events.collect { event ->
@@ -160,6 +151,11 @@ actual fun DetailScreen(
                     currentImageUrl = event.src
                     allImageUrls = event.allImages
                     showImageViewer = true
+                }
+                is WebViewEvent.ScrollChange -> {
+                    webViewScrollY.floatValue = max(event.scrollY, 0f)
+                    contentHeightPx = event.contentHeight
+                    visibleHeightPx = event.visibleHeight
                 }
                 is WebViewEvent.ScrollToPosition -> {
                     webViewState.evaluateJs("window.scrollTo(0, document.body.scrollHeight * ${event.percentage})")

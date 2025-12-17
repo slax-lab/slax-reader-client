@@ -3,7 +3,6 @@ package com.slax.reader.utils
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -22,8 +21,6 @@ actual class AppWebViewState actual constructor(private val scope: CoroutineScop
     actual val events = _events.asSharedFlow()
 
     var topContentInsetPx by mutableFloatStateOf(0f)
-
-    var onScrollChange: ((scrollY: Float, contentHeight: Float, visibleHeight: Float) -> Unit)? by mutableStateOf(null)
 
     actual fun evaluateJs(script: String) {
         scope.launch { _commands.emit(WebViewCommand.EvaluateJs(script)) }

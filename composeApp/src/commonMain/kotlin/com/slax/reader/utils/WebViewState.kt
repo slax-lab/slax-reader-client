@@ -33,6 +33,7 @@ sealed interface WebViewCommand {
 sealed interface WebViewEvent {
     data class ImageClick(val src: String, val allImages: List<String>) : WebViewEvent
     data class ScrollToPosition(val percentage: Double) : WebViewEvent
+    data class ScrollChange(val scrollY: Float, val contentHeight: Float, val visibleHeight: Float) : WebViewEvent
     data object Tap : WebViewEvent
 }
 
