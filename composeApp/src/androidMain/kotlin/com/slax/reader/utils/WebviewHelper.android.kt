@@ -91,7 +91,6 @@ actual fun AppWebView(
                     @Suppress("DEPRECATION")
                     setRenderPriority(WebSettings.RenderPriority.HIGH)
 
-                    // 设置自定义 UserAgent
                     userAgentString = generateAndroidUserAgent(context, "Android")
                 }
 
@@ -282,7 +281,6 @@ actual fun WebView(
                     allowContentAccess = false
                     cacheMode = WebSettings.LOAD_DEFAULT
 
-                    // 设置自定义 UserAgent
                     userAgentString = generateAndroidUserAgent(context, "Android")
                 }
 
@@ -319,7 +317,6 @@ actual fun WebView(
                     }
                 }
 
-                // 如果需要注入用户Cookie
                 if (injectUser) {
                     val token = kotlinx.coroutines.runBlocking { appPreference.getAuthInfoSuspend() }
                     if (token.isNullOrEmpty()) {

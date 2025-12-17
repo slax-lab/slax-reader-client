@@ -184,6 +184,8 @@ kotlin {
             implementation(libs.connectivity.compose.device)
 
             implementation(libs.kotzilla.sdk)
+
+            implementation(libs.markdown.renderer.m3)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

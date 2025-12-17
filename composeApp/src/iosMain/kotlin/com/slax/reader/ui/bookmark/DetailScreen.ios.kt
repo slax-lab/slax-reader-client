@@ -21,12 +21,11 @@ import com.slax.reader.ui.bookmark.components.*
 import com.slax.reader.utils.AppLifecycleState
 import com.slax.reader.utils.AppWebView
 import com.slax.reader.utils.LifeCycleHelper
-import com.slax.reader.utils.escapeJsTemplateString
+import com.slax.reader.utils.WebViewEvent
+import com.slax.reader.utils.rememberAppWebViewState
 import com.slax.reader.utils.wrapBookmarkDetailHtml
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import kotlin.math.max
 
 @Serializable
@@ -34,7 +33,10 @@ data class WebViewMessage(
     val type: String,
     val height: Int? = null,
     val src: String? = null,
-    val allImages: List<String>? = null
+    val allImages: List<String>? = null,
+    val position: Int? = null,
+    val index: Int? = null,
+    val percentage: Double? = null
 )
 
 @Composable
@@ -67,6 +69,8 @@ actual fun DetailScreen(
     var headerMeasuredHeight by remember { mutableFloatStateOf(0f) }
 
     var manuallyVisible by remember { mutableStateOf(true) }
+
+    val webViewState = rememberAppWebViewState()
 
     val bottomThresholdPx = with(LocalDensity.current) { 100.dp.toPx() }
 
@@ -134,6 +138,41 @@ actual fun DetailScreen(
     var currentImageUrl by remember { mutableStateOf("") }
     var allImageUrls by remember { mutableStateOf<List<String>>(emptyList()) }
 
+    // 设置 webState 的参数
+    LaunchedEffect(headerMeasuredHeight) {
+        webViewState.topContentInsetPx = headerMeasuredHeight
+    }
+
+    // 设置滚动回调
+    LaunchedEffect(Unit) {
+        webViewState.onScrollChange = { scrollY, contentHeight, visibleHeight ->
+            webViewScrollY.floatValue = max(scrollY, 0f)
+            contentHeightPx = contentHeight
+            visibleHeightPx = visibleHeight
+        }
+    }
+
+    // 监听 WebView 事件
+    LaunchedEffect(webViewState) {
+        webViewState.events.collect { event ->
+            when (event) {
+                is WebViewEvent.ImageClick -> {
+                    currentImageUrl = event.src
+                    allImageUrls = event.allImages
+                    showImageViewer = true
+                }
+                is WebViewEvent.ScrollToPosition -> {
+                    webViewState.evaluateJs("window.scrollTo(0, document.body.scrollHeight * ${event.percentage})")
+                }
+                is WebViewEvent.Tap -> {
+                    if (!isNearBottom && webViewScrollY.floatValue > 10f) {
+                        manuallyVisible = !manuallyVisible
+                    }
+                }
+            }
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -154,7 +193,7 @@ actual fun DetailScreen(
                 AppWebView(
                     htmlContent = content,
                     modifier = Modifier.fillMaxSize().preferredFrameRate(FrameRateCategory.High),
-                    webState = TODO(),
+                    webState = webViewState
                 )
             }
         }
@@ -271,6 +310,9 @@ actual fun DetailScreen(
                 },
                 onDismissRequest = {
                     outlineDialogState = OutlineDialogState.HIDDEN
+                },
+                onScrollToAnchor = { anchor ->
+                    webViewState.scrollToAnchor(anchor)
                 }
             )
         }
