@@ -26,11 +26,9 @@ googleServices = "4.4.4"
 firebaseCrashlytics = "3.0.6"
 connectivity = "2.3.0"
 kotzilla = "1.4.1"
-markdownRenderer = "0.38.1"
 
 [libraries]
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
-androidx-webkit = { module = "androidx.webkit:webkit", version.ref = "androidx-webkit" }
 atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu" }
 firebase-analytics = { module = "dev.gitlive:firebase-analytics", version.ref = "firebaseAnalytics" }
 firebase-app = { module = "dev.gitlive:firebase-app", version.ref = "firebaseAnalytics" }
@@ -66,7 +64,6 @@ sketch-extensions-compose-resources = { module = "io.github.panpf.sketch4:sketch
 sketch-compose-resources = { module = "io.github.panpf.sketch4:sketch-compose-resources", version.ref = "sketchHttp" }
 sketch-http = { module = "io.github.panpf.sketch4:sketch-http", version.ref = "sketchHttp" }
 sketch-svg = { module = "io.github.panpf.sketch4:sketch-svg", version.ref = "sketchHttp" }
-markdown-renderer-m3 = { module = "com.mikepenz:multiplatform-markdown-renderer-m3", version.ref = "markdownRenderer" }
 
 
 [plugins]

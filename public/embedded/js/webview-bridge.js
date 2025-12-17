@@ -345,15 +345,18 @@
 
         const platform = detectPlatform();
 
-        // 获取元素在文档中的绝对位置
-        const rect = element.getBoundingClientRect();
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const elementTop = rect.top + scrollTop;
-
         if (platform === 'android') {
+            const rect = element.getBoundingClientRect();
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const elementTop = rect.top + scrollTop;
+            const documentHeight = Math.max(
+                document.body.scrollHeight,
+                document.documentElement.scrollHeight
+            );
+
             postToNativeBridge({
                 type: 'scrollToPosition',
-                position: Math.round(elementTop)
+                percentage: elementTop / documentHeight
             });
         } else if (platform === 'ios') {
             element.scrollIntoView({

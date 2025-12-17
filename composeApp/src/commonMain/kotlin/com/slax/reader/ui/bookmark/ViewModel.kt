@@ -40,34 +40,11 @@ class BookmarkDetailViewModel(
 
     var _bookmarkId = MutableStateFlow<String?>(null)
 
-    private val _overviewContent = MutableStateFlow("")
-    val overviewContent: StateFlow<String> = _overviewContent.asStateFlow()
-
-
     private val _overviewState = MutableStateFlow(OverviewState())
-    val overviewState: StateFlow<OverviewState> = _overviewState.asStateFlow()
-
-
-    private val _outlineContent = MutableStateFlow("")
-    val outlineContent: StateFlow<String> = _outlineContent.asStateFlow()
+    val overviewState = _overviewState.asStateFlow()
 
     private val _outlineState = MutableStateFlow(OutlineState())
-    val outlineState: StateFlow<OutlineState> = _outlineState.asStateFlow()
-
-    // 锚点滚动事件流
-    private val _scrollToAnchorEvent = MutableSharedFlow<String>(
-        replay = 0,
-        extraBufferCapacity = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
-    )
-    val scrollToAnchorEvent: SharedFlow<String> = _scrollToAnchorEvent.asSharedFlow()
-
-    // 触发锚点滚动
-    fun scrollToAnchor(anchorText: String) {
-        viewModelScope.launch {
-            _scrollToAnchorEvent.emit(anchorText)
-        }
-    }
+    val outlineState = _outlineState.asStateFlow()
 
     fun loadOverview() {
         val bookmarkId = _bookmarkId.value ?: return
@@ -78,18 +55,16 @@ class BookmarkDetailViewModel(
             }
 
             if (!cachedOverview.isNullOrEmpty() && !cachedKeyTakeaways.isNullOrEmpty()) {
-                _overviewContent.value = cachedOverview
                 _overviewState.update { state ->
                     state.copy(
-                        keyTakeaways = cachedKeyTakeaways,
                         overview = cachedOverview,
+                        keyTakeaways = cachedKeyTakeaways,
                         isLoading = false
                     )
                 }
                 return@launch
             }
 
-            _overviewContent.value = ""
             _overviewState.value = OverviewState(isLoading = true)
 
             var fullOverview = ""
@@ -100,7 +75,6 @@ class BookmarkDetailViewModel(
                     when (response) {
                         is OverviewResponse.Overview -> {
                             fullOverview += response.content
-                            _overviewContent.value = fullOverview
                             _overviewState.update { state ->
                                 state.copy(overview = fullOverview, isLoading = true)
                             }
@@ -165,7 +139,6 @@ class BookmarkDetailViewModel(
             }
 
             if (!cacheOutline.isNullOrEmpty()) {
-                _outlineContent.value = cacheOutline
                 _outlineState.update { state ->
                     state.copy(
                         outline = cacheOutline,
@@ -175,7 +148,6 @@ class BookmarkDetailViewModel(
                 return@launch
             }
 
-            _outlineContent.value = ""
             _outlineState.value = OutlineState(isLoading = true)
 
             var fullOutline = ""
@@ -185,7 +157,6 @@ class BookmarkDetailViewModel(
                     when (response) {
                         is OutlineResponse.Outline -> {
                             fullOutline = response.content
-                            _outlineContent.value = fullOutline
                             _outlineState.update { state ->
                                 state.copy(outline = fullOutline, isLoading = true)
                             }
@@ -226,7 +197,6 @@ class BookmarkDetailViewModel(
 
     fun setBookmarkId(id: String) {
         _bookmarkId.value = id
-        _overviewContent.value = ""
         _overviewState.value = OverviewState()
     }
 

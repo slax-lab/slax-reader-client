@@ -3,9 +3,9 @@ package com.slax.reader.utils
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
+import android.view.MotionEvent
 import android.webkit.*
 import androidx.browser.customtabs.CustomTabsIntent
-import androidx.webkit.WebViewCompat
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
@@ -23,72 +23,34 @@ import androidx.core.net.toUri
 import app.slax.reader.SlaxConfig
 import com.slax.reader.const.JS_BRIDGE_NAME
 import com.slax.reader.data.preferences.AppPreferences
+import com.slax.reader.ui.bookmark.WebViewMessage
+import kotlinx.serialization.json.Json
 import org.koin.compose.koinInject
 import kotlin.math.roundToInt
 
-/**
- * 生成Android端自定义UserAgent
- * 格式: com.slax.reader/版本号 (Android 系统版本; 语言; 设备型号; Build/构建号; Webkit/版本)
- *
- * @param context Android Context，用于获取WebView包信息
- * @param format UserAgent格式
- * @return 自定义UserAgent字符串
- */
 private fun generateAndroidUserAgent(context: Context, format: String = "Android"): String {
     val androidVersion = android.os.Build.VERSION.RELEASE
     val deviceModel = android.os.Build.MODEL
     val locale = java.util.Locale.getDefault().toString()
 
-    // 使用 WebViewCompat 获取 WebView 内核版本（更好的兼容性）
-    val webkitVersion = try {
-        val webViewPackage = WebViewCompat.getCurrentWebViewPackage(context)
-        webViewPackage?.versionName ?: "0.0.0"
-    } catch (e: Exception) {
-        println("[Android WebView] 获取 WebKit 版本失败: ${e.message}")
-        "0.0.0"
-    }
-
     val prefix = if (format == "Linux") "Linux; U; " else ""
     return "com.slax.reader/${SlaxConfig.APP_VERSION_NAME} " +
             "($prefix$format $androidVersion; $locale; $deviceModel; " +
-            "Build/${SlaxConfig.APP_VERSION_CODE}; Webkit/$webkitVersion)"
+            "Build/${SlaxConfig.APP_VERSION_CODE}; Webkit/0.0.0)"
 }
-
 
 @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface", "ClickableViewAccessibility")
 @Composable
 actual fun AppWebView(
     htmlContent: String,
     modifier: Modifier,
-    topContentInsetPx: Float,
-    onTap: (() -> Unit)?,
-    onScrollChange: ((scrollY: Float, contentHeight: Float, visibleHeight: Float) -> Unit)?,
-    onJsMessage: ((message: String) -> Unit)?,
-    evaluateJsCommand: String?,  // 新增：JS 执行命令
+    webState: AppWebViewState
 ) {
     println("[watch][UI] recomposition AppWebView")
 
-    val context = LocalContext.current
-    val onTapCallback = remember(onTap) { onTap }
-    val onJsMessageCallback = remember(onJsMessage) { onJsMessage }
     var externalUrl by remember { mutableStateOf<String?>(null) }
     val appPreference: AppPreferences = koinInject()
     var doNotAlert by remember { mutableStateOf<Boolean?>(null) }
-
-    // 创建资源加载器
-    val assetLoader = remember { AndroidWebViewAssetLoader(context) }
-
-    // 缓存 WebView 引用
-    var webViewRef by remember { mutableStateOf<WebView?>(null) }
-
-    // 监听 JS 命令变化并执行
-    LaunchedEffect(evaluateJsCommand) {
-        if (evaluateJsCommand != null && webViewRef != null) {
-            webViewRef?.evaluateJavascript(evaluateJsCommand) { result ->
-                println("[Android WebView] JS 执行结果: $result")
-            }
-        }
-    }
 
     AndroidView(
         modifier = modifier,
@@ -106,20 +68,18 @@ actual fun AppWebView(
                     scrollTo(0, 0)
                 }
             }.apply {
-                // 保存引用
-                webViewRef = this
-
+                webState.webView = this
                 setBackgroundColor(Color.TRANSPARENT)
-
-                // 启用硬件加速以提升滚动性能
                 setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
 
-                // 禁用嵌套滚动支持
                 isNestedScrollingEnabled = false
 
                 // 隐藏滚动条
                 isVerticalScrollBarEnabled = false
                 isHorizontalScrollBarEnabled = false
+
+                // 启用WebView调试
+                WebView.setWebContentsDebuggingEnabled(SlaxConfig.BUILD_ENV == "dev")
 
                 settings.apply {
                     javaScriptEnabled = true
@@ -138,52 +98,40 @@ actual fun AppWebView(
                     userAgentString = generateAndroidUserAgent(ctx, "Android")
                 }
 
-                // 添加 JavaScript Interface 用于接收来自 JS 的消息
-                if (onJsMessageCallback != null) {
-                    addJavascriptInterface(object {
-                        @JavascriptInterface
-                        fun postMessage(message: String) {
-                            onJsMessageCallback.invoke(message)
-                        }
-                    }, JS_BRIDGE_NAME)
-                }
+                addJavascriptInterface(object {
+                    @JavascriptInterface
+                    fun postMessage(message: String) {
+                        runCatching { Json.decodeFromString<WebViewMessage>(message) }
+                            .onSuccess { msg ->
+                                when (msg.type) {
+                                    "imageClick" -> {
+                                        webState.dispatchEvent(
+                                            WebViewEvent.ImageClick(msg.src!!, msg.allImages!!)
+                                        )
+                                    }
+
+                                    "scrollToPosition" -> {
+                                        webState.dispatchEvent(
+                                            WebViewEvent.ScrollToPosition(msg.percentage ?: 0.0)
+                                        )
+                                    }
+                                }
+                            }
+                    }
+                }, JS_BRIDGE_NAME)
 
                 setOnTouchListener { _, event ->
-                    when (event.action) {
-                        android.view.MotionEvent.ACTION_UP -> {
-                            onTapCallback?.invoke()
-                        }
+                    if (event.action == MotionEvent.ACTION_UP) {
+                        webState.dispatchEvent(WebViewEvent.Tap)
                     }
                     false
                 }
 
                 webChromeClient = WebChromeClient()
                 webViewClient = object : WebViewClient() {
-                    override fun shouldInterceptRequest(
-                        view: WebView?,
-                        request: WebResourceRequest
-                    ): WebResourceResponse? {
-                        // 拦截资源请求，使用WebViewAssetLoader处理
-                        return assetLoader.shouldInterceptRequest(request)
-                            ?: super.shouldInterceptRequest(view, request)
-                    }
-
-                    override fun onPageFinished(view: WebView?, url: String?) {
-                        super.onPageFinished(view, url)
-                        println("[Android WebView] 页面加载完成: $url")
-                        // 注意：JS代码现在通过HTML模板中的<script src>标签加载
-                        // 不再需要evaluateJavascript注入
-                    }
-
                     override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                         val url = request?.url?.toString() ?: "null"
 
-                        // 允许加载自定义域名的资源
-                        if (url.startsWith("https://appassets.local")) {
-                            return false
-                        }
-
-                        // 拦截外部链接
                         if (url.startsWith("http://") || url.startsWith("https://")) {
                             externalUrl = url
                             return true
@@ -192,18 +140,24 @@ actual fun AppWebView(
                         return false
                     }
                 }
-
-                // 使用自定义域名加载HTML
-                loadDataWithBaseURL(
-                    "https://appassets.local/",
-                    htmlContent,
-                    "text/html",
-                    "utf-8",
-                    null
-                )
+                loadDataWithBaseURL(null, htmlContent, "text/html", "utf-8", null)
             }
         }
     )
+
+    LaunchedEffect(webState) {
+        webState.commands.collect { cmd ->
+            when (cmd) {
+                is WebViewCommand.EvaluateJs -> {
+                    webState.webView?.evaluateJavascript(cmd.script, cmd.callback)
+                }
+            }
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { webState.webView = null }
+    }
 
     if (externalUrl != null) {
         if (doNotAlert == null) {
@@ -304,6 +258,7 @@ fun PaddingValues.setOnWebView(webView: WebView) {
     )
 }
 
+@SuppressLint("SetJavaScriptEnabled")
 @Composable
 actual fun WebView(
     url: String,
@@ -321,7 +276,6 @@ actual fun WebView(
 
                 setBackgroundColor(Color.TRANSPARENT)
 
-                // 启用调试功能（开发环境）
                 WebView.setWebContentsDebuggingEnabled(SlaxConfig.BUILD_ENV == "dev")
 
                 settings.apply {
@@ -337,7 +291,6 @@ actual fun WebView(
                     userAgentString = generateAndroidUserAgent(context, "Android")
                 }
 
-                // 添加滚动监听器
                 setOnScrollChangeListener { view, scrollX, scrollY, _, _ ->
                     val webView = view as? WebView ?: return@setOnScrollChangeListener
                     val contentHeight = (webView.contentHeight * webView.scale).toDouble()
@@ -367,7 +320,7 @@ actual fun WebView(
                                     visibleHeight
                                 )
                             }
-                        }, 300) // 延迟300ms等待页面渲染完成
+                        }, 300)
                     }
                 }
 

@@ -18,7 +18,6 @@ buildscript {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.0")
         classpath("com.codingfeline.buildkonfig:buildkonfig-gradle-plugin:0.17.1")
         classpath("io.github.cdimascio:dotenv-kotlin:6.5.1")
-        classpath("io.github.ttypic:plugin:0.6.4")
     }
 }
 
@@ -117,7 +116,6 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
             implementation(libs.koin.android)
             implementation(libs.androidx.browser)
-            implementation(libs.androidx.webkit)
             implementation(libs.sketch.animated.gif.koral)
         }
         iosMain.dependencies {
@@ -184,9 +182,6 @@ kotlin {
             implementation(libs.connectivity.device)
             implementation(libs.connectivity.compose.device)
 
-            // markdown renderer
-            implementation(libs.markdown.renderer.m3)
-
             implementation(libs.kotzilla.sdk)
         }
         commonTest.dependencies {
@@ -248,6 +243,10 @@ dependencies {
     debugImplementation(compose.uiTooling)
 }
 
+fun minifyHtml(html: String): String {
+    return html
+}
+
 buildkonfig {
     packageName = "app.slax.reader"
     objectName = "SlaxConfig"
@@ -262,13 +261,10 @@ buildkonfig {
     }
 
     defaultConfigs {
-        // 基础配置
         buildConfigField(STRING, "APP_NAME", "Slax Reader")
         buildConfigField(STRING, "APP_VERSION_NAME", appVersionName)
         buildConfigField(STRING, "APP_VERSION_CODE", appVersionCode)
         buildConfigField(STRING, "APP_BUNDLE_ID", "com.slax.reader")
-
-        // 环境配置 - 根据 buildFlavor 动态设置
         buildConfigField(STRING, "BUILD_ENV", buildFlavor)
 
         if (buildFlavor == "release") {
@@ -282,8 +278,19 @@ buildkonfig {
             buildConfigField(STRING, "WEB_DOMAIN", ".slax.dev")
             buildConfigField(STRING, "LOG_LEVEL", "DEBUG")
         }
-        
-        // 从 .env 文件读取敏感配置
+
+        buildConfigField(
+            STRING,
+            "WEBVIEW_TEMPLATE",
+            minifyHtml(
+                file("../public/embedded/html/webview-template.html")
+                    .readText()
+                    .replace("{{RESET-CSS}}", file("../public/embedded/css/reset.css").readText())
+                    .replace("{{ARTICLE-CSS}}", file("../public/embedded/css/article.css").readText())
+                    .replace("{{BOTTOM-LINE-CSS}}", file("../public/embedded/css/bottom-line.css").readText())
+                    .replace("{{WEBVIEW-BRIGDE-JS}}", file("../public/embedded/js/webview-bridge.js").readText())
+            )
+        )
         buildConfigField(
             STRING,
             "GOOGLE_AUTH_SERVER_ID",

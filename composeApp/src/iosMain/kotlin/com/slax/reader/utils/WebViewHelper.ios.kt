@@ -15,7 +15,6 @@ import androidx.compose.ui.viewinterop.UIKitView
 import app.slax.reader.SlaxConfig
 import com.slax.reader.const.INJECTED_SCRIPT
 import com.slax.reader.const.JS_BRIDGE_NAME
-import com.slax.reader.const.WebViewAssets
 import com.slax.reader.data.preferences.AppPreferences
 import kotlinx.cinterop.*
 import org.koin.compose.koinInject
@@ -98,11 +97,7 @@ private class ScriptMessageHandler(
 actual fun AppWebView(
     htmlContent: String,
     modifier: Modifier,
-    topContentInsetPx: Float,
-    onTap: (() -> Unit)?,
-    onScrollChange: ((scrollY: Float, contentHeight: Float, visibleHeight: Float) -> Unit)?,
-    onJsMessage: ((message: String) -> Unit)?,
-    evaluateJsCommand: String?,  // 新增：JS 执行命令
+    webState: AppWebViewState
 ) {
 
     val tapHandler = remember(onTap) {

@@ -48,8 +48,8 @@ fun OverviewDialog(
 ) {
     println("[watch][UI] recomposition OverviewDialog")
 
-    val overview by detailView.overviewContent.collectAsState()
     val overviewState by detailView.overviewState.collectAsState()
+    val overview = overviewState.overview
     val keyTakeaways = overviewState.keyTakeaways
 
     val density = LocalDensity.current

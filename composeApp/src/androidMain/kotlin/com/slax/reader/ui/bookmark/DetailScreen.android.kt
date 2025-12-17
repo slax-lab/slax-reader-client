@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.FrameRateCategory
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.preferredFrameRate
@@ -22,11 +23,11 @@ import com.slax.reader.ui.bookmark.components.*
 import com.slax.reader.utils.AppLifecycleState
 import com.slax.reader.utils.AppWebView
 import com.slax.reader.utils.LifeCycleHelper
-import com.slax.reader.utils.escapeJsTemplateString
-import com.slax.reader.utils.generateHtmlWithExternalResources
+import com.slax.reader.utils.WebViewEvent
+import com.slax.reader.utils.rememberAppWebViewState
+import com.slax.reader.utils.wrapBookmarkDetailHtml
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 @Serializable
 data class WebViewMessage(
@@ -34,7 +35,9 @@ data class WebViewMessage(
     val height: Int? = null,
     val src: String? = null,
     val allImages: List<String>? = null,
-    val position: Int? = null  // 新增：滚动位置
+    val position: Int? = null,
+    val index: Int? = null,
+    val percentage: Double? = null
 )
 
 @SuppressLint("UseKtx")
@@ -52,8 +55,7 @@ actual fun DetailScreen(
         error = null
         try {
             htmlContent = detailViewModel.getBookmarkContent(detail.id)
-            // 使用新的HTML生成函数（支持外部CSS和JS引用）
-            htmlContent = htmlContent?.let { generateHtmlWithExternalResources(it) }
+            htmlContent = htmlContent?.let { wrapBookmarkDetailHtml(it) }
         } catch (e: Exception) {
             error = e.message ?: "加载失败"
         }
@@ -63,32 +65,16 @@ actual fun DetailScreen(
     val scrollY by remember { derivedStateOf { scrollState.value.toFloat() } }
     var manuallyVisible by remember { mutableStateOf(true) }
 
-    // 获取设备密度（用于 CSS pixels → 物理像素 转换）
-    val density = LocalDensity.current.density
-
     // 获取屏幕高度（用于计算滚动偏移）
     val configuration = LocalConfiguration.current
     val screenHeightPx = with(LocalDensity.current) { configuration.screenHeightDp.dp.toPx() }
 
     // 记录 HeaderContent 的高度（px）
     var headerHeightPx by remember { mutableFloatStateOf(0f) }
+    var webViewHeightPx by remember { mutableFloatStateOf(0f) }
 
-    // JS 命令状态（用于执行 WebView 中的 JavaScript）
-    var jsCommand by remember { mutableStateOf<String?>(null) }
+    val webViewState = rememberAppWebViewState()
     val coroutineScope = rememberCoroutineScope()
-
-    // 监听锚点滚动事件
-    LaunchedEffect(Unit) {
-        detailViewModel.scrollToAnchorEvent.collect { anchorText ->
-            println("[DetailScreen Android] 收到锚点滚动事件: $anchorText")
-            // 转义特殊字符，防止 JS 注入和语法错误
-            val escapedAnchor = escapeJsTemplateString(anchorText)
-            jsCommand = "window.SlaxWebViewBridge.scrollToAnchor(`$escapedAnchor`)"
-            // 执行后清空命令
-            kotlinx.coroutines.delay(100)
-            jsCommand = null
-        }
-    }
 
     val bottomThresholdPx = with(LocalDensity.current) { 100.dp.toPx() }
 
@@ -142,6 +128,28 @@ actual fun DetailScreen(
     var currentImageUrl by remember { mutableStateOf("") }
     var allImageUrls by remember { mutableStateOf<List<String>>(emptyList()) }
 
+    LaunchedEffect(webViewState) {
+        webViewState.events.collect { event ->
+            when (event) {
+                is WebViewEvent.ImageClick -> {
+                    currentImageUrl = event.src
+                    allImageUrls = event.allImages
+                    showImageViewer = true
+                }
+                is WebViewEvent.ScrollToPosition -> {
+                    val targetInWebView = webViewHeightPx * event.percentage
+                    val target = (headerHeightPx + targetInWebView - screenHeightPx / 4).toInt()
+                    coroutineScope.launch { scrollState.animateScrollTo(target.coerceAtLeast(0)) }
+                }
+                is WebViewEvent.Tap -> {
+                    if (!isNearBottom && scrollY > 10f) {
+                        manuallyVisible = !manuallyVisible
+                    }
+                }
+            }
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -165,7 +173,6 @@ actual fun DetailScreen(
                 detail = detail,
                 onHeightChanged = { height ->
                     headerHeightPx = height
-                    println("[Android DetailScreen] HeaderContent 高度: $height px")
                 },
                 onTagClick = { showTagView = true },
                 onOverviewExpand = { showOverviewDialog = true },
@@ -178,53 +185,11 @@ actual fun DetailScreen(
                     htmlContent = content,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .preferredFrameRate(FrameRateCategory.High),
-                    topContentInsetPx = 0f,
-                    onTap = {
-                        // 只在非底部且非顶部区域才切换显示状态
-                        if (!isNearBottom && scrollY > 10f) {
-                            manuallyVisible = !manuallyVisible
-                        }
-                    },
-                    onScrollChange = null,
-                    onJsMessage = { message ->
-                        try {
-                            val json = Json { ignoreUnknownKeys = true }
-                            val webViewMessage = json.decodeFromString<WebViewMessage>(message)
-
-                            when (webViewMessage.type) {
-                                "imageClick" -> {
-                                    val src = webViewMessage.src
-                                    val allImages = webViewMessage.allImages
-
-                                    if (src != null && !allImages.isNullOrEmpty()) {
-                                        currentImageUrl = src
-                                        allImageUrls = allImages
-                                        showImageViewer = true
-                                    }
-                                }
-
-                                "scrollToPosition" -> {
-                                    val webViewPositionCssPx = webViewMessage.position ?: 0
-                                    // WebView 的 CSS pixels 转换为物理像素
-                                    val webViewPositionPx = webViewPositionCssPx * density
-                                    // Column 的滚动位置 = HeaderContent 高度（物理像素）+ WebView 内部位置（物理像素）+ 屏幕高度的1/4
-                                    val targetPosition = (headerHeightPx + webViewPositionPx - screenHeightPx / 4).toInt()
-                                    // 使用 Compose 的 ScrollState 滚动
-                                    coroutineScope.launch {
-                                        scrollState.animateScrollTo(targetPosition)
-                                    }
-                                }
-
-                                else -> {
-                                    println("[WebView] Unknown message type: ${webViewMessage.type}")
-                                }
-                            }
-                        } catch (e: Exception) {
-                            println("[WebView] Failed to parse message: $message, error: ${e.message}")
-                        }
-                    },
-                    evaluateJsCommand = jsCommand
+                        .preferredFrameRate(FrameRateCategory.High)
+                        .onSizeChanged { size ->
+                            webViewHeightPx = size.height.toFloat()
+                        },
+                    webState = webViewState
                 )
             }
         }
@@ -323,6 +288,9 @@ actual fun DetailScreen(
                 },
                 onDismissRequest = {
                     outlineDialogState = OutlineDialogState.HIDDEN
+                },
+                onScrollToAnchor = { anchor ->
+                    webViewState.scrollToAnchor(anchor)
                 }
             )
         }

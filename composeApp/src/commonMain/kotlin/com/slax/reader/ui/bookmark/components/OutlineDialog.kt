@@ -53,7 +53,8 @@ fun OutlineDialog(
     detailViewModel: BookmarkDetailViewModel,
     currentState: OutlineDialogState,
     onStateChange: (OutlineDialogState) -> Unit,
-    onDismissRequest: () -> Unit
+    onDismissRequest: () -> Unit,
+    onScrollToAnchor: (String) -> Unit
 ) {
     println("[watch][UI] recomposition OutlineDialog")
 
@@ -77,7 +78,6 @@ fun OutlineDialog(
             onStateChange(OutlineDialogState.HIDDEN)
         }
     }
-
 
     Box(modifier = Modifier.fillMaxSize()) {
         AnimatedVisibility(
@@ -118,7 +118,8 @@ fun OutlineDialog(
                     onCollapse = { onStateChange(OutlineDialogState.COLLAPSED) },
                     onClose = {
                         internalVisible = false
-                    }
+                    },
+                    onScrollToAnchor = onScrollToAnchor
                 )
             }
         }
@@ -175,11 +176,12 @@ fun OutlineDialog(
 private fun ExpandedOutlineDialog(
     detailViewModel: BookmarkDetailViewModel,
     onCollapse: () -> Unit,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    onScrollToAnchor: (String) -> Unit
 ) {
     // 订阅状态
-    val outlineContent by detailViewModel.outlineContent.collectAsState()
     val outlineState by detailViewModel.outlineState.collectAsState()
+    val outlineContent = outlineState.outline
 
     Surface(
         shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
@@ -282,16 +284,10 @@ private fun ExpandedOutlineDialog(
                                 MarkdownRenderer(
                                     content = outlineContent,
                                     onLinkClick = { url ->
-                                        println("[OutlineDialog] 点击链接: $url")
                                         if (url.startsWith("#")) {
-                                            // 锚点链接：提取锚点文本并触发滚动
                                             val anchorText = url.removePrefix("#")
-                                            detailViewModel.scrollToAnchor(anchorText)
-                                            println("[OutlineDialog] 触发锚点滚动: $anchorText")
-
+                                            onScrollToAnchor(anchorText)
                                             onClose()
-                                        } else {
-                                            println("[OutlineDialog] 非锚点链接，暂不处理: $url")
                                         }
                                     }
                                 )
@@ -304,7 +300,6 @@ private fun ExpandedOutlineDialog(
                                     ) {
                                         DotLoadingAnimation()
                                     }
-
                                 }
                             }
                         }
@@ -327,7 +322,6 @@ private fun CollapsedOutlineBanner(
 ) {
     // 订阅状态
     val outlineState by detailViewModel.outlineState.collectAsState()
-    val outlineContent by detailViewModel.outlineContent.collectAsState()
     val bookmarkDetail by detailViewModel.bookmarkDetail.collectAsState()
 
     // 获取 bookmark 标题
@@ -335,9 +329,7 @@ private fun CollapsedOutlineBanner(
 
     // 根据状态确定显示内容
     val isLoading = outlineState.isLoading
-    val isCompleted by remember(isLoading, outlineContent, outlineState.error) {
-        mutableStateOf(!isLoading && outlineContent.isNotEmpty() && outlineState.error == null)
-    }
+    val isCompleted = !isLoading && outlineState.outline.isNotEmpty() && outlineState.error == null
 
     Surface(
         shape = RoundedCornerShape(16.dp),

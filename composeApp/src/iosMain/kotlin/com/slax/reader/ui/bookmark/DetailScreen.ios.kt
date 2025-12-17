@@ -22,7 +22,8 @@ import com.slax.reader.utils.AppLifecycleState
 import com.slax.reader.utils.AppWebView
 import com.slax.reader.utils.LifeCycleHelper
 import com.slax.reader.utils.escapeJsTemplateString
-import com.slax.reader.utils.generateHtmlWithExternalResources
+import com.slax.reader.utils.wrapBookmarkDetailHtml
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -50,8 +51,7 @@ actual fun DetailScreen(
         error = null
         try {
             htmlContent = detailViewModel.getBookmarkContent(detail.id)
-            // 使用新的HTML生成函数（支持外部CSS和JS引用）
-            htmlContent = htmlContent?.let { generateHtmlWithExternalResources(it) }
+            htmlContent = htmlContent?.let { wrapBookmarkDetailHtml(it) }
         } catch (e: Exception) {
             error = e.message ?: "加载失败"
         }
@@ -67,22 +67,6 @@ actual fun DetailScreen(
     var headerMeasuredHeight by remember { mutableFloatStateOf(0f) }
 
     var manuallyVisible by remember { mutableStateOf(true) }
-
-    // JS 命令状态（用于执行 WebView 中的 JavaScript）
-    var jsCommand by remember { mutableStateOf<String?>(null) }
-
-    // 监听锚点滚动事件
-    LaunchedEffect(Unit) {
-        detailViewModel.scrollToAnchorEvent.collect { anchorText ->
-            println("[DetailScreen iOS] 收到锚点滚动事件: $anchorText")
-            // 转义特殊字符，防止 JS 注入和语法错误
-            val escapedAnchor = escapeJsTemplateString(anchorText)
-            jsCommand = "window.SlaxWebViewBridge.scrollToAnchor(`$escapedAnchor`)"
-            // 执行后清空命令
-            kotlinx.coroutines.delay(100)
-            jsCommand = null
-        }
-    }
 
     val bottomThresholdPx = with(LocalDensity.current) { 100.dp.toPx() }
 
@@ -170,47 +154,7 @@ actual fun DetailScreen(
                 AppWebView(
                     htmlContent = content,
                     modifier = Modifier.fillMaxSize().preferredFrameRate(FrameRateCategory.High),
-                    topContentInsetPx = headerMeasuredHeight,
-                    onTap = {
-                        // 只在非底部且非顶部区域才切换显示状态
-                        if (!isNearBottom && webViewScrollY.floatValue > 10f) {
-                            manuallyVisible = !manuallyVisible
-                        }
-                    },
-                    onScrollChange = remember {
-                        { scrollY, contentHeight, visibleHeight ->
-                            // 只负责更新原始状态，manuallyVisible 的更新由 LaunchedEffect 处理
-                            webViewScrollY.floatValue = max(scrollY, 0f)
-                            contentHeightPx = contentHeight
-                            visibleHeightPx = visibleHeight
-                        }
-                    },
-                    onJsMessage = { message ->
-                        try {
-                            val json = Json { ignoreUnknownKeys = true }
-                            val webViewMessage = json.decodeFromString<WebViewMessage>(message)
-
-                            when (webViewMessage.type) {
-                                "imageClick" -> {
-                                    val src = webViewMessage.src
-                                    val allImages = webViewMessage.allImages
-
-                                    if (src != null && !allImages.isNullOrEmpty()) {
-                                        currentImageUrl = src
-                                        allImageUrls = allImages
-                                        showImageViewer = true
-                                    }
-                                }
-
-                                else -> {
-                                    println("[WebView] Unknown message type: ${webViewMessage.type}")
-                                }
-                            }
-                        } catch (e: Exception) {
-                            println("[WebView] Failed to parse message: $message, error: ${e.message}")
-                        }
-                    },
-                    evaluateJsCommand = jsCommand
+                    webState = TODO(),
                 )
             }
         }
