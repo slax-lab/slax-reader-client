@@ -32,14 +32,6 @@ expect fun WebView(
 )
 
 @Composable
-expect fun UserWebView(
-    url: String,
-    modifier: Modifier = Modifier,
-    userWebViewState: UserWebViewState,
-    onPageLoaded: (() -> Unit)? = null
-)
-
-@Composable
 expect fun OpenInBrowser(url: String)
 
 fun getDoNotAlertSetting(appPreference: AppPreferences): Boolean {

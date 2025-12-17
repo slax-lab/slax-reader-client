@@ -165,7 +165,6 @@ actual fun DetailScreen(
                         manuallyVisible = !manuallyVisible
                     }
                 }
-                else -> {}
             }
         }
     }
