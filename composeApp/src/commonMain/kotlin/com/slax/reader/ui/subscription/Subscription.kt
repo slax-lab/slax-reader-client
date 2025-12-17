@@ -19,6 +19,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,7 +35,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import app.slax.reader.SlaxConfig
-import com.slax.reader.utils.WebView
+import com.slax.reader.utils.UserWebView
+import com.slax.reader.utils.WebViewEvent
+import com.slax.reader.utils.rememberUserWebViewState
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
@@ -47,6 +50,8 @@ fun SubscriptionManagerScreen(onBackClick: () -> Unit) {
     val paymentState by viewmodel.paymentState.collectAsState()
 
     var isLoading by remember { mutableStateOf(true) }
+
+    val userWebViewState = rememberUserWebViewState()
 
     Scaffold(
         topBar = {
@@ -81,10 +86,11 @@ fun SubscriptionManagerScreen(onBackClick: () -> Unit) {
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            WebView(
-                url = "${SlaxConfig.WEB_BASE_URL}/subscription/inapp-purchase",
+            UserWebView(
+//                url = "${SlaxConfig.WEB_BASE_URL}/subscription/inapp-purchase",
+                url = "http://192.168.9.103:3000/subscription/inapp-purchase",
                 modifier = Modifier.fillMaxSize(),
-                injectUser = true,
+                userWebViewState = userWebViewState,
                 onPageLoaded = {
                     isLoading = false
                 }
@@ -102,6 +108,35 @@ fun SubscriptionManagerScreen(onBackClick: () -> Unit) {
                     )
                 }
             }
+        }
+    }
+
+    LaunchedEffect(userWebViewState) {
+        userWebViewState.events.collect { event ->
+            when (event) {
+                is WebViewEvent.GetSubscription -> {
+                    val status = when (paymentState) {
+                        is PaymentState.Success -> "active"
+                        is PaymentState.Error, is PaymentState.Cancelled -> "inactive"
+                        else -> "unknown"
+                    }
+
+                    userWebViewState.sendSubscriptionUpdate(status)
+                }
+                is WebViewEvent.StartSubscription -> {
+                    viewmodel.purchase()
+                }
+                else -> {
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(paymentState) {
+        if (paymentState is PaymentState.Success) {
+            userWebViewState.sendSubscriptionUpdate("active")
+        } else if (paymentState is PaymentState.Error || paymentState is PaymentState.Cancelled) {
+            userWebViewState.sendSubscriptionUpdate("inactive")
         }
     }
 

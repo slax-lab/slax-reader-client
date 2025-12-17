@@ -30,3 +30,26 @@ actual class AppWebViewState actual constructor(private val scope: CoroutineScop
         scope.launch { _events.emit(event) }
     }
 }
+
+@Stable
+actual class UserWebViewState actual constructor(private val scope: CoroutineScope) {
+    internal var webView: WebView? = null
+
+    private val _commands = MutableSharedFlow<WebViewCommand>(extraBufferCapacity = 8)
+    internal val commands = _commands.asSharedFlow()
+
+    private val _events = MutableSharedFlow<WebViewEvent>(extraBufferCapacity = 8)
+    actual val events = _events.asSharedFlow()
+
+    actual fun evaluateJs(script: String) {
+        scope.launch { _commands.emit(WebViewCommand.EvaluateJs(script)) }
+    }
+
+    actual fun sendSubscriptionUpdate(status: String) {
+        evaluateJs("""window.postMessage({type: 'subscriptionUpdate',data: '${escapeJsTemplateString(status)}'}, '*');""".trimIndent())
+    }
+
+    internal fun dispatchEvent(event: WebViewEvent) {
+        scope.launch { _events.emit(event) }
+    }
+}

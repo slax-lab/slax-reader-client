@@ -35,10 +35,30 @@ sealed interface WebViewEvent {
     data class ScrollToPosition(val percentage: Double) : WebViewEvent
     data class ScrollChange(val scrollY: Float, val contentHeight: Float, val visibleHeight: Float) : WebViewEvent
     data object Tap : WebViewEvent
+
+    // 订阅相关事件
+    data object GetSubscription : WebViewEvent
+    data object StartSubscription : WebViewEvent
 }
 
 @Composable
 fun rememberAppWebViewState(): AppWebViewState {
     val scope = rememberCoroutineScope()
     return remember { AppWebViewState(scope) }
+}
+
+@Stable
+expect class UserWebViewState(scope: CoroutineScope) {
+    val events: SharedFlow<WebViewEvent>
+
+    fun evaluateJs(script: String)
+
+    // 通知Web更新订阅状态
+    fun sendSubscriptionUpdate(status: String)
+}
+
+@Composable
+fun rememberUserWebViewState(): UserWebViewState {
+    val scope = rememberCoroutineScope()
+    return remember { UserWebViewState(scope) }
 }
