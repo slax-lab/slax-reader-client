@@ -18,6 +18,7 @@ buildscript {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.0")
         classpath("com.codingfeline.buildkonfig:buildkonfig-gradle-plugin:0.17.1")
         classpath("io.github.cdimascio:dotenv-kotlin:6.5.1")
+        classpath("io.github.ttypic:plugin:0.6.4")
     }
 }
 

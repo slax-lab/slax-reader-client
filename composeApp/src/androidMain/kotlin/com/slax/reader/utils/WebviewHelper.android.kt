@@ -54,8 +54,8 @@ actual fun AppWebView(
 
     AndroidView(
         modifier = modifier,
-        factory = { ctx ->
-            object : WebView(ctx) {
+        factory = { context ->
+            object : WebView(context) {
                 override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
                     val newHeightMeasureSpec = MeasureSpec.makeMeasureSpec(
                         0,
@@ -78,9 +78,6 @@ actual fun AppWebView(
                 isVerticalScrollBarEnabled = false
                 isHorizontalScrollBarEnabled = false
 
-                // 启用WebView调试
-                WebView.setWebContentsDebuggingEnabled(SlaxConfig.BUILD_ENV == "dev")
-
                 settings.apply {
                     javaScriptEnabled = true
                     domStorageEnabled = true
@@ -95,7 +92,7 @@ actual fun AppWebView(
                     setRenderPriority(WebSettings.RenderPriority.HIGH)
 
                     // 设置自定义 UserAgent
-                    userAgentString = generateAndroidUserAgent(ctx, "Android")
+                    userAgentString = generateAndroidUserAgent(context, "Android")
                 }
 
                 addJavascriptInterface(object {
@@ -131,15 +128,13 @@ actual fun AppWebView(
                 webViewClient = object : WebViewClient() {
                     override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                         val url = request?.url?.toString() ?: "null"
-
                         if (url.startsWith("http://") || url.startsWith("https://")) {
                             externalUrl = url
-                            return true
                         }
-
-                        return false
+                        return true
                     }
                 }
+
                 loadDataWithBaseURL(null, htmlContent, "text/html", "utf-8", null)
             }
         }
