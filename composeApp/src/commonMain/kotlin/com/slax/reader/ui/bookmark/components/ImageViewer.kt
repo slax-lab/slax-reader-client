@@ -160,8 +160,6 @@ private fun ZoomableImagePage(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    println("[watch][UI] recomposition ZoomableImagePage: $imageUrl")
-
     var scale by scaleState
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }

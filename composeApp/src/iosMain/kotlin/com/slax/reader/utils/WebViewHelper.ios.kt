@@ -493,7 +493,6 @@ actual fun WebView(
     onPageLoaded: (() -> Unit)?,
     injectUser: Boolean,
 ) {
-    val appPreference: AppPreferences = koinInject()
     val webViewRef = remember { mutableStateOf<WKWebView?>(null) }
 
     val scrollDelegate = remember {
