@@ -131,7 +131,7 @@ actual fun DetailScreen(
     var showOverviewDialog by remember { mutableStateOf(false) }
     var showToolbar by remember { mutableStateOf(false) }
     var showEditNameDialog by remember { mutableStateOf(false) }
-    var outlineDialogState by remember { mutableStateOf(OutlineDialogState.HIDDEN) }
+    val outlineDialogState = rememberOutlineDialogState()
 
     // 图片浏览器状态
     var showImageViewer by remember { mutableStateOf(false) }
@@ -259,7 +259,7 @@ actual fun DetailScreen(
                     println("点击了页面 $pageId 的第 ${iconIndex + 1} 个图标")
                     when (pageId) {
                         "edit_title" -> showEditNameDialog = true
-                        "summary" -> outlineDialogState = OutlineDialogState.EXPANDED
+                        "summary" -> outlineDialogState.show()
                     }
                 }
             )
@@ -297,16 +297,10 @@ actual fun DetailScreen(
         }
 
         // Outline弹窗
-        if (outlineDialogState != OutlineDialogState.HIDDEN) {
+        if (outlineDialogState.currentState != OutlineDialogState.HIDDEN) {
             OutlineDialog(
                 detailViewModel = detailViewModel,
-                currentState = outlineDialogState,
-                onStateChange = { newState ->
-                    outlineDialogState = newState
-                },
-                onDismissRequest = {
-                    outlineDialogState = OutlineDialogState.HIDDEN
-                },
+                state = outlineDialogState,
                 onScrollToAnchor = { anchor ->
                     webViewState.scrollToAnchor(anchor)
                 }

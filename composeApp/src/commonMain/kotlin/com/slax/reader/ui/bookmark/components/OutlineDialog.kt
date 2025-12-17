@@ -26,7 +26,6 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
-import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_outline_banner_analyzed
@@ -45,43 +44,61 @@ enum class OutlineDialogState {
     COLLAPSED    // 收缩（小banner）
 }
 
+
+@Stable
+class OutlineDialogStateHolder(
+    initialState: OutlineDialogState = OutlineDialogState.HIDDEN
+) {
+    var currentState by mutableStateOf(initialState)
+        private set
+
+    val isVisible: Boolean get() = currentState != OutlineDialogState.HIDDEN
+    val isExpanded: Boolean get() = currentState == OutlineDialogState.EXPANDED
+    val isCollapsed: Boolean get() = currentState == OutlineDialogState.COLLAPSED
+
+    fun show() {
+        currentState = OutlineDialogState.EXPANDED
+    }
+
+    fun expand() {
+        currentState = OutlineDialogState.EXPANDED
+    }
+
+    fun collapse() {
+        currentState = OutlineDialogState.COLLAPSED
+    }
+
+    fun hide() {
+        currentState = OutlineDialogState.HIDDEN
+    }
+}
+
+@Composable
+fun rememberOutlineDialogState(
+    initialState: OutlineDialogState = OutlineDialogState.HIDDEN
+): OutlineDialogStateHolder {
+    return remember { OutlineDialogStateHolder(initialState) }
+}
+
 /**
  * Outline弹窗组件
  */
 @Composable
 fun OutlineDialog(
     detailViewModel: BookmarkDetailViewModel,
-    currentState: OutlineDialogState,
-    onStateChange: (OutlineDialogState) -> Unit,
-    onDismissRequest: () -> Unit,
+    state: OutlineDialogStateHolder,
     onScrollToAnchor: (String) -> Unit
 ) {
-    println("[watch][UI] recomposition OutlineDialog")
-
+    println("[watch][UI] outline dialog recomposed, state = ${state.currentState}")
     LaunchedEffect(detailViewModel._bookmarkId) {
         detailViewModel.loadOutline()
     }
 
-    var internalVisible by remember { mutableStateOf(false) }
-    var animatedState by remember { mutableStateOf(currentState) }
-
-    LaunchedEffect(currentState) {
-        internalVisible = currentState != OutlineDialogState.HIDDEN
-        animatedState = currentState
-    }
-
-    LaunchedEffect(internalVisible) {
-        if (!internalVisible) {
-            animatedState = OutlineDialogState.HIDDEN
-            delay(300L)
-            onDismissRequest()
-            onStateChange(OutlineDialogState.HIDDEN)
-        }
-    }
+    if (!state.isVisible) return
 
     Box(modifier = Modifier.fillMaxSize()) {
         AnimatedVisibility(
-            visible = internalVisible && animatedState == OutlineDialogState.EXPANDED,
+            visible = state.isExpanded,
             enter = fadeIn(animationSpec = tween(300)),
             exit = fadeOut(animationSpec = tween(300))
         ) {
@@ -91,10 +108,9 @@ fun OutlineDialog(
                     .background(Color.Black.copy(alpha = 0.5f))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) {
-                        internalVisible = false
-                    }
+                        indication = null,
+                        onClick = { state.hide() }
+                    )
             )
         }
 
@@ -103,7 +119,7 @@ fun OutlineDialog(
             contentAlignment = Alignment.BottomCenter
         ) {
             AnimatedVisibility(
-                visible = internalVisible && animatedState == OutlineDialogState.EXPANDED,
+                visible = state.isExpanded,
                 enter = slideInVertically(
                     initialOffsetY = { it },
                     animationSpec = tween(300)
@@ -115,10 +131,8 @@ fun OutlineDialog(
             ) {
                 ExpandedOutlineDialog(
                     detailViewModel = detailViewModel,
-                    onCollapse = { onStateChange(OutlineDialogState.COLLAPSED) },
-                    onClose = {
-                        internalVisible = false
-                    },
+                    onCollapse = { state.collapse() },
+                    onClose = { state.hide() },
                     onScrollToAnchor = onScrollToAnchor
                 )
             }
@@ -129,15 +143,14 @@ fun OutlineDialog(
             contentAlignment = Alignment.TopCenter
         ) {
             AnimatedVisibility(
-                visible = internalVisible && animatedState == OutlineDialogState.COLLAPSED,
+                visible = state.isCollapsed,
                 enter = scaleIn(
                     initialScale = 0.3f,
                     animationSpec = tween(350, delayMillis = 100)
                 ) + fadeIn(
                     animationSpec = tween(300, delayMillis = 100)
                 ),
-                exit = if (currentState == OutlineDialogState.EXPANDED) {
-                    // 展开：向下放大消失（变成弹窗）
+                exit = if (state.currentState == OutlineDialogState.EXPANDED) {
                     slideOutVertically(
                         targetOffsetY = { it },
                         animationSpec = tween(350)
@@ -159,10 +172,8 @@ fun OutlineDialog(
             ) {
                 CollapsedOutlineBanner(
                     detailViewModel = detailViewModel,
-                    onExpand = { onStateChange(OutlineDialogState.EXPANDED) },
-                    onClose = {
-                        internalVisible = false
-                    }
+                    onExpand = { state.expand() },
+                    onClose = { state.hide() }
                 )
             }
         }

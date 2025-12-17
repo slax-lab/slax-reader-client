@@ -26,8 +26,6 @@ fun IconButton(
     icon: ToolbarIcon,
     onClick: () -> Unit
 ) {
-    println("[watch][UI] recomposition IconButton")
-
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
