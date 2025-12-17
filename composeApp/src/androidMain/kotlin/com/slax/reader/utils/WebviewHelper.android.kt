@@ -317,30 +317,6 @@ actual fun WebView(
                     }
                 }
 
-                if (injectUser) {
-                    val token = kotlinx.coroutines.runBlocking { appPreference.getAuthInfoSuspend() }
-                    if (token.isNullOrEmpty()) {
-                        println("[Android WebView] Token为空，跳过Cookie注入")
-                        return@apply
-                    }
-
-                    val cookieManager = CookieManager.getInstance().apply { setAcceptCookie(true) }
-                    val supportsThirdPartyCookies =
-                        android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP
-
-                    if (supportsThirdPartyCookies) {
-                        cookieManager.setAcceptThirdPartyCookies(this, true)
-                    }
-
-                    val cookieString =
-                        "token=$token; Domain=${SlaxConfig.WEB_DOMAIN}; Path=/; Secure; SameSite=None"
-                    cookieManager.setCookie(url, cookieString)
-
-                    if (supportsThirdPartyCookies) {
-                        cookieManager.flush()
-                    }
-                }
-
                 contentInsets?.setOnWebView(this)
                 loadUrl(url)
             }

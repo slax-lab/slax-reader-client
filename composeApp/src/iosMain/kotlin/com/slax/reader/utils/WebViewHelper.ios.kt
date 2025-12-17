@@ -565,38 +565,6 @@ actual fun WebView(
             }
         }
     )
-
-    LaunchedEffect(url, webViewRef, injectUser) {
-        val webView = webViewRef.value ?: return@LaunchedEffect
-
-        if (injectUser) {
-            val token = appPreference.getAuthInfoSuspend()
-            if (!token.isNullOrEmpty()) {
-                val cookieStore = WKWebsiteDataStore.defaultDataStore()?.httpCookieStore
-
-                val cookieProperties = mapOf<Any?, Any?>(
-                    NSHTTPCookieName to "token",
-                    NSHTTPCookieValue to token,
-                    NSHTTPCookieDomain to SlaxConfig.WEB_DOMAIN,
-                    NSHTTPCookiePath to "/",
-                    NSHTTPCookieSecure to "TRUE"
-                )
-
-                val cookie = NSHTTPCookie.cookieWithProperties(cookieProperties)
-
-                if (cookie != null && cookieStore != null) {
-                    kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
-                        cookieStore.setCookie(cookie) {
-                            println("[iOS WebView] Cookie已注入: Domain=${SlaxConfig.WEB_DOMAIN}")
-                            continuation.resumeWith(Result.success(Unit))
-                        }
-                    }
-                }
-            }
-        }
-
-        webView.loadRequest(NSURLRequest(uRL = NSURL(string = url)))
-    }
 }
 
 @Composable
