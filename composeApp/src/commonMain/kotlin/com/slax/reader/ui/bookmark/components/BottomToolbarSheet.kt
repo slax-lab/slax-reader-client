@@ -63,11 +63,11 @@ fun BottomToolbarSheet(
 //                ToolbarIcon("comment", "评论", Res.drawable.ic_bottom_panel_comment),
                 ToolbarIcon("edit_title", "detail_toolbar_edit_title".i18n(), Res.drawable.ic_bottom_panel_edittitle),
 //                ToolbarIcon("share", "分享", Res.drawable.ic_bottom_panel_share)
-            ),
-            listOf(
-//                ToolbarIcon("feedback", "反馈", Res.drawable.ic_bottom_panel_feedback),
-//                ToolbarIcon("delete", "删除", Res.drawable.ic_bottom_panel_delete),
             )
+//            listOf(
+////                ToolbarIcon("feedback", "反馈", Res.drawable.ic_bottom_panel_feedback),
+////                ToolbarIcon("delete", "删除", Res.drawable.ic_bottom_panel_delete),
+//            )
         )
     }
 
