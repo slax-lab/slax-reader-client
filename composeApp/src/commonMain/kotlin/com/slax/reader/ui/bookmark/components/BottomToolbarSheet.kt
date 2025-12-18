@@ -21,6 +21,7 @@ import androidx.lifecycle.viewModelScope
 import com.slax.reader.const.component.rememberDismissableVisibility
 import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
+import com.slax.reader.utils.i18n
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import slax_reader_client.composeapp.generated.resources.*
@@ -47,26 +48,26 @@ fun BottomToolbarSheet(
         listOf(
             listOf(
 //                ToolbarIcon("chat", "Chat", Res.drawable.ic_bottom_panel_chatbot),
-                ToolbarIcon("summary", "总结全文", Res.drawable.ic_bottom_panel_summary),
+                ToolbarIcon("summary", "detail_toolbar_summary".i18n(), Res.drawable.ic_bottom_panel_summary),
                 ToolbarIcon(
                     "star",
-                    "加星",
+                    "detail_toolbar_star".i18n(),
                     if (detail.isStarred == 1) Res.drawable.ic_bottom_panel_starred else Res.drawable.ic_bottom_panel_star
                 ),
                 ToolbarIcon(
                     "archive",
-                    "归档",
+                    "detail_toolbar_archive".i18n(),
                     if (detail.archiveStatus == 1) Res.drawable.ic_bottom_panel_archieved else Res.drawable.ic_bottom_panel_archieve
                 ),
 //                ToolbarIcon("underline", "划线", Res.drawable.ic_bottom_panel_underline),
 //                ToolbarIcon("comment", "评论", Res.drawable.ic_bottom_panel_comment),
-                ToolbarIcon("edit_title", "改标题", Res.drawable.ic_bottom_panel_edittitle),
+                ToolbarIcon("edit_title", "detail_toolbar_edit_title".i18n(), Res.drawable.ic_bottom_panel_edittitle),
 //                ToolbarIcon("share", "分享", Res.drawable.ic_bottom_panel_share)
-            ),
-            listOf(
-//                ToolbarIcon("feedback", "反馈", Res.drawable.ic_bottom_panel_feedback),
-//                ToolbarIcon("delete", "删除", Res.drawable.ic_bottom_panel_delete),
             )
+//            listOf(
+////                ToolbarIcon("feedback", "反馈", Res.drawable.ic_bottom_panel_feedback),
+////                ToolbarIcon("delete", "删除", Res.drawable.ic_bottom_panel_delete),
+//            )
         )
     }
 

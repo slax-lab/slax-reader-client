@@ -15,16 +15,17 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.domain.coordinator.AppSyncState
+import com.slax.reader.utils.i18n
 
 @Composable
 fun SyncStatusBar(state: AppSyncState) {
     println("[watch][UI] SyncStatusBar recomposed")
 
     val syncStateText = when (state) {
-        is AppSyncState.Uploading -> "Uploading"
-        is AppSyncState.Downloading -> "Downloading"
-        is AppSyncState.NoNetwork -> "Unable connect to network"
-        is AppSyncState.Connecting -> "Connecting"
+        is AppSyncState.Uploading -> "sync_uploading".i18n()
+        is AppSyncState.Downloading -> "sync_downloading".i18n()
+        is AppSyncState.NoNetwork -> "sync_no_network".i18n()
+        is AppSyncState.Connecting -> "sync_connecting".i18n()
         is AppSyncState.Error -> state.message
         else -> ""
     }

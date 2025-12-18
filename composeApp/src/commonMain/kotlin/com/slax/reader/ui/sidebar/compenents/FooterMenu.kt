@@ -19,6 +19,7 @@ import com.slax.reader.const.SettingsRoutes
 import com.slax.reader.const.SubscriptionManagerRoutes
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.ui.subscription.SubscriptionManagerScreen
+import com.slax.reader.utils.i18n
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
@@ -85,7 +86,7 @@ fun FooterMenu(
                     )
 
                     Text(
-                        "会员订阅",
+                        "sidebar_subscription".i18n(),
                         modifier = Modifier.padding(start = 10.dp),
                         style = TextStyle(
                             fontSize = 15.sp,
@@ -107,7 +108,7 @@ fun FooterMenu(
 
     mapOf(
         "subscription" to FooterMenuConfig(
-            title = "会员订阅",
+            title = "sidebar_subscription".i18n(),
             icon = {
                 Icon(
                     painter = painterResource(Res.drawable.ic_xs_sidebar_subscribe),
@@ -125,7 +126,7 @@ fun FooterMenu(
             }
         ),
         "setting" to FooterMenuConfig(
-            title = "设置",
+            title = "sidebar_settings".i18n(),
             icon = {
                 Icon(
                     painter = painterResource(Res.drawable.ic_xs_sidebar_config),
@@ -143,7 +144,7 @@ fun FooterMenu(
             }
         ),
         "about" to FooterMenuConfig(
-            title = "关于",
+            title = "sidebar_about".i18n(),
             icon = {
                 Icon(
                     painter = painterResource(Res.drawable.ic_xs_sidebar_about),
@@ -161,7 +162,7 @@ fun FooterMenu(
             }
         ),
         "logout" to FooterMenuConfig(
-            title = "退出登录",
+            title = "sidebar_logout".i18n(),
             icon = {
                 Icon(
                     painter = painterResource(Res.drawable.ic_xs_sidebar_logout),

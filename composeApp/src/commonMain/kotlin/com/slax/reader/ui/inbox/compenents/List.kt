@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.InboxListViewModel
+import com.slax.reader.utils.i18n
 
 @Composable
 fun ArticleList(
@@ -78,7 +79,7 @@ fun ArticleList(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        "没有更多了", style = TextStyle(
+                        "list_no_more".i18n(), style = TextStyle(
                             color = Color(0xFF999999),
                             fontSize = 14.sp,
                             lineHeight = 20.sp

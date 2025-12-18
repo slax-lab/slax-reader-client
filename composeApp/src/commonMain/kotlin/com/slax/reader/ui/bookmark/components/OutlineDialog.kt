@@ -26,6 +26,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
+import com.slax.reader.utils.i18n
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_outline_banner_analyzed
@@ -234,7 +235,7 @@ private fun ExpandedOutlineDialog(
                 ) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_outline_dialog_shrink),
-                        contentDescription = "收缩",
+                        contentDescription = "outline_collapse".i18n(),
                         tint = Color(0xFF666666),
                         modifier = Modifier.size(24.dp)
                     )
@@ -256,7 +257,7 @@ private fun ExpandedOutlineDialog(
                 ) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_outline_dialog_close),
-                        contentDescription = "关闭",
+                        contentDescription = "btn_close".i18n(),
                         tint = Color(0xFF666666),
                         modifier = Modifier.size(24.dp)
                     )
@@ -371,7 +372,7 @@ private fun CollapsedOutlineBanner(
                             Res.drawable.ic_outline_banner_analyzing
                         }
                     ),
-                    contentDescription = if (isCompleted) "已完成" else "总结中",
+                    contentDescription = if (isCompleted) "outline_completed".i18n() else "outline_summarizing".i18n(),
                     tint = Color.Unspecified, // 使用原始颜色
                     modifier = Modifier.size(20.dp)
                 )
@@ -386,7 +387,7 @@ private fun CollapsedOutlineBanner(
                                 fontSize = 15.sp
                             )
                         ) {
-                            append(if (isCompleted) "已完成：" else "总结中：")
+                            append(if (isCompleted) "outline_completed_prefix".i18n() else "outline_summarizing_prefix".i18n())
                         }
                         withStyle(
                             style = SpanStyle(
@@ -429,7 +430,7 @@ private fun CollapsedOutlineBanner(
                 ) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_outline_banner_expand),
-                        contentDescription = "展开",
+                        contentDescription = "outline_expand".i18n(),
                         modifier = Modifier.size(12.dp)
                     )
                 }
@@ -451,7 +452,7 @@ private fun CollapsedOutlineBanner(
                 ) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_outline_banner_close),
-                        contentDescription = "关闭",
+                        contentDescription = "btn_close".i18n(),
                         modifier = Modifier.size(12.dp)
                     )
                 }
@@ -512,7 +513,7 @@ private fun EmptyView() {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "暂无内容",
+            text = "outline_empty".i18n(),
             fontSize = 14.sp,
             color = Color(0xFF999999)
         )
@@ -533,7 +534,7 @@ private fun ErrorView(error: String) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "加载失败",
+                text = "outline_error".i18n(),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFFFF5252)

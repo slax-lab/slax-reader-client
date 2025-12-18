@@ -18,12 +18,7 @@ import androidx.lifecycle.viewModelScope
 import com.slax.reader.const.component.EditNameDialog
 import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.ui.bookmark.components.*
-import com.slax.reader.utils.AppLifecycleState
-import com.slax.reader.utils.AppWebView
-import com.slax.reader.utils.LifeCycleHelper
-import com.slax.reader.utils.WebViewEvent
-import com.slax.reader.utils.rememberAppWebViewState
-import com.slax.reader.utils.wrapBookmarkDetailHtml
+import com.slax.reader.utils.*
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlin.math.max

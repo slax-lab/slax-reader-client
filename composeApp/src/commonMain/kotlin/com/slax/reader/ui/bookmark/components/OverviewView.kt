@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.OverviewViewBounds
+import com.slax.reader.utils.i18n
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_xs_blue_down_arrow
@@ -67,7 +68,7 @@ fun OverviewView(
                 val annotatedText = remember(content) {
                     buildAnnotatedString {
                         withStyle(style = SpanStyle(color = Color(0xFF999999))) {
-                            append("全文概要: ")
+                            append("overview_prefix".i18n())
                         }
                         append(content)
                     }
@@ -106,7 +107,7 @@ fun OverviewView(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            "展开全部",
+                            "overview_expand_all".i18n(),
                             style = TextStyle(fontSize = 12.sp, lineHeight = 16.5.sp, color = Color(0xFF5490C2))
                         )
                         Icon(

@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.data.preferences.ContinueReadingBookmark
+import com.slax.reader.utils.i18n
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -159,7 +160,7 @@ fun ContinueReading(
                 ) {
                     Image(
                         painter = painterResource(Res.drawable.ic_continue_reading_icon),
-                        contentDescription = "Continue Reading",
+                        contentDescription = "continue_reading_desc".i18n(),
                         modifier = Modifier.size(14.dp),
                         contentScale = ContentScale.Fit
                     )
@@ -191,7 +192,7 @@ fun ContinueReading(
 
                     Image(
                         painter = painterResource(Res.drawable.ic_continue_reading_close),
-                        contentDescription = "Close",
+                        contentDescription = "continue_reading_close_desc".i18n(),
                         modifier = Modifier
                             .size(12.dp)
                             .clickable(

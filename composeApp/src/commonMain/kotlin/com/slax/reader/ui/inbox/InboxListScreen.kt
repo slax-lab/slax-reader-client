@@ -28,6 +28,7 @@ import com.slax.reader.const.component.EditNameDialog
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.compenents.*
 import com.slax.reader.ui.sidebar.Sidebar
+import com.slax.reader.utils.i18n
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
@@ -175,7 +176,7 @@ private fun NavigationBar(
         }
 
         Text(
-            text = "Slax Reader",
+            text = "app_name".i18n(),
             fontSize = 20.sp,
             fontWeight = FontWeight.Medium,
             color = Color(0xFF0F1419),

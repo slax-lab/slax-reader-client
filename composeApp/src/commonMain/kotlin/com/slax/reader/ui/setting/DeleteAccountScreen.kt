@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.sp
 import app.slax.reader.SlaxConfig
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.utils.WebView
+import com.slax.reader.utils.i18n
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
@@ -38,7 +39,7 @@ fun DeleteAccountScreen(onBackClick: () -> Unit) {
             TopAppBar(
                 title = {
                     Text(
-                        text = "删除账号",
+                        text = "delete_account_title".i18n(),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color(0xFF0F1419)
@@ -48,7 +49,7 @@ fun DeleteAccountScreen(onBackClick: () -> Unit) {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             painter = painterResource(Res.drawable.ic_sm_back),
-                            contentDescription = "返回",
+                            contentDescription = "btn_back".i18n(),
                             tint = Color.Unspecified,
                             modifier = Modifier.size(24.dp)
                         )
@@ -84,7 +85,7 @@ fun DeleteAccountScreen(onBackClick: () -> Unit) {
                     )
                 ) {
                     Text(
-                        text = "删除账号",
+                        text = "delete_account_button".i18n(),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -132,14 +133,14 @@ fun DeleteAccountScreen(onBackClick: () -> Unit) {
             containerColor = Color.White,
             title = {
                 Text(
-                    text = "确认删除账号",
+                    text = "delete_account_confirm_title".i18n(),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold
                 )
             },
             text = {
                 Text(
-                    text = "删除账号后，您的所有数据将被永久删除且无法恢复。确定要继续吗？",
+                    text = "delete_account_confirm_message".i18n(),
                     fontSize = 16.sp,
                     lineHeight = 24.sp
                 )
@@ -162,7 +163,7 @@ fun DeleteAccountScreen(onBackClick: () -> Unit) {
                         )
                     } else {
                         Text(
-                            text = "确认删除",
+                            text = "delete_account_confirm_button".i18n(),
                             color = Color(0xFFF45454),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium
@@ -175,7 +176,7 @@ fun DeleteAccountScreen(onBackClick: () -> Unit) {
                     onClick = { showConfirmDialog = false }
                 ) {
                     Text(
-                        text = "取消",
+                        text = "btn_cancel".i18n(),
                         color = Color(0xFF333333),
                         fontSize = 16.sp
                     )
@@ -196,7 +197,7 @@ fun DeleteAccountScreen(onBackClick: () -> Unit) {
                 containerColor = Color.White,
                 title = {
                     Text(
-                        text = "删除失败",
+                        text = "delete_account_error_title".i18n(),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -215,7 +216,7 @@ fun DeleteAccountScreen(onBackClick: () -> Unit) {
                         }
                     ) {
                         Text(
-                            text = "确定",
+                            text = "btn_ok".i18n(),
                             color = Color(0xFF333333),
                             fontSize = 16.sp
                         )

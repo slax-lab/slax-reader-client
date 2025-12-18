@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.slax.reader.SlaxConfig
+import com.slax.reader.utils.i18n
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_app_logo
@@ -38,7 +39,7 @@ fun AboutScreen(onBackClick: () -> Unit) {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             painter = painterResource(Res.drawable.ic_sm_back),
-                            contentDescription = "Back",
+                            contentDescription = "btn_back".i18n(),
                             tint = Color.Unspecified,
                             modifier = Modifier.size(24.dp)
                         )
@@ -79,7 +80,7 @@ fun AboutScreen(onBackClick: () -> Unit) {
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Version ${SlaxConfig.APP_VERSION_NAME}",
+                text = "${"about_version".i18n()} ${SlaxConfig.APP_VERSION_NAME}",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Normal,
                 lineHeight = 21.sp,

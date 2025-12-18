@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.data.database.model.UserTag
+import com.slax.reader.utils.i18n
 
 @Composable
 fun TagsManagementContent(
@@ -39,7 +40,7 @@ fun TagsManagementContent(
                 .padding(horizontal = 24.dp)
         ) {
             Text(
-                text = "取消",
+                text = "btn_cancel".i18n(),
                 modifier = Modifier
                     .align(Alignment.CenterStart)
                     .clickable(
@@ -56,7 +57,7 @@ fun TagsManagementContent(
             )
 
             Text(
-                text = "标签",
+                text = "tags_title".i18n(),
                 modifier = Modifier.align(Alignment.Center),
                 style = TextStyle(
                     fontSize = 16.sp,
@@ -67,7 +68,7 @@ fun TagsManagementContent(
             )
 
             Text(
-                text = "确定",
+                text = "btn_confirm".i18n(),
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .clickable(
@@ -101,7 +102,7 @@ fun TagsManagementContent(
         ) {
             if (selectedTags.isNotEmpty()) {
                 Text(
-                    text = "已添加",
+                    text = "tags_added".i18n(),
                     modifier = Modifier.padding(bottom = 12.dp),
                     style = TextStyle(
                         fontSize = 14.sp,
@@ -130,7 +131,7 @@ fun TagsManagementContent(
             }
 
             Text(
-                text = "可添加",
+                text = "tags_available".i18n(),
                 modifier = Modifier.padding(bottom = 12.dp),
                 style = TextStyle(
                     fontSize = 14.sp,
@@ -160,7 +161,7 @@ fun TagsManagementContent(
                 contentAlignment = Alignment.CenterStart
             ) {
                 Text(
-                    text = "创建新标签",
+                    text = "tags_create_new".i18n(),
                     style = TextStyle(
                         fontSize = 15.sp,
                         color = Color(0x99A28D64),

@@ -19,6 +19,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.slax.reader.utils.i18n
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.inbox_more
@@ -52,7 +53,7 @@ fun InboxTitleRow() {
             ) {
 
                 Text(
-                    text = "Inbox",
+                    text = "inbox_title".i18n(),
                     style = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, color = Color(0xFF999999))
                 )
 
@@ -71,7 +72,7 @@ fun InboxTitleRow() {
                 onDismissRequest = { expanded = false }
             ) {
                 DropdownMenuItem(
-                    text = { Text("Inbox") },
+                    text = { Text("inbox_title".i18n()) },
                     modifier = Modifier.background(Color.White),
                     onClick = {
                         expanded = false

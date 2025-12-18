@@ -394,8 +394,8 @@ fun OpenInBrowserTab(
     val topViewController = getTopViewController() ?: return
 
     val alertController = UIAlertController.alertControllerWithTitle(
-        title = "你即将跳转到第三方页面",
-        message = "是否确认在浏览器中打开此链接？\n$url",
+        title = "external_link_alert_title".i18n(),
+        message = "${"external_link_alert_message".i18n()}$url",
         preferredStyle = UIAlertControllerStyleAlert
     )
 
@@ -407,7 +407,7 @@ fun OpenInBrowserTab(
 
     val checkboxButton = UIButton.buttonWithType(UIButtonTypeCustom)
     checkboxButton.translatesAutoresizingMaskIntoConstraints = false
-    checkboxButton.setTitle(" 不再提示", forState = UIControlStateNormal)
+    checkboxButton.setTitle("external_link_do_not_alert".i18n(), forState = UIControlStateNormal)
     checkboxButton.setTitleColor(UIColor.darkGrayColor, forState = UIControlStateNormal)
     checkboxButton.titleLabel?.font = UIFont.systemFontOfSize(14.0)
 
@@ -446,7 +446,7 @@ fun OpenInBrowserTab(
     alertController.setValue(contentVC, forKey = "contentViewController")
 
     val confirmAction = UIAlertAction.actionWithTitle(
-        title = "确定",
+        title = "btn_ok".i18n(),
         style = UIAlertActionStyleDefault
     ) { _ ->
         openInBrowserTab()
@@ -458,7 +458,7 @@ fun OpenInBrowserTab(
     }
 
     val cancelAction = UIAlertAction.actionWithTitle(
-        title = "取消",
+        title = "btn_cancel".i18n(),
         style = UIAlertActionStyleCancel
     ) { _ ->
         onDismiss()
