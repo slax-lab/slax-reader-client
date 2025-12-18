@@ -28,17 +28,6 @@ import kotlinx.serialization.json.Json
 import org.koin.compose.koinInject
 import kotlin.math.roundToInt
 
-private fun generateAndroidUserAgent(context: Context, format: String = "Android"): String {
-    val androidVersion = android.os.Build.VERSION.RELEASE
-    val deviceModel = android.os.Build.MODEL
-    val locale = java.util.Locale.getDefault().toString()
-
-    val prefix = if (format == "Linux") "Linux; U; " else ""
-    return "com.slax.reader/${SlaxConfig.APP_VERSION_NAME} " +
-            "($prefix$format $androidVersion; $locale; $deviceModel; " +
-            "Build/${SlaxConfig.APP_VERSION_CODE}; Webkit/0.0.0)"
-}
-
 @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface", "ClickableViewAccessibility")
 @Composable
 actual fun AppWebView(
@@ -90,8 +79,6 @@ actual fun AppWebView(
                     // 性能优化配置
                     @Suppress("DEPRECATION")
                     setRenderPriority(WebSettings.RenderPriority.HIGH)
-
-                    userAgentString = generateAndroidUserAgent(context, "Android")
                 }
 
                 addJavascriptInterface(object {
@@ -260,18 +247,13 @@ actual fun WebView(
     contentInsets: PaddingValues?,
     onScroll: ((scrollX: Double, scrollY: Double, contentHeight: Double, visibleHeight: Double) -> Unit)?,
     onPageLoaded: (() -> Unit)?,
-    injectUser: Boolean,
 ) {
-    val appPreference: AppPreferences = koinInject()
     AndroidView(
         modifier = modifier,
         factory = { context ->
             WebView(context).apply {
 
                 setBackgroundColor(Color.TRANSPARENT)
-
-                WebView.setWebContentsDebuggingEnabled(SlaxConfig.BUILD_ENV == "dev")
-
                 settings.apply {
                     javaScriptEnabled = true
                     domStorageEnabled = true
@@ -280,8 +262,8 @@ actual fun WebView(
                     allowFileAccess = false
                     allowContentAccess = false
                     cacheMode = WebSettings.LOAD_DEFAULT
-
-                    userAgentString = generateAndroidUserAgent(context, "Android")
+                    @Suppress("DEPRECATION")
+                    setRenderPriority(WebSettings.RenderPriority.HIGH)
                 }
 
                 setOnScrollChangeListener { view, scrollX, scrollY, _, _ ->

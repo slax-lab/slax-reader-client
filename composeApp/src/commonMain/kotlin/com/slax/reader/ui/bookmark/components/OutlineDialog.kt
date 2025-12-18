@@ -190,9 +190,7 @@ private fun ExpandedOutlineDialog(
     onClose: () -> Unit,
     onScrollToAnchor: (String) -> Unit
 ) {
-    // 订阅状态
     val outlineState by detailViewModel.outlineState.collectAsState()
-    val outlineContent = outlineState.outline
 
     Surface(
         shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
@@ -272,16 +270,12 @@ private fun ExpandedOutlineDialog(
                     .fillMaxWidth()
             ) {
                 when {
-                    outlineState.isLoading && outlineContent.isEmpty() -> {
+                    outlineState.isLoading && outlineState.isPending -> {
                         LoadingAnimation()
                     }
 
                     outlineState.error != null -> {
                         ErrorView(error = outlineState.error!!)
-                    }
-
-                    outlineContent.isEmpty() -> {
-                        EmptyView()
                     }
 
                     else -> {
@@ -293,7 +287,7 @@ private fun ExpandedOutlineDialog(
                                     .padding(top = 4.dp)
                             ) {
                                 MarkdownRenderer(
-                                    content = outlineContent,
+                                    detailViewModel = detailViewModel,
                                     onLinkClick = { url ->
                                         if (url.startsWith("#")) {
                                             val anchorText = url.removePrefix("#")

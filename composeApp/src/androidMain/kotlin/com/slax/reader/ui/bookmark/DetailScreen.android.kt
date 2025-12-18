@@ -48,7 +48,6 @@ actual fun DetailScreen(
     screenState: DetailScreenState,
     onBackClick: (() -> Unit),
 ) {
-    println("[watch][UI] detail screen recompose")
     var htmlContent by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
 
