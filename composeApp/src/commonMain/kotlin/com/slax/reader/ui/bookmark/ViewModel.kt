@@ -26,6 +26,7 @@ data class OverviewState(
 
 data class OutlineState(
     val outline: String = "",
+    val isPending: Boolean = true,
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -59,7 +60,7 @@ class BookmarkDetailViewModel(
                     state.copy(
                         overview = cachedOverview,
                         keyTakeaways = cachedKeyTakeaways,
-                        isLoading = false
+                        isLoading = false,
                     )
                 }
                 return@launch
@@ -148,7 +149,7 @@ class BookmarkDetailViewModel(
                 return@launch
             }
 
-            _outlineState.value = OutlineState(isLoading = true)
+            _outlineState.value = OutlineState(isLoading = true, isPending = true)
 
             var fullOutline = ""
 
@@ -158,7 +159,7 @@ class BookmarkDetailViewModel(
                         is OutlineResponse.Outline -> {
                             fullOutline = response.content
                             _outlineState.update { state ->
-                                state.copy(outline = fullOutline, isLoading = true)
+                                state.copy(outline = fullOutline, isLoading = true, isPending = false)
                             }
                         }
 
