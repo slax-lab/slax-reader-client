@@ -21,10 +21,11 @@ import com.slax.reader.ui.bookmark.components.*
 import com.slax.reader.utils.AppLifecycleState
 import com.slax.reader.utils.AppWebView
 import com.slax.reader.utils.LifeCycleHelper
-import com.slax.reader.utils.wrapHtmlWithCSS
+import com.slax.reader.utils.WebViewEvent
+import com.slax.reader.utils.rememberAppWebViewState
+import com.slax.reader.utils.wrapBookmarkDetailHtml
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import kotlin.math.max
 
 @Serializable
@@ -32,7 +33,10 @@ data class WebViewMessage(
     val type: String,
     val height: Int? = null,
     val src: String? = null,
-    val allImages: List<String>? = null
+    val allImages: List<String>? = null,
+    val position: Int? = null,
+    val index: Int? = null,
+    val percentage: Double? = null
 )
 
 @Composable
@@ -49,7 +53,7 @@ actual fun DetailScreen(
         error = null
         try {
             htmlContent = detailViewModel.getBookmarkContent(detail.id)
-            htmlContent = htmlContent?.let { wrapHtmlWithCSS(it) }
+            htmlContent = htmlContent?.let { wrapBookmarkDetailHtml(it) }
         } catch (e: Exception) {
             error = e.message ?: "加载失败"
         }
@@ -65,6 +69,8 @@ actual fun DetailScreen(
     var headerMeasuredHeight by remember { mutableFloatStateOf(0f) }
 
     var manuallyVisible by remember { mutableStateOf(true) }
+
+    val webViewState = rememberAppWebViewState()
 
     val bottomThresholdPx = with(LocalDensity.current) { 100.dp.toPx() }
 
@@ -125,11 +131,43 @@ actual fun DetailScreen(
     var showOverviewDialog by remember { mutableStateOf(false) }
     var showToolbar by remember { mutableStateOf(false) }
     var showEditNameDialog by remember { mutableStateOf(false) }
+    val outlineDialogState = rememberOutlineDialogState()
 
     // 图片浏览器状态
     var showImageViewer by remember { mutableStateOf(false) }
     var currentImageUrl by remember { mutableStateOf("") }
     var allImageUrls by remember { mutableStateOf<List<String>>(emptyList()) }
+
+    // 设置 webState 的参数
+    LaunchedEffect(headerMeasuredHeight) {
+        webViewState.topContentInsetPx = headerMeasuredHeight
+    }
+
+    // 监听 WebView 事件
+    LaunchedEffect(webViewState) {
+        webViewState.events.collect { event ->
+            when (event) {
+                is WebViewEvent.ImageClick -> {
+                    currentImageUrl = event.src
+                    allImageUrls = event.allImages
+                    showImageViewer = true
+                }
+                is WebViewEvent.ScrollChange -> {
+                    webViewScrollY.floatValue = max(event.scrollY, 0f)
+                    contentHeightPx = event.contentHeight
+                    visibleHeightPx = event.visibleHeight
+                }
+                is WebViewEvent.ScrollToPosition -> {
+                    webViewState.evaluateJs("window.scrollTo(0, document.body.scrollHeight * ${event.percentage})")
+                }
+                is WebViewEvent.Tap -> {
+                    if (!isNearBottom && webViewScrollY.floatValue > 10f) {
+                        manuallyVisible = !manuallyVisible
+                    }
+                }
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -151,46 +189,7 @@ actual fun DetailScreen(
                 AppWebView(
                     htmlContent = content,
                     modifier = Modifier.fillMaxSize().preferredFrameRate(FrameRateCategory.High),
-                    topContentInsetPx = headerMeasuredHeight,
-                    onTap = {
-                        // 只在非底部且非顶部区域才切换显示状态
-                        if (!isNearBottom && webViewScrollY.floatValue > 10f) {
-                            manuallyVisible = !manuallyVisible
-                        }
-                    },
-                    onScrollChange = remember {
-                        { scrollY, contentHeight, visibleHeight ->
-                            // 只负责更新原始状态，manuallyVisible 的更新由 LaunchedEffect 处理
-                            webViewScrollY.floatValue = max(scrollY, 0f)
-                            contentHeightPx = contentHeight
-                            visibleHeightPx = visibleHeight
-                        }
-                    },
-                    onJsMessage = { message ->
-                        try {
-                            val json = Json { ignoreUnknownKeys = true }
-                            val webViewMessage = json.decodeFromString<WebViewMessage>(message)
-
-                            when (webViewMessage.type) {
-                                "imageClick" -> {
-                                    val src = webViewMessage.src
-                                    val allImages = webViewMessage.allImages
-
-                                    if (src != null && !allImages.isNullOrEmpty()) {
-                                        currentImageUrl = src
-                                        allImageUrls = allImages
-                                        showImageViewer = true
-                                    }
-                                }
-
-                                else -> {
-                                    println("[WebView] Unknown message type: ${webViewMessage.type}")
-                                }
-                            }
-                        } catch (e: Exception) {
-                            println("[WebView] Failed to parse message: $message, error: ${e.message}")
-                        }
-                    }
+                    webState = webViewState
                 )
             }
         }
@@ -258,8 +257,9 @@ actual fun DetailScreen(
                 onDismissRequest = { showToolbar = false },
                 onIconClick = { pageId, iconIndex ->
                     println("点击了页面 $pageId 的第 ${iconIndex + 1} 个图标")
-                    if (pageId == "edit_title") {
-                        showEditNameDialog = true
+                    when (pageId) {
+                        "edit_title" -> showEditNameDialog = true
+                        "summary" -> outlineDialogState.show()
                     }
                 }
             )
@@ -292,6 +292,17 @@ actual fun DetailScreen(
                 initialImageUrl = currentImageUrl,
                 onDismiss = {
                     showImageViewer = false
+                }
+            )
+        }
+
+        // Outline弹窗
+        if (outlineDialogState.currentState != OutlineDialogState.HIDDEN) {
+            OutlineDialog(
+                detailViewModel = detailViewModel,
+                state = outlineDialogState,
+                onScrollToAnchor = { anchor ->
+                    webViewState.scrollToAnchor(anchor)
                 }
             )
         }

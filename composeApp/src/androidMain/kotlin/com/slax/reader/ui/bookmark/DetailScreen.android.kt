@@ -11,6 +11,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.FrameRateCategory
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.unit.dp
@@ -21,17 +23,21 @@ import com.slax.reader.ui.bookmark.components.*
 import com.slax.reader.utils.AppLifecycleState
 import com.slax.reader.utils.AppWebView
 import com.slax.reader.utils.LifeCycleHelper
-import com.slax.reader.utils.wrapHtmlWithCSS
+import com.slax.reader.utils.WebViewEvent
+import com.slax.reader.utils.rememberAppWebViewState
+import com.slax.reader.utils.wrapBookmarkDetailHtml
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 @Serializable
 data class WebViewMessage(
     val type: String,
     val height: Int? = null,
     val src: String? = null,
-    val allImages: List<String>? = null
+    val allImages: List<String>? = null,
+    val position: Int? = null,
+    val index: Int? = null,
+    val percentage: Double? = null
 )
 
 @SuppressLint("UseKtx")
@@ -49,7 +55,7 @@ actual fun DetailScreen(
         error = null
         try {
             htmlContent = detailViewModel.getBookmarkContent(detail.id)
-            htmlContent = htmlContent?.let { wrapHtmlWithCSS(it) }
+            htmlContent = htmlContent?.let { wrapBookmarkDetailHtml(it) }
         } catch (e: Exception) {
             error = e.message ?: "加载失败"
         }
@@ -58,6 +64,17 @@ actual fun DetailScreen(
     val scrollState = rememberScrollState()
     val scrollY by remember { derivedStateOf { scrollState.value.toFloat() } }
     var manuallyVisible by remember { mutableStateOf(true) }
+
+    // 获取屏幕高度（用于计算滚动偏移）
+    val configuration = LocalConfiguration.current
+    val screenHeightPx = with(LocalDensity.current) { configuration.screenHeightDp.dp.toPx() }
+
+    // 记录 HeaderContent 的高度（px）
+    var headerHeightPx by remember { mutableFloatStateOf(0f) }
+    var webViewHeightPx by remember { mutableFloatStateOf(0f) }
+
+    val webViewState = rememberAppWebViewState()
+    val coroutineScope = rememberCoroutineScope()
 
     val bottomThresholdPx = with(LocalDensity.current) { 100.dp.toPx() }
 
@@ -104,11 +121,36 @@ actual fun DetailScreen(
     var showOverviewDialog by remember { mutableStateOf(false) }
     var showToolbar by remember { mutableStateOf(false) }
     var showEditNameDialog by remember { mutableStateOf(false) }
+    val outlineDialogState = rememberOutlineDialogState()
 
     // 图片浏览器状态
     var showImageViewer by remember { mutableStateOf(false) }
     var currentImageUrl by remember { mutableStateOf("") }
     var allImageUrls by remember { mutableStateOf<List<String>>(emptyList()) }
+
+    LaunchedEffect(webViewState) {
+        webViewState.events.collect { event ->
+            when (event) {
+                is WebViewEvent.ImageClick -> {
+                    currentImageUrl = event.src
+                    allImageUrls = event.allImages
+                    showImageViewer = true
+                }
+                is WebViewEvent.ScrollToPosition -> {
+                    val targetInWebView = webViewHeightPx * event.percentage
+                    val target = (headerHeightPx + targetInWebView - screenHeightPx / 4).toInt()
+                    coroutineScope.launch { scrollState.animateScrollTo(target.coerceAtLeast(0)) }
+                }
+                is WebViewEvent.Tap -> {
+                    if (!isNearBottom && scrollY > 10f) {
+                        manuallyVisible = !manuallyVisible
+                    }
+                }
+
+                else -> {}
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -131,7 +173,9 @@ actual fun DetailScreen(
         ) {
             HeaderContent(
                 detail = detail,
-                onHeightChanged = {},
+                onHeightChanged = { height ->
+                    headerHeightPx = height
+                },
                 onTagClick = { showTagView = true },
                 onOverviewExpand = { showOverviewDialog = true },
                 onOverviewBoundsChanged = screenState.onOverviewBoundsChanged,
@@ -143,40 +187,11 @@ actual fun DetailScreen(
                     htmlContent = content,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .preferredFrameRate(FrameRateCategory.High),
-                    topContentInsetPx = 0f,
-                    onTap = {
-                        // 只在非底部且非顶部区域才切换显示状态
-                        if (!isNearBottom && scrollY > 10f) {
-                            manuallyVisible = !manuallyVisible
-                        }
-                    },
-                    onScrollChange = null,
-                    onJsMessage = { message ->
-                        try {
-                            val json = Json { ignoreUnknownKeys = true }
-                            val webViewMessage = json.decodeFromString<WebViewMessage>(message)
-
-                            when (webViewMessage.type) {
-                                "imageClick" -> {
-                                    val src = webViewMessage.src
-                                    val allImages = webViewMessage.allImages
-
-                                    if (src != null && !allImages.isNullOrEmpty()) {
-                                        currentImageUrl = src
-                                        allImageUrls = allImages
-                                        showImageViewer = true
-                                    }
-                                }
-
-                                else -> {
-                                    println("[WebView] Unknown message type: ${webViewMessage.type}")
-                                }
-                            }
-                        } catch (e: Exception) {
-                            println("[WebView] Failed to parse message: $message, error: ${e.message}")
-                        }
-                    }
+                        .preferredFrameRate(FrameRateCategory.High)
+                        .onSizeChanged { size ->
+                            webViewHeightPx = size.height.toFloat()
+                        },
+                    webState = webViewState
                 )
             }
         }
@@ -224,8 +239,9 @@ actual fun DetailScreen(
                 onDismissRequest = { showToolbar = false },
                 onIconClick = { pageId, iconIndex ->
                     println("点击了页面 $pageId 的第 ${iconIndex + 1} 个图标")
-                    if (pageId == "edit_title") {
-                        showEditNameDialog = true
+                    when (pageId) {
+                        "edit_title" -> showEditNameDialog = true
+                        "summary" -> outlineDialogState.show()
                     }
                 }
             )
@@ -260,6 +276,17 @@ actual fun DetailScreen(
                 onDismiss = {
                     println("[ImageViewer] Dismissed")
                     showImageViewer = false
+                }
+            )
+        }
+
+        // Outline弹窗
+        if (outlineDialogState.currentState != OutlineDialogState.HIDDEN) {
+            OutlineDialog(
+                detailViewModel = detailViewModel,
+                state = outlineDialogState,
+                onScrollToAnchor = { anchor ->
+                    webViewState.scrollToAnchor(anchor)
                 }
             )
         }

@@ -37,8 +37,9 @@ fun OverviewView(
         detailView.loadOverview()
     }
 
-    val plainTextContent by detailView.overviewContent.collectAsState()
-    if (plainTextContent.isEmpty()) return
+    val overviewState by detailView.overviewState.collectAsState()
+    val content = overviewState.overview
+    if (content.isEmpty()) return
 
     Surface(
         modifier = modifier
@@ -63,12 +64,12 @@ fun OverviewView(
                     .fillMaxWidth()
                     .padding(12.dp)
             ) {
-                val annotatedText = remember(plainTextContent) {
+                val annotatedText = remember(content) {
                     buildAnnotatedString {
                         withStyle(style = SpanStyle(color = Color(0xFF999999))) {
                             append("全文概要: ")
                         }
-                        append(plainTextContent)
+                        append(content)
                     }
                 }
 

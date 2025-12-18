@@ -13,10 +13,11 @@ import androidx.compose.ui.viewinterop.UIKitInteropInteractionMode
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
 import app.slax.reader.SlaxConfig
-import com.slax.reader.const.INJECTED_SCRIPT
 import com.slax.reader.const.JS_BRIDGE_NAME
 import com.slax.reader.data.preferences.AppPreferences
+import com.slax.reader.ui.bookmark.WebViewMessage
 import kotlinx.cinterop.*
+import kotlinx.serialization.json.Json
 import org.koin.compose.koinInject
 import platform.CoreGraphics.CGPointMake
 import platform.CoreGraphics.CGRectMake
@@ -76,28 +77,34 @@ private class ScriptMessageHandler(
 
 @OptIn(ExperimentalForeignApi::class)
 @Composable
-@Suppress("UNUSED_PARAMETER")
 actual fun AppWebView(
     htmlContent: String,
     modifier: Modifier,
-    topContentInsetPx: Float,
-    onTap: (() -> Unit)?,
-    onScrollChange: ((scrollY: Float, contentHeight: Float, visibleHeight: Float) -> Unit)?,
-    onJsMessage: ((message: String) -> Unit)?,
+    webState: AppWebViewState
 ) {
-
-    val tapHandler = remember(onTap) {
-        TapHandler { onTap?.invoke() }
+    val tapHandler = remember {
+        TapHandler { webState.dispatchEvent(WebViewEvent.Tap) }
     }
     val singleTapGestureDelegate = remember { SingleTapGestureDelegate() }
-    val onJsMessageCallback = rememberUpdatedState(onJsMessage)
 
-    val scriptMessageHandler = remember(onJsMessageCallback.value) {
-        if (onJsMessageCallback.value != null) {
-            ScriptMessageHandler { message ->
-                onJsMessageCallback.value?.invoke(message)
-            }
-        } else null
+    val scriptMessageHandler = remember {
+        ScriptMessageHandler { message ->
+            runCatching { Json.decodeFromString<WebViewMessage>(message) }
+                .onSuccess { msg ->
+                    when (msg.type) {
+                        "imageClick" -> {
+                            webState.dispatchEvent(
+                                WebViewEvent.ImageClick(msg.src!!, msg.allImages!!)
+                            )
+                        }
+                        "scrollToPosition" -> {
+                            webState.dispatchEvent(
+                                WebViewEvent.ScrollToPosition(msg.percentage ?: 0.0)
+                            )
+                        }
+                    }
+                }
+        }
     }
 
     val density = LocalDensity.current
@@ -109,7 +116,7 @@ actual fun AppWebView(
     val statusBarHeightPx = windowInsets.getTop(density).toFloat()
 
     // iOS contentInset 需要完整高度：Column + statusBarsPadding + 视觉间距
-    val totalInsetPx = topContentInsetPx + statusBarHeightPx + 16f * density.density
+    val totalInsetPx = webState.topContentInsetPx + statusBarHeightPx + 16f * density.density
 
     var externalUrl by remember { mutableStateOf<String?>(null) }
     val appPreference: AppPreferences = koinInject()
@@ -118,7 +125,6 @@ actual fun AppWebView(
     val topInsetPoints by remember(totalInsetPx, densityScale) {
         derivedStateOf { (totalInsetPx / densityScale).coerceAtLeast(0f) }
     }
-    val onScrollChangeState = rememberUpdatedState(onScrollChange)
     var observedScrollView by remember { mutableStateOf<UIScrollView?>(null) }
     val scrollObserver = remember {
         KVOObserver { keyPath, newValue, _ ->
@@ -139,7 +145,7 @@ actual fun AppWebView(
                 val visibleHeightPoints = scrollView.bounds.useContents { size.height }.toFloat()
                 val visibleHeightPx = visibleHeightPoints * densityScaleState.value
 
-                onScrollChangeState.value?.invoke(offsetPx, contentHeightPx, visibleHeightPx)
+                webState.dispatchEvent(WebViewEvent.ScrollChange(offsetPx, contentHeightPx, visibleHeightPx))
             }
         }
     }
@@ -206,28 +212,18 @@ actual fun AppWebView(
                     javaScriptEnabled = true
                 }
 
-                // 配置 JS Bridge 和脚本注入
-                if (scriptMessageHandler != null) {
-                    val userContentController = WKUserContentController()
-
-                    // 添加消息处理器
-                    userContentController.addScriptMessageHandler(
-                        scriptMessageHandler = scriptMessageHandler,
-                        name = JS_BRIDGE_NAME
-                    )
-
-                    val userScript = WKUserScript(
-                        source = INJECTED_SCRIPT,
-                        injectionTime = WKUserScriptInjectionTime.WKUserScriptInjectionTimeAtDocumentEnd,
-                        forMainFrameOnly = true
-                    )
-                    userContentController.addUserScript(userScript)
-
-                    this.userContentController = userContentController
-                }
+                val userContentController = WKUserContentController()
+                userContentController.addScriptMessageHandler(
+                    scriptMessageHandler = scriptMessageHandler,
+                    name = JS_BRIDGE_NAME
+                )
+                this.userContentController = userContentController
             }
 
             val view = WKWebView(frame = CGRectMake(0.0, 0.0, 0.0, 0.0), configuration = config)
+
+            webState.webView = view
+
             if (available("16.4")) {
                 view.inspectable = SlaxConfig.BUILD_ENV == "dev"
             }
@@ -281,6 +277,9 @@ actual fun AppWebView(
         },
         update = { uiView ->
             val webView = uiView as WKWebView
+
+            webState.webView = webView
+
             val scrollView = webView.scrollView
             val currentInsetPoints = scrollView.contentInset.useContents { top }.toFloat()
             if (abs(currentInsetPoints - topInsetPoints) > 0.1f) {
@@ -313,6 +312,25 @@ actual fun AppWebView(
             interactionMode = UIKitInteropInteractionMode.Cooperative()
         )
     )
+
+    LaunchedEffect(webState) {
+        webState.commands.collect { cmd ->
+            when (cmd) {
+                is WebViewCommand.EvaluateJs -> {
+                    webState.webView?.evaluateJavaScript(cmd.script) { result, error ->
+                        if (error != null) {
+                            println("[iOS WebView] JS 执行失败: ${error.localizedDescription}")
+                        }
+                        cmd.callback?.invoke(result?.toString() ?: "")
+                    }
+                }
+            }
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { webState.webView = null }
+    }
 
     if (externalUrl != null) {
         if (doNotAlert == null) {
@@ -471,7 +489,8 @@ actual fun WebView(
     url: String,
     modifier: Modifier,
     contentInsets: PaddingValues?,
-    onScroll: ((scrollX: Double, scrollY: Double, contentHeight: Double, visibleHeight: Double) -> Unit)?
+    onScroll: ((scrollX: Double, scrollY: Double, contentHeight: Double, visibleHeight: Double) -> Unit)?,
+    onPageLoaded: (() -> Unit)?,
 ) {
     val webViewRef = remember { mutableStateOf<WKWebView?>(null) }
 
@@ -491,9 +510,9 @@ actual fun WebView(
     val navigationDelegate = remember {
         object : NSObject(), WKNavigationDelegateProtocol {
             override fun webView(webView: WKWebView, didFinishNavigation: WKNavigation?) {
-                // 页面加载完成后，延迟一小段时间等待渲染完成，然后手动触发一次滚动检查
+                onPageLoaded?.invoke()
                 dispatch_after(
-                    dispatch_time(platform.darwin.DISPATCH_TIME_NOW, 300_000_000L), // 300ms in nanoseconds
+                    dispatch_time(platform.darwin.DISPATCH_TIME_NOW, 300_000_000L),
                     dispatch_get_main_queue()
                 ) {
                     val scrollView = webView.scrollView
@@ -544,10 +563,6 @@ actual fun WebView(
             }
         }
     )
-
-    LaunchedEffect(url, webViewRef) {
-        webViewRef.value?.loadRequest(NSURLRequest(uRL = NSURL(string = url)))
-    }
 }
 
 @Composable

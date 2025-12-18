@@ -3,52 +3,22 @@ package com.slax.reader.utils
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import app.slax.reader.SlaxConfig
 import com.slax.reader.const.articleStyle
 import com.slax.reader.const.bottomLineStyle
 import com.slax.reader.const.resetStyle
 import com.slax.reader.data.preferences.AppPreferences
 import kotlinx.coroutines.runBlocking
 
-fun wrapHtmlWithCSS(htmlContent: String): String {
-    return """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-            <meta name="color-scheme" content="light only">
-            <meta name="supported-color-schemes" content="light">
-            <style>
-                $articleStyle
-                $resetStyle
-                $bottomLineStyle
-
-                body {
-                    padding-top: 0px !important;
-                    padding-left: 20px !important;
-                    padding-right: 20px !important;
-                    padding-bottom: 150px !important;
-                }
-            </style>
-        </head>
-        <body lang="en">
-            $htmlContent
-            <div class="bottom-seperator-line">
-              <div class="seperator-line"></div>
-            </div>
-        </body>
-        </html>
-    """.trimIndent()
+fun wrapBookmarkDetailHtml(htmlContent: String): String {
+    return SlaxConfig.WEBVIEW_TEMPLATE.replace("{{CONTENT}}", htmlContent)
 }
 
 @Composable
 expect fun AppWebView(
     htmlContent: String,
     modifier: Modifier = Modifier,
-    topContentInsetPx: Float = 0f,
-    onTap: (() -> Unit)? = null,
-    onScrollChange: ((scrollY: Float, contentHeight: Float, visibleHeight: Float) -> Unit)? = null,
-    onJsMessage: ((message: String) -> Unit)? = null,
+    webState: AppWebViewState
 )
 
 @Composable
@@ -57,6 +27,7 @@ expect fun WebView(
     modifier: Modifier,
     contentInsets: PaddingValues? = null,
     onScroll: ((scrollX: Double, scrollY: Double, contentHeight: Double, visibleHeight: Double) -> Unit)? = null,
+    onPageLoaded: (() -> Unit)? = null,
 )
 
 @Composable

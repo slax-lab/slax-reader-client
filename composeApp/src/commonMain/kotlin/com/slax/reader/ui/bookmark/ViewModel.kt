@@ -7,17 +7,26 @@ import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.data.database.model.UserTag
 import com.slax.reader.data.network.ApiService
+import com.slax.reader.data.network.dto.OutlineResponse
 import com.slax.reader.data.network.dto.OverviewResponse
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.data.preferences.ContinueReadingBookmark
 import com.slax.reader.domain.sync.BackgroundDomain
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.json.Json
 
 data class OverviewState(
     val overview: String = "",
     val keyTakeaways: List<String> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null
+)
+
+data class OutlineState(
+    val outline: String = "",
+    val isPending: Boolean = true,
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -32,11 +41,11 @@ class BookmarkDetailViewModel(
 
     var _bookmarkId = MutableStateFlow<String?>(null)
 
-    private val _overviewContent = MutableStateFlow("")
-    val overviewContent: StateFlow<String> = _overviewContent.asStateFlow()
-
     private val _overviewState = MutableStateFlow(OverviewState())
-    val overviewState: StateFlow<OverviewState> = _overviewState.asStateFlow()
+    val overviewState = _overviewState.asStateFlow()
+
+    private val _outlineState = MutableStateFlow(OutlineState())
+    val outlineState = _outlineState.asStateFlow()
 
     fun loadOverview() {
         val bookmarkId = _bookmarkId.value ?: return
@@ -47,18 +56,16 @@ class BookmarkDetailViewModel(
             }
 
             if (!cachedOverview.isNullOrEmpty() && !cachedKeyTakeaways.isNullOrEmpty()) {
-                _overviewContent.value = cachedOverview
                 _overviewState.update { state ->
                     state.copy(
-                        keyTakeaways = cachedKeyTakeaways,
                         overview = cachedOverview,
-                        isLoading = false
+                        keyTakeaways = cachedKeyTakeaways,
+                        isLoading = false,
                     )
                 }
                 return@launch
             }
 
-            _overviewContent.value = ""
             _overviewState.value = OverviewState(isLoading = true)
 
             var fullOverview = ""
@@ -69,7 +76,6 @@ class BookmarkDetailViewModel(
                     when (response) {
                         is OverviewResponse.Overview -> {
                             fullOverview += response.content
-                            _overviewContent.value = fullOverview
                             _overviewState.update { state ->
                                 state.copy(overview = fullOverview, isLoading = true)
                             }
@@ -122,9 +128,76 @@ class BookmarkDetailViewModel(
         }
     }
 
+    fun loadOutline() {
+        if (_outlineState.value.isLoading) {
+            return
+        }
+
+        val bookmarkId = _bookmarkId.value ?: return
+        viewModelScope.launch {
+            val cacheOutline = withContext(Dispatchers.IO) {
+                localBookmarkDao.getLocalBookmarkOutline(bookmarkId)
+            }
+
+            if (!cacheOutline.isNullOrEmpty()) {
+                _outlineState.update { state ->
+                    state.copy(
+                        outline = cacheOutline,
+                        isLoading = false
+                    )
+                }
+                return@launch
+            }
+
+            _outlineState.value = OutlineState(isLoading = true, isPending = true)
+
+            var fullOutline = ""
+
+            try {
+                apiService.getBookmarkOutline(bookmarkId).collect { response ->
+                    when (response) {
+                        is OutlineResponse.Outline -> {
+                            fullOutline = response.content
+                            _outlineState.update { state ->
+                                state.copy(outline = fullOutline, isLoading = true, isPending = false)
+                            }
+                        }
+
+                        is OutlineResponse.Done -> {
+                            _outlineState.update { state ->
+                                state.copy(isLoading = false)
+                            }
+
+                            if (fullOutline.isNotEmpty()) {
+                                withContext(Dispatchers.IO) {
+                                    localBookmarkDao.updateLocalBookmarkOutline(
+                                        bookmarkId = bookmarkId,
+                                        outline = fullOutline
+                                    )
+                                }
+                            }
+                        }
+
+                        is OutlineResponse.Error -> {
+                            _outlineState.update { state ->
+                                state.copy(error = response.message, isLoading = false)
+                            }
+                        }
+
+                        else -> {
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                _outlineState.update { state ->
+                    state.copy(error = e.message ?: "Unknown error", isLoading = false)
+                }
+            }
+        }
+    }
+
     fun setBookmarkId(id: String) {
         _bookmarkId.value = id
-        _overviewContent.value = ""
         _overviewState.value = OverviewState()
     }
 

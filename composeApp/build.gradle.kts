@@ -184,6 +184,8 @@ kotlin {
             implementation(libs.connectivity.compose.device)
 
             implementation(libs.kotzilla.sdk)
+
+            implementation(libs.markdown.renderer.m3)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -244,6 +246,10 @@ dependencies {
     debugImplementation(compose.uiTooling)
 }
 
+fun minifyHtml(html: String): String {
+    return html
+}
+
 buildkonfig {
     packageName = "app.slax.reader"
     objectName = "SlaxConfig"
@@ -262,34 +268,32 @@ buildkonfig {
         buildConfigField(STRING, "APP_VERSION_NAME", appVersionName)
         buildConfigField(STRING, "APP_VERSION_CODE", appVersionCode)
         buildConfigField(STRING, "APP_BUNDLE_ID", "com.slax.reader")
-    }
+        buildConfigField(STRING, "BUILD_ENV", buildFlavor)
 
-    defaultConfigs("dev") {
-        buildConfigField(STRING, "BUILD_ENV", buildFlavor)
-        buildConfigField(STRING, "API_BASE_URL", "https://reader-api.slax.dev")
-        buildConfigField(STRING, "WEB_BASE_URL", "https://r.slax.dev")
-        buildConfigField(STRING, "LOG_LEVEL", "DEBUG")
+        if (buildFlavor == "release") {
+            buildConfigField(STRING, "API_BASE_URL", "https://api-reader.slax.com")
+            buildConfigField(STRING, "WEB_BASE_URL", "https://r.slax.com")
+            buildConfigField(STRING, "WEB_DOMAIN", ".slax.com")
+            buildConfigField(STRING, "LOG_LEVEL", "ERROR")
+        } else if (buildFlavor == "dev") {
+            buildConfigField(STRING, "API_BASE_URL", "https://reader-api.slax.dev")
+            buildConfigField(STRING, "WEB_BASE_URL", "https://r.slax.dev")
+            buildConfigField(STRING, "WEB_DOMAIN", ".slax.dev")
+            buildConfigField(STRING, "LOG_LEVEL", "DEBUG")
+        }
+
         buildConfigField(
             STRING,
-            "GOOGLE_AUTH_SERVER_ID",
-            dotenv.get("GOOGLE_AUTH_SERVER_ID")!!
+            "WEBVIEW_TEMPLATE",
+            minifyHtml(
+                file("../public/embedded/html/webview-template.html")
+                    .readText()
+                    .replace("{{RESET-CSS}}", file("../public/embedded/css/reset.css").readText())
+                    .replace("{{ARTICLE-CSS}}", file("../public/embedded/css/article.css").readText())
+                    .replace("{{BOTTOM-LINE-CSS}}", file("../public/embedded/css/bottom-line.css").readText())
+                    .replace("{{WEBVIEW-BRIGDE-JS}}", file("../public/embedded/js/webview-bridge.js").readText())
+            )
         )
-        buildConfigField(
-            STRING,
-            "KOTZILLA_KEY",
-            dotenv.get("KOTZILLA_KEY")!!
-        )
-        buildConfigField(
-            STRING,
-            "REVENUE_CAT_API_KEY",
-            dotenv.get("REVENUE_CAT_API_KEY")!!
-        )
-    }
-    defaultConfigs("release") {
-        buildConfigField(STRING, "BUILD_ENV", buildFlavor)
-        buildConfigField(STRING, "API_BASE_URL", "https://api-reader.slax.com")
-        buildConfigField(STRING, "WEB_BASE_URL", "https://r.slax.com")
-        buildConfigField(STRING, "LOG_LEVEL", "ERROR")
         buildConfigField(
             STRING,
             "GOOGLE_AUTH_SERVER_ID",

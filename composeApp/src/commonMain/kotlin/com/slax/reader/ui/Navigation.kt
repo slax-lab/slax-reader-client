@@ -134,8 +134,11 @@ fun SlaxNavigation(
                 navCtrl.popBackStack()
             })
         }
+
         composable<SubscriptionManagerRoutes> {
-            SubscriptionManagerScreen()
+            SubscriptionManagerScreen(onBackClick = {
+                navCtrl.popBackStack()
+            })
         }
     }
 }

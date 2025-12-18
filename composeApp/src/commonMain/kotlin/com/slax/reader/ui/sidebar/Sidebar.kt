@@ -58,7 +58,7 @@ fun Sidebar(
                         scope.launch {
                             drawerState.close()
                         }
-                    },
+                    }
                 )
             }
         },
@@ -69,7 +69,7 @@ fun Sidebar(
 @Composable
 private fun DrawerContent(
     navCtrl: NavController,
-    onDismiss: () -> Unit,
+    onDismiss: () -> Unit
 ) {
     val viewModel = koinInject<SidebarViewModel>()
 

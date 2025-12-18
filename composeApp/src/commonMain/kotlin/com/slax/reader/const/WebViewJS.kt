@@ -67,7 +67,5 @@ const val INJECTED_SCRIPT: String = """
                 });
             });
         });
-                
-        
     })();
 """

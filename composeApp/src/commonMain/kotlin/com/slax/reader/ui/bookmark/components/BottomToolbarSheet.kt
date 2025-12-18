@@ -47,7 +47,7 @@ fun BottomToolbarSheet(
         listOf(
             listOf(
 //                ToolbarIcon("chat", "Chat", Res.drawable.ic_bottom_panel_chatbot),
-//                ToolbarIcon("summary", "总结全文", Res.drawable.ic_bottom_panel_summary),
+                ToolbarIcon("summary", "总结全文", Res.drawable.ic_bottom_panel_summary),
                 ToolbarIcon(
                     "star",
                     "加星",

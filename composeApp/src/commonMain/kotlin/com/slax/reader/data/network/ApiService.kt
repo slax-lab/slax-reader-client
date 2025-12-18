@@ -190,6 +190,35 @@ class ApiService(
         }
     }.flowOn(Dispatchers.IO)
 
+    fun getBookmarkOutline(bookmarkId: String): Flow<OutlineResponse> = flow {
+        val url = buildUrl("/v1/bookmark/outline")
+
+        httpClient.preparePost(url) {
+            headers {
+                append(HttpHeaders.ContentType, "application/json")
+                append(HttpHeaders.Accept, "text/event-stream")
+            }
+            setBody(BookmarkOutlineParam(bookmarkId))
+        }.execute { response ->
+            val channel = response.bodyAsChannel()
+
+            while (!channel.isClosedForRead) {
+                val line = channel.readUTF8Line() ?: break
+                if (line.isEmpty()) continue
+
+                val itemData = Json.decodeFromString<OutlineEventData>(line)
+                val data = itemData.data ?: continue
+
+                if (data.done == true) {
+                    emit(OutlineResponse.Done)
+                    continue
+                }
+
+                data.outline?.let { emit(OutlineResponse.Outline(it)) }
+            }
+        }
+    }.flowOn(Dispatchers.IO)
+
     suspend fun deleteAccount(): HttpData<DeleteAccountData> = withContext(Dispatchers.IO) {
         return@withContext post<DeleteAccountData>("/v1/user/delete_my_account")
     }

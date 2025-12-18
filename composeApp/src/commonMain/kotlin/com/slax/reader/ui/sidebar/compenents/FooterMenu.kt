@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -23,6 +24,10 @@ import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_xs_sidebar_about
 import slax_reader_client.composeapp.generated.resources.ic_xs_sidebar_config
+import slax_reader_client.composeapp.generated.resources.ic_xs_sidebar_logout
+import slax_reader_client.composeapp.generated.resources.ic_xs_sidebar_subscribe
+import slax_reader_client.composeapp.generated.resources.ic_xs_sidebar_subscribed
+import slax_reader_client.composeapp.generated.resources.ic_xs_sidebar_yellow_arrow
 
 class FooterMenuConfig(
     val title: String,
@@ -33,6 +38,7 @@ class FooterMenuConfig(
 
 @Composable
 fun FooterMenu(
+    isSubscribed: Boolean = false,
     navCtrl: NavController,
     onDismiss: () -> Unit,
 ) {
@@ -40,7 +46,84 @@ fun FooterMenu(
 
     println("[watch][UI] FooterMenu recomposed")
 
+    if (isSubscribed) {
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp)
+        ) {
+            Button(
+                onClick = {
+                    onDismiss()
+                    navCtrl.navigate(SubscriptionManagerRoutes)
+                },
+                modifier = Modifier.height(36.dp),
+                shape = RoundedCornerShape(8.dp),
+                contentPadding = PaddingValues(),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = Color.Transparent
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color(0xFF272220),
+                                    Color(0xFF4b4441)
+                                )
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        ),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_xs_sidebar_subscribed),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.padding(start = 12.dp).size(16.dp, 14.5.dp)
+                    )
+
+                    Text(
+                        "会员订阅",
+                        modifier = Modifier.padding(start = 10.dp),
+                        style = TextStyle(
+                            fontSize = 15.sp,
+                            lineHeight = 21.sp,
+                            color = Color(0xFFFFDCC1)
+                        )
+                    )
+
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_xs_sidebar_yellow_arrow),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.padding(horizontal = 8.dp).size(20.dp)
+                    )
+                }
+            }
+        }
+    }
+
     mapOf(
+        "subscription" to FooterMenuConfig(
+            title = "会员订阅",
+            icon = {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_xs_sidebar_subscribe),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(20.dp)
+                )
+            },
+            color = NavigationDrawerItemDefaults.colors(
+                unselectedContainerColor = Color.Transparent
+            ),
+            onClick = {
+                onDismiss()
+                navCtrl.navigate(SubscriptionManagerRoutes)
+            }
+        ),
         "setting" to FooterMenuConfig(
             title = "设置",
             icon = {
@@ -77,11 +160,11 @@ fun FooterMenu(
                 navCtrl.navigate(AboutRoutes)
             }
         ),
-        "subscription" to FooterMenuConfig(
-            title = "订阅管理",
+        "logout" to FooterMenuConfig(
+            title = "退出登录",
             icon = {
                 Icon(
-                    painter = painterResource(Res.drawable.ic_xs_sidebar_about),
+                    painter = painterResource(Res.drawable.ic_xs_sidebar_logout),
                     contentDescription = null,
                     tint = Color.Unspecified,
                     modifier = Modifier.size(20.dp)
@@ -91,11 +174,10 @@ fun FooterMenu(
                 unselectedContainerColor = Color.Transparent
             ),
             onClick = {
-                onDismiss()
-                navCtrl.navigate(SubscriptionManagerRoutes)
+                authDomain.signOut()
             }
-        ),
-    ).map {
+        )
+    ).let { if (isSubscribed) it.filterKeys { k -> k != "subscription" } else it }.map {
         NavigationDrawerItem(
             label = {
                 Text(
@@ -112,37 +194,4 @@ fun FooterMenu(
             colors = it.value.color
         )
     }
-
-    Column(
-        modifier = Modifier.padding(horizontal = 16.dp).padding(top = 60.dp).fillMaxWidth()
-    ) {
-        Button(
-            onClick = {
-                authDomain.signOut()
-            },
-            modifier = Modifier.fillMaxWidth().height(50.dp),
-            shape = RoundedCornerShape(12.dp),
-            contentPadding = PaddingValues(),
-            colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = Color.White
-            )
-        ) {
-            Row(
-                modifier = Modifier.fillMaxSize().background(Color.White),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    "退出登录",
-                    style = TextStyle(
-                        fontSize = 16.sp,
-                        lineHeight = 22.5.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF333333)
-                    )
-                )
-            }
-        }
-    }
-
 }
