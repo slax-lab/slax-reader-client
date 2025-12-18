@@ -10,6 +10,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.powersync.ExperimentalPowerSyncAPI
 import com.slax.reader.const.*
+import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.auth.AuthState
 import com.slax.reader.domain.coordinator.CoordinatorDomain
@@ -24,6 +25,7 @@ import com.slax.reader.ui.setting.SettingScreen
 import com.slax.reader.ui.space.SpaceManager
 import com.slax.reader.ui.subscription.SubscriptionManagerScreen
 import com.slax.reader.utils.LifeCycleHelper
+import com.slax.reader.utils.LocaleString
 import com.slax.reader.utils.NavHostTransitionHelper
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.analytics.analytics
@@ -40,9 +42,20 @@ fun SlaxNavigation(
 ) {
 
     val authDomain: AuthDomain = koinInject()
+    val appPreferences: AppPreferences = koinInject()
     val backgroundDomain: BackgroundDomain = koinInject()
     val coordinator: CoordinatorDomain = koinInject()
     val authState by authDomain.authState.collectAsState()
+
+    // 应用启动时加载保存的语言设置
+    LaunchedEffect(Unit) {
+        launch(Dispatchers.IO) {
+            val savedLanguage = appPreferences.getUserLanguage()
+            if (savedLanguage != null) {
+                LocaleString.currentLocale = savedLanguage
+            }
+        }
+    }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {

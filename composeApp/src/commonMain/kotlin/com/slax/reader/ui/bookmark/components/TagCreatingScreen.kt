@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewModelScope
 import com.slax.reader.data.database.model.UserTag
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
+import com.slax.reader.utils.i18n
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
@@ -122,7 +123,7 @@ fun TagCreatingScreen(
                     .padding(horizontal = 24.dp)
             ) {
                 Text(
-                    text = "返回",
+                    text = "btn_back".i18n(),
                     modifier = Modifier
                         .align(Alignment.CenterStart)
                         .clickable(
@@ -137,7 +138,7 @@ fun TagCreatingScreen(
                 )
 
                 Text(
-                    text = "创建标签",
+                    text = "tags_create_title".i18n(),
                     modifier = Modifier.align(Alignment.Center),
                     style = TextStyle(
                         fontSize = 16.sp,
@@ -202,7 +203,7 @@ fun TagCreatingScreen(
                             ) {
                                 if (inputState.text.isEmpty()) {
                                     Text(
-                                        text = "输入标签名称",
+                                        text = "tags_input_placeholder".i18n(),
                                         style = TextStyle(
                                             fontSize = 15.sp,
                                             color = Color(0x99A28D64),
@@ -242,7 +243,7 @@ fun TagCreatingScreen(
                             )
 
                             Text(
-                                text = "创建：${inputState.text}",
+                                text = "${"tags_create_prefix".i18n()}${inputState.text}",
                                 style = TextStyle(
                                     fontSize = 15.sp,
                                     color = Color(0xFFA28D64)

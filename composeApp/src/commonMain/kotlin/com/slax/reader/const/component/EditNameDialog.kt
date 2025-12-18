@@ -28,6 +28,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.slax.reader.utils.i18n
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
@@ -92,7 +93,7 @@ fun EditNameDialog(
                             .height(25.dp)
                     ) {
                         Text(
-                            text = "修改标题",
+                            text = "edit_title_dialog_title".i18n(),
                             modifier = Modifier.align(Alignment.CenterStart),
                             style = TextStyle(
                                 fontSize = 18.sp,
@@ -104,7 +105,7 @@ fun EditNameDialog(
 
                         Image(
                             painter = painterResource(Res.drawable.ic_xs_dialog_close),
-                            contentDescription = "关闭",
+                            contentDescription = "btn_close".i18n(),
                             modifier = Modifier
                                 .align(Alignment.CenterEnd)
                                 .size(24.dp)
@@ -187,7 +188,7 @@ fun EditNameDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "确定",
+                            text = "btn_confirm".i18n(),
                             style = TextStyle(
                                 fontSize = 16.sp,
                                 lineHeight = 22.5.sp,

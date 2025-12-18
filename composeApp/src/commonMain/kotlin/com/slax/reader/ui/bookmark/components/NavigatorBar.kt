@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.slax.reader.utils.i18n
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_sm_back
@@ -68,7 +69,7 @@ fun NavigatorBar(
             ) {
                 Icon(
                     painter = painterResource(Res.drawable.ic_sm_back),
-                    contentDescription = "返回",
+                    contentDescription = "btn_back".i18n(),
                     tint = Color.Unspecified,
                     modifier = Modifier.size(24.dp)
                 )

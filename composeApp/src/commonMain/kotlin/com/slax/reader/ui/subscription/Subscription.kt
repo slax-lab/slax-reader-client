@@ -84,7 +84,6 @@ fun SubscriptionManagerScreen(onBackClick: () -> Unit) {
             WebView(
                 url = "${SlaxConfig.WEB_BASE_URL}/subscription/inapp-purchase",
                 modifier = Modifier.fillMaxSize(),
-                injectUser = true,
                 onPageLoaded = {
                     isLoading = false
                 }

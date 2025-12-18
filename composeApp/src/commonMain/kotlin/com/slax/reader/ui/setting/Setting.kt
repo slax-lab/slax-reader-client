@@ -14,8 +14,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.slax.reader.const.DeleteAccountRoutes
+import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.utils.i18n
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
+import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_sm_back
 
@@ -25,6 +28,8 @@ fun SettingScreen(
     onBackClick: () -> Unit,
     navController: NavHostController
 ) {
+    val appPreferences: AppPreferences = koinInject()
+    val coroutineScope = rememberCoroutineScope()
     var showLanguageDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -113,6 +118,9 @@ fun SettingScreen(
                         selected = com.slax.reader.utils.LocaleString.currentLocale == "zh",
                         onClick = {
                             com.slax.reader.utils.LocaleString.currentLocale = "zh"
+                            coroutineScope.launch {
+                                appPreferences.setUserLanguage("zh")
+                            }
                             showLanguageDialog = false
                         }
                     )
@@ -122,6 +130,9 @@ fun SettingScreen(
                         selected = com.slax.reader.utils.LocaleString.currentLocale == "en",
                         onClick = {
                             com.slax.reader.utils.LocaleString.currentLocale = "en"
+                            coroutineScope.launch {
+                                appPreferences.setUserLanguage("en")
+                            }
                             showLanguageDialog = false
                         }
                     )

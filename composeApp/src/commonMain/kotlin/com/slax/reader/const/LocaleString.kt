@@ -251,5 +251,184 @@ val localeString: Map<String, Map<String, String>> = mapOf(
     "about_version" to mapOf(
         "zh" to "版本",
         "en" to "Version"
+    ),
+
+    // ========================================
+    // DetailScreen（书签详情页）
+    // ========================================
+    // 底部工具栏
+    "detail_toolbar_summary" to mapOf(
+        "zh" to "总结全文",
+        "en" to "Summarize"
+    ),
+    "detail_toolbar_star" to mapOf(
+        "zh" to "加星",
+        "en" to "Star"
+    ),
+    "detail_toolbar_archive" to mapOf(
+        "zh" to "归档",
+        "en" to "Archive"
+    ),
+    "detail_toolbar_edit_title" to mapOf(
+        "zh" to "改标题",
+        "en" to "Edit Title"
+    ),
+
+    // 标签管理
+    "tags_title" to mapOf(
+        "zh" to "标签",
+        "en" to "Tags"
+    ),
+    "tags_added" to mapOf(
+        "zh" to "已添加",
+        "en" to "Added"
+    ),
+    "tags_available" to mapOf(
+        "zh" to "可添加",
+        "en" to "Available"
+    ),
+    "tags_create_new" to mapOf(
+        "zh" to "创建新标签",
+        "en" to "Create New Tag"
+    ),
+    "tags_create_title" to mapOf(
+        "zh" to "创建标签",
+        "en" to "Create Tag"
+    ),
+    "tags_input_placeholder" to mapOf(
+        "zh" to "输入标签名称",
+        "en" to "Enter tag name"
+    ),
+    "tags_create_prefix" to mapOf(
+        "zh" to "创建：",
+        "en" to "Create: "
+    ),
+
+    // Outline（大纲）
+    "outline_collapse" to mapOf(
+        "zh" to "收缩",
+        "en" to "Collapse"
+    ),
+    "outline_expand" to mapOf(
+        "zh" to "展开",
+        "en" to "Expand"
+    ),
+    "outline_completed" to mapOf(
+        "zh" to "已完成",
+        "en" to "Completed"
+    ),
+    "outline_summarizing" to mapOf(
+        "zh" to "总结中",
+        "en" to "Summarizing"
+    ),
+    "outline_completed_prefix" to mapOf(
+        "zh" to "已完成：",
+        "en" to "Completed: "
+    ),
+    "outline_summarizing_prefix" to mapOf(
+        "zh" to "总结中：",
+        "en" to "Summarizing: "
+    ),
+    "outline_empty" to mapOf(
+        "zh" to "暂无内容",
+        "en" to "No content"
+    ),
+    "outline_error" to mapOf(
+        "zh" to "加载失败",
+        "en" to "Load failed"
+    ),
+
+    // 通用按钮
+    "btn_cancel" to mapOf(
+        "zh" to "取消",
+        "en" to "Cancel"
+    ),
+    "btn_confirm" to mapOf(
+        "zh" to "确定",
+        "en" to "Confirm"
+    ),
+
+    // ========================================
+    // 外部链接警告对话框（iOS）
+    // ========================================
+    "external_link_alert_title" to mapOf(
+        "zh" to "你即将跳转到第三方页面",
+        "en" to "You are about to visit a third-party page"
+    ),
+    "external_link_alert_message" to mapOf(
+        "zh" to "是否确认在浏览器中打开此链接？\n",
+        "en" to "Do you want to open this link in the browser?\n"
+    ),
+    "external_link_do_not_alert" to mapOf(
+        "zh" to " 不再提示",
+        "en" to " Don't show again"
+    ),
+
+    // ========================================
+    // 删除账号页面
+    // ========================================
+    "delete_account_title" to mapOf(
+        "zh" to "删除账号",
+        "en" to "Delete Account"
+    ),
+    "delete_account_button" to mapOf(
+        "zh" to "删除账号",
+        "en" to "Delete Account"
+    ),
+    "delete_account_confirm_title" to mapOf(
+        "zh" to "确认删除账号",
+        "en" to "Confirm Delete Account"
+    ),
+    "delete_account_confirm_message" to mapOf(
+        "zh" to "删除账号后，您的所有数据将被永久删除且无法恢复。确定要继续吗？",
+        "en" to "After deleting your account, all your data will be permanently deleted and cannot be recovered. Are you sure you want to continue?"
+    ),
+    "delete_account_confirm_button" to mapOf(
+        "zh" to "确认删除",
+        "en" to "Confirm Delete"
+    ),
+    "delete_account_error_title" to mapOf(
+        "zh" to "删除失败",
+        "en" to "Delete Failed"
+    ),
+
+    // ========================================
+    // 主页列表
+    // ========================================
+    "list_no_more" to mapOf(
+        "zh" to "没有更多了",
+        "en" to "No more items"
+    ),
+
+    // ========================================
+    // DetailScreen - 查看原网页
+    // ========================================
+    "detail_view_original" to mapOf(
+        "zh" to "查看原网页",
+        "en" to "View Original"
+    ),
+
+    // ========================================
+    // 修改标题对话框
+    // ========================================
+    "edit_title_dialog_title" to mapOf(
+        "zh" to "修改标题",
+        "en" to "Edit Title"
+    ),
+
+    // ========================================
+    // 全文概要
+    // ========================================
+    "overview_prefix" to mapOf(
+        "zh" to "全文概要: ",
+        "en" to "Overview: "
+    ),
+    "overview_expand_all" to mapOf(
+        "zh" to "展开全部",
+        "en" to "Expand All"
+    ),
+    "overview_dialog_title" to mapOf(
+        "zh" to "全文概要：",
+        "en" to "Full Overview:"
     )
 )

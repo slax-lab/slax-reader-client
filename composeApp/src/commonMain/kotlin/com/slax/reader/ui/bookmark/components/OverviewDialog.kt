@@ -32,6 +32,7 @@ import androidx.lifecycle.viewModelScope
 import com.slax.reader.const.component.rememberDismissableVisibility
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.OverviewViewBounds
+import com.slax.reader.utils.i18n
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_circle_close_icon
@@ -160,7 +161,7 @@ fun OverviewDialog(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    "全文概要：",
+                                    "overview_dialog_title".i18n(),
                                     modifier = Modifier.fillMaxWidth(),
                                     style = TextStyle(
                                         fontSize = 14.sp,

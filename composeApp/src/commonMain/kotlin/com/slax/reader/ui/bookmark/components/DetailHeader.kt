@@ -16,6 +16,7 @@ import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.OverviewViewBounds
 import com.slax.reader.utils.OpenInBrowser
+import com.slax.reader.utils.i18n
 
 @Composable
 fun HeaderContent(
@@ -68,7 +69,7 @@ fun HeaderContent(
                     style = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, color = Color(0xFF999999))
                 )
                 Text(
-                    "查看原网页",
+                    "detail_view_original".i18n(),
                     modifier = Modifier.padding(start = 16.dp).clickable {
                         externalUrl = detail.metadataUrl
                     },
