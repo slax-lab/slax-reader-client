@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.utils.OpenInBrowser
+import com.slax.reader.utils.i18n
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
@@ -91,7 +92,7 @@ fun ProcessingDialog(
                     ) {
                         Image(
                             painter = painterResource(Res.drawable.ic_xs_dialog_close),
-                            contentDescription = "关闭",
+                            contentDescription = "btn_close".i18n(),
                             modifier = Modifier
                                 .align(Alignment.CenterEnd)
                                 .size(24.dp)
@@ -106,7 +107,7 @@ fun ProcessingDialog(
 
                     Spacer(modifier = Modifier.height(20.dp))
                     Text(
-                        text = "快照将在几分钟内准备就绪。在此期间，您可以阅读原文。",
+                        text = "processing_message".i18n(),
                         modifier = Modifier.fillMaxWidth(),
                         style = TextStyle(
                             fontSize = 16.sp,
@@ -139,7 +140,7 @@ fun ProcessingDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "阅读原文",
+                            text = "processing_btn_read_original".i18n(),
                             style = TextStyle(
                                 fontSize = 16.sp,
                                 lineHeight = 22.5.sp,

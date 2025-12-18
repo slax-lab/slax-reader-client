@@ -1,9 +1,12 @@
 package com.slax.reader.utils
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.slax.reader.const.localeString
 
 object LocaleString {
-    var currentLocale: String = "zh"
+    var currentLocale by mutableStateOf("zh")
     private const val FALLBACK_LOCALE: String = "en"
 
     private val positionalTemplateCache = mutableMapOf<String, ParsedPositionalTemplate>()

@@ -34,6 +34,7 @@ import androidx.lifecycle.viewModelScope
 import com.slax.reader.const.component.rememberDismissableVisibility
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.utils.getText
+import com.slax.reader.utils.i18n
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -73,9 +74,9 @@ fun AddLinkDialog(
 
         val res = matchRegexp.findAll(text)
         if (res.count() == 0) {
-            errorMessage = ShowErrorMessage("剪贴板中没有有效的链接", Color(0xfff3b336))
+            errorMessage = ShowErrorMessage("add_link_error_no_clipboard".i18n(), Color(0xfff3b336))
         } else if (res.count() > 1) {
-            errorMessage = ShowErrorMessage("剪贴板发现多个链接，请手动处理", Color(0xfff3b336))
+            errorMessage = ShowErrorMessage("add_link_error_multiple_links".i18n(), Color(0xfff3b336))
         } else {
             inputState.setTextAndPlaceCursorAtEnd(res.firstOrNull()!!.value)
         }
@@ -93,7 +94,7 @@ fun AddLinkDialog(
     fun onConfirm() {
         val text = inputState.text.toString().trim()
         if (!text.startsWith("https://") && !text.startsWith("http://")) {
-            errorMessage = ShowErrorMessage("请输入有效的网址链接", Color(0xFFE53935))
+            errorMessage = ShowErrorMessage("add_link_error_invalid_url".i18n(), Color(0xFFE53935))
             return
         }
         inboxView.viewModelScope.launch {
@@ -151,7 +152,7 @@ fun AddLinkDialog(
                     ) {
 
                         Text(
-                            text = "添加链接",
+                            text = "add_link_dialog_title".i18n(),
                             modifier = Modifier.align(Alignment.CenterStart),
                             style = TextStyle(
                                 fontSize = 18.sp,
@@ -163,7 +164,7 @@ fun AddLinkDialog(
 
                         Image(
                             painter = painterResource(Res.drawable.ic_xs_dialog_close),
-                            contentDescription = "关闭",
+                            contentDescription = "btn_close".i18n(),
                             modifier = Modifier
                                 .align(Alignment.CenterEnd)
                                 .size(24.dp)
@@ -212,7 +213,7 @@ fun AddLinkDialog(
                             ) {
                                 if (inputState.text.isEmpty()) {
                                     Text(
-                                        text = "https://…",
+                                        text = "add_link_placeholder".i18n(),
                                         style = TextStyle(
                                             fontSize = 16.sp,
                                             lineHeight = 24.sp,
@@ -263,7 +264,7 @@ fun AddLinkDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "添加收藏",
+                            text = "add_link_btn_submit".i18n(),
                             style = TextStyle(
                                 fontSize = 16.sp,
                                 lineHeight = 22.5.sp,

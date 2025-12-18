@@ -28,6 +28,7 @@ import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.coordinator.AppSyncState
 import com.slax.reader.ui.sidebar.compenents.FooterMenu
 import com.slax.reader.ui.sidebar.compenents.SyncStatusBar
+import com.slax.reader.utils.i18n
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
@@ -109,7 +110,7 @@ private fun DrawerContent(
         ) {
             Icon(
                 painter = painterResource(Res.drawable.ic_xs_sidebar_close),
-                contentDescription = "关闭",
+                contentDescription = "sidebar_close".i18n(),
                 tint = Color.Unspecified,
                 modifier = Modifier.size(24.dp)
             )
@@ -127,7 +128,7 @@ private fun DrawerContent(
         ) {
             Image(
                 painter = avatarPainter,
-                contentDescription = "用户头像",
+                contentDescription = "sidebar_user_avatar".i18n(),
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape),

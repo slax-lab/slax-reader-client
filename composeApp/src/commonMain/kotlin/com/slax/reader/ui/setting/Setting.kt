@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.slax.reader.const.DeleteAccountRoutes
+import com.slax.reader.utils.i18n
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_sm_back
@@ -24,13 +25,14 @@ fun SettingScreen(
     onBackClick: () -> Unit,
     navController: NavHostController
 ) {
+    var showLanguageDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = "设置",
+                        text = "setting_title".i18n(),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color(0xFF0F1419)
@@ -40,7 +42,7 @@ fun SettingScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             painter = painterResource(Res.drawable.ic_sm_back),
-                            contentDescription = "返回",
+                            contentDescription = "btn_back".i18n(),
                             tint = Color.Unspecified,
                             modifier = Modifier.size(24.dp)
                         )
@@ -70,8 +72,24 @@ fun SettingScreen(
                 Column(
                     modifier = Modifier.fillMaxWidth()
                 ) {
+                    // 语言选择
                     SettingItem(
-                        title = "删除账号",
+                        title = "setting_language".i18n(),
+                        rightText = if (com.slax.reader.utils.LocaleString.currentLocale == "zh") "language_chinese".i18n() else "language_english".i18n(),
+                        onClick = {
+                            showLanguageDialog = true
+                        }
+                    )
+
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        thickness = 0.5.dp,
+                        color = Color(0x1E000000)
+                    )
+
+                    // 删除账号
+                    SettingItem(
+                        title = "setting_delete_account".i18n(),
                         color = Color(0xFFF45454),
                         onClick = {
                             navController.navigate(DeleteAccountRoutes)
@@ -81,12 +99,76 @@ fun SettingScreen(
             }
         }
     }
+
+    // 语言选择对话框
+    if (showLanguageDialog) {
+        AlertDialog(
+            onDismissRequest = { showLanguageDialog = false },
+            containerColor = Color.White,
+            title = { Text("setting_language".i18n()) },
+            text = {
+                Column {
+                    RadioButtonItem(
+                        text = "language_chinese".i18n(),
+                        selected = com.slax.reader.utils.LocaleString.currentLocale == "zh",
+                        onClick = {
+                            com.slax.reader.utils.LocaleString.currentLocale = "zh"
+                            showLanguageDialog = false
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    RadioButtonItem(
+                        text = "language_english".i18n(),
+                        selected = com.slax.reader.utils.LocaleString.currentLocale == "en",
+                        onClick = {
+                            com.slax.reader.utils.LocaleString.currentLocale = "en"
+                            showLanguageDialog = false
+                        }
+                    )
+                }
+            },
+            confirmButton = { }
+        )
+    }
+}
+
+@Composable
+private fun RadioButtonItem(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(color = Color.Gray)
+            ) { onClick() }
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(
+            selected = selected,
+            onClick = onClick,
+            colors = RadioButtonDefaults.colors(
+                selectedColor = Color(0xFF16b998)
+            )
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = text,
+            fontSize = 16.sp,
+            color = Color(0xFF0F1419)
+        )
+    }
 }
 
 @Composable
 private fun SettingItem(
     title: String,
     color: Color = Color(0xFF0F1419),
+    rightText: String? = null,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -109,5 +191,14 @@ private fun SettingItem(
             fontWeight = FontWeight.Normal,
             color = color
         )
+
+        if (rightText != null) {
+            Text(
+                text = rightText,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Normal,
+                color = Color(0xFF999999)
+            )
+        }
     }
 }

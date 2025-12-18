@@ -33,6 +33,7 @@ import androidx.navigation.NavController
 import com.slax.reader.const.BookmarkRoutes
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.InboxListViewModel
+import com.slax.reader.utils.i18n
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -164,7 +165,7 @@ fun BookmarkItemRow(
                     ) {
                         Image(
                             painter = painterResource(if (bookmark.isStarred == 1) Res.drawable.ic_floating_panel_starred else Res.drawable.ic_cell_action_star),
-                            contentDescription = "Star",
+                            contentDescription = "bookmark_star".i18n(),
                             modifier = Modifier.size(20.dp),
                             contentScale = ContentScale.Fit
                         )
@@ -193,7 +194,7 @@ fun BookmarkItemRow(
                     ) {
                         Image(
                             painter = painterResource(if (bookmark.archiveStatus == 1) Res.drawable.ic_floating_panel_archieved else Res.drawable.ic_cell_action_archieve),
-                            contentDescription = "Archive",
+                            contentDescription = "bookmark_archive".i18n(),
                             modifier = Modifier.size(20.dp),
                             contentScale = ContentScale.Fit
                         )
@@ -377,7 +378,7 @@ fun BookmarkItemRow(
                 // 加星
                 MenuItem(
                     icon = painterResource(if (bookmark.isStarred == 1) Res.drawable.ic_floating_panel_starred else Res.drawable.ic_cell_more_star),
-                    text = "加星",
+                    text = "bookmark_star".i18n(),
                     onClick = {
                         scope.launch {
                             menuTriggerSource = MenuTriggerSource.NONE
@@ -390,7 +391,7 @@ fun BookmarkItemRow(
                 // 归档
                 MenuItem(
                     icon = painterResource(if (bookmark.archiveStatus == 1) Res.drawable.ic_floating_panel_archieved else Res.drawable.ic_cell_more_archieve),
-                    text = "归档",
+                    text = "bookmark_archive".i18n(),
                     onClick = {
                         scope.launch {
                             menuTriggerSource = MenuTriggerSource.NONE
@@ -403,7 +404,7 @@ fun BookmarkItemRow(
                 // 修改标题
                 MenuItem(
                     icon = painterResource(Res.drawable.ic_cell_more_edittitle),
-                    text = "修改标题",
+                    text = "bookmark_edit_title".i18n(),
                     onClick = {
                         menuTriggerSource = MenuTriggerSource.NONE
                         isLongPressed = false
@@ -414,7 +415,7 @@ fun BookmarkItemRow(
                 // 删除
                 MenuItem(
                     icon = painterResource(Res.drawable.ic_cell_more_delete),
-                    text = "删除",
+                    text = "bookmark_delete".i18n(),
                     color = Color(0xFFF45454),
                     onClick = {
                         scope.launch {

@@ -36,6 +36,7 @@ import com.mmk.kmpauth.google.GoogleButtonUiContainer
 import com.slax.reader.const.InboxRoutes
 import com.slax.reader.domain.auth.AppleSignInProvider
 import com.slax.reader.utils.WebView
+import com.slax.reader.utils.i18n
 import com.slax.reader.utils.platformType
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
@@ -78,11 +79,11 @@ fun LoginScreen(navController: NavHostController) {
     errorMessage?.let { message ->
         AlertDialog(
             onDismissRequest = { errorMessage = null },
-            title = { Text("Login Failed") },
+            title = { Text("login_failed".i18n()) },
             text = { Text(message) },
             confirmButton = {
                 TextButton(onClick = { errorMessage = null }) {
-                    Text("OK")
+                    Text("btn_ok".i18n())
                 }
             }
         )
@@ -98,7 +99,7 @@ fun LoginScreen(navController: NavHostController) {
             Spacer(modifier = Modifier.heightIn(min = 48.dp, max = 128.dp).fillMaxWidth().weight(0.15f))
 
             Text(
-                text = "欢迎来到 \nSlax Reader",
+                text = "login_welcome_title".i18n(),
                 style = TextStyle(
                     fontSize = 27.sp,
                     lineHeight = 40.5.sp,
@@ -119,7 +120,7 @@ fun LoginScreen(navController: NavHostController) {
                 )
 
                 Text(
-                    text = "Read Smarter\nConnect Deeper",
+                    text = "login_welcome_subtitle".i18n(),
                     style = TextStyle(
                         fontSize = 14.sp,
                         lineHeight = 21.sp,
@@ -152,7 +153,7 @@ fun LoginScreen(navController: NavHostController) {
                 }
             }) {
                 LoginButton(
-                    text = "Google 登录",
+                    text = "login_google".i18n(),
                     isLoading = isGoogleLoading,
                     drawableResource = Res.drawable.ic_sm_google,
                     onClick = {
@@ -173,7 +174,7 @@ fun LoginScreen(navController: NavHostController) {
                     modifier = Modifier.padding(top = 10.dp),
                     drawableResource = Res.drawable.ic_sm_apple,
                     isLoading = isAppleLoading,
-                    text = "通过 Apple 登录",
+                    text = "login_apple".i18n(),
                     onClick = {
                         if (!isAgreed) {
                             pendingLoginAction = {
@@ -336,25 +337,25 @@ private fun AgreementText(
     onPrivacyPolicyClick: () -> Unit
 ) {
     val annotatedString = buildAnnotatedString {
-        append("阅读并同意")
+        append("agreement_prefix".i18n())
 
         pushStringAnnotation(
             tag = "user_agreement",
             annotation = "user_agreement"
         )
         withStyle(style = SpanStyle(color = Color(0xff5490C2))) {
-            append("《用户协议》")
+            append("agreement_user_agreement".i18n())
         }
         pop()
 
-        append("和")
+        append("agreement_and".i18n())
 
         pushStringAnnotation(
             tag = "privacy_policy",
             annotation = "privacy_policy"
         )
         withStyle(style = SpanStyle(color = Color(0xff5490C2))) {
-            append("《隐私政策》")
+            append("agreement_privacy_policy".i18n())
         }
         pop()
     }
@@ -471,7 +472,7 @@ private fun AgreementBottomSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "用户协议",
+                    text = "agreement_tab_terms".i18n(),
                     style = TextStyle(
                         fontSize = 16.sp,
                         fontWeight = if (selectedTabIndex == 0) FontWeight.SemiBold else FontWeight.Normal,
@@ -491,7 +492,7 @@ private fun AgreementBottomSheet(
                 )
 
                 Text(
-                    text = "隐私政策",
+                    text = "agreement_tab_privacy".i18n(),
                     style = TextStyle(
                         fontSize = 16.sp,
                         fontWeight = if (selectedTabIndex == 1) FontWeight.SemiBold else FontWeight.Normal,
@@ -546,7 +547,7 @@ private fun AgreementBottomSheet(
                 )
             ) {
                 Text(
-                    "同意",
+                    "agreement_btn_agree".i18n(),
                     style = TextStyle(
                         color = Color.White,
                         fontSize = 16.sp,
@@ -569,7 +570,7 @@ private fun AgreementBottomSheet(
                 )
             ) {
                 Text(
-                    "不同意",
+                    "agreement_btn_disagree".i18n(),
                     style = TextStyle(
                         color = Color(0xff999999),
                         fontSize = 15.sp,
