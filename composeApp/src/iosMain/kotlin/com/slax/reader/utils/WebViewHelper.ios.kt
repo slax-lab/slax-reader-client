@@ -491,7 +491,6 @@ actual fun WebView(
     contentInsets: PaddingValues?,
     onScroll: ((scrollX: Double, scrollY: Double, contentHeight: Double, visibleHeight: Double) -> Unit)?,
     onPageLoaded: (() -> Unit)?,
-    injectUser: Boolean,
 ) {
     val webViewRef = remember { mutableStateOf<WKWebView?>(null) }
 
