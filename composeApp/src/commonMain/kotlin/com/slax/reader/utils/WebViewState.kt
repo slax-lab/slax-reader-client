@@ -3,7 +3,6 @@ package com.slax.reader.utils
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharedFlow
 
@@ -17,12 +16,28 @@ fun escapeJsTemplateString(input: String): String {
         .replace("\t", "\\t")    // 制表符
 }
 
+data class WebViewCookie(
+    val name: String,
+    val value: String,
+    val domain: String,
+    val path: String = "/",
+    val secure: Boolean = false,
+    val httpOnly: Boolean = false,
+    val expiresDate: Long? = null
+)
+
 @Stable
-expect class AppWebViewState(scope: CoroutineScope) {
+expect class AppWebViewState(
+    scope: CoroutineScope,
+    initialCookies: List<WebViewCookie>? = null
+) {
     val events: SharedFlow<WebViewEvent>
+    val initialCookies: List<WebViewCookie>?
 
     fun evaluateJs(script: String)
     fun scrollToAnchor(anchor: String)
+    fun reload()
+    fun setCookies(cookies: List<WebViewCookie>, url: String)
 }
 
 @Stable
@@ -35,10 +50,16 @@ sealed interface WebViewEvent {
     data class ScrollToPosition(val percentage: Double) : WebViewEvent
     data class ScrollChange(val scrollY: Float, val contentHeight: Float, val visibleHeight: Float) : WebViewEvent
     data object Tap : WebViewEvent
+    data object PageLoaded : WebViewEvent
+    data class Scroll(val scrollX: Double, val scrollY: Double, val contentHeight: Double, val visibleHeight: Double) : WebViewEvent
+    data class PurchaseWithOffer(val productId: String, val orderId: String, val offer: IAPProductOffer) : WebViewEvent
+    data class Purchase(val productId: String, val orderId: String) : WebViewEvent
 }
 
 @Composable
-fun rememberAppWebViewState(): AppWebViewState {
-    val scope = rememberCoroutineScope()
-    return remember { AppWebViewState(scope) }
+fun rememberAppWebViewState(
+    scope: CoroutineScope,
+    initialCookies: List<WebViewCookie>? = null
+): AppWebViewState {
+    return remember(initialCookies) { AppWebViewState(scope, initialCookies) }
 }

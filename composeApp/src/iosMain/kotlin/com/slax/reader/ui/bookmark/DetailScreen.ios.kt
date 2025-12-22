@@ -31,7 +31,11 @@ data class WebViewMessage(
     val allImages: List<String>? = null,
     val position: Int? = null,
     val index: Int? = null,
-    val percentage: Double? = null
+    val percentage: Double? = null,
+
+    val productId: String,
+    val orderId: String,
+    val offer: IAPProductOffer?
 )
 
 @Composable
@@ -65,7 +69,8 @@ actual fun DetailScreen(
 
     var manuallyVisible by remember { mutableStateOf(true) }
 
-    val webViewState = rememberAppWebViewState()
+    val coroutineScope = rememberCoroutineScope()
+    val webViewState = rememberAppWebViewState(coroutineScope)
 
     val bottomThresholdPx = with(LocalDensity.current) { 100.dp.toPx() }
 
@@ -160,6 +165,8 @@ actual fun DetailScreen(
                         manuallyVisible = !manuallyVisible
                     }
                 }
+
+                else -> {}
             }
         }
     }

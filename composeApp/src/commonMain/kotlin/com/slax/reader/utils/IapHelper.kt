@@ -1,5 +1,6 @@
 package com.slax.reader.utils
 
+import kotlinx.serialization.Serializable
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -10,6 +11,15 @@ data class IAPProduct(
     val description: String,
     val price: Double,
     val type: ProductType
+)
+
+@Serializable
+data class IAPProductOffer(
+    val offerId: String,
+    val keyID: String,
+    val nonce: String,
+    val signature: String,
+    val timestamp: Int
 )
 
 enum class ProductType { CONSUMABLE, NON_CONSUMABLE, AUTO_RENEWABLE, NON_RENEWABLE, UNKNOWN }
@@ -41,4 +51,5 @@ expect class IAPManager() {
     fun getPurchasedIds(): List<String>
     fun canMakePayments(): Boolean
     fun getProducts(): List<IAPProduct>
+    fun purchaseWithOffer(productId: String, orderId: String, offer: IAPProductOffer)
 }

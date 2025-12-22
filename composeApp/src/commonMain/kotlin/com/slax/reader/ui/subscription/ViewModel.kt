@@ -2,11 +2,15 @@ package com.slax.reader.ui.subscription
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.slax.reader.SlaxConfig
 import com.slax.reader.data.network.ApiService
+import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.utils.IAPCallback
 import com.slax.reader.utils.IAPManager
 import com.slax.reader.utils.IAPProduct
+import com.slax.reader.utils.IAPProductOffer
 import com.slax.reader.utils.PurchaseResult
+import com.slax.reader.utils.WebViewCookie
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,7 +33,10 @@ sealed class PaymentState {
     data class Error(val message: String) : PaymentState()
 }
 
-class SubscriptionViewModel(private val apiService: ApiService) : ViewModel() {
+class SubscriptionViewModel(
+    private val apiService: ApiService,
+    private val appPreferences: AppPreferences
+    ) : ViewModel() {
     private val _paymentState = MutableStateFlow<PaymentState>(PaymentState.Loading)
     val paymentState: StateFlow<PaymentState> = _paymentState.asStateFlow()
     private val paymentManager = IAPManager()
@@ -93,22 +100,21 @@ class SubscriptionViewModel(private val apiService: ApiService) : ViewModel() {
     init {
         val callback = SubscriptionCallback()
         paymentManager.setCallback(callback)
-        paymentManager.loadProducts(listOf("app.slax.reader.monthly"))
+        viewModelScope.launch {
+            val productIds = apiService.getIAPProductIds()
+            paymentManager.loadProducts(productIds.data?.products ?: emptyList())
+        }
     }
 
     @OptIn(ExperimentalUuidApi::class)
-   fun purchase() {
+   fun purchase(productId: String, orderId: String, offer: IAPProductOffer? = null) {
         _paymentState.value = PaymentState.Purchasing
         try {
-            val orderInfo = runBlocking {
-                apiService.createIapOrderId("app.slax.reader.monthly")
+            if (offer != null) {
+                paymentManager.purchaseWithOffer(productId, orderId, offer)
+            } else {
+                paymentManager.purchase(productId, orderId)
             }
-            val orderId = orderInfo.data?.orderId
-            if (orderId == null) {
-                _paymentState.value = PaymentState.Error("Failed to create order: ${orderInfo.message}")
-                return
-            }
-            paymentManager.purchase("app.slax.reader.monthly", orderId)
         } catch (e: Exception) {
             _paymentState.value = PaymentState.Error(e.message ?: "Failed to create order")
         }
@@ -116,5 +122,21 @@ class SubscriptionViewModel(private val apiService: ApiService) : ViewModel() {
 
     fun resetState() {
         _paymentState.value = PaymentState.Idle
+    }
+
+    fun getUserWebviewCookie() : List<WebViewCookie> {
+        val token = runBlocking {
+            appPreferences.getAuthInfoSuspend()
+        }
+        return listOf(
+            WebViewCookie(
+                name = "token",
+                value = token!!,
+                domain = SlaxConfig.WEB_DOMAIN,
+                path = "/",
+                httpOnly = true,
+                secure = true
+            )
+        )
     }
 }

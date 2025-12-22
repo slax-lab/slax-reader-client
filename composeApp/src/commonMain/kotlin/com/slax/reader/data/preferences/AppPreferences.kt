@@ -144,19 +144,11 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
         }
     }
 
-    /**
-     * 获取用户保存的语言设置
-     * @return 语言代码（"zh" 或 "en"），如果未设置则返回 null（使用系统默认）
-     */
     suspend fun getUserLanguage(): String? = withContext(Dispatchers.IO) {
         val prefs = dataStore.data.first()
         return@withContext prefs[USER_LANGUAGE_KEY]
     }
 
-    /**
-     * 保存用户的语言设置
-     * @param language 语言代码（"zh" 或 "en"）
-     */
     suspend fun setUserLanguage(language: String) = withContext(Dispatchers.IO) {
         dataStore.edit { preferences ->
             preferences[USER_LANGUAGE_KEY] = language

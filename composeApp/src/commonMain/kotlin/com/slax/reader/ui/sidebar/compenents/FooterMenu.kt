@@ -10,7 +10,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -18,8 +17,8 @@ import com.slax.reader.const.AboutRoutes
 import com.slax.reader.const.SettingsRoutes
 import com.slax.reader.const.SubscriptionManagerRoutes
 import com.slax.reader.domain.auth.AuthDomain
-import com.slax.reader.ui.subscription.SubscriptionManagerScreen
 import com.slax.reader.utils.i18n
+import com.slax.reader.utils.platformType
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
@@ -47,7 +46,7 @@ fun FooterMenu(
 
     println("[watch][UI] FooterMenu recomposed")
 
-    if (isSubscribed) {
+    if (isSubscribed && platformType != "android") {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp)
         ) {
@@ -178,7 +177,10 @@ fun FooterMenu(
                 authDomain.signOut()
             }
         )
-    ).let { if (isSubscribed) it.filterKeys { k -> k != "subscription" } else it }.map {
+    ).map {
+        if (it.key == "subscription" && platformType == "android") {
+            return@map
+        }
         NavigationDrawerItem(
             label = {
                 Text(

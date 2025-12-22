@@ -40,7 +40,7 @@ data class WebViewMessage(
     val percentage: Double? = null
 )
 
-@SuppressLint("UseKtx")
+@SuppressLint("UseKtx", "ConfigurationScreenWidthHeight")
 @Composable
 actual fun DetailScreen(
     detailViewModel: BookmarkDetailViewModel,
@@ -73,8 +73,8 @@ actual fun DetailScreen(
     var headerHeightPx by remember { mutableFloatStateOf(0f) }
     var webViewHeightPx by remember { mutableFloatStateOf(0f) }
 
-    val webViewState = rememberAppWebViewState()
     val coroutineScope = rememberCoroutineScope()
+    val webViewState = rememberAppWebViewState(coroutineScope)
 
     val bottomThresholdPx = with(LocalDensity.current) { 100.dp.toPx() }
 

@@ -147,111 +147,130 @@ public class StoreKitBridge: NSObject {
 
     @objc public func purchase(_ productId: String, appAccountToken: UUID) {
         Task {
-            guard let product = products[productId] else {
-                await MainActor.run {
-                    let result = SKPurchaseResult(
-                        success: false,
-                        productId: productId,
-                        transactionId: "",
-                        appAccountToken: appAccountToken,
-                        errorMessage: "Product not found: \(productId)",
-                        isPending: false,
-                        isCancelled: false
-                    )
-                    self.callback?.onPurchaseResult(result)
-                }
+            await doPurchase(productId: productId, appAccountToken: appAccountToken, options: [
+                .appAccountToken(appAccountToken)
+            ])
+        }
+    }
+
+    @objc public func purchaseWithOffer(
+        _ productId: String,
+        appAccountToken: UUID,
+        offerId: String,
+        keyID: String,
+        nonce: UUID,
+        signature: String,
+        timestamp: Int
+    ) {
+        Task {
+            guard let signatureData = Data(base64Encoded: signature) else {
+                await sendPurchaseError(productId: productId, appAccountToken: appAccountToken, message: "Invalid signature")
                 return
             }
 
-            do {
-                let purchaseResult = try await product.purchase(options: [
-                    .appAccountToken(appAccountToken)
-                ])
+            await doPurchase(productId: productId, appAccountToken: appAccountToken, options: [
+                .appAccountToken(appAccountToken),
+                .promotionalOffer(offerID: offerId, keyID: keyID, nonce: nonce, signature: signatureData, timestamp: timestamp)
+            ])
+        }
+    }
 
-                await MainActor.run {
-                    switch purchaseResult {
-                    case .success(let verification):
-                        switch verification {
-                        case .verified(let transaction):
-                            self.purchasedIds.insert(productId)
-                            Task { await transaction.finish() }
+    // MARK: - 内部购买实现
+    private func doPurchase(productId: String, appAccountToken: UUID, options: Set<Product.PurchaseOption>) async {
+        guard let product = products[productId] else {
+            await sendPurchaseError(productId: productId, appAccountToken: appAccountToken, message: "Product not found: \(productId)")
+            return
+        }
 
-                            let result = SKPurchaseResult(
-                                success: true,
-                                productId: productId,
-                                transactionId: String(transaction.id),
-                                appAccountToken: transaction.appAccountToken ?? appAccountToken,
-                                errorMessage: "",
-                                isPending: false,
-                                isCancelled: false
-                            )
-                            self.callback?.onPurchaseResult(result)
+        do {
+            let purchaseResult = try await product.purchase(options: options)
 
-                        case .unverified(_, let verificationError):
-                            let result = SKPurchaseResult(
-                                success: false,
-                                productId: productId,
-                                transactionId: "",
-                                appAccountToken: appAccountToken,
-                                errorMessage: "Verification failed: \(verificationError.localizedDescription)",
-                                isPending: false,
-                                isCancelled: false
-                            )
-                            self.callback?.onPurchaseResult(result)
-                        }
+            await MainActor.run {
+                switch purchaseResult {
+                case .success(let verification):
+                    switch verification {
+                    case .verified(let transaction):
+                        self.purchasedIds.insert(productId)
+                        Task { await transaction.finish() }
 
-                    case .pending:
                         let result = SKPurchaseResult(
-                            success: false,
+                            success: true,
                             productId: productId,
-                            transactionId: "",
-                            appAccountToken: appAccountToken,
+                            transactionId: String(transaction.id),
+                            appAccountToken: transaction.appAccountToken ?? appAccountToken,
                             errorMessage: "",
-                            isPending: true,
+                            isPending: false,
                             isCancelled: false
                         )
                         self.callback?.onPurchaseResult(result)
 
-                    case .userCancelled:
+                    case .unverified(_, let error):
                         let result = SKPurchaseResult(
                             success: false,
                             productId: productId,
                             transactionId: "",
                             appAccountToken: appAccountToken,
-                            errorMessage: "",
-                            isPending: false,
-                            isCancelled: true
-                        )
-                        self.callback?.onPurchaseResult(result)
-
-                    @unknown default:
-                        let result = SKPurchaseResult(
-                            success: false,
-                            productId: productId,
-                            transactionId: "",
-                            appAccountToken: appAccountToken,
-                            errorMessage: "Unknown result",
+                            errorMessage: "Verification failed: \(error.localizedDescription)",
                             isPending: false,
                             isCancelled: false
                         )
                         self.callback?.onPurchaseResult(result)
                     }
-                }
-            } catch {
-                await MainActor.run {
+
+                case .pending:
                     let result = SKPurchaseResult(
                         success: false,
                         productId: productId,
                         transactionId: "",
                         appAccountToken: appAccountToken,
-                        errorMessage: error.localizedDescription,
+                        errorMessage: "",
+                        isPending: true,
+                        isCancelled: false
+                    )
+                    self.callback?.onPurchaseResult(result)
+
+                case .userCancelled:
+                    let result = SKPurchaseResult(
+                        success: false,
+                        productId: productId,
+                        transactionId: "",
+                        appAccountToken: appAccountToken,
+                        errorMessage: "",
+                        isPending: false,
+                        isCancelled: true
+                    )
+                    self.callback?.onPurchaseResult(result)
+
+                @unknown default:
+                    let result = SKPurchaseResult(
+                        success: false,
+                        productId: productId,
+                        transactionId: "",
+                        appAccountToken: appAccountToken,
+                        errorMessage: "Unknown result",
                         isPending: false,
                         isCancelled: false
                     )
                     self.callback?.onPurchaseResult(result)
                 }
             }
+        } catch {
+            await sendPurchaseError(productId: productId, appAccountToken: appAccountToken, message: error.localizedDescription)
         }
+    }
+
+    @MainActor
+    private func sendPurchaseError(productId: String, appAccountToken: UUID, message: String) {
+        let result = SKPurchaseResult(
+            success: false,
+            productId: productId,
+            transactionId: "",
+            appAccountToken: appAccountToken,
+            errorMessage: message,
+            isPending: false,
+            isCancelled: false
+        )
+        self.callback?.onPurchaseResult(result)
     }
 
     @objc public func restorePurchases() {

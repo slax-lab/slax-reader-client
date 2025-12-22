@@ -40,14 +40,12 @@ import org.koin.compose.koinInject
 fun SlaxNavigation(
     navCtrl: NavHostController
 ) {
-
     val authDomain: AuthDomain = koinInject()
     val appPreferences: AppPreferences = koinInject()
     val backgroundDomain: BackgroundDomain = koinInject()
     val coordinator: CoordinatorDomain = koinInject()
     val authState by authDomain.authState.collectAsState()
 
-    // 应用启动时加载保存的语言设置
     LaunchedEffect(Unit) {
         launch(Dispatchers.IO) {
             val savedLanguage = appPreferences.getUserLanguage()

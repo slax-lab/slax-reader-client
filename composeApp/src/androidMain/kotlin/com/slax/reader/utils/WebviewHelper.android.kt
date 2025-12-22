@@ -244,15 +244,14 @@ fun PaddingValues.setOnWebView(webView: WebView) {
 actual fun WebView(
     url: String,
     modifier: Modifier,
+    webState: AppWebViewState,
     contentInsets: PaddingValues?,
-    onScroll: ((scrollX: Double, scrollY: Double, contentHeight: Double, visibleHeight: Double) -> Unit)?,
-    onPageLoaded: (() -> Unit)?,
 ) {
     AndroidView(
         modifier = modifier,
         factory = { context ->
             WebView(context).apply {
-
+                webState.webView = this
                 setBackgroundColor(Color.TRANSPARENT)
                 settings.apply {
                     javaScriptEnabled = true
@@ -270,11 +269,13 @@ actual fun WebView(
                     val webView = view as? WebView ?: return@setOnScrollChangeListener
                     val contentHeight = (webView.contentHeight * webView.scale).toDouble()
                     val visibleHeight = webView.height.toDouble()
-                    onScroll?.invoke(
-                        scrollX.toDouble(),
-                        scrollY.toDouble(),
-                        contentHeight,
-                        visibleHeight
+                    webState.dispatchEvent(
+                        WebViewEvent.Scroll(
+                            scrollX.toDouble(),
+                            scrollY.toDouble(),
+                            contentHeight,
+                            visibleHeight
+                        )
                     )
                 }
 
@@ -283,16 +284,18 @@ actual fun WebView(
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
 
-                        onPageLoaded?.invoke()
+                        webState.dispatchEvent(WebViewEvent.PageLoaded)
                         view?.postDelayed({
                             view.let {
                                 val contentHeight = (it.contentHeight * it.scale).toDouble()
                                 val visibleHeight = it.height.toDouble()
-                                onScroll?.invoke(
-                                    it.scrollX.toDouble(),
-                                    it.scrollY.toDouble(),
-                                    contentHeight,
-                                    visibleHeight
+                                webState.dispatchEvent(
+                                    WebViewEvent.Scroll(
+                                        it.scrollX.toDouble(),
+                                        it.scrollY.toDouble(),
+                                        contentHeight,
+                                        visibleHeight
+                                    )
                                 )
                             }
                         }, 300)
@@ -300,6 +303,11 @@ actual fun WebView(
                 }
 
                 contentInsets?.setOnWebView(this)
+
+                webState.initialCookies?.let { cookies ->
+                    webState.setCookies(cookies, url)
+                }
+
                 loadUrl(url)
             }
         },

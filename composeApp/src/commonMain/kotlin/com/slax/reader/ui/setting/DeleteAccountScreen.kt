@@ -12,7 +12,9 @@ import androidx.compose.ui.unit.sp
 import app.slax.reader.SlaxConfig
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.utils.WebView
+import com.slax.reader.utils.WebViewEvent
 import com.slax.reader.utils.i18n
+import com.slax.reader.utils.rememberAppWebViewState
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
@@ -27,12 +29,46 @@ fun DeleteAccountScreen(onBackClick: () -> Unit) {
     val deleteAccountState by viewModel.deleteAccountState.collectAsState()
 
     val scope = rememberCoroutineScope()
+    val webState = rememberAppWebViewState(scope)
 
     // 状态管理
     var hasScrolledToBottom by remember { mutableStateOf(false) }
     var hasScrolled by remember { mutableStateOf(false) }
     var showConfirmDialog by remember { mutableStateOf(false) }
     var isDeleting by remember { mutableStateOf(false) }
+
+    LaunchedEffect(webState) {
+        webState.events.collect { event ->
+            when (event) {
+                is WebViewEvent.Scroll -> {
+                    // 标记已经开始滚动（认为WebView已加载完成）
+                    if (!hasScrolled) {
+                        hasScrolled = true
+                    }
+
+                    // 判断是否曾经滚动到底部（一旦激活就永久保持激活）
+                    if (!hasScrolledToBottom) {
+                        // 确保内容高度和可见高度都已经正确初始化（大于0）
+                        if (event.contentHeight > 0 && event.visibleHeight > 0) {
+                            // 如果内容高度小于等于可见高度，说明不需要滚动，直接激活按钮
+                            if (event.contentHeight <= event.visibleHeight) {
+                                hasScrolledToBottom = true
+                            } else {
+                                // 需要滚动的情况，判断当前是否在底部
+                                // 容错值设置为5dp（考虑iOS弹性滚动等边界情况）
+                                val threshold = 5.0
+                                val isAtBottom = event.scrollY + event.visibleHeight >= event.contentHeight - threshold
+                                if (isAtBottom) {
+                                    hasScrolledToBottom = true
+                                }
+                            }
+                        }
+                    }
+                }
+                else -> {}
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -98,31 +134,7 @@ fun DeleteAccountScreen(onBackClick: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            onScroll = { _, scrollY, contentHeight, visibleHeight ->
-                // 标记已经开始滚动（认为WebView已加载完成）
-                if (!hasScrolled) {
-                    hasScrolled = true
-                }
-
-                // 判断是否曾经滚动到底部（一旦激活就永久保持激活）
-                if (!hasScrolledToBottom) {
-                    // 确保内容高度和可见高度都已经正确初始化（大于0）
-                    if (contentHeight > 0 && visibleHeight > 0) {
-                        // 如果内容高度小于等于可见高度，说明不需要滚动，直接激活按钮
-                        if (contentHeight <= visibleHeight) {
-                            hasScrolledToBottom = true
-                        } else {
-                            // 需要滚动的情况，判断当前是否在底部
-                            // 容错值设置为5dp（考虑iOS弹性滚动等边界情况）
-                            val threshold = 5.0
-                            val isAtBottom = scrollY + visibleHeight >= contentHeight - threshold
-                            if (isAtBottom) {
-                                hasScrolledToBottom = true
-                            }
-                        }
-                    }
-                }
-            }
+            webState = webState
         )
     }
 

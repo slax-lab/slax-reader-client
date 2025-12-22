@@ -75,6 +75,17 @@ actual class IAPManager actual constructor() {
         val infos = bridge.getProducts()
         return infos.filterIsInstance<SKProductInfo>().map { it.toIAPProduct() }
     }
+
+    actual fun purchaseWithOffer(productId: String, orderId: String, offer: IAPProductOffer) {
+        bridge.purchaseWithOffer(
+            productId, NSUUID(orderId),
+            offerId = offer.offerId,
+            keyID = offer.keyID,
+            nonce = NSUUID(offer.nonce),
+            signature = offer.signature,
+            timestamp = offer.timestamp.toLong()
+        )
+    }
 }
 
 @OptIn(ExperimentalForeignApi::class)

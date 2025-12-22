@@ -156,9 +156,6 @@ sealed class OutlineResponse {
     data class Error(val message: String) : OutlineResponse()
 }
 
-/**
- * 删除账号失败的原因枚举
- */
 @Serializable
 enum class DeleteAccountReason {
     /** 有活跃的订阅 */
@@ -182,13 +179,13 @@ enum class DeleteAccountReason {
     HAS_FREE_SUBSCRIPTION_HISTORY
 }
 
-/**
- * 删除账号响应数据
- * @param canDelete 是否可以删除账号
- * @param reason 不能删除的原因（仅在 canDelete=false 时返回）
- */
 @Serializable
 data class DeleteAccountData(
     val canDelete: Boolean = false,
     val reason: DeleteAccountReason? = null
+)
+
+@Serializable
+data class ProductIdsResult(
+    val products: List<String>
 )

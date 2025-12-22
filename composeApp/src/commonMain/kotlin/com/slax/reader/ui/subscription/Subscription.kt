@@ -19,10 +19,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +37,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import app.slax.reader.SlaxConfig
 import com.slax.reader.utils.WebView
+import com.slax.reader.utils.WebViewEvent
+import com.slax.reader.utils.rememberAppWebViewState
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
@@ -47,6 +51,28 @@ fun SubscriptionManagerScreen(onBackClick: () -> Unit) {
     val paymentState by viewmodel.paymentState.collectAsState()
 
     var isLoading by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
+
+    val cookie = remember { viewmodel.getUserWebviewCookie() }
+    val webState = rememberAppWebViewState(scope, cookie)
+
+    LaunchedEffect(webState) {
+        webState.events.collect { event ->
+            when (event) {
+                is WebViewEvent.Purchase -> {
+                    viewmodel.purchase(event.productId, event.productId)
+                }
+                is WebViewEvent.PurchaseWithOffer -> {
+                    viewmodel.purchase(event.productId, event.productId, event.offer)
+                }
+                is WebViewEvent.PageLoaded -> {
+                    isLoading = false
+                }
+
+                else -> {}
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -84,9 +110,7 @@ fun SubscriptionManagerScreen(onBackClick: () -> Unit) {
             WebView(
                 url = "${SlaxConfig.WEB_BASE_URL}/subscription/inapp-purchase",
                 modifier = Modifier.fillMaxSize(),
-                onPageLoaded = {
-                    isLoading = false
-                }
+                webState = webState
             )
 
             if (isLoading) {
@@ -131,6 +155,7 @@ fun SubscriptionManagerScreen(onBackClick: () -> Unit) {
             }
         }
         is PaymentState.Cancelled -> {
+            webState.reload()
             AlertDialog(
                 onDismissRequest = { },
                 title = { Text("支付已取消") },
@@ -143,6 +168,7 @@ fun SubscriptionManagerScreen(onBackClick: () -> Unit) {
             )
         }
         is PaymentState.Error -> {
+            webState.reload()
             AlertDialog(
                 onDismissRequest = { },
                 title = { Text("支付失败") },
@@ -155,6 +181,7 @@ fun SubscriptionManagerScreen(onBackClick: () -> Unit) {
             )
         }
         is PaymentState.Success -> {
+            webState.reload()
             AlertDialog(
                 onDismissRequest = { },
                 title = { Text("支付成功") },

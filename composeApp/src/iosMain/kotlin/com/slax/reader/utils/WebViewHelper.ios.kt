@@ -97,10 +97,29 @@ actual fun AppWebView(
                                 WebViewEvent.ImageClick(msg.src!!, msg.allImages!!)
                             )
                         }
+
                         "scrollToPosition" -> {
                             webState.dispatchEvent(
                                 WebViewEvent.ScrollToPosition(msg.percentage ?: 0.0)
                             )
+                        }
+
+                        "purchase" -> {
+                            webState.dispatchEvent(
+                                WebViewEvent.Purchase(msg.productId, msg.orderId)
+                            )
+                        }
+
+                        "purchaseWithOffer" -> {
+                            msg.offer?.let {
+                                webState.dispatchEvent(
+                                    WebViewEvent.PurchaseWithOffer(
+                                        msg.productId,
+                                        msg.orderId,
+                                        it,
+                                    )
+                                )
+                            }
                         }
                     }
                 }
@@ -488,13 +507,10 @@ val PaddingValues.toUIEdgeInsets: CValue<UIEdgeInsets>
 actual fun WebView(
     url: String,
     modifier: Modifier,
+    webState: AppWebViewState,
     contentInsets: PaddingValues?,
-    onScroll: ((scrollX: Double, scrollY: Double, contentHeight: Double, visibleHeight: Double) -> Unit)?,
-    onPageLoaded: (() -> Unit)?,
 ) {
-    val webViewRef = remember { mutableStateOf<WKWebView?>(null) }
-
-    val scrollDelegate = remember {
+    val scrollDelegate = remember(webState) {
         object : NSObject(), UIScrollViewDelegateProtocol {
             override fun scrollViewDidScroll(scrollView: UIScrollView) {
                 val contentOffset = scrollView.contentOffset
@@ -502,15 +518,17 @@ actual fun WebView(
                 val scrollY = contentOffset.useContents { y }
                 val contentHeight = scrollView.contentSize.useContents { height }
                 val visibleHeight = scrollView.bounds.useContents { size.height }
-                onScroll?.invoke(scrollX, scrollY, contentHeight, visibleHeight)
+                webState.dispatchEvent(
+                    WebViewEvent.Scroll(scrollX, scrollY, contentHeight, visibleHeight)
+                )
             }
         }
     }
 
-    val navigationDelegate = remember {
+    val navigationDelegate = remember(webState) {
         object : NSObject(), WKNavigationDelegateProtocol {
             override fun webView(webView: WKWebView, didFinishNavigation: WKNavigation?) {
-                onPageLoaded?.invoke()
+                webState.dispatchEvent(WebViewEvent.PageLoaded)
                 dispatch_after(
                     dispatch_time(platform.darwin.DISPATCH_TIME_NOW, 300_000_000L),
                     dispatch_get_main_queue()
@@ -521,7 +539,9 @@ actual fun WebView(
                     val scrollY = contentOffset.useContents { y }
                     val contentHeight = scrollView.contentSize.useContents { height }
                     val visibleHeight = scrollView.bounds.useContents { size.height }
-                    onScroll?.invoke(scrollX, scrollY, contentHeight, visibleHeight)
+                    webState.dispatchEvent(
+                        WebViewEvent.Scroll(scrollX, scrollY, contentHeight, visibleHeight)
+                    )
                 }
             }
         }
@@ -540,6 +560,7 @@ actual fun WebView(
                 frame = CGRectMake(0.0, 0.0, 0.0, 0.0),
                 configuration = config,
             ).apply {
+                webState.webView = this
                 if (available("16.4")) {
                     inspectable = SlaxConfig.BUILD_ENV == "dev"
                 }
@@ -554,7 +575,42 @@ actual fun WebView(
                 scrollView.contentInset = contentInsets?.toUIEdgeInsets ?: UIEdgeInsets_zero
 
                 this.navigationDelegate = navigationDelegate
-                webViewRef.value = this
+
+                val request = NSURLRequest(uRL = NSURL(string = url))
+                if (webState.initialCookies != null && webState.initialCookies.isNotEmpty()) {
+                    val cookieStore = configuration.websiteDataStore.httpCookieStore
+                    var cookiesSet = 0
+                    val totalCookies = webState.initialCookies.size
+
+                    webState.initialCookies.forEach { cookie ->
+                        val properties = mutableMapOf<Any?, Any?>(
+                            NSHTTPCookieName to cookie.name,
+                            NSHTTPCookieValue to cookie.value,
+                            NSHTTPCookieDomain to cookie.domain,
+                            NSHTTPCookiePath to cookie.path
+                        )
+
+                        if (cookie.secure) {
+                            properties[NSHTTPCookieSecure] = "TRUE"
+                        }
+
+                        cookie.expiresDate?.let {
+                            val timeInterval = it / 1000.0
+                            properties[NSHTTPCookieExpires] = NSDate.dateWithTimeIntervalSince1970(timeInterval)
+                        }
+
+                        NSHTTPCookie.cookieWithProperties(properties)?.let { nsCookie ->
+                            cookieStore.setCookie(nsCookie) {
+                                cookiesSet++
+                                if (cookiesSet == totalCookies) {
+                                    loadRequest(request)
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    loadRequest(request)
+                }
             }
         },
         update = { view ->

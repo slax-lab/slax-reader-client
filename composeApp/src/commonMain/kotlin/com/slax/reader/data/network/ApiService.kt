@@ -219,6 +219,10 @@ class ApiService(
         }
     }.flowOn(Dispatchers.IO)
 
+    suspend fun getIAPProductIds(): HttpData<ProductIdsResult> = withContext(Dispatchers.IO) {
+        return@withContext get<ProductIdsResult>("/v1/subscription/apple_inapp_products", query = null)
+    }
+
     suspend fun deleteAccount(): HttpData<DeleteAccountData> = withContext(Dispatchers.IO) {
         return@withContext post<DeleteAccountData>("/v1/user/delete_my_account")
     }
