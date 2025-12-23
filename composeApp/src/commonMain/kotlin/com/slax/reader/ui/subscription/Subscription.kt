@@ -105,7 +105,7 @@ fun SubscriptionManagerScreen(onBackClick: () -> Unit) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(top = paddingValues.calculateTopPadding())
         ) {
             WebView(
                 url = "${SlaxConfig.WEB_BASE_URL}/subscription/inapp-purchase",
