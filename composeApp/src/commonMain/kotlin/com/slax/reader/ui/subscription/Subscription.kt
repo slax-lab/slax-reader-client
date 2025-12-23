@@ -58,7 +58,6 @@ fun SubscriptionManagerScreen(onBackClick: () -> Unit) {
 
     LaunchedEffect(webState) {
         webState.events.collect { event ->
-            print("======= $event")
             when (event) {
                 is WebViewEvent.Purchase -> {
                     viewmodel.purchase(event.productId, event.productId)
@@ -109,7 +108,7 @@ fun SubscriptionManagerScreen(onBackClick: () -> Unit) {
                 .padding(paddingValues)
         ) {
             WebView(
-                url = "http://192.168.9.82:3000/subscription/test",
+                url = "${SlaxConfig.WEB_BASE_URL}/subscription/inapp-purchase",
                 modifier = Modifier.fillMaxSize(),
                 webState = webState
             )

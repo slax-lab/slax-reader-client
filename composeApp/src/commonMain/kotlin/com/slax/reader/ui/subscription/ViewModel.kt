@@ -102,7 +102,7 @@ class SubscriptionViewModel(
         paymentManager.setCallback(callback)
         viewModelScope.launch {
             val productIds = apiService.getIAPProductIds()
-            paymentManager.loadProducts(listOf("app.slax.reader.monthly", "slax.reader.monthly"))
+            paymentManager.loadProducts(productIds.data?.products ?: emptyList())
         }
     }
 
