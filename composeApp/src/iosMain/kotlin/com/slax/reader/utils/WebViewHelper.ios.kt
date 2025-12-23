@@ -510,6 +510,46 @@ actual fun WebView(
     webState: AppWebViewState,
     contentInsets: PaddingValues?,
 ) {
+    val scriptMessageHandler = remember {
+        ScriptMessageHandler { message ->
+            runCatching { Json.decodeFromString<WebViewMessage>(message) }
+                .onSuccess { msg ->
+                    println("====== ${msg}")
+                    when (msg.type) {
+                        "imageClick" -> {
+                            webState.dispatchEvent(
+                                WebViewEvent.ImageClick(msg.src!!, msg.allImages!!)
+                            )
+                        }
+
+                        "scrollToPosition" -> {
+                            webState.dispatchEvent(
+                                WebViewEvent.ScrollToPosition(msg.percentage ?: 0.0)
+                            )
+                        }
+
+                        "purchase" -> {
+                            webState.dispatchEvent(
+                                WebViewEvent.Purchase(msg.productId, msg.orderId)
+                            )
+                        }
+
+                        "purchaseWithOffer" -> {
+                            msg.offer?.let {
+                                webState.dispatchEvent(
+                                    WebViewEvent.PurchaseWithOffer(
+                                        msg.productId,
+                                        msg.orderId,
+                                        it,
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+        }
+    }
+
     val scrollDelegate = remember(webState) {
         object : NSObject(), UIScrollViewDelegateProtocol {
             override fun scrollViewDidScroll(scrollView: UIScrollView) {
@@ -543,6 +583,12 @@ actual fun WebView(
                         WebViewEvent.Scroll(scrollX, scrollY, contentHeight, visibleHeight)
                     )
                 }
+                val userContentController = WKUserContentController()
+                userContentController.addScriptMessageHandler(
+                    scriptMessageHandler = scriptMessageHandler,
+                    name = JS_BRIDGE_NAME
+                )
+                this.userContentController = userContentController
             }
         }
     }
