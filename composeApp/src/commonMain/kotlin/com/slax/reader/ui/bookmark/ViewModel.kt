@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.slax.reader.data.database.dao.BookmarkDao
 import com.slax.reader.data.database.dao.LocalBookmarkDao
+import com.slax.reader.data.database.dao.SubscriptionDao
 import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.data.database.model.UserTag
 import com.slax.reader.data.network.ApiService
@@ -12,8 +13,8 @@ import com.slax.reader.data.network.dto.OverviewResponse
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.data.preferences.ContinueReadingBookmark
 import com.slax.reader.domain.sync.BackgroundDomain
+import com.slax.reader.utils.parseInstant
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.json.Json
 
@@ -33,6 +34,7 @@ data class OutlineState(
 
 class BookmarkDetailViewModel(
     private val bookmarkDao: BookmarkDao,
+    private val subscriptionDao: SubscriptionDao,
     private val localBookmarkDao: LocalBookmarkDao,
     private val backgroundDomain: BackgroundDomain,
     private val apiService: ApiService,
@@ -40,6 +42,25 @@ class BookmarkDetailViewModel(
 ) : ViewModel() {
 
     var _bookmarkId = MutableStateFlow<String?>(null)
+
+    val subscriptionInfo = subscriptionDao.watchSubscriptionInfo()
+
+    @OptIn(kotlin.time.ExperimentalTime::class)
+    val isSubscriptionActive: StateFlow<Boolean> = subscriptionInfo
+        .map { info ->
+            if (info == null) {
+                false
+            } else {
+                try {
+                    val endTime = parseInstant(info.subscription_end_time)
+                    val now = kotlin.time.Clock.System.now()
+                    endTime > now
+                } catch (e: Exception) {
+                    false
+                }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.Lazily, false)
 
     private val _overviewState = MutableStateFlow(OverviewState())
     val overviewState = _overviewState.asStateFlow()
