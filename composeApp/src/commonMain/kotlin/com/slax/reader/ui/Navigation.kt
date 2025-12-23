@@ -117,6 +117,9 @@ fun SlaxNavigation(
                 bookmarkId = params.bookmarkId,
                 onBackClick = {
                     navCtrl.popBackStack()
+                },
+                onNavigateToSubscription = {
+                    navCtrl.navigate(SubscriptionManagerRoutes)
                 }
             )
         }
