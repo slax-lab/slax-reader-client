@@ -47,6 +47,7 @@ actual fun DetailScreen(
     htmlContent: String,
     screenState: DetailScreenState,
     onBackClick: (() -> Unit),
+    onNavigateToSubscription: (() -> Unit)?,
 ) {
     val wrappedHtmlContent = remember(htmlContent) { wrapBookmarkDetailHtml(htmlContent) }
 
@@ -237,6 +238,7 @@ actual fun DetailScreen(
                 detail = detail,
                 detailView = detailViewModel,
                 onDismissRequest = { showToolbar = false },
+                onSubscriptionRequired = onNavigateToSubscription,
                 onIconClick = { pageId, iconIndex ->
                     println("点击了页面 $pageId 的第 ${iconIndex + 1} 个图标")
                     when (pageId) {

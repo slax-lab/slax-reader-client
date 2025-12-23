@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,9 +44,12 @@ fun BottomToolbarSheet(
     detail: UserBookmark,
     detailView: BookmarkDetailViewModel,
     onDismissRequest: () -> Unit,
+    onSubscriptionRequired: (() -> Unit)? = null,
     onIconClick: (pageId: String, iconIndex: Int) -> Unit
 ) {
     println("[watch][UI] recomposition BottomToolbarSheet")
+
+    val isSubscriptionActive by detailView.isSubscriptionActive.collectAsState()
     val toolbarPages = remember(detail.isStarred, detail.archiveStatus) {
         listOf(
             listOf(
@@ -129,6 +134,17 @@ fun BottomToolbarSheet(
                                 detailView.toggleStar(detail.isStarred != 1)
                             } else if (pageId == "archive") {
                                 detailView.toggleArchive(detail.archiveStatus != 1)
+                            }
+                        }
+
+                        if (pageId == "summary") {
+                            if (!isSubscriptionActive) {
+                                dismiss()
+                                if (onSubscriptionRequired != null) {
+                                    onSubscriptionRequired()
+                                }
+
+                                return@PagerToolbar
                             }
                         }
 
