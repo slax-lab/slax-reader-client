@@ -152,9 +152,9 @@ class ApiService(
         )
     }
 
-    suspend fun checkIapResult(ticketId: String, productId: String) : HttpData<CheckIapResult> {
+    suspend fun checkIapResult(param: CheckIapParam) : HttpData<CheckIapResult> {
         return post(
-            "/v1/subscription/check_inapp_purchase", body = CheckIapParam(ticketId, productId, platformType)
+            "/v1/subscription/check_inapp_purchase", body = param
         )
     }
 

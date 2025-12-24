@@ -103,24 +103,6 @@ actual fun AppWebView(
                                 WebViewEvent.ScrollToPosition(msg.percentage ?: 0.0)
                             )
                         }
-
-                        "purchase" -> {
-                            webState.dispatchEvent(
-                                WebViewEvent.Purchase(msg.productId, msg.orderId)
-                            )
-                        }
-
-                        "purchaseWithOffer" -> {
-                            msg.offer?.let {
-                                webState.dispatchEvent(
-                                    WebViewEvent.PurchaseWithOffer(
-                                        msg.productId,
-                                        msg.orderId,
-                                        it,
-                                    )
-                                )
-                            }
-                        }
                     }
                 }
         }
@@ -514,7 +496,6 @@ actual fun WebView(
         ScriptMessageHandler { message ->
             runCatching { Json.decodeFromString<WebViewMessage>(message) }
                 .onSuccess { msg ->
-                    println("====== ${msg}")
                     when (msg.type) {
                         "imageClick" -> {
                             webState.dispatchEvent(
@@ -530,20 +511,24 @@ actual fun WebView(
 
                         "purchase" -> {
                             webState.dispatchEvent(
-                                WebViewEvent.Purchase(msg.productId, msg.orderId)
+                                WebViewEvent.Purchase(msg.productId!!, msg.orderId!!)
                             )
                         }
 
                         "purchaseWithOffer" -> {
-                            msg.offer?.let {
-                                webState.dispatchEvent(
-                                    WebViewEvent.PurchaseWithOffer(
-                                        msg.productId,
-                                        msg.orderId,
-                                        it,
-                                    )
+                            webState.dispatchEvent(
+                                WebViewEvent.PurchaseWithOffer(
+                                    msg.productId!!,
+                                    msg.orderId!!,
+                                    IAPProductOffer(
+                                        offerId = msg.offerId!!,
+                                        signature = msg.signature!!,
+                                        keyID = msg.keyID!!,
+                                        nonce = msg.nonce!!,
+                                        timestamp = msg.timestamp!!
+                                    ),
                                 )
-                            }
+                            )
                         }
                     }
                 }
@@ -583,12 +568,6 @@ actual fun WebView(
                         WebViewEvent.Scroll(scrollX, scrollY, contentHeight, visibleHeight)
                     )
                 }
-                val userContentController = WKUserContentController()
-                userContentController.addScriptMessageHandler(
-                    scriptMessageHandler = scriptMessageHandler,
-                    name = JS_BRIDGE_NAME
-                )
-                this.userContentController = userContentController
             }
         }
     }
@@ -600,6 +579,12 @@ actual fun WebView(
                 preferences = WKPreferences().apply {
                     javaScriptEnabled = true
                 }
+                val userContentController = WKUserContentController()
+                userContentController.addScriptMessageHandler(
+                    scriptMessageHandler = scriptMessageHandler,
+                    name = JS_BRIDGE_NAME
+                )
+                this.userContentController = userContentController
             }
 
             WKWebView(

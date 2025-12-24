@@ -60,11 +60,13 @@ fun SubscriptionManagerScreen(onBackClick: () -> Unit) {
         webState.events.collect { event ->
             when (event) {
                 is WebViewEvent.Purchase -> {
-                    viewmodel.purchase(event.productId, event.productId)
+                    viewmodel.purchase(event.productId, event.orderId)
                 }
+
                 is WebViewEvent.PurchaseWithOffer -> {
-                    viewmodel.purchase(event.productId, event.productId, event.offer)
+                    viewmodel.purchase(event.productId, event.orderId, event.offer)
                 }
+
                 is WebViewEvent.PageLoaded -> {
                     isLoading = false
                 }
@@ -154,8 +156,8 @@ fun SubscriptionManagerScreen(onBackClick: () -> Unit) {
                 }
             }
         }
+
         is PaymentState.Cancelled -> {
-            webState.reload()
             AlertDialog(
                 onDismissRequest = { },
                 title = { Text("支付已取消") },
@@ -166,9 +168,10 @@ fun SubscriptionManagerScreen(onBackClick: () -> Unit) {
                     }
                 }
             )
-        }
-        is PaymentState.Error -> {
             webState.reload()
+        }
+
+        is PaymentState.Error -> {
             AlertDialog(
                 onDismissRequest = { },
                 title = { Text("支付失败") },
@@ -179,20 +182,26 @@ fun SubscriptionManagerScreen(onBackClick: () -> Unit) {
                     }
                 }
             )
-        }
-        is PaymentState.Success -> {
             webState.reload()
+        }
+
+        is PaymentState.Success -> {
             AlertDialog(
                 onDismissRequest = { },
                 title = { Text("支付成功") },
                 text = { Text("感谢您的订阅!") },
                 confirmButton = {
-                    TextButton(onClick = { viewmodel.resetState() }) {
+                    TextButton(onClick = {
+                        viewmodel.resetState()
+                        webState.reload()
+                    }) {
                         Text("确定")
                     }
                 }
             )
+            webState.reload()
         }
+
         else -> {
         }
     }

@@ -19,7 +19,7 @@ data class IAPProductOffer(
     val keyID: String,
     val nonce: String,
     val signature: String,
-    val timestamp: Int
+    val timestamp: Long
 )
 
 enum class ProductType { CONSUMABLE, NON_CONSUMABLE, AUTO_RENEWABLE, NON_RENEWABLE, UNKNOWN }
@@ -32,7 +32,8 @@ data class PurchaseResult(
     val appAccountToken: Uuid? = null,
     val error: String? = null,
     val isPending: Boolean = false,
-    val isCancelled: Boolean = false
+    val isCancelled: Boolean = false,
+    val jwsRepresentation: String? = null
 )
 
 interface IAPCallback {

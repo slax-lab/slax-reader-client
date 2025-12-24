@@ -32,4 +32,8 @@ actual class IAPManager actual constructor() {
     actual fun getProducts(): List<IAPProduct> {
         TODO("Not yet implemented")
     }
+
+    actual fun purchaseWithOffer(productId: String, orderId: String, offer: IAPProductOffer) {
+        TODO("Not yet implemented")
+    }
 }
