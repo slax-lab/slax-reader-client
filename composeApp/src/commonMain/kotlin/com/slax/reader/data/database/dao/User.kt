@@ -11,10 +11,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.*
 
 class UserDao(
+    private val scope: CoroutineScope,
     private val database: PowerSyncDatabase
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
     private val _userInfoFlow: StateFlow<UserInfo?> by lazy {
         println("[watch][database] _userInfoFlow")
 

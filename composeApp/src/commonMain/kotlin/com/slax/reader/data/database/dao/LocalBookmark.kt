@@ -9,10 +9,9 @@ import kotlinx.coroutines.flow.*
 import kotlinx.serialization.json.Json
 
 class LocalBookmarkDao(
+    private val scope: CoroutineScope,
     private val database: PowerSyncDatabase
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
     private val _userLocalBookmarkListFlow: StateFlow<Map<String, LocalBookmarkInfo>> by lazy {
         println("[watch][database] _userLocalBookmarkListFlow")
         database.watch(

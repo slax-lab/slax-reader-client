@@ -2,7 +2,9 @@ package com.slax.reader.ui
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
+import androidx.compose.ui.FrameRateCategory
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.preferredFrameRate
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -98,7 +100,7 @@ fun SlaxNavigation(
     NavHost(
         navController = navCtrl,
         startDestination = startDestination,
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().preferredFrameRate(FrameRateCategory.High),
         exitTransition = NavHostTransitionHelper.exitTransition,
         enterTransition = NavHostTransitionHelper.enterTransition,
         popEnterTransition = NavHostTransitionHelper.popEnterTransition,

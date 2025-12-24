@@ -13,10 +13,9 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
 
 class BookmarkCommentDao(
+    private val scope: CoroutineScope,
     private val database: PowerSyncDatabase
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
     fun watchComments(bookmarkId: String): StateFlow<List<BookmarkCommentPO>> {
         println("[watch][database] watchComments for bookmarkId: $bookmarkId")
         return database.watch(

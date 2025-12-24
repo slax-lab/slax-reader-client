@@ -45,21 +45,11 @@ data class WebViewMessage(
 actual fun DetailScreen(
     detailViewModel: BookmarkDetailViewModel,
     detail: UserBookmark,
+    htmlContent: String,
     screenState: DetailScreenState,
     onBackClick: (() -> Unit),
 ) {
-    var htmlContent by remember { mutableStateOf<String?>(null) }
-    var error by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(detail.id) {
-        error = null
-        try {
-            htmlContent = detailViewModel.getBookmarkContent(detail.id)
-            htmlContent = htmlContent?.let { wrapBookmarkDetailHtml(it) }
-        } catch (e: Exception) {
-            error = e.message ?: "加载失败"
-        }
-    }
+    val wrappedHtmlContent = remember(htmlContent) { wrapBookmarkDetailHtml(htmlContent) }
 
     val scrollState = rememberScrollState()
     val scrollY by remember { derivedStateOf { scrollState.value.toFloat() } }
@@ -157,15 +147,6 @@ actual fun DetailScreen(
             .fillMaxSize()
             .background(Color(0xFFFCFCFC))
     ) {
-        if (error != null) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "加载失败: $error", color = Color.Red)
-            }
-            return
-        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -182,18 +163,16 @@ actual fun DetailScreen(
                 detailView = detailViewModel
             )
 
-            htmlContent?.let { content ->
-                AppWebView(
-                    htmlContent = content,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .preferredFrameRate(FrameRateCategory.High)
-                        .onSizeChanged { size ->
-                            webViewHeightPx = size.height.toFloat()
-                        },
-                    webState = webViewState
-                )
-            }
+            AppWebView(
+                htmlContent = wrappedHtmlContent,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .preferredFrameRate(FrameRateCategory.High)
+                    .onSizeChanged { size ->
+                        webViewHeightPx = size.height.toFloat()
+                    },
+                webState = webViewState
+            )
         }
 
         // 浮动操作栏

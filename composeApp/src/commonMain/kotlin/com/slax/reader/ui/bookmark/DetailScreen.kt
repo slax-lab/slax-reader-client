@@ -1,13 +1,11 @@
 package com.slax.reader.ui.bookmark
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.viewModelScope
 import com.slax.reader.data.database.model.UserBookmark
+import com.slax.reader.ui.bookmark.components.BookmarkAlertDialog
+import com.slax.reader.ui.bookmark.components.DetailScreenSkeleton
+import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 data class OverviewViewBounds(
@@ -27,12 +25,34 @@ fun DetailScreen(bookmarkId: String, onBackClick: (() -> Unit)) {
     val detailView = koinViewModel<BookmarkDetailViewModel>()
     val backClickHandle = remember { onBackClick }
 
+    var bookmarkDetail by remember { mutableStateOf<UserBookmark?>(null) }
+    var htmlContent by remember { mutableStateOf<String?>(null) }
+    var loadError by remember { mutableStateOf<String?>(null) }
+
     LaunchedEffect(bookmarkId) {
         detailView.setBookmarkId(bookmarkId)
+
+        detailView.viewModelScope.launch {
+            detailView.bookmarkDetail.collect { details ->
+                bookmarkDetail = details.firstOrNull()
+            }
+        }
+        detailView.viewModelScope.runCatching {
+            htmlContent = detailView.getBookmarkContent(bookmarkId)
+        }.onFailure { e ->
+            loadError = e.message ?: "加载失败"
+        }
     }
 
-    val details by detailView.bookmarkDetail.collectAsState()
-    val detail = details.firstOrNull()
+    if (bookmarkDetail == null || htmlContent == null) {
+        DetailScreenSkeleton()
+        return
+    }
+
+    if (loadError != null) {
+        BookmarkAlertDialog(loadError!!, onBackClick)
+        return
+    }
 
     var overviewBounds by remember { mutableStateOf(OverviewViewBounds()) }
 
@@ -43,19 +63,10 @@ fun DetailScreen(bookmarkId: String, onBackClick: (() -> Unit)) {
         )
     }
 
-    if (detail == null) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator(color = Color(0xFF16B998))
-        }
-        return
-    }
-
     DetailScreen(
         detailViewModel = detailView,
-        detail = detail,
+        detail = bookmarkDetail!!,
+        htmlContent = htmlContent!!,
         screenState = screenState.copy(overviewBounds = overviewBounds),
         onBackClick = backClickHandle,
     )
@@ -65,6 +76,7 @@ fun DetailScreen(bookmarkId: String, onBackClick: (() -> Unit)) {
 expect fun DetailScreen(
     detailViewModel: BookmarkDetailViewModel,
     detail: UserBookmark,
+    htmlContent: String,
     screenState: DetailScreenState,
     onBackClick: (() -> Unit),
 )

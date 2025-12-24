@@ -1,9 +1,7 @@
 package com.slax.reader.ui.bookmark
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,30 +31,24 @@ data class WebViewMessage(
     val index: Int? = null,
     val percentage: Double? = null,
 
-    val productId: String,
-    val orderId: String,
-    val offer: IAPProductOffer?
+    val productId: String? = null,
+    val orderId: String? = null,
+    val offerId: String? = null,
+    val keyID: String? = null,
+    val nonce: String? = null,
+    val signature: String? = null,
+    val timestamp: Long? = null
 )
 
 @Composable
 actual fun DetailScreen(
     detailViewModel: BookmarkDetailViewModel,
     detail: UserBookmark,
+    htmlContent: String,
     screenState: DetailScreenState,
     onBackClick: (() -> Unit),
 ) {
-    var htmlContent by remember { mutableStateOf<String?>(null) }
-    var error by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(detail.id) {
-        error = null
-        try {
-            htmlContent = detailViewModel.getBookmarkContent(detail.id)
-            htmlContent = htmlContent?.let { wrapBookmarkDetailHtml(it) }
-        } catch (e: Exception) {
-            error = e.message ?: "加载失败"
-        }
-    }
+    val wrappedHtmlContent = remember(htmlContent) { wrapBookmarkDetailHtml(htmlContent) }
 
     // WebView 滚动偏移
     val webViewScrollY = remember { mutableFloatStateOf(0f) }
@@ -176,24 +168,12 @@ actual fun DetailScreen(
             .fillMaxSize()
             .background(Color(0xFFFCFCFC))
     ) {
-        if (error != null) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "加载失败: $error", color = Color.Red)
-            }
-            return
-        }
-
-        htmlContent?.let { content ->
-            key(detail.id) {
-                AppWebView(
-                    htmlContent = content,
-                    modifier = Modifier.fillMaxSize().preferredFrameRate(FrameRateCategory.High),
-                    webState = webViewState
-                )
-            }
+        key(detail.id) {
+            AppWebView(
+                htmlContent = wrappedHtmlContent,
+                modifier = Modifier.fillMaxSize().preferredFrameRate(FrameRateCategory.High),
+                webState = webViewState
+            )
         }
 
         if (headerVisible) {

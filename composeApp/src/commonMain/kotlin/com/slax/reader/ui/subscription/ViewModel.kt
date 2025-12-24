@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.slax.reader.SlaxConfig
 import com.slax.reader.data.network.ApiService
+import com.slax.reader.data.network.dto.CheckIapParam
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.utils.IAPCallback
 import com.slax.reader.utils.IAPManager
@@ -11,7 +12,7 @@ import com.slax.reader.utils.IAPProduct
 import com.slax.reader.utils.IAPProductOffer
 import com.slax.reader.utils.PurchaseResult
 import com.slax.reader.utils.WebViewCookie
-import kotlinx.coroutines.delay
+import com.slax.reader.utils.platformType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -43,26 +44,24 @@ class SubscriptionViewModel(
 
     inner class SubscriptionCallback() : IAPCallback {
         override fun onProductsLoaded(products: List<IAPProduct>) {
-            println("===== onProductsLoaded: $products")
             _paymentState.value = PaymentState.Idle
         }
 
         override fun onLoadFailed(error: String) {
-            println("===== onLoadFailed: $error")
             _paymentState.value = PaymentState.Error(error)
         }
 
         @OptIn(ExperimentalUuidApi::class)
         override fun onPurchaseResult(result: PurchaseResult) {
-            println("===== onPurchaseResult: $result")
             when {
                 result.success -> {
-                    if (result.transactionId == null || result.appAccountToken == null) {
+                    if (result.transactionId == null || result.appAccountToken == null || result.jwsRepresentation == null) {
                         _paymentState.value = PaymentState.Error("Missing transaction ID")
                         return
                     }
-                    _paymentState.value = PaymentState.Checking(result.transactionId)
-                    startCheckTransactionStatus(result.productId, result.appAccountToken.toString())
+                    result.isPending
+                    _paymentState.value = PaymentState.Checking(result.jwsRepresentation)
+                    startCheckTransactionStatus(result.productId, result.appAccountToken.toString(), result.jwsRepresentation)
                 }
                 result.isPending -> _paymentState.value = PaymentState.Purchasing
                 result.isCancelled -> _paymentState.value = PaymentState.Cancelled
@@ -74,25 +73,26 @@ class SubscriptionViewModel(
         }
 
         override fun onEntitlementsUpdated(productIds: List<String>) {
-            println("===== onEntitlementsUpdated: $productIds")
         }
 
-        fun startCheckTransactionStatus(productId: String, ticketId: String) {
+        fun startCheckTransactionStatus(productId: String, orderId: String, jwsRepresentation: String) {
             viewModelScope.launch {
-                repeat(10) {
-                    try {
-                        val result = apiService.checkIapResult(ticketId, productId)
-                        if (result.data?.ok == true) {
-                            _paymentState.value = PaymentState.Success
-                            return@launch
-                        }
-                        delay(1000L)
-                    } catch (e: Exception) {
-                        _paymentState.value = PaymentState.Error(e.message ?: "Failed to verify transaction")
+                try {
+                    val result = apiService.checkIapResult(CheckIapParam(
+                        product_id = productId,
+                        order_id = orderId,
+                        jws_representation = jwsRepresentation,
+                        platform = platformType
+                    ))
+                    if (result.data?.ok == true) {
+                        _paymentState.value = PaymentState.Success
                         return@launch
                     }
+                } catch (e: Exception) {
+                    println("===== checkTransactionStatus error: $e")
+                    _paymentState.value = PaymentState.Error(e.message ?: "Transaction verification failed")
                 }
-                _paymentState.value = PaymentState.Error("Transaction verification timed out")
+                _paymentState.value = PaymentState.Error("Transaction verification failed")
             }
         }
     }

@@ -4,9 +4,6 @@ import com.powersync.PowerSyncDatabase
 import com.powersync.db.getString
 import com.slax.reader.data.database.model.*
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.json.Json
 import kotlin.time.Clock
@@ -15,10 +12,9 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 class BookmarkDao(
+    private val scope: CoroutineScope,
     private val database: PowerSyncDatabase
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
     private val _userBookmarkListFlow: StateFlow<List<InboxListBookmarkItem>> by lazy {
         println("[watch][database] _userBookmarkListFlow")
         database.watch(

@@ -67,7 +67,8 @@ data class CreateIapOrderResult(
 
 @Serializable
 data class CheckIapParam(
-    val ticket_id: String,
+    val jws_representation: String,
+    val order_id: String,
     val product_id: String,
     val platform: String
 )

@@ -26,8 +26,13 @@ import com.slax.reader.utils.Connector
 import com.slax.reader.utils.getHttpClient
 import com.slax.reader.utils.platformFileSystem
 import io.kotzilla.sdk.analytics.koin.analytics
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.SupervisorJob
 import org.koin.core.KoinApplication
 import org.koin.core.module.dsl.viewModelOf
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 val fileModule = module {
@@ -48,11 +53,12 @@ val powerSyncModule = module {
 }
 
 val repositoryModule = module {
-    single { BookmarkDao(get()) }
-    single { UserDao(get()) }
-    single { LocalBookmarkDao(get()) }
+    single(named("daoScope")) { CoroutineScope(SupervisorJob() + Dispatchers.IO) }
+    single { BookmarkDao(get(named("daoScope")), get()) }
+    single { UserDao(get(named("daoScope")), get()) }
+    single { LocalBookmarkDao(get(named("daoScope")), get()) }
     single { PowerSyncDao(get()) }
-    single { BookmarkCommentDao(get()) }
+    single { BookmarkCommentDao(get(named("daoScope")), get()) }
 }
 
 val viewModelModule = module {

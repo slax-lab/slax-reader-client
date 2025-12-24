@@ -430,5 +430,9 @@ val localeString: Map<String, Map<String, String>> = mapOf(
     "overview_dialog_title" to mapOf(
         "zh" to "全文概要：",
         "en" to "Full Overview:"
+    ),
+    "load_bookmark_content_error" to mapOf(
+        "zh" to "加载书签内容失败",
+        "en" to "Failed to load bookmark content"
     )
 )
