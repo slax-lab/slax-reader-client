@@ -38,7 +38,7 @@ fun DetailScreenSkeleton() {
                 modifier = Modifier
                     .fillMaxWidth(0.7f)
                     .height(30.dp)
-                    .background(Color(0xFFE0E0E0), shape = RoundedCornerShape(4.dp))
+                    .background(Color(0xFFF0F0F0), shape = RoundedCornerShape(4.dp))
             )
 
             Row(
