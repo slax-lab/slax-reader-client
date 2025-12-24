@@ -434,5 +434,21 @@ val localeString: Map<String, Map<String, String>> = mapOf(
     "load_bookmark_content_error" to mapOf(
         "zh" to "加载书签内容失败",
         "en" to "Failed to load bookmark content"
+    ),
+
+    // ========================================
+    // 订阅提示
+    // ========================================
+    "subscription_required_title" to mapOf(
+        "zh" to "需要订阅",
+        "en" to "Subscription Required"
+    ),
+    "subscription_required_message" to mapOf(
+        "zh" to "该功能需要订阅后才能使用，请前往网页端进行订阅",
+        "en" to "This feature requires a subscription. Please subscribe via web"
+    ),
+    "subscription_required_btn_ok" to mapOf(
+        "zh" to "我知道了",
+        "en" to "Got it"
     )
 )

@@ -5,7 +5,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.FrameRateCategory
@@ -15,7 +17,9 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.preferredFrameRate
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewModelScope
 import com.slax.reader.const.component.EditNameDialog
 import com.slax.reader.data.database.model.UserBookmark
@@ -24,6 +28,7 @@ import com.slax.reader.utils.AppLifecycleState
 import com.slax.reader.utils.AppWebView
 import com.slax.reader.utils.LifeCycleHelper
 import com.slax.reader.utils.WebViewEvent
+import com.slax.reader.utils.i18n
 import com.slax.reader.utils.rememberAppWebViewState
 import com.slax.reader.utils.wrapBookmarkDetailHtml
 import kotlinx.coroutines.launch
@@ -48,6 +53,7 @@ actual fun DetailScreen(
     htmlContent: String,
     screenState: DetailScreenState,
     onBackClick: (() -> Unit),
+    onNavigateToSubscription: (() -> Unit)?,
 ) {
     val wrappedHtmlContent = remember(htmlContent) { wrapBookmarkDetailHtml(htmlContent) }
 
@@ -111,6 +117,7 @@ actual fun DetailScreen(
     var showOverviewDialog by remember { mutableStateOf(false) }
     var showToolbar by remember { mutableStateOf(false) }
     var showEditNameDialog by remember { mutableStateOf(false) }
+    var showSubscriptionRequiredDialog by remember { mutableStateOf(false) }
     val outlineDialogState = rememberOutlineDialogState()
 
     // 图片浏览器状态
@@ -216,6 +223,9 @@ actual fun DetailScreen(
                 detail = detail,
                 detailView = detailViewModel,
                 onDismissRequest = { showToolbar = false },
+                onSubscriptionRequired = {
+                    showSubscriptionRequiredDialog = true
+                },
                 onIconClick = { pageId, iconIndex ->
                     println("点击了页面 $pageId 的第 ${iconIndex + 1} 个图标")
                     when (pageId) {
@@ -266,6 +276,39 @@ actual fun DetailScreen(
                 state = outlineDialogState,
                 onScrollToAnchor = { anchor ->
                     webViewState.scrollToAnchor(anchor)
+                }
+            )
+        }
+
+        // 订阅提示弹窗
+        if (showSubscriptionRequiredDialog) {
+            AlertDialog(
+                onDismissRequest = { showSubscriptionRequiredDialog = false },
+                containerColor = Color.White,
+                title = {
+                    Text(
+                        text = "subscription_required_title".i18n(),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                },
+                text = {
+                    Text(
+                        text = "subscription_required_message".i18n(),
+                        fontSize = 16.sp,
+                        lineHeight = 24.sp
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = { showSubscriptionRequiredDialog = false }
+                    ) {
+                        Text(
+                            text = "subscription_required_btn_ok".i18n(),
+                            color = Color(0xFF16b998),
+                            fontSize = 16.sp
+                        )
+                    }
                 }
             )
         }

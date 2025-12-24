@@ -21,7 +21,7 @@ data class DetailScreenState(
 )
 
 @Composable
-fun DetailScreen(bookmarkId: String, onBackClick: (() -> Unit)) {
+fun DetailScreen(bookmarkId: String, onBackClick: (() -> Unit), onNavigateToSubscription: (() -> Unit)? = null) {
     val detailView = koinViewModel<BookmarkDetailViewModel>()
     val backClickHandle = remember { onBackClick }
 
@@ -69,6 +69,7 @@ fun DetailScreen(bookmarkId: String, onBackClick: (() -> Unit)) {
         htmlContent = htmlContent!!,
         screenState = screenState.copy(overviewBounds = overviewBounds),
         onBackClick = backClickHandle,
+        onNavigateToSubscription = onNavigateToSubscription,
     )
 }
 
@@ -79,4 +80,5 @@ expect fun DetailScreen(
     htmlContent: String,
     screenState: DetailScreenState,
     onBackClick: (() -> Unit),
+    onNavigateToSubscription: (() -> Unit)? = null,
 )

@@ -7,6 +7,7 @@ import com.slax.reader.data.database.dao.BookmarkCommentDao
 import com.slax.reader.data.database.dao.BookmarkDao
 import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.database.dao.PowerSyncDao
+import com.slax.reader.data.database.dao.SubscriptionDao
 import com.slax.reader.data.database.dao.UserDao
 import com.slax.reader.data.database.databasePlatformModule
 import com.slax.reader.data.file.FileManager
@@ -57,6 +58,7 @@ val repositoryModule = module {
     single { BookmarkDao(get(named("daoScope")), get()) }
     single { UserDao(get(named("daoScope")), get()) }
     single { LocalBookmarkDao(get(named("daoScope")), get()) }
+    single { SubscriptionDao(get(named("daoScope")), get()) }
     single { PowerSyncDao(get()) }
     single { BookmarkCommentDao(get(named("daoScope")), get()) }
 }
