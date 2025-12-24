@@ -43,25 +43,6 @@ class BookmarkDetailViewModel(
 
     var _bookmarkId = MutableStateFlow<String?>(null)
 
-    val subscriptionInfo = subscriptionDao.watchSubscriptionInfo()
-
-    @OptIn(kotlin.time.ExperimentalTime::class)
-    val isSubscriptionActive: StateFlow<Boolean> = subscriptionInfo
-        .map { info ->
-            if (info == null) {
-                false
-            } else {
-                try {
-                    val endTime = parseInstant(info.subscription_end_time)
-                    val now = kotlin.time.Clock.System.now()
-                    endTime > now
-                } catch (e: Exception) {
-                    false
-                }
-            }
-        }
-        .stateIn(viewModelScope, SharingStarted.Lazily, false)
-
     private val _overviewState = MutableStateFlow(OverviewState())
     val overviewState = _overviewState.asStateFlow()
 
@@ -295,6 +276,20 @@ class BookmarkDetailViewModel(
     suspend fun updateBookmarkTitle(newTitle: String) = withContext(Dispatchers.IO) {
         _bookmarkId.value?.let { id ->
             return@withContext bookmarkDao.updateBookmarkAliasTitle(id, newTitle)
+        }
+    }
+
+    @OptIn(kotlin.time.ExperimentalTime::class)
+    suspend fun checkUserIsSubscribed(): Boolean = withContext(Dispatchers.IO)  {
+        val info = subscriptionDao.getSubscriptionInfo() ?: return@withContext false
+
+        try {
+            val endTime = parseInstant(info.subscription_end_time)
+            val now = kotlin.time.Clock.System.now()
+            endTime > now
+        } catch (e: Exception) {
+            println("Error checking subscription: ${e.message}")
+            false
         }
     }
 }
