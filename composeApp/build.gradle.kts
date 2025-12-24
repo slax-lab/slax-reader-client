@@ -185,7 +185,7 @@ kotlin {
 
             implementation(libs.kotzilla.sdk)
 
-            implementation(libs.intellij.markdown)
+            implementation(libs.markdown.renderer.m3)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
