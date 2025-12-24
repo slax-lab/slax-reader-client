@@ -16,6 +16,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.painterResource
+import slax_reader_client.composeapp.generated.resources.Res
+import slax_reader_client.composeapp.generated.resources.ic_bottom_panel_pro
 
 
 /**
@@ -30,23 +32,36 @@ fun IconButton(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Surface(
-            onClick = onClick,
-            modifier = Modifier.size(56.dp),
-            color = Color(0xCCFFFFFF),
-            shape = RoundedCornerShape(12.dp)
+        Box(
+            contentAlignment = Alignment.TopCenter
         ) {
-            Box(
-                contentAlignment = Alignment.Center
+            Surface(
+                onClick = onClick,
+                modifier = Modifier.size(56.dp),
+                color = Color(0xCCFFFFFF),
+                shape = RoundedCornerShape(12.dp)
             ) {
-                icon.iconRes?.let {
-                    Icon(
-                        painter = painterResource(it),
-                        contentDescription = null,
-                        tint = Color.Unspecified,
-                        modifier = Modifier.size(24.dp)
-                    )
+                Box(
+                    contentAlignment = Alignment.Center
+                ) {
+                    icon.iconRes?.let {
+                        Icon(
+                            painter = painterResource(it),
+                            contentDescription = null,
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
+            }
+
+            if (icon.proFeature) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_bottom_panel_pro),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(25.dp, 10.dp)
+                )
             }
         }
 

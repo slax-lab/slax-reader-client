@@ -29,7 +29,8 @@ import slax_reader_client.composeapp.generated.resources.*
 data class ToolbarIcon(
     val id: String,
     val label: String,
-    val iconRes: DrawableResource? = null
+    val iconRes: DrawableResource? = null,
+    val proFeature: Boolean = false
 )
 
 /**
@@ -48,7 +49,7 @@ fun BottomToolbarSheet(
         listOf(
             listOf(
 //                ToolbarIcon("chat", "Chat", Res.drawable.ic_bottom_panel_chatbot),
-                ToolbarIcon("summary", "detail_toolbar_summary".i18n(), Res.drawable.ic_bottom_panel_summary),
+                ToolbarIcon("summary", "detail_toolbar_summary".i18n(), Res.drawable.ic_bottom_panel_summary, proFeature = true),
                 ToolbarIcon(
                     "star",
                     "detail_toolbar_star".i18n(),
