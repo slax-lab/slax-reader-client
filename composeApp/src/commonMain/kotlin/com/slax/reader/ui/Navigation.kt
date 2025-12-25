@@ -58,7 +58,7 @@ fun SlaxNavigation(
                 LocaleString.currentLocale = savedLanguage
             } else {
                 // 用户未手动设置，跟随系统语言
-                val systemLanguage = getAppSystemLanguage()  // 自动映射：zh-*/zh → "zh", 其他 → "en"
+                val systemLanguage = getAppSystemLanguage()
                 LocaleString.currentLocale = systemLanguage
             }
         }
