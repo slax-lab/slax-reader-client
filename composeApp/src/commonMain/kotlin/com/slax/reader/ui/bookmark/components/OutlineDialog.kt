@@ -293,7 +293,7 @@ private fun ExpandedOutlineDialog(
                                         if (url.startsWith("#")) {
                                             val anchorText = url.removePrefix("#")
                                             onScrollToAnchor(anchorText)
-                                            onClose()
+                                            onCollapse()
                                         }
                                     }
                                 )
