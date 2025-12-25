@@ -6,7 +6,7 @@ import androidx.compose.runtime.setValue
 import com.slax.reader.const.localeString
 import com.slax.reader.data.preferences.AppPreferences
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -16,16 +16,14 @@ object LocaleString : KoinComponent {
     private const val FALLBACK_LOCALE: String = "en"
 
     private val appPreferences: AppPreferences by inject()
-    private var isInitialized = false
 
     private val positionalTemplateCache = mutableMapOf<String, ParsedPositionalTemplate>()
     private val namedTemplateCache = mutableMapOf<String, ParsedNamedTemplate>()
 
 
-    suspend fun initialize() {
-        if (isInitialized) return
 
-        withContext(Dispatchers.IO) {
+    init {
+        runBlocking {
             val savedLanguage = appPreferences.getUserLanguage()
 
             if (savedLanguage != null) {
@@ -34,13 +32,11 @@ object LocaleString : KoinComponent {
                 val systemLanguage = getAppSystemLanguage()
                 currentLocale = systemLanguage
             }
-
-            isInitialized = true
         }
     }
 
     suspend fun changeLocale(language: String) {
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.Main) {
             appPreferences.setUserLanguage(language)
             currentLocale = language
         }

@@ -7,7 +7,7 @@ fun getAppSystemLanguage(): String {
     val systemLanguageCode = getSystemLanguageCode()
 
     val languageCode = if (systemLanguageCode.length > 2) {
-        systemLanguageCode.substring(0, 2).lowercase()
+        systemLanguageCode.take(2).lowercase()
     } else {
         systemLanguageCode.lowercase()
     }

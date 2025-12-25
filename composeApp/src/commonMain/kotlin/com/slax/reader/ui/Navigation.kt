@@ -47,10 +47,6 @@ fun SlaxNavigation(
     val coordinator: CoordinatorDomain = koinInject()
     val authState by authDomain.authState.collectAsState()
 
-    LaunchedEffect(Unit) {
-        LocaleString.initialize()
-    }
-
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         lifecycleOwner.lifecycle.addObserver(LifeCycleHelper)
