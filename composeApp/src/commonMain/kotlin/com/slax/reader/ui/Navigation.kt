@@ -29,6 +29,7 @@ import com.slax.reader.ui.subscription.SubscriptionManagerScreen
 import com.slax.reader.utils.LifeCycleHelper
 import com.slax.reader.utils.LocaleString
 import com.slax.reader.utils.NavHostTransitionHelper
+import com.slax.reader.utils.getAppSystemLanguage
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.analytics.analytics
 import dev.gitlive.firebase.crashlytics.crashlytics
@@ -51,8 +52,14 @@ fun SlaxNavigation(
     LaunchedEffect(Unit) {
         launch(Dispatchers.IO) {
             val savedLanguage = appPreferences.getUserLanguage()
+
             if (savedLanguage != null) {
+                // 用户已经手动设置过语言，使用保存的语言
                 LocaleString.currentLocale = savedLanguage
+            } else {
+                // 用户未手动设置，跟随系统语言
+                val systemLanguage = getAppSystemLanguage()  // 自动映射：zh-*/zh → "zh", 其他 → "en"
+                LocaleString.currentLocale = systemLanguage
             }
         }
     }
