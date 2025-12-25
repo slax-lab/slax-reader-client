@@ -14,11 +14,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.slax.reader.const.DeleteAccountRoutes
-import com.slax.reader.data.preferences.AppPreferences
+import com.slax.reader.utils.LocaleString
 import com.slax.reader.utils.i18n
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
-import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_sm_back
 
@@ -28,7 +27,6 @@ fun SettingScreen(
     onBackClick: () -> Unit,
     navController: NavHostController
 ) {
-    val appPreferences: AppPreferences = koinInject()
     val coroutineScope = rememberCoroutineScope()
     var showLanguageDialog by remember { mutableStateOf(false) }
 
@@ -80,7 +78,7 @@ fun SettingScreen(
                     // 语言选择
                     SettingItem(
                         title = "setting_language".i18n(),
-                        rightText = if (com.slax.reader.utils.LocaleString.currentLocale == "zh") "language_chinese".i18n() else "language_english".i18n(),
+                        rightText = if (LocaleString.currentLocale == "zh") "language_chinese".i18n() else "language_english".i18n(),
                         onClick = {
                             showLanguageDialog = true
                         }
@@ -115,11 +113,10 @@ fun SettingScreen(
                 Column {
                     RadioButtonItem(
                         text = "language_chinese".i18n(),
-                        selected = com.slax.reader.utils.LocaleString.currentLocale == "zh",
+                        selected = LocaleString.currentLocale == "zh",
                         onClick = {
-                            com.slax.reader.utils.LocaleString.currentLocale = "zh"
                             coroutineScope.launch {
-                                appPreferences.setUserLanguage("zh")
+                                LocaleString.changeLocale("zh")
                             }
                             showLanguageDialog = false
                         }
@@ -127,11 +124,10 @@ fun SettingScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     RadioButtonItem(
                         text = "language_english".i18n(),
-                        selected = com.slax.reader.utils.LocaleString.currentLocale == "en",
+                        selected = LocaleString.currentLocale == "en",
                         onClick = {
-                            com.slax.reader.utils.LocaleString.currentLocale = "en"
                             coroutineScope.launch {
-                                appPreferences.setUserLanguage("en")
+                                LocaleString.changeLocale("en")
                             }
                             showLanguageDialog = false
                         }
