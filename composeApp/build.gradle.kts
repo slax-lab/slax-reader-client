@@ -35,7 +35,6 @@ plugins {
     id("com.codingfeline.buildkonfig") version "0.17.1"
     id("org.jetbrains.kotlinx.atomicfu") version "0.29.0"
     id("io.github.ttypic.swiftklib") version "0.6.4"
-    alias(libs.plugins.kotzilla)
 }
 
 repositories {
@@ -183,8 +182,6 @@ kotlin {
             implementation(libs.connectivity.device)
             implementation(libs.connectivity.compose.device)
 
-            implementation(libs.kotzilla.sdk)
-
             implementation(libs.markdown.renderer.m3)
         }
         commonTest.dependencies {
@@ -298,11 +295,6 @@ buildkonfig {
             STRING,
             "GOOGLE_AUTH_SERVER_ID",
             dotenv.get("GOOGLE_AUTH_SERVER_ID")!!
-        )
-        buildConfigField(
-            STRING,
-            "KOTZILLA_KEY",
-            dotenv.get("KOTZILLA_KEY")!!
         )
         buildConfigField(
             STRING,
