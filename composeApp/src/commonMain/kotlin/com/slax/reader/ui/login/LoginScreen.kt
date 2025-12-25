@@ -38,6 +38,7 @@ import com.slax.reader.domain.auth.AppleSignInProvider
 import com.slax.reader.utils.WebView
 import com.slax.reader.utils.i18n
 import com.slax.reader.utils.platformType
+import com.slax.reader.utils.rememberAppWebViewState
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -433,6 +434,8 @@ private fun AgreementBottomSheet(
 ) {
     // 0 = 用户协议，1 = 隐私政策
     var selectedTabIndex by remember { mutableStateOf(0) }
+    val scope = rememberCoroutineScope()
+    val webState = rememberAppWebViewState(scope)
 
     LaunchedEffect(visible, initialType) {
         if (visible && initialType != null) {
@@ -524,7 +527,8 @@ private fun AgreementBottomSheet(
                 url = currentUrl,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(fraction = 0.7F)
+                    .fillMaxHeight(fraction = 0.7F),
+                webState = webState
             )
 
             Box(

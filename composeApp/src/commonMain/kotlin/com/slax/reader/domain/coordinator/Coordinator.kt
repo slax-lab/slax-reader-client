@@ -10,6 +10,7 @@ import dev.jordond.connectivity.Connectivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -125,6 +126,8 @@ class CoordinatorDomain(
     }
 
     suspend fun cleanup(clear: Boolean) {
+        workerScope?.cancel()
+        workerScope = null
         if (isConnected) {
             connectivity.stop()
             database.disconnectAndClear(clearLocal = clear, soft = true)

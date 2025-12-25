@@ -4,9 +4,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import app.slax.reader.SlaxConfig
-import com.slax.reader.const.articleStyle
-import com.slax.reader.const.bottomLineStyle
-import com.slax.reader.const.resetStyle
 import com.slax.reader.data.preferences.AppPreferences
 import kotlinx.coroutines.runBlocking
 
@@ -25,9 +22,8 @@ expect fun AppWebView(
 expect fun WebView(
     url: String,
     modifier: Modifier,
+    webState: AppWebViewState,
     contentInsets: PaddingValues? = null,
-    onScroll: ((scrollX: Double, scrollY: Double, contentHeight: Double, visibleHeight: Double) -> Unit)? = null,
-    onPageLoaded: (() -> Unit)? = null,
 )
 
 @Composable

@@ -2,12 +2,17 @@ package com.slax.reader.ui.subscription
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.slax.reader.SlaxConfig
 import com.slax.reader.data.network.ApiService
+import com.slax.reader.data.network.dto.CheckIapParam
+import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.utils.IAPCallback
 import com.slax.reader.utils.IAPManager
 import com.slax.reader.utils.IAPProduct
+import com.slax.reader.utils.IAPProductOffer
 import com.slax.reader.utils.PurchaseResult
-import kotlinx.coroutines.delay
+import com.slax.reader.utils.WebViewCookie
+import com.slax.reader.utils.platformType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,33 +34,34 @@ sealed class PaymentState {
     data class Error(val message: String) : PaymentState()
 }
 
-class SubscriptionViewModel(private val apiService: ApiService) : ViewModel() {
+class SubscriptionViewModel(
+    private val apiService: ApiService,
+    private val appPreferences: AppPreferences
+    ) : ViewModel() {
     private val _paymentState = MutableStateFlow<PaymentState>(PaymentState.Loading)
     val paymentState: StateFlow<PaymentState> = _paymentState.asStateFlow()
     private val paymentManager = IAPManager()
 
     inner class SubscriptionCallback() : IAPCallback {
         override fun onProductsLoaded(products: List<IAPProduct>) {
-            println("===== onProductsLoaded: $products")
             _paymentState.value = PaymentState.Idle
         }
 
         override fun onLoadFailed(error: String) {
-            println("===== onLoadFailed: $error")
             _paymentState.value = PaymentState.Error(error)
         }
 
         @OptIn(ExperimentalUuidApi::class)
         override fun onPurchaseResult(result: PurchaseResult) {
-            println("===== onPurchaseResult: $result")
             when {
                 result.success -> {
-                    if (result.transactionId == null || result.appAccountToken == null) {
+                    if (result.transactionId == null || result.appAccountToken == null || result.jwsRepresentation == null) {
                         _paymentState.value = PaymentState.Error("Missing transaction ID")
                         return
                     }
-                    _paymentState.value = PaymentState.Checking(result.transactionId)
-                    startCheckTransactionStatus(result.productId, result.appAccountToken.toString())
+                    result.isPending
+                    _paymentState.value = PaymentState.Checking(result.jwsRepresentation)
+                    startCheckTransactionStatus(result.productId, result.appAccountToken.toString(), result.jwsRepresentation)
                 }
                 result.isPending -> _paymentState.value = PaymentState.Purchasing
                 result.isCancelled -> _paymentState.value = PaymentState.Cancelled
@@ -67,25 +73,26 @@ class SubscriptionViewModel(private val apiService: ApiService) : ViewModel() {
         }
 
         override fun onEntitlementsUpdated(productIds: List<String>) {
-            println("===== onEntitlementsUpdated: $productIds")
         }
 
-        fun startCheckTransactionStatus(productId: String, ticketId: String) {
+        fun startCheckTransactionStatus(productId: String, orderId: String, jwsRepresentation: String) {
             viewModelScope.launch {
-                repeat(10) {
-                    try {
-                        val result = apiService.checkIapResult(ticketId, productId)
-                        if (result.data?.ok == true) {
-                            _paymentState.value = PaymentState.Success
-                            return@launch
-                        }
-                        delay(1000L)
-                    } catch (e: Exception) {
-                        _paymentState.value = PaymentState.Error(e.message ?: "Failed to verify transaction")
+                try {
+                    val result = apiService.checkIapResult(CheckIapParam(
+                        product_id = productId,
+                        order_id = orderId,
+                        jws_representation = jwsRepresentation,
+                        platform = platformType
+                    ))
+                    if (result.data?.ok == true) {
+                        _paymentState.value = PaymentState.Success
                         return@launch
                     }
+                } catch (e: Exception) {
+                    println("===== checkTransactionStatus error: $e")
+                    _paymentState.value = PaymentState.Error(e.message ?: "Transaction verification failed")
                 }
-                _paymentState.value = PaymentState.Error("Transaction verification timed out")
+                _paymentState.value = PaymentState.Error("Transaction verification failed")
             }
         }
     }
@@ -93,22 +100,21 @@ class SubscriptionViewModel(private val apiService: ApiService) : ViewModel() {
     init {
         val callback = SubscriptionCallback()
         paymentManager.setCallback(callback)
-        paymentManager.loadProducts(listOf("app.slax.reader.monthly"))
+        viewModelScope.launch {
+            val productIds = apiService.getIAPProductIds()
+            paymentManager.loadProducts(productIds.data?.products ?: emptyList())
+        }
     }
 
     @OptIn(ExperimentalUuidApi::class)
-   fun purchase() {
+   fun purchase(productId: String, orderId: String, offer: IAPProductOffer? = null) {
         _paymentState.value = PaymentState.Purchasing
         try {
-            val orderInfo = runBlocking {
-                apiService.createIapOrderId("app.slax.reader.monthly")
+            if (offer != null) {
+                paymentManager.purchaseWithOffer(productId, orderId, offer)
+            } else {
+                paymentManager.purchase(productId, orderId)
             }
-            val orderId = orderInfo.data?.orderId
-            if (orderId == null) {
-                _paymentState.value = PaymentState.Error("Failed to create order: ${orderInfo.message}")
-                return
-            }
-            paymentManager.purchase("app.slax.reader.monthly", orderId)
         } catch (e: Exception) {
             _paymentState.value = PaymentState.Error(e.message ?: "Failed to create order")
         }
@@ -116,5 +122,21 @@ class SubscriptionViewModel(private val apiService: ApiService) : ViewModel() {
 
     fun resetState() {
         _paymentState.value = PaymentState.Idle
+    }
+
+    fun getUserWebviewCookie() : List<WebViewCookie> {
+        val token = runBlocking {
+            appPreferences.getAuthInfoSuspend()
+        }
+        return listOf(
+            WebViewCookie(
+                name = "token",
+                value = token!!,
+                domain = SlaxConfig.WEB_DOMAIN,
+                path = "/",
+                httpOnly = true,
+                secure = true
+            )
+        )
     }
 }

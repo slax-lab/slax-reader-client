@@ -41,6 +41,7 @@ import StoreKit
     @objc public var errorMessage: String = ""
     @objc public var isPending: Bool = false
     @objc public var isCancelled: Bool = false
+    @objc public var jwsRepresentation: String = ""
 
     @objc public override init() {
         super.init()
@@ -53,7 +54,8 @@ import StoreKit
         appAccountToken: UUID,
         errorMessage: String,
         isPending: Bool,
-        isCancelled: Bool
+        isCancelled: Bool,
+        jwsRepresentation: String = ""
     ) {
         self.success = success
         self.productId = productId
@@ -62,6 +64,35 @@ import StoreKit
         self.errorMessage = errorMessage
         self.isPending = isPending
         self.isCancelled = isCancelled
+        self.jwsRepresentation = jwsRepresentation
+        super.init()
+    }
+}
+
+// MARK: - Offer 信息
+@objc public class SKOfferInfo: NSObject {
+    @objc public var offerIdentifier: String = ""
+    @objc public var keyIdentifier: String = ""
+    @objc public var nonce: UUID = UUID()
+    @objc public var signature: String = ""
+    @objc public var timestamp: Int = 0
+
+    @objc public override init() {
+        super.init()
+    }
+
+    @objc public init(
+        offerIdentifier: String,
+        keyIdentifier: String,
+        nonce: UUID,
+        signature: String,
+        timestamp: Int
+    ) {
+        self.offerIdentifier = offerIdentifier
+        self.keyIdentifier = keyIdentifier
+        self.nonce = nonce
+        self.signature = signature
+        self.timestamp = timestamp
         super.init()
     }
 }
@@ -183,7 +214,142 @@ public class StoreKitBridge: NSObject {
                                 appAccountToken: transaction.appAccountToken ?? appAccountToken,
                                 errorMessage: "",
                                 isPending: false,
+                                isCancelled: false,
+                                jwsRepresentation: verification.jwsRepresentation
+                            )
+                            self.callback?.onPurchaseResult(result)
+
+                        case .unverified(_, let verificationError):
+                            let result = SKPurchaseResult(
+                                success: false,
+                                productId: productId,
+                                transactionId: "",
+                                appAccountToken: appAccountToken,
+                                errorMessage: "Verification failed: \(verificationError.localizedDescription)",
+                                isPending: false,
                                 isCancelled: false
+                            )
+                            self.callback?.onPurchaseResult(result)
+                        }
+
+                    case .pending:
+                        let result = SKPurchaseResult(
+                            success: false,
+                            productId: productId,
+                            transactionId: "",
+                            appAccountToken: appAccountToken,
+                            errorMessage: "",
+                            isPending: true,
+                            isCancelled: false
+                        )
+                        self.callback?.onPurchaseResult(result)
+
+                    case .userCancelled:
+                        let result = SKPurchaseResult(
+                            success: false,
+                            productId: productId,
+                            transactionId: "",
+                            appAccountToken: appAccountToken,
+                            errorMessage: "",
+                            isPending: false,
+                            isCancelled: true
+                        )
+                        self.callback?.onPurchaseResult(result)
+
+                    @unknown default:
+                        let result = SKPurchaseResult(
+                            success: false,
+                            productId: productId,
+                            transactionId: "",
+                            appAccountToken: appAccountToken,
+                            errorMessage: "Unknown result",
+                            isPending: false,
+                            isCancelled: false
+                        )
+                        self.callback?.onPurchaseResult(result)
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    let result = SKPurchaseResult(
+                        success: false,
+                        productId: productId,
+                        transactionId: "",
+                        appAccountToken: appAccountToken,
+                        errorMessage: error.localizedDescription,
+                        isPending: false,
+                        isCancelled: false
+                    )
+                    self.callback?.onPurchaseResult(result)
+                }
+            }
+        }
+    }
+
+    // MARK: - 带 Offer 的购买
+    @objc public func purchaseWithOffer(_ productId: String, appAccountToken: UUID, offer: SKOfferInfo) {
+        Task {
+            guard let product = products[productId] else {
+                await MainActor.run {
+                    let result = SKPurchaseResult(
+                        success: false,
+                        productId: productId,
+                        transactionId: "",
+                        appAccountToken: appAccountToken,
+                        errorMessage: "Product not found: \(productId)",
+                        isPending: false,
+                        isCancelled: false
+                    )
+                    self.callback?.onPurchaseResult(result)
+                }
+                return
+            }
+
+            do {
+                guard let signatureData = Data(base64Encoded: offer.signature) else {
+                    await MainActor.run {
+                        let result = SKPurchaseResult(
+                            success: false,
+                            productId: productId,
+                            transactionId: "",
+                            appAccountToken: appAccountToken,
+                            errorMessage: "Invalid signature format",
+                            isPending: false,
+                            isCancelled: false
+                        )
+                        self.callback?.onPurchaseResult(result)
+                    }
+                    return
+                }
+
+                let purchaseResult = try await product.purchase(options: [
+                    .appAccountToken(appAccountToken),
+                    .promotionalOffer(
+                        offerID: offer.offerIdentifier,
+                        keyID: offer.keyIdentifier,
+                        nonce: offer.nonce,
+                        signature: signatureData,
+                        timestamp: offer.timestamp
+                    )
+                ])
+
+                await MainActor.run {
+                    switch purchaseResult {
+                    case .success(let verification):
+                        switch verification {
+                        case .verified(let transaction):
+                            self.purchasedIds.insert(productId)
+                            Task { await transaction.finish() }
+
+                            let result = SKPurchaseResult(
+                                success: true,
+                                productId: productId,
+                                transactionId: String(transaction.id),
+                                appAccountToken: transaction.appAccountToken ?? appAccountToken,
+                                errorMessage: "",
+                                isPending: false,
+                                isCancelled: false,
+                                jwsRepresentation: verification.jwsRepresentation
                             )
                             self.callback?.onPurchaseResult(result)
 

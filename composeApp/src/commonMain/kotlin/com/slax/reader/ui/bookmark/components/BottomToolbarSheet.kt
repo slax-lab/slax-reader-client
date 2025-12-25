@@ -42,9 +42,11 @@ fun BottomToolbarSheet(
     detail: UserBookmark,
     detailView: BookmarkDetailViewModel,
     onDismissRequest: () -> Unit,
+    onSubscriptionRequired: (() -> Unit)? = null,
     onIconClick: (pageId: String, iconIndex: Int) -> Unit
 ) {
     println("[watch][UI] recomposition BottomToolbarSheet")
+
     val toolbarPages = remember(detail.isStarred, detail.archiveStatus) {
         listOf(
             listOf(
@@ -130,10 +132,21 @@ fun BottomToolbarSheet(
                             } else if (pageId == "archive") {
                                 detailView.toggleArchive(detail.archiveStatus != 1)
                             }
-                        }
 
-                        onIconClick(pageId, iconIndex)
-                        dismiss()
+                            if (pageId == "summary") {
+                                val isSubscribed = detailView.checkUserIsSubscribed()
+                                if (!isSubscribed) {
+                                    dismiss()
+                                    if (onSubscriptionRequired != null) {
+                                        onSubscriptionRequired()
+                                    }
+                                    return@launch
+                                }
+                            }
+
+                            onIconClick(pageId, iconIndex)
+                            dismiss()
+                        }
                     },
                     modifier = Modifier.padding(top = 30.dp)
                 )

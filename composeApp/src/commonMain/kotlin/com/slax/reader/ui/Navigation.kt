@@ -2,7 +2,9 @@ package com.slax.reader.ui
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
+import androidx.compose.ui.FrameRateCategory
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.preferredFrameRate
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -40,14 +42,12 @@ import org.koin.compose.koinInject
 fun SlaxNavigation(
     navCtrl: NavHostController
 ) {
-
     val authDomain: AuthDomain = koinInject()
     val appPreferences: AppPreferences = koinInject()
     val backgroundDomain: BackgroundDomain = koinInject()
     val coordinator: CoordinatorDomain = koinInject()
     val authState by authDomain.authState.collectAsState()
 
-    // 应用启动时加载保存的语言设置
     LaunchedEffect(Unit) {
         launch(Dispatchers.IO) {
             val savedLanguage = appPreferences.getUserLanguage()
@@ -100,7 +100,7 @@ fun SlaxNavigation(
     NavHost(
         navController = navCtrl,
         startDestination = startDestination,
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().preferredFrameRate(FrameRateCategory.High),
         exitTransition = NavHostTransitionHelper.exitTransition,
         enterTransition = NavHostTransitionHelper.enterTransition,
         popEnterTransition = NavHostTransitionHelper.popEnterTransition,
@@ -117,6 +117,9 @@ fun SlaxNavigation(
                 bookmarkId = params.bookmarkId,
                 onBackClick = {
                     navCtrl.popBackStack()
+                },
+                onNavigateToSubscription = {
+                    navCtrl.navigate(SubscriptionManagerRoutes)
                 }
             )
         }

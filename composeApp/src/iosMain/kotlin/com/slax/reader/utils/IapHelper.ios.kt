@@ -1,5 +1,6 @@
 package com.slax.reader.utils
 
+import app.slax.reader.storekit.SKOfferInfo
 import app.slax.reader.storekit.SKProductInfo
 import app.slax.reader.storekit.SKPurchaseResult
 import app.slax.reader.storekit.StoreKitBridge
@@ -75,6 +76,19 @@ actual class IAPManager actual constructor() {
         val infos = bridge.getProducts()
         return infos.filterIsInstance<SKProductInfo>().map { it.toIAPProduct() }
     }
+
+    actual fun purchaseWithOffer(productId: String, orderId: String, offer: IAPProductOffer) {
+        bridge.purchaseWithOffer(
+            productId, NSUUID(orderId),
+            SKOfferInfo(
+                offer.offerId,
+                offer.keyID,
+                NSUUID(offer.nonce),
+                offer.signature,
+                offer.timestamp
+            )
+        )
+    }
 }
 
 @OptIn(ExperimentalForeignApi::class)
@@ -101,5 +115,6 @@ private fun SKPurchaseResult.toPurchaseResult() = PurchaseResult(
     appAccountToken = this.appAccountToken()?.let { Uuid.parse(it.UUIDString()) },
     error = this.errorMessage().takeIf { it.isNotEmpty() },
     isPending = this.isPending(),
-    isCancelled = this.isCancelled()
+    isCancelled = this.isCancelled(),
+    jwsRepresentation = this.jwsRepresentation().takeIf { it.isNotEmpty() }
 )
