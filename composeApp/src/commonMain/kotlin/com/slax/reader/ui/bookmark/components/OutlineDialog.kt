@@ -101,6 +101,7 @@ fun OutlineDialog(
 
     Box(modifier = Modifier.fillMaxSize()) {
         AnimatedVisibility(
+            modifier = Modifier.preferredFrameRate(FrameRateCategory.High),
             visible = state.isExpanded,
             enter = fadeIn(animationSpec = tween(300)),
             exit = fadeOut(animationSpec = tween(300))
@@ -122,6 +123,7 @@ fun OutlineDialog(
             contentAlignment = Alignment.BottomCenter
         ) {
             AnimatedVisibility(
+                modifier = Modifier.preferredFrameRate(FrameRateCategory.High),
                 visible = state.isExpanded,
                 enter = slideInVertically(
                     initialOffsetY = { it },
@@ -146,6 +148,7 @@ fun OutlineDialog(
             contentAlignment = Alignment.TopCenter
         ) {
             AnimatedVisibility(
+                modifier = Modifier.preferredFrameRate(FrameRateCategory.High),
                 visible = state.isCollapsed,
                 enter = scaleIn(
                     initialScale = 0.3f,
