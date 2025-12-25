@@ -43,19 +43,9 @@ fun SlaxNavigation(
     navCtrl: NavHostController
 ) {
     val authDomain: AuthDomain = koinInject()
-    val appPreferences: AppPreferences = koinInject()
     val backgroundDomain: BackgroundDomain = koinInject()
     val coordinator: CoordinatorDomain = koinInject()
     val authState by authDomain.authState.collectAsState()
-
-    LaunchedEffect(Unit) {
-        launch(Dispatchers.IO) {
-            val savedLanguage = appPreferences.getUserLanguage()
-            if (savedLanguage != null) {
-                LocaleString.currentLocale = savedLanguage
-            }
-        }
-    }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
