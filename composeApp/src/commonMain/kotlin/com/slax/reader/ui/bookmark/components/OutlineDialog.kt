@@ -13,13 +13,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.FrameRateCategory
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -101,7 +99,6 @@ fun OutlineDialog(
 
     Box(modifier = Modifier.fillMaxSize()) {
         AnimatedVisibility(
-            modifier = Modifier.preferredFrameRate(FrameRateCategory.High),
             visible = state.isExpanded,
             enter = fadeIn(animationSpec = tween(300)),
             exit = fadeOut(animationSpec = tween(300))
@@ -123,7 +120,6 @@ fun OutlineDialog(
             contentAlignment = Alignment.BottomCenter
         ) {
             AnimatedVisibility(
-                modifier = Modifier.preferredFrameRate(FrameRateCategory.High),
                 visible = state.isExpanded,
                 enter = slideInVertically(
                     initialOffsetY = { it },
@@ -148,7 +144,6 @@ fun OutlineDialog(
             contentAlignment = Alignment.TopCenter
         ) {
             AnimatedVisibility(
-                modifier = Modifier.preferredFrameRate(FrameRateCategory.High),
                 visible = state.isCollapsed,
                 enter = scaleIn(
                     initialScale = 0.3f,
@@ -298,7 +293,7 @@ private fun ExpandedOutlineDialog(
                                         if (url.startsWith("#")) {
                                             val anchorText = url.removePrefix("#")
                                             onScrollToAnchor(anchorText)
-                                            onCollapse()
+                                            onClose()
                                         }
                                     }
                                 )
