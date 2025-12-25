@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
@@ -11,8 +13,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.FrameRateCategory
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.text.TextLinkStyles
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.mikepenz.markdown.m3.Markdown
@@ -28,19 +32,21 @@ fun MarkdownRenderer(
 ) {
     val outlineState by detailViewModel.outlineState.collectAsState()
 
-    val customUriHandler = object : UriHandler {
-        override fun openUri(uri: String) {
-            onLinkClick(uri)
+    val markdownState = rememberMarkdownState(
+        content = outlineState.outline,
+        retainState = true,
+        immediate = false
+    )
+
+    val customUriHandler = remember {
+        object : UriHandler {
+            override fun openUri(uri: String) {
+                onLinkClick(uri)
+            }
         }
     }
 
     CompositionLocalProvider(LocalUriHandler provides customUriHandler) {
-        val markdownState = rememberMarkdownState(
-            content = outlineState.outline,
-            retainState = true,
-            immediate = true
-        )
-
         Markdown(
             markdownState = markdownState,
             modifier = Modifier.fillMaxWidth(),

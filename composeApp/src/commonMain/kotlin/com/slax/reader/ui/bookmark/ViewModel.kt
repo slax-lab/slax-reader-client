@@ -13,6 +13,7 @@ import com.slax.reader.data.network.dto.OverviewResponse
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.data.preferences.ContinueReadingBookmark
 import com.slax.reader.domain.sync.BackgroundDomain
+import com.slax.reader.utils.MarkdownHelper
 import com.slax.reader.utils.parseInstant
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -142,9 +143,10 @@ class BookmarkDetailViewModel(
             }
 
             if (!cacheOutline.isNullOrEmpty()) {
+                val fixedOutline = MarkdownHelper.fixMarkdownLinks(cacheOutline)
                 _outlineState.update { state ->
                     state.copy(
-                        outline = cacheOutline,
+                        outline = fixedOutline,
                         isLoading = false
                     )
                 }
@@ -153,28 +155,29 @@ class BookmarkDetailViewModel(
 
             _outlineState.value = OutlineState(isLoading = true, isPending = true)
 
-            var fullOutline = ""
+            val streamProcessor = MarkdownHelper.createStreamProcessor()
 
             try {
                 apiService.getBookmarkOutline(bookmarkId).collect { response ->
                     when (response) {
                         is OutlineResponse.Outline -> {
-                            fullOutline = response.content
                             _outlineState.update { state ->
-                                state.copy(outline = fullOutline, isLoading = true, isPending = false)
+                                state.copy(outline = streamProcessor.process(response.content), isLoading = true, isPending = false)
                             }
                         }
 
                         is OutlineResponse.Done -> {
+                            val finalOutline = streamProcessor.flush()
+
                             _outlineState.update { state ->
-                                state.copy(isLoading = false)
+                                state.copy(outline = finalOutline, isLoading = false)
                             }
 
-                            if (fullOutline.isNotEmpty()) {
+                            if (finalOutline.isNotEmpty()) {
                                 withContext(Dispatchers.IO) {
                                     localBookmarkDao.updateLocalBookmarkOutline(
                                         bookmarkId = bookmarkId,
-                                        outline = fullOutline
+                                        outline = finalOutline
                                     )
                                 }
                             }

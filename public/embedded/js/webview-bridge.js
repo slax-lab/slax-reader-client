@@ -152,7 +152,8 @@
             img.addEventListener('click', (event) => {
                 const allImageUrls = Array.from(images)
                     .map(getImageUrl)
-                    .filter(url => url);
+                    .filter(url => url && (url.startsWith("https://") || url.startsWith("http://")))
+
 
                 const clickedImageUrl = getImageUrl(event.currentTarget);
 
