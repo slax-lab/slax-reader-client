@@ -49,7 +49,7 @@ fun MarkdownRenderer(
     CompositionLocalProvider(LocalUriHandler provides customUriHandler) {
         Markdown(
             markdownState = markdownState,
-            modifier = Modifier.fillMaxWidth().preferredFrameRate(FrameRateCategory.High),
+            modifier = Modifier.fillMaxWidth(),
             colors = markdownColor(
                 text = Color(0xFF333333),
                 codeBackground = Color(0xFFF5F5F5),
