@@ -7,12 +7,12 @@ import java.util.Locale
  */
 actual fun getSystemLanguageCode(): String {
     val locale = Locale.getDefault()
-    val language = locale.language  // 如 "zh", "en"
-    val country = locale.country    // 如 "CN", "TW", "US"
+    val language = locale.language
+    val country = locale.country
 
     return if (country.isNotEmpty()) {
-        "$language-$country"  // 如 "zh-CN", "en-US"
+        "$language-$country"
     } else {
-        language  // 如 "zh", "en"
+        language
     }
 }
