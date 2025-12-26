@@ -259,7 +259,7 @@ val localeString: Map<String, Map<String, String>> = mapOf(
     // 底部工具栏
     "detail_toolbar_summary" to mapOf(
         "zh" to "提纲",
-        "en" to "Summarize"
+        "en" to "Outline"
     ),
     "detail_toolbar_star" to mapOf(
         "zh" to "加星",
