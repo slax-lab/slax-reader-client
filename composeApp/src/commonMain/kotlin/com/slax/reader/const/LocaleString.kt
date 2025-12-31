@@ -106,7 +106,7 @@ val localeString: Map<String, Map<String, String>> = mapOf(
     ),
     "add_link_btn_submit" to mapOf(
         "zh" to "添加收藏",
-        "en" to "Add Bookmark"
+        "en" to "Add"
     ),
     "add_link_error_invalid_url" to mapOf(
         "zh" to "请输入有效的网址链接",
