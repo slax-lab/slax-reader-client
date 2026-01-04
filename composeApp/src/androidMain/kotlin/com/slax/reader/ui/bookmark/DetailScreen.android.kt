@@ -182,6 +182,14 @@ actual fun DetailScreen(
             )
         }
 
+        // 导航栏
+        if (manuallyVisible) {
+            NavigatorBar(
+                visible = manuallyVisible,
+                onBackClick = onBackClick
+            )
+        }
+
         // 浮动操作栏
         FloatingActionBar(
             detail = detail,
@@ -236,13 +244,6 @@ actual fun DetailScreen(
             )
         }
 
-        // 导航栏
-        if (manuallyVisible) {
-            NavigatorBar(
-                visible = manuallyVisible,
-                onBackClick = onBackClick
-            )
-        }
 
         // 编辑标题弹窗
         if (showEditNameDialog) {

@@ -1,5 +1,6 @@
 package com.slax.reader.ui.bookmark.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -87,7 +88,14 @@ fun OverviewView(
                 )
             }
 
-            // 展开按钮
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp)
+                    .height(0.5.dp)
+                    .background(Color(0x14333333))
+            )
+
             Surface(
                 onClick = {
                     onExpand()
