@@ -133,24 +133,39 @@ fun FloatingActionBar(
 
             Box(modifier = Modifier.width(12.dp))
 
-            Surface(
-                onClick = onMoreClick,
-                modifier = Modifier
-                    .size(50.dp),
-                color = Color(0xFFFFFFFF),
-                shape = RoundedCornerShape(25.dp),
-                border = BorderStroke(1.dp, Color.White)
-            ) {
+            Box {
                 Box(
-                    contentAlignment = Alignment.Center
+                    modifier = Modifier
+                        .matchParentSize()
+                        .offset(y = 10.dp)
+                        .shadow(
+                            elevation = 40.dp,
+                            shape = RoundedCornerShape(25.dp),
+                            ambientColor = Color.Black.copy(alpha = 1.0f),
+                            spotColor = Color.Black.copy(alpha = 1.0f)
+                        )
+                )
+
+                Surface(
+                    onClick = onMoreClick,
+                    modifier = Modifier
+                        .size(50.dp),
+                    color = Color(0xFFFFFFFF),
+                    shape = RoundedCornerShape(25.dp),
+                    border = BorderStroke(1.dp, Color.White)
                 ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_floating_panel_more),
-                        contentDescription = null,
-                        tint = Color.Unspecified,
-                        modifier = Modifier.size(20.dp)
-                    )
+                    Box(
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_floating_panel_more),
+                            contentDescription = null,
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
+
             }
         }
     }

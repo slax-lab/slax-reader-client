@@ -198,6 +198,13 @@ actual fun DetailScreen(
             }
         }
 
+        if (manuallyVisible) {
+            NavigatorBar(
+                visible = manuallyVisible,
+                onBackClick = onBackClick
+            )
+        }
+
         // 浮动操作栏
         FloatingActionBar(
             detail = detail,
@@ -246,13 +253,6 @@ actual fun DetailScreen(
                         "summary" -> outlineDialogState.show()
                     }
                 }
-            )
-        }
-
-        if (manuallyVisible) {
-            NavigatorBar(
-                visible = manuallyVisible,
-                onBackClick = onBackClick
             )
         }
 
