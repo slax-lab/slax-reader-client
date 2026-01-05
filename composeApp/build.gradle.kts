@@ -251,22 +251,46 @@ fun minifyHtml(html: String): String {
  * 获取 web-bridge 产物文件路径
  */
 fun getWebBridgeOutputPath(): File {
-    val webBridgeDir = file("../public/embedded/sub-projects/web-bridge")
+    val webBridgeDir = file("../public/embedded/slax-reader-web-bridge")
     return file("$webBridgeDir/dist/slax-reader-web-bridge.js")
 }
 
 /**
  * 读取 web-bridge 文件内容
- * 如果文件不存在，直接报错
+ * 如果文件不存在，根据子模块状态提供具体的错误提示
  */
 fun getWebBridgeContent(): String {
     val output = getWebBridgeOutputPath()
-    return if (output.exists()) {
-        output.readText()
-    } else {
+    if (output.exists()) {
+        return output.readText()
+    }
+
+    // 检查子模块状态
+    val webBridgeDir = file("../public/embedded/slax-reader-web-bridge")
+    val packageJsonFile = file("$webBridgeDir/package.json")
+
+    if (!packageJsonFile.exists()) {
+        // 子模块未初始化
         throw GradleException("""
-            ❌ web-bridge 文件不存在: ${output.absolutePath}
-            💡 请先运行: ./gradlew buildWebBridge
+            ❌ web-bridge 子模块未初始化
+
+            💡 请按以下步骤操作：
+            1. 初始化子模块：
+               git submodule update --init --recursive
+
+            2. 构建 web-bridge：
+               ./gradlew buildWebBridge
+
+            或者直接运行（会自动初始化子模块）：
+               ./gradlew buildWebBridge
+        """.trimIndent())
+    } else {
+        // 子模块已初始化，但产物文件不存在
+        throw GradleException("""
+            ❌ web-bridge 产物文件不存在: ${output.absolutePath}
+
+            💡 请运行以下命令构建：
+            ./gradlew buildWebBridge
         """.trimIndent())
     }
 }
@@ -274,13 +298,16 @@ fun getWebBridgeContent(): String {
 /**
  * web-bridge 构建任务
  * 符合 Gradle Configuration Cache 规范
+ * 自动检查并初始化 Git 子模块
  */
 val buildWebBridge = tasks.register<Exec>("buildWebBridge") {
     group = "build"
-    description = "构建 web-bridge TypeScript 项目"
+    description = "构建 web-bridge TypeScript 项目（自动初始化子模块）"
 
-    val webBridgeDir = file("../public/embedded/sub-projects/web-bridge")
+    val webBridgeDir = file("../public/embedded/slax-reader-web-bridge")
     val webBridgeOutputFile = file("$webBridgeDir/dist/slax-reader-web-bridge.js")
+    val packageJsonFile = file("$webBridgeDir/package.json")  // 在配置阶段创建文件引用
+    val projectRootDir = rootProject.projectDir  // 在配置阶段解析为 File 对象
 
     workingDir(webBridgeDir)
 
@@ -297,6 +324,58 @@ val buildWebBridge = tasks.register<Exec>("buildWebBridge") {
     outputs.upToDateWhen { webBridgeOutputFile.exists() }
 
     doFirst {
+        // 检查子模块是否已初始化（Configuration Cache 安全）
+        if (!packageJsonFile.exists()) {
+            println("⚠️  检测到 web-bridge 子模块未初始化")
+            println("🔄 正在初始化 Git 子模块...")
+
+            // 使用 ProcessBuilder 替代 project.exec 以符合 Configuration Cache 要求
+            val initCommand = if (isWindows) {
+                listOf("cmd", "/c", "git submodule update --init --recursive public/embedded/slax-reader-web-bridge")
+            } else {
+                listOf("sh", "-c", "git submodule update --init --recursive public/embedded/slax-reader-web-bridge")
+            }
+
+            val processBuilder = ProcessBuilder(initCommand)
+            processBuilder.directory(projectRootDir)  // 使用配置阶段解析的 File 对象
+            processBuilder.redirectErrorStream(true)
+
+            val process = processBuilder.start()
+            val exitCode = process.waitFor()
+
+            if (exitCode != 0) {
+                val errorOutput = process.inputStream.bufferedReader().readText()
+                throw GradleException("""
+                    ❌ Git 子模块初始化失败（退出码：$exitCode）
+
+                    错误输出：
+                    $errorOutput
+
+                    💡 请手动执行以下命令：
+                    cd ${projectRootDir.absolutePath}
+                    git submodule update --init --recursive
+
+                    或者检查是否已正确配置子模块：
+                    cat .gitmodules
+                """.trimIndent())
+            }
+
+            if (!packageJsonFile.exists()) {
+                throw GradleException("""
+                    ❌ 子模块初始化后仍未找到 package.json
+
+                    💡 可能的原因：
+                    1. 子模块 URL 配置错误（检查 .gitmodules）
+                    2. 网络问题导致克隆失败
+                    3. 子模块仓库为空或结构不正确
+
+                    请检查：${webBridgeDir.absolutePath}
+                """.trimIndent())
+            }
+
+            println("✅ 子模块初始化成功")
+        }
+
         println("🔨 开始构建 web-bridge 项目...")
     }
 
