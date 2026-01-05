@@ -247,6 +247,69 @@ fun minifyHtml(html: String): String {
     return html
 }
 
+/**
+ * 获取 web-bridge 产物文件路径
+ */
+fun getWebBridgeOutputPath(): File {
+    val webBridgeDir = file("../public/embedded/sub-projects/web-bridge")
+    return file("$webBridgeDir/dist/slax-reader-web-bridge.js")
+}
+
+/**
+ * 读取 web-bridge 文件内容
+ * 如果文件不存在，直接报错
+ */
+fun getWebBridgeContent(): String {
+    val output = getWebBridgeOutputPath()
+    return if (output.exists()) {
+        output.readText()
+    } else {
+        throw GradleException("""
+            ❌ web-bridge 文件不存在: ${output.absolutePath}
+            💡 请先运行: ./gradlew buildWebBridge
+        """.trimIndent())
+    }
+}
+
+/**
+ * web-bridge 构建任务
+ * 符合 Gradle Configuration Cache 规范
+ */
+val buildWebBridge = tasks.register<Exec>("buildWebBridge") {
+    group = "build"
+    description = "构建 web-bridge TypeScript 项目"
+
+    val webBridgeDir = file("../public/embedded/sub-projects/web-bridge")
+    val webBridgeOutputFile = file("$webBridgeDir/dist/slax-reader-web-bridge.js")
+
+    workingDir(webBridgeDir)
+
+    // 跨平台兼容性处理
+    val isWindows = System.getProperty("os.name").lowercase().contains("win")
+    if (isWindows) {
+        commandLine("cmd", "/c", "pnpm install && pnpm build")
+    } else {
+        commandLine("sh", "-c", "pnpm install && pnpm build")
+    }
+
+    // 声明输出，支持增量构建
+    outputs.file(webBridgeOutputFile)
+    outputs.upToDateWhen { webBridgeOutputFile.exists() }
+
+    doFirst {
+        println("🔨 开始构建 web-bridge 项目...")
+    }
+
+    doLast {
+        if (webBridgeOutputFile.exists()) {
+            val fileSizeKB = webBridgeOutputFile.length() / 1024
+            println("✅ web-bridge 构建完成 (${fileSizeKB}KB)")
+        } else {
+            throw GradleException("❌ 构建失败：未找到产物文件 $webBridgeOutputFile")
+        }
+    }
+}
+
 buildkonfig {
     packageName = "app.slax.reader"
     objectName = "SlaxConfig"
@@ -288,7 +351,7 @@ buildkonfig {
                     .replace("{{RESET-CSS}}", file("../public/embedded/css/reset.css").readText())
                     .replace("{{ARTICLE-CSS}}", file("../public/embedded/css/article.css").readText())
                     .replace("{{BOTTOM-LINE-CSS}}", file("../public/embedded/css/bottom-line.css").readText())
-                    .replace("{{WEBVIEW-BRIGDE-JS}}", file("../public/embedded/js/webview-bridge.js").readText())
+                    .replace("{{WEBVIEW-BRIGDE-JS}}", getWebBridgeContent())
             )
         )
         buildConfigField(
@@ -375,6 +438,7 @@ val syncFirebaseIOS = tasks.register<Exec>("syncFirebaseIOS") {
 }
 
 tasks.named("preBuild").configure {
+    dependsOn(buildWebBridge)
     dependsOn(syncFirebaseAndroid)
 }
 
