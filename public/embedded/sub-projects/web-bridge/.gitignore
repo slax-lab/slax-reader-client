@@ -1,0 +1,14 @@
+node_modules/
+dist/
+# 但保留生成的产物文件（需要提交到 git 以兼容 Gradle Configuration Cache）
+!dist/slax-reader-web-bridge.js
+*.log
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+.claude
+.github

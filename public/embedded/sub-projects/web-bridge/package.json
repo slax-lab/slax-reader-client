@@ -1,0 +1,39 @@
+{
+  "name": "slax-reader-web-bridge",
+  "version": "0.1.0",
+  "description": "slax reader bridge for slax-reader-client app integration",
+  "type": "module",
+  "main": "./dist/slax-reader-web-bridge.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "NODE_OPTIONS=\"--loader ts-node/esm\" rollup -c rollup.config.ts",
+    "dev": "NODE_OPTIONS=\"--loader ts-node/esm\" rollup -c rollup.config.ts -w",
+    "demo": "SERVE=true NODE_OPTIONS=\"--loader ts-node/esm\" rollup -c rollup.config.ts -w",
+    "test": "jest",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "Slax Reader",
+  "license": "MIT",
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^29.0.0",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^11.1.5",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^20.0.0",
+    "jest": "^30.2.0",
+    "jest-environment-jsdom": "^30.2.0",
+    "rollup": "^4.9.0",
+    "rollup-plugin-livereload": "^2.0.5",
+    "rollup-plugin-serve": "^3.0.0",
+    "ts-jest": "^29.4.6",
+    "ts-node": "^10.9.2",
+    "tslib": "^2.6.2",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "approx-string-match": "^2.0.0",
+    "dom-anchor-text-position": "^5.0.0"
+  }
+}

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search & Highlight Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        #control-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 350px;
+            height: 100vh;
+            background: #f8f9fa;
+            border-left: 1px solid #dee2e6;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.05);
+        }
+        #panel-header {
+            padding: 15px;
+            border-bottom: 1px solid #dee2e6;
+            background: #fff;
+        }
+        #panel-header h2 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+        }
+        #buttons-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        #log-area {
+            height: 150px;
+            background: #212529;
+            color: #f8f9fa;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            overflow-y: auto;
+            border-top: 1px solid #dee2e6;
+        }
+        .log-entry {
+            margin-bottom: 4px;
+            border-bottom: 1px solid #343a40;
+            padding-bottom: 2px;
+        }
+        .log-success { color: #40c057; }
+        .log-error { color: #fa5252; }
+        .log-info { color: #4dabf7; }
+
+        #content-area {
+            margin-right: 350px;
+            padding: 40px;
+            max-width: 800px;
+            margin-left: auto;
+        }
+
+        .test-btn {
+            display: block;
+            width: 100%;
+            margin-bottom: 8px;
+            padding: 8px 12px;
+            text-align: left;
+            font-size: 13px;
+            cursor: pointer;
+            background: #fff;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            transition: all 0.2s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .test-btn:hover {
+            background-color: #e9ecef;
+            border-color: #adb5bd;
+        }
+        .test-btn:active {
+            background-color: #dee2e6;
+        }
+        .test-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: #f1f3f5;
+            color: #adb5bd;
+        }
+        
+        /* Highlight styles */
+        .slax-highlight {
+            background-color: rgba(255, 255, 0, 0.4);
+            border-bottom: 2px solid #ffd43b;
+        }
+        .slax-current-highlight {
+            background-color: rgba(255, 165, 0, 0.6);
+            border-bottom: 2px solid #f76707;
+        }
+    </style>
+</head>
+<body>
+    <div id="content-area">
+        <div style="text-align: center; padding: 50px; color: #666;">
+            Loading content from canon.html...
+        </div>
+    </div>
+
+    <div id="control-panel">
+        <div id="panel-header">
+            <h2>Search & Highlight Test</h2>
+            <div style="font-size: 12px; color: #666; margin-bottom: 10px;">
+                Click a button to search and highlight the text.
+            </div>
+            <div style="margin-bottom: 10px;">
+                <label for="dataset-select" style="font-size: 12px; font-weight: bold;">Dataset:</label>
+                <select id="dataset-select" onchange="changeDataset(this.value)" style="width: 100%; padding: 5px; margin-top: 5px;">
+                    <option value="canon">Canon EOS R6 III</option>
+                    <option value="notebookllm">NotebookLLM</option>
+                </select>
+            </div>
+            <button onclick="clearHighlights()" style="width: 100%; padding: 5px;">Clear Highlights</button>
+            <button onclick="checkAnchors()" style="width: 100%; padding: 5px; margin-top: 5px;">Check Anchors Availability</button>
+        </div>
+        <div id="buttons-container"></div>
+        <!-- <div id="log-area"></div> -->
+    </div>
+
+</body>
+
+      <!-- Scripts -->
+  <script src="../dist/slax-reader-web-bridge.js"></script>
+  <script src="mock-native.js"></script>
+  <script src="search_highlight_test/load-content.js"></script>
+</html>

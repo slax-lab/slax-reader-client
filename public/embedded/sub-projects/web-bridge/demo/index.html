@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slax Reader Web Bridge 演示</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Slax Reader Web Bridge 演示</h1>
+    <p>本页面演示 Slax Reader Web Bridge 的各项功能。请打开控制台查看日志。</p>
+
+    <section>
+        <h2>独立测试页面</h2>
+        <ul>
+            <li><a href="search_highlight_test.html">搜索与高亮测试 (Search & Highlight Test)</a></li>
+        </ul>
+    </section>
+
+    <!-- Feature: Content Height -->
+    <section>
+        <h2>1. 内容高度 (Content Height)</h2>
+        <p>获取内容的总高度。</p>
+        <button onclick="testGetContentHeight()">获取内容高度</button>
+    </section>
+
+    <!-- Feature: Post Message -->
+    <section>
+        <h2>2. Native Bridge 通信</h2>
+        <p>发送自定义消息给 Native Bridge。</p>
+        <button onclick="testPostMessage()">发送测试消息</button>
+    </section>
+
+    <!-- Feature: Images -->
+    <section>
+        <h2>3. 图片点击处理 (Image Click Handling)</h2>
+        <p>点击任意图片以触发 Native Bridge 事件。</p>
+        <div class="image-gallery">
+            <img src="https://picsum.photos/300/200?random=1" alt="随机图片 1">
+            <img src="https://picsum.photos/300/200?random=2" alt="随机图片 2">
+            <img src="https://picsum.photos/300/200?random=3" alt="随机图片 3">
+        </div>
+    </section>
+
+    <!-- Feature: Highlight -->
+    <section>
+        <h2>4. 元素高亮 (Element Highlighting)</h2>
+        <p>通过 ID 高亮指定元素。</p>
+        <div id="highlight-target" style="padding: 10px; border: 1px solid #ccc; margin-bottom: 10px;">
+            这是一个 ID 为 "highlight-target" 的目标元素。
+        </div>
+        <button onclick="testHighlight()">高亮元素</button>
+    </section>
+
+    <!-- Feature: Scroll -->
+    <section>
+        <h2>5. 滚动到锚点 (Scroll to Anchor)</h2>
+        <p>滚动到页面上的特定元素。</p>
+        <button onclick="testScrollToBottom()">滚动到底部锚点</button>
+    </section>
+
+    <div class="spacer">长内容以启用滚动...</div>
+    <div class="spacer">更多内容...</div>
+    
+    <div id="bottom-anchor" style="padding: 20px; background: #e0e0e0; text-align: center;">
+        <strong>底部锚点 (ID: bottom-anchor)</strong>
+    </div>
+
+    <!-- Console Output -->
+    <div id="console-container">
+        <div id="console-header">
+            <span>Bridge 日志</span>
+            <button onclick="document.getElementById('log-area').innerHTML = ''" style="padding: 2px 8px; margin: 0; font-size: 12px;">清除</button>
+        </div>
+        <div id="log-area"></div>
+    </div>
+
+    <!-- Mock Native Bridge -->
+    <script src="mock-native.js"></script>
+
+    <!-- Load the Bridge Library -->
+    <script src="../dist/slax-reader-web-bridge.js"></script>
+
+    <!-- Test Scripts -->
+    <script>
+        // 辅助函数：输出日志到自定义控制台
+        const log = window.logToConsole;
+
+        function testGetContentHeight() {
+            if (window.SlaxWebViewBridge && window.SlaxWebViewBridge.getContentHeight) {
+                const height = window.SlaxWebViewBridge.getContentHeight();
+                log(`内容高度: ${height}px`, 'info');
+            } else {
+                log('错误: 未找到 SlaxWebViewBridge.getContentHeight', 'error');
+            }
+        }
+
+        function testPostMessage() {
+            if (window.SlaxWebViewBridge && window.SlaxWebViewBridge.postMessage) {
+                const success = window.SlaxWebViewBridge.postMessage({
+                    type: 'test',
+                    payload: '来自 Web 的问候!'
+                });
+                log(`消息已发送: ${success}`, 'info');
+            } else {
+                log('错误: 未找到 SlaxWebViewBridge.postMessage', 'error');
+            }
+        }
+
+        function testHighlight() {
+            if (window.SlaxWebViewBridge && window.SlaxWebViewBridge.highlightElement) {
+                const el = document.getElementById('highlight-target');
+                if (el) {
+                    window.SlaxWebViewBridge.highlightElement(el);
+                    log('调用 highlightElement(element)', 'info');
+                } else {
+                    log('错误: 未找到 ID 为 "highlight-target" 的元素', 'error');
+                }
+            } else {
+                log('错误: 未找到 SlaxWebViewBridge.highlightElement', 'error');
+            }
+        }
+
+        function testScrollToBottom() {
+            if (window.SlaxWebViewBridge && window.SlaxWebViewBridge.scrollToAnchor) {
+                // 验证 scrollToAnchor 签名
+                window.SlaxWebViewBridge.scrollToAnchor('bottom-anchor');
+                log('调用 scrollToAnchor("bottom-anchor")', 'info');
+            } else {
+                log('错误: 未找到 SlaxWebViewBridge.scrollToAnchor', 'error');
+            }
+        }
+
+        // 检查 Bridge 是否加载
+        window.addEventListener('load', () => {
+            if (window.SlaxWebViewBridge) {
+                log('SlaxWebViewBridge 加载成功', 'success');
+            } else {
+                log('警告: window 上未找到 SlaxWebViewBridge。请确保先构建项目 (npm run build)。', 'error');
+            }
+        });
+    </script>
+</body>
+</html>
