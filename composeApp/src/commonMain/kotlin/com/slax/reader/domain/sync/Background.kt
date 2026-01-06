@@ -203,8 +203,12 @@ class BackgroundDomain(
         val contentPath = "$bookmarkDir/content.html"
 
         val existingContent = fileManager.streamDataFile(contentPath)
-        if (existingContent != null) {
-            return existingContent.decodeToString()
+
+        existingContent?.let {
+            val bookmarkContent = existingContent.decodeToString()
+            if (bookmarkContent.isNotEmpty()) {
+                return bookmarkContent
+            }
         }
 
         inQueue.getAndUpdate { it + id }
