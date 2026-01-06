@@ -1,0 +1,3 @@
+[submodule "public/embedded/slax-reader-web-bridge"]
+	path = public/embedded/slax-reader-web-bridge
+	url = https://github.com/slax-lab/slax-reader-web-bridge.git
