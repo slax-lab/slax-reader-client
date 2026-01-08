@@ -160,13 +160,13 @@ actual fun DetailScreen(
                     }
                 }
 
-                is WebViewEvent.BookmarkRetry -> {
+                is WebViewEvent.refreshContent -> {
                     if (onRefresh != null) {
                         onRefresh()
                     }
                 }
 
-                is WebViewEvent.BookmarkFeedback -> {}
+                is WebViewEvent.feedback -> {}
 
                 else -> {}
             }

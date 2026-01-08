@@ -99,12 +99,12 @@ actual fun AppWebView(
                                         )
                                     }
 
-                                    "bookmarkRetry" -> {
-                                        webState.dispatchEvent(WebViewEvent.BookmarkRetry)
+                                    "refreshContent" -> {
+                                        webState.dispatchEvent(WebViewEvent.refreshContent)
                                     }
 
-                                    "bookmarkFeedback" -> {
-                                        webState.dispatchEvent(WebViewEvent.BookmarkFeedback)
+                                    "feedback" -> {
+                                        webState.dispatchEvent(WebViewEvent.feedback)
                                     }
                                 }
                             }

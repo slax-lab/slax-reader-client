@@ -55,9 +55,9 @@ sealed interface WebViewEvent {
     data class PurchaseWithOffer(val productId: String, val orderId: String, val offer: IAPProductOffer) : WebViewEvent
     data class Purchase(val productId: String, val orderId: String) : WebViewEvent
 
-    data object BookmarkRetry: WebViewEvent
+    data object refreshContent: WebViewEvent
 
-    data object BookmarkFeedback: WebViewEvent
+    data object feedback: WebViewEvent
 }
 
 @Composable

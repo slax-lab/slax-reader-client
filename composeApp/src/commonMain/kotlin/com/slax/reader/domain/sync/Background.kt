@@ -203,7 +203,6 @@ class BackgroundDomain(
 
         val existingContent = fileManager.streamDataFile(contentPath)
 
-
         if (existingContent != null) {
             return existingContent.decodeToString()
         }
