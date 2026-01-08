@@ -54,6 +54,10 @@ sealed interface WebViewEvent {
     data class Scroll(val scrollX: Double, val scrollY: Double, val contentHeight: Double, val visibleHeight: Double) : WebViewEvent
     data class PurchaseWithOffer(val productId: String, val orderId: String, val offer: IAPProductOffer) : WebViewEvent
     data class Purchase(val productId: String, val orderId: String) : WebViewEvent
+
+    data object RefreshContent: WebViewEvent
+
+    data object Feedback: WebViewEvent
 }
 
 @Composable

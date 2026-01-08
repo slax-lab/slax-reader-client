@@ -103,6 +103,18 @@ actual fun AppWebView(
                                 WebViewEvent.ScrollToPosition(msg.percentage ?: 0.0)
                             )
                         }
+
+                        "refreshContent" -> {
+                            webState.dispatchEvent(
+                                WebViewEvent.RefreshContent
+                            )
+                        }
+
+                        "feedback" -> {
+                            webState.dispatchEvent(
+                                WebViewEvent.Feedback
+                            )
+                        }
                     }
                 }
         }

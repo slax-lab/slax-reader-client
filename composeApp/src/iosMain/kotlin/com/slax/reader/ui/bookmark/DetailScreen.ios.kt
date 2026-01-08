@@ -2,7 +2,6 @@ package com.slax.reader.ui.bookmark
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.FrameRateCategory
@@ -47,6 +46,7 @@ actual fun DetailScreen(
     htmlContent: String,
     screenState: DetailScreenState,
     onBackClick: (() -> Unit),
+    onRefresh: (() -> Unit)?,
     onNavigateToSubscription: (() -> Unit)?,
 ) {
     val wrappedHtmlContent = remember(htmlContent) { wrapBookmarkDetailHtml(htmlContent) }
@@ -158,6 +158,14 @@ actual fun DetailScreen(
                         manuallyVisible = !manuallyVisible
                     }
                 }
+
+                is WebViewEvent.RefreshContent -> {
+                    if (onRefresh != null) {
+                        onRefresh()
+                    }
+                }
+
+                is WebViewEvent.Feedback -> {}
 
                 else -> {}
             }

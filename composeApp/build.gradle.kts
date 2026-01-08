@@ -4,6 +4,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
 import java.util.*
 import io.github.ttypic.swiftklib.*
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 buildscript {
     repositories {
@@ -15,10 +17,10 @@ buildscript {
         }
     }
     dependencies {
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.0")
-        classpath("com.codingfeline.buildkonfig:buildkonfig-gradle-plugin:0.17.1")
-        classpath("io.github.cdimascio:dotenv-kotlin:6.5.1")
-        classpath("io.github.ttypic:plugin:0.6.4")
+        classpath(libs.kotlin.gradle.plugin)
+        classpath(libs.buildkonfig.gradle.plugin)
+        classpath(libs.dotenv.kotlin)
+        classpath(libs.ttypic.plugin)
     }
 }
 
@@ -247,6 +249,11 @@ fun minifyHtml(html: String): String {
     return html
 }
 
+@OptIn(ExperimentalEncodingApi::class)
+fun base64Image(filePath: String) : String {
+    return Base64.encode(file(filePath).readBytes())
+}
+
 buildkonfig {
     packageName = "app.slax.reader"
     objectName = "SlaxConfig"
@@ -289,6 +296,15 @@ buildkonfig {
                     .replace("{{ARTICLE-CSS}}", file("../public/embedded/css/article.css").readText())
                     .replace("{{BOTTOM-LINE-CSS}}", file("../public/embedded/css/bottom-line.css").readText())
                     .replace("{{WEBVIEW-BRIGDE-JS}}", file("../public/embedded/js/webview-bridge.js").readText())
+            )
+        )
+        buildConfigField(
+            STRING,
+            "DETAIL_ERROR_TEMPLATE",
+            minifyHtml(
+                file("../public/embedded/html/error.html")
+                    .readText()
+                    .replace("{{BACKGROUND}}", base64Image("../public/embedded/image/error.png"))
             )
         )
         buildConfigField(

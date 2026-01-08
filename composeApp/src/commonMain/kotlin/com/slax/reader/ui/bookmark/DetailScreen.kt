@@ -69,6 +69,17 @@ fun DetailScreen(bookmarkId: String, onBackClick: (() -> Unit), onNavigateToSubs
         htmlContent = htmlContent!!,
         screenState = screenState.copy(overviewBounds = overviewBounds),
         onBackClick = backClickHandle,
+        onRefresh = {
+            detailView.viewModelScope.launch {
+                runCatching {
+                    detailView.getBookmarkContent(bookmarkId)
+                }.onSuccess { content ->
+                    htmlContent = content
+                }.onFailure { e ->
+                    loadError = e.message ?: "加载失败"
+                }
+            }
+        },
         onNavigateToSubscription = onNavigateToSubscription,
     )
 }
@@ -80,5 +91,6 @@ expect fun DetailScreen(
     htmlContent: String,
     screenState: DetailScreenState,
     onBackClick: (() -> Unit),
+    onRefresh: (() -> Unit)? = null,
     onNavigateToSubscription: (() -> Unit)? = null,
 )

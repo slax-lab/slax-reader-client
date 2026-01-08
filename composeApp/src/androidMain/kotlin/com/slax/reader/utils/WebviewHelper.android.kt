@@ -1,7 +1,6 @@
 package com.slax.reader.utils
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.graphics.Color
 import android.view.MotionEvent
 import android.webkit.*
@@ -20,7 +19,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
-import app.slax.reader.SlaxConfig
 import com.slax.reader.const.JS_BRIDGE_NAME
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.ui.bookmark.WebViewMessage
@@ -98,6 +96,14 @@ actual fun AppWebView(
                                             WebViewEvent.ScrollToPosition(msg.percentage ?: 0.0)
                                         )
                                     }
+
+                                    "refreshContent" -> {
+                                        webState.dispatchEvent(WebViewEvent.RefreshContent)
+                                    }
+
+                                    "feedback" -> {
+                                        webState.dispatchEvent(WebViewEvent.Feedback)
+                                    }
                                 }
                             }
                     }
@@ -106,6 +112,7 @@ actual fun AppWebView(
                 setOnTouchListener { _, event ->
                     if (event.action == MotionEvent.ACTION_UP) {
                         webState.dispatchEvent(WebViewEvent.Tap)
+
                     }
                     false
                 }
