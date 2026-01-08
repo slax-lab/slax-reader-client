@@ -114,6 +114,7 @@ actual fun AppWebView(
                 setOnTouchListener { _, event ->
                     if (event.action == MotionEvent.ACTION_UP) {
                         webState.dispatchEvent(WebViewEvent.Tap)
+
                     }
                     false
                 }
