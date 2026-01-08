@@ -53,6 +53,7 @@ actual fun DetailScreen(
     htmlContent: String,
     screenState: DetailScreenState,
     onBackClick: (() -> Unit),
+    onRefresh: (() -> Unit)?,
     onNavigateToSubscription: (() -> Unit)?,
 ) {
     val wrappedHtmlContent = remember(htmlContent) { wrapBookmarkDetailHtml(htmlContent) }
@@ -145,7 +146,9 @@ actual fun DetailScreen(
                 }
 
                 is WebViewEvent.BookmarkRetry -> {
-                    println("retry")
+                    if (onRefresh != null) {
+                        onRefresh()
+                    }
                 }
 
                 is WebViewEvent.BookmarkFeedback -> {

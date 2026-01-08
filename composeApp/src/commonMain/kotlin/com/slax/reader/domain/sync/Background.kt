@@ -204,10 +204,6 @@ class BackgroundDomain(
         val existingContent = fileManager.streamDataFile(contentPath)
 
 
-        return SlaxConfig.DETAIL_ERROR_TEMPLATE
-            .replace("{{TITLE}}", "Failed to load content")
-            .replace("{{REASON}}", "Content not found")
-            .replace("{{DETAIL}}", "The requested bookmark content could not be found.")
         if (existingContent != null) {
             return existingContent.decodeToString()
         }
@@ -229,8 +225,6 @@ class BackgroundDomain(
                     updateBookmarkStatus(id, DownloadStatus.FAILED)
                 }
             }
-
-            throw Exception("Simulated exception for testing")
 
             return response
         } catch (e: Exception) {
