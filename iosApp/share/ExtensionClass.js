@@ -8,7 +8,8 @@ ExtensionClass.prototype = {
             "icon": this.getIconLink(),
             "hostname": document.location.hostname,
             "description": this.getDescription(),
-            "content": document.documentElement.outerHTML,
+            "content": ""
+            // "content": document.documentElement.outerHTML,
         });
     },
     getIconLink: function () {

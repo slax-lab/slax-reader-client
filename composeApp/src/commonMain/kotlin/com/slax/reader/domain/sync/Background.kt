@@ -1,5 +1,7 @@
 package com.slax.reader.domain.sync
 
+import app.slax.reader.SlaxConfig
+import com.slax.reader.const.AppError
 import com.slax.reader.data.database.dao.BookmarkDao
 import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.database.model.InboxListBookmarkItem
@@ -14,6 +16,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlin.collections.mapOf
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.ExperimentalTime
@@ -156,9 +159,9 @@ class BackgroundDomain(
 
             updateBookmarkStatus(item.bookmarkId, DownloadStatus.DOWNLOADING)
 
-            val htmlContent = apiService.getBookmarkContent(item.bookmarkId)
+            val response = apiService.getBookmarkRawContent(item.bookmarkId)
 
-            fileManager.writeDataFile(contentInfo, htmlContent.encodeToByteArray())
+            fileManager.writeDataFile(contentInfo, response.encodeToByteArray())
 
             println("[BackgroundDomain] Download successful!")
             updateBookmarkStatus(item.bookmarkId, DownloadStatus.COMPLETED)
@@ -166,10 +169,7 @@ class BackgroundDomain(
         } catch (e: Exception) {
             println("下载失败 ${item.bookmarkId}: ${e.message}")
             e.printStackTrace()
-
             updateBookmarkStatus(item.bookmarkId, DownloadStatus.FAILED)
-
-            throw e
         } finally {
             inQueue.getAndUpdate { it - item.bookmarkId }
         }
@@ -189,7 +189,6 @@ class BackgroundDomain(
             DownloadStatus.COMPLETED -> 2
             DownloadStatus.FAILED -> 3
         }
-        // 持久化到数据库
         try {
             localBookmarkDao.updateLocalBookmarkDownloadStatus(id, statusCode)
         } catch (e: Exception) {
@@ -204,29 +203,44 @@ class BackgroundDomain(
 
         val existingContent = fileManager.streamDataFile(contentPath)
 
-        existingContent?.let {
-            val bookmarkContent = existingContent.decodeToString()
-            if (bookmarkContent.isNotEmpty()) {
-                return bookmarkContent
-            }
+        if (existingContent != null) {
+            return existingContent.decodeToString()
         }
 
         inQueue.getAndUpdate { it + id }
 
         try {
-            updateBookmarkStatus(id, DownloadStatus.DOWNLOADING)
+            withContext(Dispatchers.IO) {
+                updateBookmarkStatus(id, DownloadStatus.DOWNLOADING)
+            }
 
-            val htmlContent = apiService.getBookmarkContent(id)
+            val response = apiService.getBookmarkRawContent(id)
+            CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+                try {
+                    fileManager.writeDataFile(contentPath, response.encodeToByteArray())
+                    updateBookmarkStatus(id, DownloadStatus.COMPLETED)
+                } catch (e: Exception) {
+                    println("后台写入失败 $id: ${e.message}")
+                    updateBookmarkStatus(id, DownloadStatus.FAILED)
+                }
+            }
 
-            fileManager.writeDataFile(contentPath, htmlContent.encodeToByteArray())
-            updateBookmarkStatus(id, DownloadStatus.COMPLETED)
-
-            return htmlContent
+            return response
         } catch (e: Exception) {
-            println("手动下载失败 $id: ${e.message}")
-            updateBookmarkStatus(id, DownloadStatus.FAILED)
+            println("API 调用失败 $id: ${e.message}")
+            withContext(Dispatchers.IO) {
+                updateBookmarkStatus(id, DownloadStatus.FAILED)
+            }
+            val errInfo = when (e) {
+                is AppError.ApiException.HttpError -> mapOf("title" to "Error code: ${e.code}", "message" to e.message)
+                else -> mapOf("Network error" to (e.message ?: "Unknown error"))
+            }
+            return SlaxConfig.DETAIL_ERROR_TEMPLATE
+                .replace("{{TITLE}}", "Failed to load content")
+                .replace("{{REASON}}", errInfo["title"]!!)
+                .replace("{{DETAIL}}", errInfo["message"]!!)
+        } finally {
             inQueue.getAndUpdate { it - id }
-            throw e
         }
     }
 }
