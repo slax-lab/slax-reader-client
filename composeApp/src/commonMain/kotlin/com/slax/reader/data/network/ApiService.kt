@@ -74,29 +74,6 @@ class ApiService(
         return processResult(response)
     }
 
-    private fun streamPost(
-        pathName: String,
-        query: Map<String, String> = emptyMap(),
-        body: Any? = null
-    ): Flow<String> = flow {
-        val url = buildUrl(pathName, query)
-
-        httpClient.preparePost(url, {
-            headers {
-                append(HttpHeaders.ContentType, "application/json")
-                append(HttpHeaders.Accept, "text/event-stream")
-            }
-            setBody(body = body)
-        }).execute { resp ->
-            val channel = resp.bodyAsChannel()
-
-            while (!channel.isClosedForRead) {
-                val line = channel.readUTF8Line() ?: continue
-                emit(line)
-            }
-        }
-    }
-
     suspend fun getSyncToken(): HttpData<CredentialsData> {
         return post("/v1/sync/token")
     }
@@ -113,17 +90,32 @@ class ApiService(
         return post("/v1/user/refresh")
     }
 
-    suspend fun getBookmarkContent(id: String): String {
-        val contentBuilder = StringBuilder()
-        val resp = streamBookmarkContent(id)
-        resp.collect { chunk ->
-            contentBuilder.append(chunk)
+    suspend fun getBookmarkRawContent(id: String): String {
+        val url = buildUrl("/v1/bookmark/content")
+        val response = httpClient.post(url) {
+            headers {
+                append(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            }
+            setBody(BookmarkContentParam(id))
         }
-        return contentBuilder.toString()
-    }
 
-    private fun streamBookmarkContent(id: String): Flow<String> {
-        return streamPost("/v1/bookmark/content", body = BookmarkContentParam(id))
+        if (response.status == HttpStatusCode.OK) {
+            return response.bodyAsText()
+        } else {
+            val errorResponse = try {
+                response.body<ErrorResponse>()
+            } catch (e: Exception) {
+                ErrorResponse(
+                    message = "Error: ${response.status.description}",
+                    code = response.status.value
+                )
+            }
+
+            throw AppError.ApiException.HttpError(
+                code = errorResponse.code,
+                message = errorResponse.message
+            )
+        }
     }
 
     suspend fun addBookmarkUrl(url: String, title: String?): HttpData<CollectionBookmarkResult> {

@@ -1,9 +1,13 @@
+@file:OptIn(ExperimentalEncodingApi::class)
+
 import com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING
 import io.github.cdimascio.dotenv.dotenv
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
 import java.util.*
 import io.github.ttypic.swiftklib.*
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 buildscript {
     repositories {
@@ -289,6 +293,15 @@ buildkonfig {
                     .replace("{{ARTICLE-CSS}}", file("../public/embedded/css/article.css").readText())
                     .replace("{{BOTTOM-LINE-CSS}}", file("../public/embedded/css/bottom-line.css").readText())
                     .replace("{{WEBVIEW-BRIGDE-JS}}", file("../public/embedded/js/webview-bridge.js").readText())
+            )
+        )
+        buildConfigField(
+            STRING,
+            "DETAIL_ERROR_TEMPLATE",
+            minifyHtml(
+                file("../public/embedded/html/error.html")
+                    .readText()
+                    .replace("{{BACKGROUND}}", Base64.encode(file("../public/embedded/image/404.png").readBytes()))
             )
         )
         buildConfigField(
