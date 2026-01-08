@@ -145,13 +145,13 @@ actual fun DetailScreen(
                     }
                 }
 
-                is WebViewEvent.refreshContent -> {
+                is WebViewEvent.RefreshContent -> {
                     if (onRefresh != null) {
                         onRefresh()
                     }
                 }
 
-                is WebViewEvent.feedback -> {
+                is WebViewEvent.Feedback -> {
                     println("feedback")
                 }
 

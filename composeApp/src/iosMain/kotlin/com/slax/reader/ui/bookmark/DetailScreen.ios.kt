@@ -2,7 +2,6 @@ package com.slax.reader.ui.bookmark
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.FrameRateCategory
@@ -160,13 +159,13 @@ actual fun DetailScreen(
                     }
                 }
 
-                is WebViewEvent.refreshContent -> {
+                is WebViewEvent.RefreshContent -> {
                     if (onRefresh != null) {
                         onRefresh()
                     }
                 }
 
-                is WebViewEvent.feedback -> {}
+                is WebViewEvent.Feedback -> {}
 
                 else -> {}
             }

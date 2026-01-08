@@ -106,13 +106,13 @@ actual fun AppWebView(
 
                         "refreshContent" -> {
                             webState.dispatchEvent(
-                                WebViewEvent.refreshContent
+                                WebViewEvent.RefreshContent
                             )
                         }
 
                         "feedback" -> {
                             webState.dispatchEvent(
-                                WebViewEvent.feedback
+                                WebViewEvent.Feedback
                             )
                         }
                     }
