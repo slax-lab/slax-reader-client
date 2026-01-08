@@ -98,6 +98,14 @@ actual fun AppWebView(
                                             WebViewEvent.ScrollToPosition(msg.percentage ?: 0.0)
                                         )
                                     }
+
+                                    "bookmarkRetry" -> {
+                                        webState.dispatchEvent(WebViewEvent.BookmarkRetry)
+                                    }
+
+                                    "bookmarkFeedback" -> {
+                                        webState.dispatchEvent(WebViewEvent.BookmarkFeedback)
+                                    }
                                 }
                             }
                     }

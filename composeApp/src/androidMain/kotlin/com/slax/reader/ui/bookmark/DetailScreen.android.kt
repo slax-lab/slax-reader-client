@@ -144,6 +144,14 @@ actual fun DetailScreen(
                     }
                 }
 
+                is WebViewEvent.BookmarkRetry -> {
+                    println("retry")
+                }
+
+                is WebViewEvent.BookmarkFeedback -> {
+                    println("feedback")
+                }
+
                 else -> {}
             }
         }

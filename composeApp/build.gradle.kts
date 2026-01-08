@@ -301,7 +301,7 @@ buildkonfig {
             minifyHtml(
                 file("../public/embedded/html/error.html")
                     .readText()
-                    .replace("{{BACKGROUND}}", Base64.encode(file("../public/embedded/image/404.png").readBytes()))
+                    .replace("{{BACKGROUND}}", Base64.encode(file("../public/embedded/image/error.png").readBytes()))
             )
         )
         buildConfigField(
