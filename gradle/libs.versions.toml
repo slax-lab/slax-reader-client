@@ -7,10 +7,13 @@ androidx-activity = "1.12.2"
 androidx-lifecycle = "2.9.6"
 atomicfu = "0.29.0"
 browser = "1.9.0"
+buildkonfigGradlePlugin = "0.17.1"
 composeHotReload = "1.0.0"
 composeMultiplatform = "1.9.3"
+dotenvKotlin = "6.5.1"
 firebaseAnalytics = "2.4.0"
 kmpauthGoogle = "2.3.1"
+kotlinGradlePlugin = "2.2.0"
 kotlinxDatetime = "0.7.1"
 okio = "3.16.4"
 powerSyncCore = "1.10.1"
@@ -25,6 +28,7 @@ googleServices = "4.4.4"
 firebaseCrashlytics = "3.0.6"
 connectivity = "2.4.0"
 markdownRenderer = "0.39.0"
+ttypic = "0.6.4"
 
 [libraries]
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
@@ -63,6 +67,12 @@ sketch-compose-resources = { module = "io.github.panpf.sketch4:sketch-compose-re
 sketch-http = { module = "io.github.panpf.sketch4:sketch-http", version.ref = "sketchHttp" }
 sketch-svg = { module = "io.github.panpf.sketch4:sketch-svg", version.ref = "sketchHttp" }
 markdown-renderer-m3 = { module = "com.mikepenz:multiplatform-markdown-renderer-m3", version.ref = "markdownRenderer" }
+
+## plugin
+ttypic-plugin = { module = "io.github.ttypic:plugin", version.ref = "ttypic" }
+buildkonfig-gradle-plugin = { module = "com.codingfeline.buildkonfig:buildkonfig-gradle-plugin", version.ref = "buildkonfigGradlePlugin" }
+dotenv-kotlin = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenvKotlin" }
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlinGradlePlugin" }
 
 
 [plugins]
