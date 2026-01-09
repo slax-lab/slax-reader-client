@@ -29,3 +29,6 @@ object DeleteAccountRoutes
 @Serializable
 object SubscriptionManagerRoutes
 
+@Serializable
+object RNDemoRoutes
+

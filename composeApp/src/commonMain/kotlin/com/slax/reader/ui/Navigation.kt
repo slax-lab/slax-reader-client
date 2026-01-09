@@ -29,6 +29,7 @@ import com.slax.reader.ui.subscription.SubscriptionManagerScreen
 import com.slax.reader.utils.LifeCycleHelper
 import com.slax.reader.utils.LocaleString
 import com.slax.reader.utils.NavHostTransitionHelper
+import com.slax.reader.utils.RNDemoScreen
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.analytics.analytics
 import dev.gitlive.firebase.crashlytics.crashlytics
@@ -143,6 +144,12 @@ fun SlaxNavigation(
 
         composable<SubscriptionManagerRoutes> {
             SubscriptionManagerScreen(onBackClick = {
+                navCtrl.popBackStack()
+            })
+        }
+
+        composable<RNDemoRoutes> {
+            RNDemoScreen(onBackClick = {
                 navCtrl.popBackStack()
             })
         }

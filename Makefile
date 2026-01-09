@@ -20,3 +20,6 @@ bridge:
 	./gradlew :composeApp:swiftklibStoreKitWrapperIosArm64
 	./gradlew :composeApp:swiftklibStoreKitWrapperIosSimulatorArm64
 	./gradlew :composeApp:swiftklibStoreKitWrapperIosX64
+
+adb-proxy:
+	 ~/Library/Android/sdk/platform-tools/adb reverse tcp:8081 tcp:8081
