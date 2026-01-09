@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.slax.reader.const.AboutRoutes
+import com.slax.reader.const.RNDemoRoutes
 import com.slax.reader.const.SettingsRoutes
 import com.slax.reader.const.SubscriptionManagerRoutes
 import com.slax.reader.domain.auth.AuthDomain
@@ -122,6 +123,24 @@ fun FooterMenu(
             onClick = {
                 onDismiss()
                 navCtrl.navigate(SubscriptionManagerRoutes)
+            }
+        ),
+        "rndemo" to FooterMenuConfig(
+            title = "React Native Demo",
+            icon = {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_xs_sidebar_config),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(20.dp)
+                )
+            },
+            color = NavigationDrawerItemDefaults.colors(
+                unselectedContainerColor = Color.Transparent
+            ),
+            onClick = {
+                onDismiss()
+                navCtrl.navigate(RNDemoRoutes)
             }
         ),
         "setting" to FooterMenuConfig(
