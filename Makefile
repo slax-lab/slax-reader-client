@@ -23,3 +23,6 @@ bridge:
 
 adb-proxy:
 	 ~/Library/Android/sdk/platform-tools/adb reverse tcp:8081 tcp:8081
+
+rn:
+	 ./gradlew kspCommonMainKotlinMetadata

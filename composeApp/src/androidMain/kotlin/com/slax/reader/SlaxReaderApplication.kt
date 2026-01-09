@@ -8,6 +8,7 @@ import com.facebook.react.defaults.DefaultReactNativeHost
 import com.facebook.react.shell.MainReactPackage
 import com.facebook.soloader.SoLoader
 import com.slax.reader.di.configureKoin
+import com.slax.reader.reactnative.SlaxReaderReactPackage
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.initialize
 import org.koin.android.ext.koin.androidContext
@@ -21,8 +22,10 @@ class SlaxReaderApplication : Application(), ReactApplication {
     override val reactNativeHost: ReactNativeHost =
         object : DefaultReactNativeHost(this) {
             override fun getPackages(): List<ReactPackage> {
-                // Directly use MainReactPackage
-                return listOf(MainReactPackage(null))
+                return listOf(
+                    MainReactPackage(null),
+                    SlaxReaderReactPackage() // Register KMP-generated modules
+                )
             }
 
             override fun getJSMainModuleName(): String = "index"

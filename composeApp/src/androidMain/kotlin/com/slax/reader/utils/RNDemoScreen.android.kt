@@ -4,7 +4,7 @@ import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalContext
-import com.slax.reader.RNDemoActivity
+import com.slax.reader.reactnative.ui.RNDemoActivity
 
 @Composable
 actual fun RNDemoScreen(onBackClick: () -> Unit) {
