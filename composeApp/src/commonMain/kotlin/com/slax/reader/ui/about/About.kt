@@ -80,7 +80,7 @@ fun AboutScreen(onBackClick: () -> Unit) {
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "${"about_version".i18n()} ${SlaxConfig.APP_VERSION_NAME}",
+                text = "${"about_version".i18n()} ${SlaxConfig.APP_VERSION_NAME} (${SlaxConfig.APP_VERSION_CODE})",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Normal,
                 lineHeight = 21.sp,
