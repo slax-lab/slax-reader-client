@@ -38,8 +38,7 @@ plugins {
     id("org.jetbrains.kotlinx.atomicfu") version "0.29.0"
     id("io.github.ttypic.swiftklib") version "0.6.4"
     id("com.facebook.react")
-    // Temporarily disable KSP until we fix the configuration
-    // id("com.google.devtools.ksp") version "2.2.21-2.0.4"
+    id("com.google.devtools.ksp") version "2.3.4"
 }
 
 repositories {
@@ -124,9 +123,9 @@ kotlin {
             implementation(libs.sketch.animated.gif.koral)
 
             // React Native
-            implementation("com.facebook.react:react-android")
-            implementation("com.facebook.react:hermes-android")
-            implementation("com.facebook.soloader:soloader:0.11.0")
+            implementation(libs.react.android)
+            implementation(libs.hermes.android)
+            implementation(libs.soloader)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -194,8 +193,8 @@ kotlin {
 
             implementation(libs.markdown.renderer.m3)
 
-            // reakt-native-toolkit - Temporarily disabled
-            // implementation("de.voize:reakt-native-toolkit:0.6.0")
+            // reakt-native-toolkit
+            implementation("de.voize:reakt-native-toolkit:0.22.0")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -262,29 +261,29 @@ react {
 dependencies {
     debugImplementation(compose.uiTooling)
 
-    // KSP dependencies for reakt-native-toolkit - Temporarily disabled
-    // add("kspCommonMainMetadata", "de.voize:reakt-native-toolkit-ksp:0.6.0")
-    // add("kspAndroid", "de.voize:reakt-native-toolkit-ksp:0.6.0")
-    // add("kspIosArm64", "de.voize:reakt-native-toolkit-ksp:0.6.0")
-    // add("kspIosSimulatorArm64", "de.voize:reakt-native-toolkit-ksp:0.6.0")
+    // KSP dependencies for reakt-native-toolkit
+    add("kspCommonMainMetadata", "de.voize:reakt-native-toolkit-ksp:0.22.0")
+    add("kspAndroid", "de.voize:reakt-native-toolkit-ksp:0.22.0")
+    add("kspIosArm64", "de.voize:reakt-native-toolkit-ksp:0.22.0")
+    add("kspIosSimulatorArm64", "de.voize:reakt-native-toolkit-ksp:0.22.0")
 }
 
-// Task to copy generated TypeScript files to React Native project - Temporarily disabled
-// tasks.register<Copy>("copyGeneratedTsFiles") {
-//     from("build/generated/ksp/metadata/commonMain/resources")
-//     into(rootProject.file("react-native/src/generated"))
-// }
+// Task to copy generated TypeScript files to React Native project
+tasks.register<Copy>("copyGeneratedTsFiles") {
+    from("build/generated/ksp/metadata/commonMain/resources")
+    into(rootProject.file("react-native/src/generated"))
+}
 
-// Make sure TS files are copied after KSP processing - Temporarily disabled
-// tasks.whenTaskAdded {
-//     if (name == "kspCommonMainKotlinMetadata") {
-//         finalizedBy("copyGeneratedTsFiles")
-//     }
-// }
+// Configure KSP task dependencies for KSP1
+tasks.configureEach {
+    if (name.startsWith("ksp") && name.contains("Kotlin")) {
+        finalizedBy("copyGeneratedTsFiles")
+    }
+}
 
-// kotlin.sourceSets.commonMain {
-//     kotlin.srcDir("build/generated/ksp/metadata/commonMain/kotlin")
-// }
+kotlin.sourceSets.commonMain {
+    kotlin.srcDir("build/generated/ksp/metadata/commonMain/kotlin")
+}
 
 
 fun minifyHtml(html: String): String {
