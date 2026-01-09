@@ -1,11 +1,9 @@
 package com.slax.reader
 
 import android.app.Application
-import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactNativeHost
 import com.facebook.react.ReactPackage
-import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint
 import com.facebook.react.defaults.DefaultReactNativeHost
 import com.facebook.react.shell.MainReactPackage
 import com.facebook.soloader.SoLoader
@@ -39,11 +37,7 @@ class SlaxReaderApplication : Application(), ReactApplication {
     override fun onCreate() {
         super.onCreate()
 
-        // Initialize SoLoader for React Native
         SoLoader.init(this, false)
-        if (BuildConfig.DEBUG) {
-            DefaultNewArchitectureEntryPoint.load()
-        }
 
         // Initialize Firebase and Koin
         if (GlobalContext.getOrNull() == null) {
