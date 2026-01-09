@@ -19,7 +19,8 @@ xcodebuild archive \
   -configuration Release \
   -archivePath build/iosApp.xcarchive \
   -destination 'generic/platform=iOS' \
-  BUILD_FLAVOR=$BUILD_FLAVOR
+  BUILD_FLAVOR=$BUILD_FLAVOR \
+  DEBUG_INFORMATION_FORMAT=dwarf-with-dsym
 
 xcodebuild -exportArchive \
   -archivePath build/iosApp.xcarchive \
