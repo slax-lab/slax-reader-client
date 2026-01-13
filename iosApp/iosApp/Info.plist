@@ -30,6 +30,8 @@
         <true/>
         <key>ITSAppUsesNonExemptEncryption</key>
         <false/>
+        <key>UIViewControllerBasedStatusBarAppearance</key>
+        <false/>
         <key>CFBundleURLTypes</key>
         <array>
             <dict>

@@ -1,4 +1,4 @@
-package com.slax.reader.utils
+package com.slax.reader.reactnative.ui
 
 import androidx.compose.runtime.Composable
 

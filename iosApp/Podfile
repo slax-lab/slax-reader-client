@@ -1,3 +1,16 @@
+require_relative '../react-native/node_modules/react-native/scripts/react_native_pods.rb'
+
+platform :ios, '14.1'
+prepare_react_native_project!
+
+linkage = ENV['USE_FRAMEWORKS']
+if linkage != nil
+  Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
+  use_frameworks! :linkage => linkage.to_sym
+else
+  use_frameworks! :linkage => :static
+end
+
 project 'iosApp', {
   'Debug' => :debug,
   'Beta' => :release,
@@ -5,18 +18,56 @@ project 'iosApp', {
 }
 
 target 'iosApp' do
-  use_frameworks! :linkage => :static
-  platform :ios, '14.1'
+  use_react_native!(
+    path: '../react-native/node_modules/react-native',
+    app_path: '../react-native',
+    hermes_enabled: false,
+    new_arch_enabled: false
+  )
 
+  # KMP dependency
   pod 'ComposeApp', :path => '../composeApp'
 
-   target 'share' do
-       inherit! :search_paths
-       pod 'ComposeApp', path: '../composeApp'
-   end
+  target 'share' do
+    inherit! :search_paths
+    pod 'ComposeApp', path: '../composeApp'
+  end
 end
 
 post_install do |installer|
+  react_native_post_install(
+    installer,
+    '../react-native/',
+    mac_catalyst_enabled: false
+  )
+
+  rn_root = "${PODS_ROOT}/../../react-native/node_modules/react-native"
+
+  # Helper to apply common build settings
+  def apply_react_native_settings(targets, rn_root)
+    targets.each do |t|
+      t.build_configurations.each do |config|
+        config.build_settings['REACT_NATIVE_PATH'] = rn_root
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.1'
+      end
+    end
+  end
+
+  # Update Pods project targets
+  apply_react_native_settings(installer.pods_project.targets, rn_root)
+
+  # Update User project targets (iosApp.xcodeproj)
+  installer.aggregate_targets.map(&:user_project).uniq.each do |user_project|
+    apply_react_native_settings(user_project.targets, rn_root)
+    user_project.save
+  end
+
+  # Update any generated projects
+  installer.generated_projects.each do |project|
+    apply_react_native_settings(project.targets, rn_root)
+  end
+
+  # Include Versions.xcconfig for KMP
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
       xcconfig_path = config.base_configuration_reference.real_path

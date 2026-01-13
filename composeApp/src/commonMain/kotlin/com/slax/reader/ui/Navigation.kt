@@ -12,7 +12,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.powersync.ExperimentalPowerSyncAPI
 import com.slax.reader.const.*
-import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.auth.AuthState
 import com.slax.reader.domain.coordinator.CoordinatorDomain
@@ -27,9 +26,8 @@ import com.slax.reader.ui.setting.SettingScreen
 import com.slax.reader.ui.space.SpaceManager
 import com.slax.reader.ui.subscription.SubscriptionManagerScreen
 import com.slax.reader.utils.LifeCycleHelper
-import com.slax.reader.utils.LocaleString
 import com.slax.reader.utils.NavHostTransitionHelper
-import com.slax.reader.utils.RNDemoScreen
+import com.slax.reader.reactnative.ui.RNDemoScreen
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.analytics.analytics
 import dev.gitlive.firebase.crashlytics.crashlytics

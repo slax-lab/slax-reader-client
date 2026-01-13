@@ -107,6 +107,7 @@ kotlin {
             val main by getting {
                 cinterops {
                     create("StoreKitWrapper")
+                    create("ReactNativeBridge")
                     create("nskeyvalueobserving")
                 }
             }
@@ -444,6 +445,11 @@ swiftklib {
     create("StoreKitWrapper") {
         path = file("src/nativeInterop/storekit")
         packageName("app.slax.reader.storekit")
+        minIos = 14
+    }
+    create("ReactNativeBridge") {
+        path = file("src/nativeInterop/reactnative")
+        packageName("app.slax.reader.reactnative.bridge")
         minIos = 14
     }
 }
