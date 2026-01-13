@@ -28,3 +28,5 @@ iosApp/iosApp/GoogleService-Info.plist
 kotzilla.json
 
 node_modules/
+.xcode.env
+.xcode.env.local
