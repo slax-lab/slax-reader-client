@@ -30,3 +30,5 @@ kotzilla.json
 node_modules/
 .xcode.env
 .xcode.env.local
+index.android.bundle
+main.jsbundle
