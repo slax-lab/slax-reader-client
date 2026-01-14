@@ -2,6 +2,7 @@ import UIKit
 import React
 import ComposeApp
 
+
 @objc(ReactViewController)
 public class ReactViewController: UIViewController {
 
@@ -52,10 +53,11 @@ public class ReactViewController: UIViewController {
 
     /// Get all KMP modules to expose to React Native
     private func getKMPModules() -> [RCTBridgeModule] {
-        let helper = IOSRNHelper()
-        let modules = helper.createModules()
+        // Use the Kotlin helper to create modules with proper CoroutineScope
+        let helper = ReactNativeModulesHelper()
+        let modules = helper.createNativeModules()
 
-        // Convert to RCTBridgeModule
+        // Convert to RCTBridgeModule array
         return modules.compactMap { $0 as? RCTBridgeModule }
     }
 }
