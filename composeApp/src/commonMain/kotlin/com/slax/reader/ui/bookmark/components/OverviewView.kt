@@ -200,7 +200,7 @@ private fun TextWithTrailingIcon(
 
     Box(
         modifier = modifier
-            .fillMaxWidth().background(Color.Red)
+            .fillMaxWidth()
             .onGloballyPositioned { coordinates ->
                 containerWidth = coordinates.size.width
             }
