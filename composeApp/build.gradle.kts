@@ -259,6 +259,69 @@ react {
     cliFile = rootProject.file("react-native/node_modules/react-native/cli.js")
 }
 
+val bundleAndroidReleaseJs = tasks.register<Exec>("bundleAndroidReleaseJs") {
+    group = "react"
+    description = "Bundle React Native JavaScript for Android Release"
+
+    workingDir = rootProject.file("react-native")
+
+    val bundleFile = project.file("src/androidMain/assets/index.android.bundle")
+    val assetsDir = project.file("src/androidMain/assets")
+
+    doFirst {
+        bundleFile.parentFile.mkdirs()
+        println("📦 Bundling React Native JavaScript for Android...")
+    }
+
+    commandLine(
+        "npx", "react-native", "bundle",
+        "--platform", "android",
+        "--dev", "false",
+        "--entry-file", "index.js",
+        "--bundle-output", bundleFile.absolutePath,
+        "--assets-dest", assetsDir.absolutePath,
+        "--reset-cache"
+    )
+
+    doLast {
+        println("✅ Android bundle created: ${bundleFile.absolutePath}")
+    }
+}
+
+val bundleIOSReleaseJs = tasks.register<Exec>("bundleIOSReleaseJs") {
+    group = "react"
+    description = "Bundle React Native JavaScript for iOS Release"
+
+    workingDir = rootProject.file("react-native")
+
+    val bundleFile = rootProject.file("iosApp/iosApp/main.jsbundle")
+    val assetsDir = rootProject.file("iosApp/iosApp")
+
+    doFirst {
+        bundleFile.parentFile.mkdirs()
+        println("📦 Bundling React Native JavaScript for iOS...")
+    }
+
+    commandLine(
+        "npx", "react-native", "bundle",
+        "--platform", "ios",
+        "--dev", "false",
+        "--entry-file", "index.js",
+        "--bundle-output", bundleFile.absolutePath,
+        "--assets-dest", assetsDir.absolutePath
+    )
+
+    doLast {
+        println("✅ iOS bundle created: ${bundleFile.absolutePath}")
+    }
+}
+
+val bundleReleaseJsAndAssets = tasks.register("bundleReleaseJsAndAssets") {
+    group = "react"
+    description = "Bundle React Native JavaScript and assets for Android and iOS Release"
+    dependsOn(bundleAndroidReleaseJs, bundleIOSReleaseJs)
+}
+
 dependencies {
     debugImplementation(compose.uiTooling)
 
@@ -434,6 +497,16 @@ val syncFirebaseIOS = tasks.register<Exec>("syncFirebaseIOS") {
 
 tasks.named("preBuild").configure {
     dependsOn(syncFirebaseAndroid)
+}
+
+tasks.configureEach {
+    if ((name.contains("assemble") || name.contains("bundle"))
+        && name.contains("Release", ignoreCase = true)
+        && name != "bundleReleaseJsAndAssets"
+        && name != "bundleAndroidReleaseJs"
+        && name != "bundleIOSReleaseJs") {
+        dependsOn(bundleReleaseJsAndAssets)
+    }
 }
 
 tasks.matching { it.name.contains("embedAndSign") && it.name.contains("FrameworkForXcode") }.configureEach {

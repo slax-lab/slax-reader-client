@@ -20,26 +20,20 @@ class RNDemoActivity : AppCompatActivity(), DefaultHardwareBackBtnHandler {
 
         reactRootView = ReactRootView(this)
 
-        // Create ReactInstanceManager with explicit package configuration
-        // Use RN_RELEASE_MODE to control whether to use release bundle or dev server
-        val useReleaseBundle = System.getenv("RN_RELEASE_MODE")?.toBoolean() ?: false
-
         reactInstanceManager = ReactInstanceManager.builder()
             .setApplication(application)
             .setCurrentActivity(this)
             .apply {
-                if (useReleaseBundle) {
-                    // Load pre-built release bundle from assets (RN release mode)
+                if (BuildConfig.DEBUG) {
+                    setJSMainModulePath("index")
+                    setUseDeveloperSupport(true)
+                } else {
                     setBundleAssetName("index.android.bundle")
                     setUseDeveloperSupport(false)
-                } else {
-                    // Connect to Metro Bundler for live reload (RN debug mode)
-                    setJSMainModulePath("index")
-                    setUseDeveloperSupport(BuildConfig.DEBUG)
                 }
             }
-            .addPackage(MainReactPackage(null))  // Explicitly add MainReactPackage
-            .addPackage(SlaxReaderReactPackage())  // Add KMP-generated modules
+            .addPackage(MainReactPackage(null))
+            .addPackage(SlaxReaderReactPackage())
             .setInitialLifecycleState(LifecycleState.RESUMED)
             .build()
 
