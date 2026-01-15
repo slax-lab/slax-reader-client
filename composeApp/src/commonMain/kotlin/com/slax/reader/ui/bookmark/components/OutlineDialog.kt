@@ -26,8 +26,11 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
+import com.slax.reader.ui.bookmark.states.OutlineDialogStatus
 import com.slax.reader.utils.i18n
 import org.jetbrains.compose.resources.painterResource
+import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_outline_banner_analyzed
 import slax_reader_client.composeapp.generated.resources.ic_outline_banner_analyzing
@@ -36,70 +39,29 @@ import slax_reader_client.composeapp.generated.resources.ic_outline_banner_expan
 import slax_reader_client.composeapp.generated.resources.ic_outline_dialog_close
 import slax_reader_client.composeapp.generated.resources.ic_outline_dialog_shrink
 
-/**
- * Outline弹窗的三种状态
- */
-enum class OutlineDialogState {
-    HIDDEN,      // 隐藏
-    EXPANDED,    // 展开弹窗
-    COLLAPSED    // 收缩（小banner）
-}
-
-
-@Stable
-class OutlineDialogStateHolder(
-    initialState: OutlineDialogState = OutlineDialogState.HIDDEN
-) {
-    var currentState by mutableStateOf(initialState)
-        private set
-
-    val isVisible: Boolean get() = currentState != OutlineDialogState.HIDDEN
-    val isExpanded: Boolean get() = currentState == OutlineDialogState.EXPANDED
-    val isCollapsed: Boolean get() = currentState == OutlineDialogState.COLLAPSED
-
-    fun show() {
-        currentState = OutlineDialogState.EXPANDED
-    }
-
-    fun expand() {
-        currentState = OutlineDialogState.EXPANDED
-    }
-
-    fun collapse() {
-        currentState = OutlineDialogState.COLLAPSED
-    }
-
-    fun hide() {
-        currentState = OutlineDialogState.HIDDEN
-    }
-}
-
 @Composable
-fun rememberOutlineDialogState(
-    initialState: OutlineDialogState = OutlineDialogState.HIDDEN
-): OutlineDialogStateHolder {
-    return remember { OutlineDialogStateHolder(initialState) }
-}
+fun OutlineDialog() {
+    println("[watch][UI] recomposition OutlineDialog")
+    val viewModel = koinViewModel<BookmarkDetailViewModel>()
 
-/**
- * Outline弹窗组件
- */
-@Composable
-fun OutlineDialog(
-    detailViewModel: BookmarkDetailViewModel,
-    state: OutlineDialogStateHolder,
-    onScrollToAnchor: (String) -> Unit
-) {
-    println("[watch][UI] outline dialog recomposed, state = ${state.currentState}")
-    LaunchedEffect(detailViewModel._bookmarkId) {
-        detailViewModel.loadOutline()
+    val bookmarkId by viewModel.bookmarkId.collectAsState()
+    val status by viewModel.outlineDelegate.dialogStatus.collectAsState()
+
+    LaunchedEffect(bookmarkId) {
+        if (bookmarkId != null) {
+            viewModel.loadOutline()
+        }
     }
 
-    if (!state.isVisible) return
+    val isVisible = status != OutlineDialogStatus.HIDDEN
+    val isExpanded = status == OutlineDialogStatus.EXPANDED
+    val isCollapsed = status == OutlineDialogStatus.COLLAPSED
+
+    if (!isVisible) return
 
     Box(modifier = Modifier.fillMaxSize()) {
         AnimatedVisibility(
-            visible = state.isExpanded,
+            visible = isExpanded,
             enter = fadeIn(animationSpec = tween(300)),
             exit = fadeOut(animationSpec = tween(300))
         ) {
@@ -110,7 +72,7 @@ fun OutlineDialog(
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
-                        onClick = { state.hide() }
+                        onClick = { viewModel.outlineDelegate.hideDialog() }
                     )
             )
         }
@@ -120,7 +82,7 @@ fun OutlineDialog(
             contentAlignment = Alignment.BottomCenter
         ) {
             AnimatedVisibility(
-                visible = state.isExpanded,
+                visible = isExpanded,
                 enter = slideInVertically(
                     initialOffsetY = { it },
                     animationSpec = tween(300)
@@ -130,12 +92,7 @@ fun OutlineDialog(
                     animationSpec = tween(300)
                 )
             ) {
-                ExpandedOutlineDialog(
-                    detailViewModel = detailViewModel,
-                    onCollapse = { state.collapse() },
-                    onClose = { state.hide() },
-                    onScrollToAnchor = onScrollToAnchor
-                )
+                ExpandedOutlineDialog()
             }
         }
 
@@ -144,14 +101,14 @@ fun OutlineDialog(
             contentAlignment = Alignment.TopCenter
         ) {
             AnimatedVisibility(
-                visible = state.isCollapsed,
+                visible = isCollapsed,
                 enter = scaleIn(
                     initialScale = 0.3f,
                     animationSpec = tween(350, delayMillis = 100)
                 ) + fadeIn(
                     animationSpec = tween(300, delayMillis = 100)
                 ),
-                exit = if (state.currentState == OutlineDialogState.EXPANDED) {
+                exit = if (isExpanded) {
                     slideOutVertically(
                         targetOffsetY = { it },
                         animationSpec = tween(350)
@@ -162,7 +119,6 @@ fun OutlineDialog(
                         animationSpec = tween(250)
                     )
                 } else {
-                    // 关闭：原地缩小淡出
                     scaleOut(
                         targetScale = 0.3f,
                         animationSpec = tween(300)
@@ -171,11 +127,7 @@ fun OutlineDialog(
                     )
                 }
             ) {
-                CollapsedOutlineBanner(
-                    detailViewModel = detailViewModel,
-                    onExpand = { state.expand() },
-                    onClose = { state.hide() }
-                )
+                CollapsedOutlineBanner()
             }
         }
     }
@@ -185,13 +137,9 @@ fun OutlineDialog(
  * 全屏展开状态的弹窗
  */
 @Composable
-private fun ExpandedOutlineDialog(
-    detailViewModel: BookmarkDetailViewModel,
-    onCollapse: () -> Unit,
-    onClose: () -> Unit,
-    onScrollToAnchor: (String) -> Unit
-) {
-    val outlineState by detailViewModel.outlineState.collectAsState()
+private fun ExpandedOutlineDialog() {
+    val viewModel =  koinViewModel<BookmarkDetailViewModel>()
+    val outlineState by viewModel.outlineDelegate.outlineState.collectAsState()
 
     Surface(
         shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
@@ -228,7 +176,7 @@ private fun ExpandedOutlineDialog(
                         .clickable(
                             interactionSource = collapseInteractionSource,
                             indication = null,
-                            onClick = onCollapse
+                            onClick = { viewModel.outlineDelegate.collapseDialog() }
                         )
                         .padding(vertical = 18.dp, horizontal = 20.dp),
                     contentAlignment = Alignment.Center
@@ -250,7 +198,7 @@ private fun ExpandedOutlineDialog(
                         .clickable(
                             interactionSource = closeInteractionSource,
                             indication = null,
-                            onClick = onClose
+                            onClick = { viewModel.outlineDelegate.hideDialog() }
                         )
                         .padding(vertical = 18.dp, horizontal = 20.dp),
                     contentAlignment = Alignment.Center
@@ -288,12 +236,10 @@ private fun ExpandedOutlineDialog(
                                     .padding(top = 4.dp)
                             ) {
                                 MarkdownRenderer(
-                                    detailViewModel = detailViewModel,
                                     onLinkClick = { url ->
                                         if (url.startsWith("#")) {
                                             val anchorText = url.removePrefix("#")
-                                            onScrollToAnchor(anchorText)
-                                            onCollapse()
+                                            viewModel.requestScrollToAnchor(anchorText)
                                         }
                                     }
                                 )
@@ -323,17 +269,13 @@ private fun ExpandedOutlineDialog(
  * 根据 outline 加载状态显示不同的文本和图标
  */
 @Composable
-private fun CollapsedOutlineBanner(
-    detailViewModel: BookmarkDetailViewModel,
-    onExpand: () -> Unit,
-    onClose: () -> Unit
-) {
-    // 订阅状态
-    val outlineState by detailViewModel.outlineState.collectAsState()
-    val bookmarkDetail by detailViewModel.bookmarkDetail.collectAsState()
+private fun CollapsedOutlineBanner() {
+    val viewModel =  koinViewModel<BookmarkDetailViewModel>()
 
-    // 获取 bookmark 标题
-    val displayTitle = bookmarkDetail.firstOrNull()?.displayTitle ?: ""
+    // 订阅状态
+    val outlineState by viewModel.outlineDelegate.outlineState.collectAsState()
+    val uiState by viewModel.bookmarkDelegate.bookmarkDetailState.collectAsState()
+    val displayTitle by remember { derivedStateOf { uiState.displayTitle } }
 
     // 根据状态确定显示内容
     val isLoading = outlineState.isLoading
@@ -351,7 +293,7 @@ private fun CollapsedOutlineBanner(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
             ) {
-                onExpand()
+                viewModel.outlineDelegate.expandDialog()
             }
     ) {
         Row(
@@ -427,7 +369,7 @@ private fun CollapsedOutlineBanner(
                         .clickable(
                             interactionSource = expandInteractionSource,
                             indication = null,
-                            onClick = onExpand
+                            onClick = { viewModel.outlineDelegate.expandDialog() }
                         )
                         .padding(4.dp),
                     contentAlignment = Alignment.Center
@@ -449,7 +391,7 @@ private fun CollapsedOutlineBanner(
                         .clickable(
                             interactionSource = closeBannerInteractionSource,
                             indication = null,
-                            onClick = onClose
+                            onClick = { viewModel.outlineDelegate.hideDialog() }
                         )
                         .padding(4.dp),
                     contentAlignment = Alignment.Center

@@ -13,24 +13,24 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.FrameRateCategory
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
-import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.text.TextLinkStyles
-import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownColor
 import com.mikepenz.markdown.m3.markdownTypography
 import com.mikepenz.markdown.model.rememberMarkdownState
+import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
+import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 
 @Composable
 fun MarkdownRenderer(
-    detailViewModel: BookmarkDetailViewModel,
     onLinkClick: (String) -> Unit = {}
 ) {
-    val outlineState by detailViewModel.outlineState.collectAsState()
+    val viewModel = koinViewModel<BookmarkDetailViewModel>()
+    val outlineState by viewModel.outlineDelegate.outlineState.collectAsState()
 
     val markdownState = rememberMarkdownState(
         content = outlineState.outline,

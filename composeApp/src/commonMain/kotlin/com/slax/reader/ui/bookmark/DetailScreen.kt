@@ -1,96 +1,38 @@
 package com.slax.reader.ui.bookmark
 
 import androidx.compose.runtime.*
-import androidx.lifecycle.viewModelScope
-import com.slax.reader.data.database.model.UserBookmark
-import com.slax.reader.ui.bookmark.components.BookmarkAlertDialog
+import com.slax.reader.ui.bookmark.components.CommentSidebar
 import com.slax.reader.ui.bookmark.components.DetailScreenSkeleton
-import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
-
-data class OverviewViewBounds(
-    val x: Float = 0f,
-    val y: Float = 0f,
-    val width: Float = 0f,
-    val height: Float = 0f
-)
-
-data class DetailScreenState(
-    val overviewBounds: OverviewViewBounds,
-    val onOverviewBoundsChanged: (OverviewViewBounds) -> Unit
-)
 
 @Composable
 fun DetailScreen(bookmarkId: String, onBackClick: (() -> Unit), onNavigateToSubscription: (() -> Unit)? = null) {
     val detailView = koinViewModel<BookmarkDetailViewModel>()
-    val backClickHandle = remember { onBackClick }
-
-    var bookmarkDetail by remember { mutableStateOf<UserBookmark?>(null) }
-    var htmlContent by remember { mutableStateOf<String?>(null) }
-    var loadError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(bookmarkId) {
-        detailView.setBookmarkId(bookmarkId)
+        detailView.bind(bookmarkId)
+    }
 
-        detailView.viewModelScope.launch {
-            detailView.bookmarkDetail.collect { details ->
-                bookmarkDetail = details.firstOrNull()
+    LaunchedEffect(detailView) {
+        detailView.effects.collect { effect ->
+            when (effect) {
+                BookmarkDetailEffect.NavigateBack -> onBackClick()
+                BookmarkDetailEffect.NavigateToSubscription -> onNavigateToSubscription?.invoke()
+                else -> {}
             }
-        }
-        detailView.viewModelScope.runCatching {
-            htmlContent = detailView.getBookmarkContent(bookmarkId)
-        }.onFailure { e ->
-            loadError = e.message ?: "加载失败"
         }
     }
 
-    if (bookmarkDetail == null || htmlContent == null) {
+    val contentState by detailView.contentState.collectAsState()
+
+    if (contentState.htmlContent == null || contentState.isLoading) {
         DetailScreenSkeleton()
         return
     }
 
-    if (loadError != null) {
-        BookmarkAlertDialog(loadError!!, onBackClick)
-        return
-    }
-
-    var overviewBounds by remember { mutableStateOf(OverviewViewBounds()) }
-
-    val screenState = remember {
-        DetailScreenState(
-            overviewBounds = OverviewViewBounds(),
-            onOverviewBoundsChanged = { bounds -> overviewBounds = bounds }
-        )
-    }
-
-    DetailScreen(
-        detailViewModel = detailView,
-        detail = bookmarkDetail!!,
-        htmlContent = htmlContent!!,
-        screenState = screenState.copy(overviewBounds = overviewBounds),
-        onBackClick = backClickHandle,
-        onRefresh = {
-            detailView.viewModelScope.launch {
-                runCatching {
-                    detailView.getBookmarkContent(bookmarkId)
-                }.onSuccess { content ->
-                    htmlContent = content
-                }.onFailure { e ->
-                    loadError = e.message ?: "加载失败"
-                }
-            }
-        },
-        onNavigateToSubscription = onNavigateToSubscription,
-    )
+    CommentSidebar(bookmarkId)
+    DetailScreen(htmlContent = contentState.htmlContent!!)
 }
 
 @Composable
-expect fun DetailScreen(
-    detailViewModel: BookmarkDetailViewModel,
-    detail: UserBookmark,
-    htmlContent: String,
-    screenState: DetailScreenState,
-    onBackClick: (() -> Unit),
-    onRefresh: (() -> Unit)? = null,
-    onNavigateToSubscription: (() -> Unit)? = null,
-)
+expect fun DetailScreen(htmlContent: String)

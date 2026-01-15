@@ -9,9 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -20,22 +18,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewModelScope
-import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
-import kotlinx.coroutines.launch
+import com.slax.reader.ui.bookmark.states.BookmarkOverlay
 import org.jetbrains.compose.resources.painterResource
+import org.koin.compose.viewmodel.koinViewModel
 import slax_reader_client.composeapp.generated.resources.*
 
 @Composable
 fun FloatingActionBar(
-    detail: UserBookmark,
-    detailView: BookmarkDetailViewModel,
     modifier: Modifier = Modifier,
     visible: Boolean = true,
-    onMoreClick: () -> Unit = {}
 ) {
     println("[watch][UI] recomposition FloatingActionBar")
+    val viewModel = koinViewModel<BookmarkDetailViewModel>()
+
+    val detailState by viewModel.bookmarkDelegate.bookmarkDetailState.collectAsState()
+    val isStarred by remember { derivedStateOf { detailState.isStarred } }
+    val isArchived by remember { derivedStateOf { detailState.isArchived } }
 
     val density = LocalDensity.current
     val hiddenOffsetPx = remember(density) { with(density) { 150.dp.toPx() } }
@@ -79,93 +78,103 @@ fun FloatingActionBar(
                             shape = RoundedCornerShape(25.dp)
                         )
                         .background(Color(0xFFFFFFFF))
-
                 ) {
-                    Surface(
-                        onClick = {
-                            detailView.viewModelScope.launch {
-                                detailView.toggleStar(detail.isStarred != 1)
-                            }
-                        },
-                        modifier = Modifier
-                            .size(50.dp),
-                        color = Color.Transparent,
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.CenterStart
-                        ) {
-                            Icon(
-                                painter = painterResource(
-                                    if (detail.isStarred == 1)
-                                        Res.drawable.ic_floating_panel_starred
-                                    else Res.drawable.ic_floating_panel_star
-                                ),
-                                contentDescription = null,
-                                tint = Color.Unspecified,
-                                modifier = Modifier.padding(start = 17.5.dp).size(20.dp)
-                            )
-                        }
-                    }
+                    StarButton(
+                        isStarred = isStarred,
+                        onClick = { viewModel.bookmarkDelegate.onToggleStar(!isStarred) }
+                    )
 
-                    Surface(
-                        onClick = {
-                            detailView.viewModelScope.launch {
-                                detailView.toggleArchive(detail.archiveStatus != 1)
-                            }
-                        },
-                        modifier = Modifier
-                            .size(50.dp),
-                        color = Color.Transparent,
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.CenterEnd
-                        ) {
-                            Icon(
-                                painter = painterResource(if (detail.archiveStatus == 1) Res.drawable.ic_floating_panel_archieved else Res.drawable.ic_floating_panel_archieve),
-                                contentDescription = null,
-                                tint = Color.Unspecified,
-                                modifier = Modifier.padding(end = 17.5.dp).size(20.dp)
-                            )
-                        }
-                    }
+                    ArchiveButton(
+                        isArchived = isArchived,
+                        onClick = { viewModel.bookmarkDelegate.onToggleArchive(!isArchived) }
+                    )
                 }
             }
 
             Box(modifier = Modifier.width(12.dp))
 
-            Box {
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .offset(y = 10.dp)
-                        .shadow(
-                            elevation = 40.dp,
-                            shape = RoundedCornerShape(25.dp),
-                            ambientColor = Color.Black.copy(alpha = 1.0f),
-                            spotColor = Color.Black.copy(alpha = 1.0f)
-                        )
-                )
+            MoreButton(onClick = { viewModel.overlayDelegate.showOverlay(BookmarkOverlay.Toolbar) })
+        }
+    }
+}
 
-                Surface(
-                    onClick = onMoreClick,
-                    modifier = Modifier
-                        .size(50.dp),
-                    color = Color(0xFFFFFFFF),
+@Composable
+private fun StarButton(
+    isStarred: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.size(50.dp),
+        color = Color.Transparent,
+    ) {
+        Box(contentAlignment = Alignment.CenterStart) {
+            Icon(
+                painter = painterResource(
+                    if (isStarred) Res.drawable.ic_floating_panel_starred
+                    else Res.drawable.ic_floating_panel_star
+                ),
+                contentDescription = null,
+                tint = Color.Unspecified,
+                modifier = Modifier.padding(start = 17.5.dp).size(20.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ArchiveButton(
+    isArchived: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.size(50.dp),
+        color = Color.Transparent,
+    ) {
+        Box(contentAlignment = Alignment.CenterEnd) {
+            Icon(
+                painter = painterResource(
+                    if (isArchived) Res.drawable.ic_floating_panel_archieved
+                    else Res.drawable.ic_floating_panel_archieve
+                ),
+                contentDescription = null,
+                tint = Color.Unspecified,
+                modifier = Modifier.padding(end = 17.5.dp).size(20.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun MoreButton(onClick: () -> Unit) {
+    Box {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .offset(y = 10.dp)
+                .shadow(
+                    elevation = 40.dp,
                     shape = RoundedCornerShape(25.dp),
-                    border = BorderStroke(1.dp, Color.White)
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(Res.drawable.ic_floating_panel_more),
-                            contentDescription = null,
-                            tint = Color.Unspecified,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
+                    ambientColor = Color.Black.copy(alpha = 1.0f),
+                    spotColor = Color.Black.copy(alpha = 1.0f)
+                )
+        )
 
+        Surface(
+            onClick = onClick,
+            modifier = Modifier.size(50.dp),
+            color = Color(0xFFFFFFFF),
+            shape = RoundedCornerShape(25.dp),
+            border = BorderStroke(1.dp, Color.White)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_floating_panel_more),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(20.dp)
+                )
             }
         }
     }

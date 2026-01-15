@@ -16,12 +16,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.utils.i18n
 import org.jetbrains.compose.resources.painterResource
+import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_sm_back
 
@@ -30,10 +34,10 @@ fun NavigatorBar(
     title: String = "",
     showBackButton: Boolean = true,
     visible: Boolean = true,
-    onBackClick: (() -> Unit),
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     println("[watch][UI] recomposition NavigatorBar")
+    val viewModel = koinViewModel<BookmarkDetailViewModel>()
 
     val offsetY by animateDpAsState(
         targetValue = if (visible) 0.dp else (-100).dp,
@@ -45,7 +49,9 @@ fun NavigatorBar(
             .fillMaxWidth()
             .statusBarsPadding()
             .height(44.dp)
-            .offset(y = offsetY)
+            .graphicsLayer {
+                translationY = offsetY.toPx()
+            }
             .background(Color.Transparent)
             .padding(horizontal = 20.dp)
     ) {
@@ -63,7 +69,7 @@ fun NavigatorBar(
                         interactionSource = interactionSource,
                         indication = null
                     ) {
-                        onBackClick()
+                        viewModel.requestNavigateBack()
                     },
                 contentAlignment = Alignment.Center
             ) {
