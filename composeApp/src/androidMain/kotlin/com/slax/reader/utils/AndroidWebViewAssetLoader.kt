@@ -6,8 +6,10 @@ import android.webkit.WebResourceResponse
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewAssetLoader.PathHandler
 import com.slax.reader.const.WebViewAssets
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import java.io.ByteArrayInputStream
+import java.util.Locale
 
 /**
  * Android WebView 资源加载器
@@ -15,6 +17,18 @@ import java.io.ByteArrayInputStream
  * 使用WebViewAssetLoader来拦截并处理自定义域名的资源请求
  */
 class AndroidWebViewAssetLoader(context: Context) {
+
+    companion object {
+        /**
+         * 是否启用模拟延时（用于测试阻塞情况）
+         */
+        var enableSimulatedDelay: Boolean = true
+
+        /**
+         * 模拟延时的时长（毫秒）
+         */
+        var simulatedDelayMillis: Long = 10000L
+    }
 
     private val assetLoader: WebViewAssetLoader
 
@@ -27,10 +41,28 @@ class AndroidWebViewAssetLoader(context: Context) {
                     val resourcePath = "files/$path"
                     println("[AndroidWebViewAssetLoader] 加载资源: $resourcePath")
 
+                    // 记录开始时间（纳秒）
+                    val startTime = System.nanoTime()
+
+                    val isJavaScriptFile = path.lowercase(Locale.US).endsWith(".js")
+                    val isCssFile = path.lowercase(Locale.US).endsWith(".css")
+
                     // 通过WebViewResourceLoader读取资源
                     val resourceBytes = runBlocking {
+                        // 模拟延时（用于测试阻塞情况）
+                        if (enableSimulatedDelay && isJavaScriptFile) {
+                            println("[AndroidWebViewAssetLoader] 模拟延时: ${simulatedDelayMillis}ms")
+                            delay(simulatedDelayMillis)
+                        }
+
                         WebViewResourceLoader.readResourceBytes(resourcePath)
                     }
+
+                    // 记录结束时间并计算耗时
+                    val endTime = System.nanoTime()
+                    val durationMicros = (endTime - startTime) / 1000
+                    val durationMillis = durationMicros / 1000.0
+                    println("[AndroidWebViewAssetLoader] 文件读取耗时: ${durationMicros}μs (${String.format(Locale.US, "%.2f", durationMillis)}ms), 路径: $resourcePath, 大小: ${resourceBytes.size} bytes")
 
                     // 获取MIME类型
                     val mimeType = WebViewResourceLoader.getMimeType(path)

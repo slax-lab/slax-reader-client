@@ -4,10 +4,27 @@ import com.slax.reader.const.WebViewAssets
 import kotlinx.cinterop.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import platform.Foundation.*
 import platform.WebKit.*
 import platform.darwin.NSObject
+import kotlin.time.TimeSource
+
+/**
+ * iOS WebView 资源加载配置
+ */
+object IOSWebViewConfig {
+    /**
+     * 是否启用模拟延时（用于测试阻塞情况）
+     */
+    var enableSimulatedDelay: Boolean = true
+
+    /**
+     * 模拟延时的时长（毫秒）
+     */
+    var simulatedDelayMillis: Long = 10000L
+}
 
 /**
  * iOS WebView URL Scheme Handler
@@ -43,8 +60,24 @@ class IOSWebViewURLSchemeHandler : NSObject(), WKURLSchemeHandlerProtocol {
                 val resourcePath = extractResourcePath(url)
                 println("[IOSWebViewURLSchemeHandler] 资源路径: $resourcePath")
 
+                // 记录开始时间
+                val startMark = TimeSource.Monotonic.markNow()
+
+                val isJavaScriptFile = resourcePath.lowercase().endsWith(".js")
+
+                // 模拟延时（用于测试阻塞情况）
+                if (IOSWebViewConfig.enableSimulatedDelay && isJavaScriptFile) {
+                    println("[IOSWebViewURLSchemeHandler] 模拟延时: ${IOSWebViewConfig.simulatedDelayMillis}ms")
+                    delay(IOSWebViewConfig.simulatedDelayMillis)
+                }
+
                 // 读取资源内容
                 val resourceBytes = WebViewResourceLoader.readResourceBytes("files/$resourcePath")
+
+                // 计算耗时
+                val durationMicros = startMark.elapsedNow().inWholeMicroseconds
+                val durationMillis = (durationMicros / 10).toDouble() / 100.0  // 保留两位小数
+                println("[IOSWebViewURLSchemeHandler] 文件读取耗时: ${durationMicros}μs (${durationMillis}ms), 路径: files/$resourcePath, 大小: ${resourceBytes.size} bytes")
 
                 // 获取MIME类型
                 val mimeType = WebViewResourceLoader.getMimeType(resourcePath)
