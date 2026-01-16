@@ -12,6 +12,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
+data class ScrollInfo(val scrollY: Float, val isNearBottom: Boolean)
+
 data class BookmarkDetailState(
     val isStarred: Boolean = false,
     val isArchived: Boolean = false,

@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
+import com.slax.reader.ui.bookmark.LocalToolbarVisible
 import com.slax.reader.ui.bookmark.states.BookmarkOverlay
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -27,10 +28,10 @@ import slax_reader_client.composeapp.generated.resources.*
 @Composable
 fun FloatingActionBar(
     modifier: Modifier = Modifier,
-    visible: Boolean = true,
 ) {
     println("[watch][UI] recomposition FloatingActionBar")
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
+    val visible by LocalToolbarVisible.current
 
     val detailState by viewModel.bookmarkDelegate.bookmarkDetailState.collectAsState()
     val isStarred by remember { derivedStateOf { detailState.isStarred } }

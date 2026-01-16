@@ -29,7 +29,6 @@ import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.states.OutlineDialogStatus
 import com.slax.reader.utils.i18n
 import org.jetbrains.compose.resources.painterResource
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_outline_banner_analyzed
@@ -53,11 +52,9 @@ fun OutlineDialog() {
         }
     }
 
-    val isVisible = status != OutlineDialogStatus.HIDDEN
+    if (status == OutlineDialogStatus.NONE) return
     val isExpanded = status == OutlineDialogStatus.EXPANDED
     val isCollapsed = status == OutlineDialogStatus.COLLAPSED
-
-    if (!isVisible) return
 
     Box(modifier = Modifier.fillMaxSize()) {
         AnimatedVisibility(

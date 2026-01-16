@@ -37,7 +37,11 @@ data class WebViewMessage(
 )
 
 @Composable
-actual fun DetailScreen(htmlContent: String) {
+actual fun DetailScreen(
+    htmlContent: String,
+    webViewState: AppWebViewState,
+    onScrollInfoChanged: (ScrollInfo) -> Unit
+) {
     println("[watch][UI] recomposition DetailScreen.ios")
 
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
@@ -54,29 +58,7 @@ actual fun DetailScreen(htmlContent: String) {
     // 顶部内容高度 (px)
     val headerMeasuredHeightState = remember { mutableFloatStateOf(0f) }
 
-    var manuallyVisible by remember { mutableStateOf(true) }
-
-    val coroutineScope = rememberCoroutineScope()
-    val webViewState = rememberAppWebViewState(coroutineScope)
-
     val bottomThresholdPx = with(LocalDensity.current) { 100.dp.toPx() }
-
-    LaunchedEffect(Unit) {
-        LifeCycleHelper.lifecycleState.collect { state ->
-            when (state) {
-                AppLifecycleState.ON_STOP -> {
-                    viewModel.onStopRecordContinue(webViewScrollY.floatValue.toInt())
-                }
-
-                AppLifecycleState.ON_RESUME -> {
-                    viewModel.onResumeClearContinue()
-                }
-
-                else -> {
-                }
-            }
-        }
-    }
 
     // 距离底部的距离
     val isNearBottom by remember {
@@ -86,15 +68,10 @@ actual fun DetailScreen(htmlContent: String) {
         }
     }
 
-    // 统一处理 manuallyVisible 的自动更新逻辑
     LaunchedEffect(Unit) {
-        snapshotFlow { isNearBottom to webViewScrollY.floatValue }
-            .collect { (nearBottom, scrollY) ->
-                manuallyVisible = when {
-                    nearBottom -> true  // 在底部区域，强制显示
-                    scrollY <= 10f -> true  // 在顶部区域，显示
-                    else -> false  // 中间区域，自动隐藏
-                }
+        snapshotFlow { webViewScrollY.floatValue to isNearBottom }
+            .collect { (scrollY, nearBottom) ->
+                onScrollInfoChanged(ScrollInfo(scrollY, nearBottom))
             }
     }
 
@@ -109,24 +86,9 @@ actual fun DetailScreen(htmlContent: String) {
         webViewState.topContentInsetPx = headerMeasuredHeightState.floatValue
     }
 
-    LaunchedEffect(viewModel) {
-        viewModel.effects.collect { effect ->
-            when (effect) {
-                is BookmarkDetailEffect.ScrollToAnchor -> {
-                    webViewState.scrollToAnchor(effect.anchor)
-                }
-                else -> {}
-            }
-        }
-    }
-
-    // 监听 WebView 事件
     LaunchedEffect(webViewState) {
         webViewState.events.collect { event ->
             when (event) {
-                is WebViewEvent.ImageClick -> {
-                    viewModel.overlayDelegate.onWebViewImageClick(event.src, event.allImages)
-                }
                 is WebViewEvent.ScrollChange -> {
                     webViewScrollY.floatValue = max(event.scrollY, 0f)
                     contentHeightPx = event.contentHeight
@@ -135,18 +97,6 @@ actual fun DetailScreen(htmlContent: String) {
                 is WebViewEvent.ScrollToPosition -> {
                     webViewState.evaluateJs("window.scrollTo(0, document.body.scrollHeight * ${event.percentage})")
                 }
-                is WebViewEvent.Tap -> {
-                    if (!isNearBottom && webViewScrollY.floatValue > 10f) {
-                        manuallyVisible = !manuallyVisible
-                    }
-                }
-
-                is WebViewEvent.RefreshContent -> {
-                    viewModel.refreshContent()
-                }
-
-                is WebViewEvent.Feedback -> {}
-
                 else -> {}
             }
         }
@@ -179,10 +129,9 @@ actual fun DetailScreen(htmlContent: String) {
             }
         }
 
-        NavigatorBar(visible = manuallyVisible)
+        NavigatorBar()
 
         FloatingActionBar(
-            visible = manuallyVisible,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 58.dp),

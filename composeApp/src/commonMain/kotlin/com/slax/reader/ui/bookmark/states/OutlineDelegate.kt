@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 
 data class OutlineState(
     val outline: String = "",
@@ -21,7 +22,10 @@ data class OutlineState(
 )
 
 enum class OutlineDialogStatus {
-    HIDDEN, EXPANDED, COLLAPSED
+    NONE,
+    HIDDEN,
+    COLLAPSED,
+    EXPANDED
 }
 
 class OutlineDelegate(
@@ -32,7 +36,7 @@ class OutlineDelegate(
     private val _outlineState = MutableStateFlow(OutlineState())
     val outlineState = _outlineState.asStateFlow()
 
-    private val _dialogStatus = MutableStateFlow(OutlineDialogStatus.HIDDEN)
+    private val _dialogStatus = MutableStateFlow(OutlineDialogStatus.NONE)
     val dialogStatus = _dialogStatus.asStateFlow()
 
     fun loadOutline(bookmarkId: String) {
@@ -108,15 +112,15 @@ class OutlineDelegate(
     }
 
     fun showDialog() {
-        _dialogStatus.value = OutlineDialogStatus.EXPANDED
+        transitionTo(OutlineDialogStatus.EXPANDED)
     }
 
     fun expandDialog() {
-        _dialogStatus.value = OutlineDialogStatus.EXPANDED
+        transitionTo(OutlineDialogStatus.EXPANDED)
     }
 
     fun collapseDialog() {
-        _dialogStatus.value = OutlineDialogStatus.COLLAPSED
+        transitionTo(OutlineDialogStatus.COLLAPSED)
     }
 
     fun hideDialog() {
@@ -125,6 +129,18 @@ class OutlineDelegate(
 
     fun reset() {
         _outlineState.value = OutlineState()
-        _dialogStatus.value = OutlineDialogStatus.HIDDEN
+        _dialogStatus.value = OutlineDialogStatus.NONE
+    }
+
+    private fun transitionTo(target: OutlineDialogStatus) {
+        if (_dialogStatus.value == OutlineDialogStatus.NONE) {
+            _dialogStatus.value = OutlineDialogStatus.HIDDEN
+            scope.launch {
+                yield()
+                _dialogStatus.value = target
+            }
+        } else {
+            _dialogStatus.value = target
+        }
     }
 }

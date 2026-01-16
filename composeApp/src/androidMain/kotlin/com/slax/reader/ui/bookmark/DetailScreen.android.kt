@@ -14,17 +14,14 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.preferredFrameRate
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.slax.reader.ui.bookmark.components.*
-import com.slax.reader.utils.AppLifecycleState
 import com.slax.reader.utils.AppWebView
-import com.slax.reader.utils.LifeCycleHelper
+import com.slax.reader.utils.AppWebViewState
 import com.slax.reader.utils.WebViewEvent
-import com.slax.reader.utils.rememberAppWebViewState
 import com.slax.reader.utils.wrapBookmarkDetailHtml
-import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import org.koin.compose.viewmodel.koinViewModel
 
 @Serializable
 data class WebViewMessage(
@@ -39,16 +36,16 @@ data class WebViewMessage(
 
 @SuppressLint("UseKtx", "ConfigurationScreenWidthHeight")
 @Composable
-actual fun DetailScreen(htmlContent: String) {
+actual fun DetailScreen(
+    htmlContent: String,
+    webViewState: AppWebViewState,
+    onScrollInfoChanged: (ScrollInfo) -> Unit
+) {
     println("[watch][UI] recomposition DetailScreen")
-
-    val viewModel = koinViewModel<BookmarkDetailViewModel>()
 
     val wrappedHtmlContent = remember(htmlContent) { wrapBookmarkDetailHtml(htmlContent) }
 
     val scrollState = rememberScrollState()
-    val scrollY by remember { derivedStateOf { scrollState.value.toFloat() } }
-    var manuallyVisible by remember { mutableStateOf(true) }
 
     // 获取屏幕高度（用于计算滚动偏移）
     val configuration = LocalConfiguration.current
@@ -58,27 +55,7 @@ actual fun DetailScreen(htmlContent: String) {
     val headerHeightState = remember { mutableFloatStateOf(0f) }
     val webViewHeightState = remember { mutableFloatStateOf(0f) }
 
-    val coroutineScope = rememberCoroutineScope()
-    val webViewState = rememberAppWebViewState(coroutineScope)
-
     val bottomThresholdPx = with(LocalDensity.current) { 100.dp.toPx() }
-
-    LaunchedEffect(Unit) {
-        LifeCycleHelper.lifecycleState.collect { state ->
-            when (state) {
-                AppLifecycleState.ON_STOP -> {
-                    viewModel.onStopRecordContinue(scrollState.value)
-                }
-
-                AppLifecycleState.ON_RESUME -> {
-                    viewModel.onResumeClearContinue()
-                }
-
-                else -> {
-                }
-            }
-        }
-    }
 
     // 是否接近底部
     val isNearBottom by remember {
@@ -88,51 +65,19 @@ actual fun DetailScreen(htmlContent: String) {
     }
 
     LaunchedEffect(Unit) {
-        snapshotFlow { isNearBottom to scrollState.value }
-            .collect { (nearBottom, scrollValue) ->
-                manuallyVisible = when {
-                    nearBottom -> true  // 在底部区域，强制显示
-                    scrollValue <= 10 -> true  // 在顶部区域，显示
-                    else -> false  // 中间区域，自动隐藏
-                }
+        snapshotFlow { scrollState.value.toFloat() to isNearBottom }
+            .collect { (scrollY, nearBottom) ->
+                onScrollInfoChanged(ScrollInfo(scrollY, nearBottom))
             }
     }
 
     LaunchedEffect(webViewState) {
         webViewState.events.collect { event ->
             when (event) {
-                is WebViewEvent.ImageClick -> {
-                    viewModel.overlayDelegate.onWebViewImageClick(event.src, event.allImages)
-                }
                 is WebViewEvent.ScrollToPosition -> {
                     val targetInWebView = webViewHeightState.floatValue * event.percentage
                     val target = (headerHeightState.floatValue + targetInWebView - screenHeightPx / 4).toInt()
-                    coroutineScope.launch { scrollState.animateScrollTo(target.coerceAtLeast(0)) }
-                }
-                is WebViewEvent.Tap -> {
-                    if (!isNearBottom && scrollY > 10f) {
-                        manuallyVisible = !manuallyVisible
-                    }
-                }
-
-                is WebViewEvent.RefreshContent -> {
-                    viewModel.refreshContent()
-                }
-
-                is WebViewEvent.Feedback -> {
-                    println("feedback")
-                }
-
-                else -> {}
-            }
-        }
-    }
-
-    LaunchedEffect(viewModel) {
-        viewModel.effects.collect { effect ->
-            when (effect) {
-                is BookmarkDetailEffect.ScrollToAnchor -> {
-                    webViewState.scrollToAnchor(effect.anchor)
+                    scrollState.animateScrollTo(target.coerceAtLeast(0))
                 }
                 else -> {}
             }
@@ -143,7 +88,7 @@ actual fun DetailScreen(htmlContent: String) {
         { height: Float -> headerHeightState.floatValue = height }
     }
 
-    val onWebViewSizeChanged: (androidx.compose.ui.unit.IntSize) -> Unit = remember {
+    val onWebViewSizeChanged: (IntSize) -> Unit = remember {
         { size -> webViewHeightState.floatValue = size.height.toFloat() }
     }
 
@@ -169,10 +114,9 @@ actual fun DetailScreen(htmlContent: String) {
             )
         }
 
-        NavigatorBar(visible = manuallyVisible)
+        NavigatorBar()
 
         FloatingActionBar(
-            visible = manuallyVisible,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 58.dp),
