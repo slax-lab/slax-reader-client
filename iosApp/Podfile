@@ -1,6 +1,6 @@
 require_relative '../react-native/node_modules/react-native/scripts/react_native_pods.rb'
 
-platform :ios, '14.1'
+platform :ios, '15.1'
 prepare_react_native_project!
 
 linkage = ENV['USE_FRAMEWORKS']
@@ -48,7 +48,7 @@ post_install do |installer|
     targets.each do |t|
       t.build_configurations.each do |config|
         config.build_settings['REACT_NATIVE_PATH'] = rn_root
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.1'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
       end
     end
   end
