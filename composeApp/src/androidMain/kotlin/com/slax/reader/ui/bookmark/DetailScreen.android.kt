@@ -17,6 +17,7 @@ import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.slax.reader.ui.bookmark.components.*
+import com.slax.reader.ui.bookmark.states.ScrollInfo
 import com.slax.reader.utils.AppWebView
 import com.slax.reader.utils.AppWebViewState
 import com.slax.reader.utils.WebViewEvent

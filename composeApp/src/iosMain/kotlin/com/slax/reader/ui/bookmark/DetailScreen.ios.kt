@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.unit.dp
 import com.slax.reader.ui.bookmark.components.*
+import com.slax.reader.ui.bookmark.states.ScrollInfo
 import com.slax.reader.utils.*
 import kotlinx.serialization.Serializable
 import org.koin.compose.viewmodel.koinViewModel
