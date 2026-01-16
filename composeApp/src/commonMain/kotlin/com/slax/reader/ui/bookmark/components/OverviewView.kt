@@ -49,7 +49,6 @@ fun OverviewView(
     val content = overviewState.overview
     if (content.isEmpty()) return
 
-    // 构建文本内容
     val annotatedText = remember(content) {
         buildAnnotatedString {
             withStyle(style = SpanStyle(color = Color(0xFF999999))) {
@@ -98,10 +97,6 @@ fun OverviewView(
     }
 }
 
-/**
- * 文本末尾带图标的组合组件
- * 前几行保持全宽，只在最后一行为图标预留空间
- */
 @Composable
 private fun TextWithTrailingIcon(
     text: AnnotatedString,
@@ -138,10 +133,8 @@ private fun TextWithTrailingIcon(
         val needsEllipsis = fullWidthMeasure.didOverflowHeight || fullWidthMeasure.hasVisualOverflow
 
         if (!needsEllipsis) {
-            // 文本未溢出，直接返回原文本
             text
         } else {
-            // 文本溢出，需要手动处理最后一行
             val maxLines = 3
             val actualLineCount = minOf(fullWidthMeasure.lineCount, maxLines)
             val lastLineIndex = actualLineCount - 1
@@ -186,7 +179,6 @@ private fun TextWithTrailingIcon(
                     }
                 }
 
-                // 构建最终文本
                 buildAnnotatedString {
                     append(text.subSequence(0, lastLineStartOffset))
                     append(remainingText.subSequence(0, bestEnd))
