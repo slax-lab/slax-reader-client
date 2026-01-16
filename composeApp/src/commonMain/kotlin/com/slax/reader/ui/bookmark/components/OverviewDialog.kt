@@ -21,19 +21,18 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewModelScope
 import com.slax.reader.const.component.rememberDismissableVisibility
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
-import com.slax.reader.ui.bookmark.OverviewViewBounds
+import com.slax.reader.ui.bookmark.states.BookmarkOverlay
+import com.slax.reader.ui.bookmark.states.OverviewViewBounds
 import com.slax.reader.utils.i18n
 import org.jetbrains.compose.resources.painterResource
+import org.koin.compose.viewmodel.koinViewModel
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_circle_close_icon
 import kotlin.math.roundToInt
@@ -43,13 +42,12 @@ import kotlin.math.roundToInt
  */
 @Composable
 fun OverviewDialog(
-    detailView: BookmarkDetailViewModel,
-    onDismissRequest: () -> Unit,
     sourceBounds: OverviewViewBounds
 ) {
     println("[watch][UI] recomposition OverviewDialog")
+    val viewModel = koinViewModel<BookmarkDetailViewModel>()
 
-    val overviewState by detailView.overviewState.collectAsState()
+    val overviewState by viewModel.overviewDelegate.overviewState.collectAsState()
     val overview = overviewState.overview
     val keyTakeaways = overviewState.keyTakeaways
 
@@ -60,9 +58,11 @@ fun OverviewDialog(
     var contentHeight by remember { mutableStateOf(0f) }
 
     val (visible, dismiss) = rememberDismissableVisibility(
-        scope = detailView.viewModelScope,
+        scope = viewModel.viewModelScope,
         animationDuration = 300L,
-        onDismissRequest = onDismissRequest
+        onDismissRequest = {
+            viewModel.overlayDelegate.dismissOverlay(BookmarkOverlay.Overview)
+        }
     )
 
     val animationProgress by animateFloatAsState(

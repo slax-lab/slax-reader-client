@@ -11,13 +11,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewModelScope
-import com.slax.reader.const.component.EditNameDialog
-import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.ui.bookmark.components.*
+import com.slax.reader.ui.bookmark.states.ScrollInfo
 import com.slax.reader.utils.*
-import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.max
 
 @Serializable
@@ -41,14 +39,15 @@ data class WebViewMessage(
 
 @Composable
 actual fun DetailScreen(
-    detailViewModel: BookmarkDetailViewModel,
-    detail: UserBookmark,
     htmlContent: String,
-    screenState: DetailScreenState,
-    onBackClick: (() -> Unit),
-    onRefresh: (() -> Unit)?,
-    onNavigateToSubscription: (() -> Unit)?,
+    webViewState: AppWebViewState,
+    onScrollInfoChanged: (ScrollInfo) -> Unit
 ) {
+    println("[watch][UI] recomposition DetailScreen.ios")
+
+    val viewModel = koinViewModel<BookmarkDetailViewModel>()
+    val bookmarkId by viewModel.bookmarkId.collectAsState()
+
     val wrappedHtmlContent = remember(htmlContent) { wrapBookmarkDetailHtml(htmlContent) }
 
     // WebView 滚动偏移
@@ -58,93 +57,39 @@ actual fun DetailScreen(
     var visibleHeightPx by remember { mutableFloatStateOf(0f) }
 
     // 顶部内容高度 (px)
-    var headerMeasuredHeight by remember { mutableFloatStateOf(0f) }
-
-    var manuallyVisible by remember { mutableStateOf(true) }
-
-    val coroutineScope = rememberCoroutineScope()
-    val webViewState = rememberAppWebViewState(coroutineScope)
+    val headerMeasuredHeightState = remember { mutableFloatStateOf(0f) }
 
     val bottomThresholdPx = with(LocalDensity.current) { 100.dp.toPx() }
 
-    LaunchedEffect(Unit) {
-        LifeCycleHelper.lifecycleState.collect { state ->
-            when (state) {
-                AppLifecycleState.ON_STOP -> {
-                    detailViewModel.viewModelScope.launch {
-                        detailViewModel.recordContinueBookmark(webViewScrollY.floatValue.toInt())
-                    }
-                }
-
-                AppLifecycleState.ON_RESUME -> {
-                    detailViewModel.viewModelScope.launch {
-                        detailViewModel.clearContinueBookmark()
-                    }
-                }
-
-                else -> {
-                }
-            }
-        }
-    }
-
     // 距离底部的距离
-    val distanceToBottom by remember {
-        derivedStateOf {
-            contentHeightPx - (webViewScrollY.floatValue + visibleHeightPx) + headerMeasuredHeight
-        }
-    }
-
-    // 是否接近底部
     val isNearBottom by remember {
         derivedStateOf {
+            val distanceToBottom = contentHeightPx - (webViewScrollY.floatValue + visibleHeightPx) + headerMeasuredHeightState.floatValue
             distanceToBottom < bottomThresholdPx
         }
     }
 
-    // 统一处理 manuallyVisible 的自动更新逻辑
     LaunchedEffect(Unit) {
-        snapshotFlow { isNearBottom to webViewScrollY.floatValue }
-            .collect { (nearBottom, scrollY) ->
-                manuallyVisible = when {
-                    nearBottom -> true  // 在底部区域，强制显示
-                    scrollY <= 10f -> true  // 在顶部区域，显示
-                    else -> false  // 中间区域，自动隐藏
-                }
+        snapshotFlow { webViewScrollY.floatValue to isNearBottom }
+            .collect { (scrollY, nearBottom) ->
+                onScrollInfoChanged(ScrollInfo(scrollY, nearBottom))
             }
     }
 
     val headerVisible by remember {
         derivedStateOf {
-            headerMeasuredHeight == 0f || webViewScrollY.floatValue < headerMeasuredHeight
+            headerMeasuredHeightState.floatValue == 0f || webViewScrollY.floatValue < headerMeasuredHeightState.floatValue
         }
     }
 
-    var showTagView by remember { mutableStateOf(false) }
-    var showOverviewDialog by remember { mutableStateOf(false) }
-    var showToolbar by remember { mutableStateOf(false) }
-    var showEditNameDialog by remember { mutableStateOf(false) }
-    val outlineDialogState = rememberOutlineDialogState()
-
-    // 图片浏览器状态
-    var showImageViewer by remember { mutableStateOf(false) }
-    var currentImageUrl by remember { mutableStateOf("") }
-    var allImageUrls by remember { mutableStateOf<List<String>>(emptyList()) }
-
     // 设置 webState 的参数
-    LaunchedEffect(headerMeasuredHeight) {
-        webViewState.topContentInsetPx = headerMeasuredHeight
+    LaunchedEffect(headerMeasuredHeightState.floatValue) {
+        webViewState.topContentInsetPx = headerMeasuredHeightState.floatValue
     }
 
-    // 监听 WebView 事件
     LaunchedEffect(webViewState) {
         webViewState.events.collect { event ->
             when (event) {
-                is WebViewEvent.ImageClick -> {
-                    currentImageUrl = event.src
-                    allImageUrls = event.allImages
-                    showImageViewer = true
-                }
                 is WebViewEvent.ScrollChange -> {
                     webViewScrollY.floatValue = max(event.scrollY, 0f)
                     contentHeightPx = event.contentHeight
@@ -153,23 +98,13 @@ actual fun DetailScreen(
                 is WebViewEvent.ScrollToPosition -> {
                     webViewState.evaluateJs("window.scrollTo(0, document.body.scrollHeight * ${event.percentage})")
                 }
-                is WebViewEvent.Tap -> {
-                    if (!isNearBottom && webViewScrollY.floatValue > 10f) {
-                        manuallyVisible = !manuallyVisible
-                    }
-                }
-
-                is WebViewEvent.RefreshContent -> {
-                    if (onRefresh != null) {
-                        onRefresh()
-                    }
-                }
-
-                is WebViewEvent.Feedback -> {}
-
                 else -> {}
             }
         }
+    }
+
+    val onHeightChanged = remember {
+        { height: Float -> headerMeasuredHeightState.floatValue = height }
     }
 
     Box(
@@ -177,7 +112,7 @@ actual fun DetailScreen(
             .fillMaxSize()
             .background(Color(0xFFFCFCFC))
     ) {
-        key(detail.id) {
+        key(bookmarkId) {
             AppWebView(
                 htmlContent = wrappedHtmlContent,
                 modifier = Modifier.fillMaxSize().preferredFrameRate(FrameRateCategory.High),
@@ -191,112 +126,20 @@ actual fun DetailScreen(
                     translationY = -webViewScrollY.floatValue
                 }
             ) {
-                HeaderContent(
-                    detail = detail,
-                    detailView = detailViewModel,
-                    onHeightChanged = remember {
-                        { height ->
-                            headerMeasuredHeight = height
-                        }
-                    },
-                    onTagClick = { showTagView = true },
-                    onOverviewExpand = { showOverviewDialog = true },
-                    onOverviewBoundsChanged = screenState.onOverviewBoundsChanged
-                )
+                HeaderContent(onHeightChanged = onHeightChanged)
             }
         }
 
-        if (manuallyVisible) {
-            NavigatorBar(
-                visible = manuallyVisible,
-                onBackClick = onBackClick
-            )
-        }
+        NavigatorBar()
 
-        // 浮动操作栏
         FloatingActionBar(
-            detail = detail,
-            detailView = detailViewModel,
-            visible = manuallyVisible,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 58.dp),
-            onMoreClick = { showToolbar = true }
         )
 
-        // 标签管理界面
-        if (showTagView) {
-            TagsManageBottomSheet(
-                detailViewModel = detailViewModel,
-                onDismissRequest = { showTagView = false },
-                enableDrag = false,
-                onConfirm = { selectedTags ->
-                    detailViewModel.viewModelScope.launch {
-                        detailViewModel.updateBookmarkTags(detail.id, selectedTags.map { it.id })
-                    }
-                    showTagView = false
-                }
-            )
-        }
-
-        // Overview 弹窗
-        if (showOverviewDialog) {
-            OverviewDialog(
-                detailView = detailViewModel,
-                onDismissRequest = { showOverviewDialog = false },
-                sourceBounds = screenState.overviewBounds
-            )
-        }
-
-        if (showToolbar) {
-            BottomToolbarSheet(
-                detail = detail,
-                detailView = detailViewModel,
-                onDismissRequest = { showToolbar = false },
-                onSubscriptionRequired = onNavigateToSubscription,
-                onIconClick = { pageId, iconIndex ->
-                    println("点击了页面 $pageId 的第 ${iconIndex + 1} 个图标")
-                    when (pageId) {
-                        "edit_title" -> showEditNameDialog = true
-                        "summary" -> outlineDialogState.show()
-                    }
-                }
-            )
-        }
-
-        // 编辑标题弹窗
-        if (showEditNameDialog) {
-            EditNameDialog(
-                initialTitle = detail.displayTitle,
-                onConfirm = { title ->
-                    detailViewModel.viewModelScope.launch {
-                        detailViewModel.updateBookmarkTitle(title)
-                    }
-                },
-                onDismissRequest = { showEditNameDialog = false }
-            )
-        }
-
-        // 图片浏览器
-        if (showImageViewer) {
-            ImageViewer(
-                imageUrls = allImageUrls,
-                initialImageUrl = currentImageUrl,
-                onDismiss = {
-                    showImageViewer = false
-                }
-            )
-        }
-
-        // Outline弹窗
-        if (outlineDialogState.currentState != OutlineDialogState.HIDDEN) {
-            OutlineDialog(
-                detailViewModel = detailViewModel,
-                state = outlineDialogState,
-                onScrollToAnchor = { anchor ->
-                    webViewState.scrollToAnchor(anchor)
-                }
-            )
-        }
+        OutlineDialog()
     }
+
+    BookmarkDetailOverlays()
 }

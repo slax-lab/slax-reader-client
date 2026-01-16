@@ -22,28 +22,30 @@ import androidx.lifecycle.viewModelScope
 import com.slax.reader.const.component.rememberDismissableVisibility
 import com.slax.reader.data.database.model.UserTag
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
+import com.slax.reader.ui.bookmark.states.BookmarkOverlay
+import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.roundToInt
 
 @Composable
 fun TagsManageBottomSheet(
-    detailViewModel: BookmarkDetailViewModel,
-    onDismissRequest: () -> Unit,
     enableDrag: Boolean = false,
-    onConfirm: (List<UserTag>) -> Unit = {}
 ) {
     println("[watch][UI] recomposition TagsManageBottomSheet")
+    val viewModel = koinViewModel<BookmarkDetailViewModel>()
 
-    val availableTags by detailViewModel.userTagList.collectAsState(emptyList())
-    val remoteSelectedTags by detailViewModel.selectedTagList.collectAsState()
+    val bookmarkId by viewModel.bookmarkId.collectAsState()
+
+    val availableTags by viewModel.bookmarkDelegate.userTagList.collectAsState(emptyList())
+    val remoteSelectedTags by viewModel.bookmarkDelegate.selectedTagList.collectAsState()
 
     val addedTags = remember { mutableStateListOf<UserTag>() }
     val removedTags = remember { mutableStateListOf<UserTag>() }
     var showCreatingScreen by remember { mutableStateOf(false) }
 
     val (visible, dismiss) = rememberDismissableVisibility(
-        scope = detailViewModel.viewModelScope,
+        scope = viewModel.viewModelScope,
         animationDuration = 300L,
-        onDismissRequest = onDismissRequest
+        onDismissRequest = { viewModel.overlayDelegate.dismissOverlay(BookmarkOverlay.Tags) }
     )
 
     LaunchedEffect(remoteSelectedTags) {
@@ -145,7 +147,6 @@ fun TagsManageBottomSheet(
             ) {
                 if (showCreatingScreen) {
                     TagCreatingScreen(
-                        detailViewModel = detailViewModel,
                         onTagCreated = { newTag ->
                             removedTags.remove(newTag)
                             if (!addedTags.any { it.id == newTag.id }) {
@@ -176,8 +177,10 @@ fun TagsManageBottomSheet(
                             showCreatingScreen = true
                         },
                         onConfirm = {
-                            onConfirm(selectedTags)
-                            onDismissRequest()
+                            bookmarkId?.let { id ->
+                                viewModel.bookmarkDelegate.onUpdateBookmarkTags(id, selectedTags.map { it.id })
+                            }
+                            viewModel.overlayDelegate.dismissOverlay(BookmarkOverlay.Tags)
                         },
                         onDismiss = {
                             dismiss()

@@ -36,20 +36,23 @@ import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.utils.i18n
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
+import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_cell_tag
 
 @Composable
 fun TagCreatingScreen(
-    detailViewModel: BookmarkDetailViewModel,
     onTagCreated: (UserTag) -> Unit,
     onBack: () -> Unit
 ) {
+    println("[watch][UI] recomposition TagCreatingScreen")
+    val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val inputState = rememberTextFieldState("")
     val focusRequester = remember { FocusRequester() }
 
-    val availableTags by detailViewModel.userTagList.collectAsState(emptyList())
-    val selectedTags by detailViewModel.selectedTagList.collectAsState()
+    val availableTags by viewModel.bookmarkDelegate.userTagList.collectAsState(emptyList())
+    val selectedTags by viewModel.bookmarkDelegate.selectedTagList.collectAsState()
 
     val similarTags by remember {
         derivedStateOf {
@@ -104,8 +107,8 @@ fun TagCreatingScreen(
         }
 
         // 创建新标签
-        detailViewModel.viewModelScope.launch {
-            val newTag = detailViewModel.createTag(tagName)
+        viewModel.viewModelScope.launch {
+            val newTag = viewModel.bookmarkDelegate.createTag(tagName)
             onTagCreated(newTag)
             onBack()
         }

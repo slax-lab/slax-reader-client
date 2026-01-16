@@ -20,27 +20,28 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
-import com.slax.reader.ui.bookmark.OverviewViewBounds
+import com.slax.reader.ui.bookmark.states.BookmarkOverlay
+import com.slax.reader.ui.bookmark.states.OverviewViewBounds
 import com.slax.reader.utils.i18n
 import org.jetbrains.compose.resources.painterResource
+import org.koin.compose.viewmodel.koinViewModel
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_xs_blue_down_arrow
 
 @Composable
 fun OverviewView(
-    detailView: BookmarkDetailViewModel,
     modifier: Modifier = Modifier,
-    onExpand: () -> Unit = {},
-    onBoundsChanged: (OverviewViewBounds) -> Unit = {}
 ) {
     println("[watch][UI] recomposition OverviewView")
-    
-    LaunchedEffect(detailView._bookmarkId) {
-        detailView.loadOverview()
+    val viewModel = koinViewModel<BookmarkDetailViewModel>()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadOverview()
     }
 
-    val overviewState by detailView.overviewState.collectAsState()
+    val overviewState by viewModel.overviewDelegate.overviewState.collectAsState()
     val content = overviewState.overview
+
     if (content.isEmpty()) return
 
     Surface(
@@ -48,7 +49,7 @@ fun OverviewView(
             .fillMaxWidth()
             .onGloballyPositioned { coordinates ->
                 val position = coordinates.positionInRoot()
-                onBoundsChanged(
+                viewModel.overviewDelegate.updateBounds(
                     OverviewViewBounds(
                         x = position.x,
                         y = position.y,
@@ -61,32 +62,7 @@ fun OverviewView(
         color = Color(0xFFF5F5F3)
     ) {
         Column {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp)
-            ) {
-                val annotatedText = remember(content) {
-                    buildAnnotatedString {
-                        withStyle(style = SpanStyle(color = Color(0xFF999999))) {
-                            append("overview_prefix".i18n())
-                        }
-                        append(content)
-                    }
-                }
-
-                Text(
-                    text = annotatedText,
-                    modifier = Modifier.fillMaxWidth(),
-                    style = TextStyle(
-                        fontSize = 14.sp,
-                        lineHeight = 20.sp,
-                        color = Color(0xFF333333)
-                    ),
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            OverviewContent(content = content)
 
             Box(
                 modifier = Modifier
@@ -96,36 +72,64 @@ fun OverviewView(
                     .background(Color(0x14333333))
             )
 
-            Surface(
-                onClick = {
-                    onExpand()
-                },
-                color = Color.Transparent,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(45.dp),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            "overview_expand_all".i18n(),
-                            style = TextStyle(fontSize = 12.sp, lineHeight = 16.5.sp, color = Color(0xFF5490C2))
-                        )
-                        Icon(
-                            painter = painterResource(Res.drawable.ic_xs_blue_down_arrow),
-                            contentDescription = null,
-                            tint = Color.Unspecified,
-                            modifier = Modifier.size(8.dp)
-                        )
-                    }
+            ExpandButton(onClick = { viewModel.overlayDelegate.showOverlay(BookmarkOverlay.Overview) })
+        }
+    }
+}
+
+@Composable
+private fun OverviewContent(content: String) {
+    Box(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+        val annotatedText = remember(content) {
+            buildAnnotatedString {
+                withStyle(style = SpanStyle(color = Color(0xFF999999))) {
+                    append("overview_prefix".i18n())
                 }
+                append(content)
+            }
+        }
+
+        Text(
+            text = annotatedText,
+            modifier = Modifier.fillMaxWidth(),
+            style = TextStyle(
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+                color = Color(0xFF333333)
+            ),
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+private fun ExpandButton(onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        color = Color.Transparent,
+        modifier = Modifier.fillMaxWidth().height(45.dp),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "overview_expand_all".i18n(),
+                    style = TextStyle(
+                        fontSize = 12.sp,
+                        lineHeight = 16.5.sp,
+                        color = Color(0xFF5490C2)
+                    )
+                )
+                Icon(
+                    painter = painterResource(Res.drawable.ic_xs_blue_down_arrow),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(8.dp)
+                )
             }
         }
     }

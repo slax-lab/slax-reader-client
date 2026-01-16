@@ -12,25 +12,20 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
-import com.slax.reader.ui.bookmark.OverviewViewBounds
 import com.slax.reader.utils.OpenInBrowser
 import com.slax.reader.utils.i18n
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun HeaderContent(
-    detailView: BookmarkDetailViewModel,
-    detail: UserBookmark,
     onHeightChanged: (Float) -> Unit,
-    onTagClick: () -> Unit,
-    onOverviewExpand: () -> Unit,
-    onOverviewBoundsChanged: (OverviewViewBounds) -> Unit
 ) {
     println("[watch][UI] recomposition HeaderContent")
 
-    val displayTitle = remember(detail.displayTitle) { detail.displayTitle }
-    val displayTime = remember(detail.displayTime) { detail.displayTime }
+    val viewModel = koinViewModel<BookmarkDetailViewModel>()
+    val detailState by viewModel.bookmarkDelegate.bookmarkDetailState.collectAsState()
+
     var externalUrl by remember { mutableStateOf<String?>(null) }
 
     Box(
@@ -51,7 +46,7 @@ fun HeaderContent(
             Spacer(modifier = Modifier.height(44.dp))
 
             Text(
-                text = displayTitle,
+                text = detailState.displayTitle,
                 style = TextStyle(
                     fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -65,30 +60,21 @@ fun HeaderContent(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = displayTime,
+                    text = detailState.displayTime,
                     style = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, color = Color(0xFF999999))
                 )
                 Text(
                     "detail_view_original".i18n(),
                     modifier = Modifier.padding(start = 16.dp).clickable {
-                        externalUrl = detail.metadataUrl
+                        externalUrl = detailState.metadataUrl
                     },
                     style = TextStyle(color = Color(0xFF5490C2), fontSize = 14.sp, lineHeight = 20.sp)
                 )
             }
 
-            TagsView(
-                modifier = Modifier.padding(top = 16.dp),
-                onAddTagClick = onTagClick,
-                detailView = detailView
-            )
+            TagsView(modifier = Modifier.padding(top = 16.dp))
 
-            OverviewView(
-                detailView = detailView,
-                modifier = Modifier.padding(top = 20.dp),
-                onExpand = onOverviewExpand,
-                onBoundsChanged = onOverviewBoundsChanged
-            )
+            OverviewView(modifier = Modifier.padding(top = 20.dp))
         }
     }
 

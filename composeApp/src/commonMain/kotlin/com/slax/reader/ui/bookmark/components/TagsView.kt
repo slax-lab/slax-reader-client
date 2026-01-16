@@ -16,19 +16,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
+import com.slax.reader.ui.bookmark.states.BookmarkOverlay
 import org.jetbrains.compose.resources.painterResource
+import org.koin.compose.viewmodel.koinViewModel
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_xs_yellow_plus
 
 @Composable
 fun TagsView(
-    detailView: BookmarkDetailViewModel,
     modifier: Modifier = Modifier,
-    onAddTagClick: () -> Unit
 ) {
     println("[watch][UI] recomposition TagsView")
-
-    val currentTags by detailView.selectedTagList.collectAsState()
+    val viewModel = koinViewModel<BookmarkDetailViewModel>()
+    val currentTags by viewModel.bookmarkDelegate.selectedTagList.collectAsState()
 
     FlowRow(
         modifier = modifier,
@@ -46,18 +46,18 @@ fun TagsView(
 
         Box(
             modifier = Modifier
-                .size(21.dp) // 动态高度
+                .size(21.dp)
                 .clip(RoundedCornerShape(3.dp))
                 .border(
                     width = 1.dp,
                     color = Color(0xFFE4D6BA),
                     shape = RoundedCornerShape(3.dp)
                 ).then(
-                    Modifier
-                        .clickable(
-                            onClick = onAddTagClick,
-                            interactionSource = remember { MutableInteractionSource() }
-                        )
+                    Modifier.clickable(
+                        onClick = { viewModel.overlayDelegate.showOverlay(BookmarkOverlay.Tags) },
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    )
                 ),
             contentAlignment = Alignment.Center
         ) {

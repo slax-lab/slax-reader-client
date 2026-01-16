@@ -190,10 +190,10 @@ fun OpenInBrowserTab(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("你即将跳转到第三方页面") },
+        title = { Text("external_link_alert_title".i18n()) },
         text = {
             Column {
-                Text("是否确认在浏览器中打开此链接？\n$url")
+                Text("${"external_link_alert_message".i18n()}$url")
 
                 Spacer(modifier = Modifier.height(16.dp))
 
