@@ -26,3 +26,4 @@ adb-proxy:
 
 rn:
 	 ./gradlew kspCommonMainKotlinMetadata
+	 mkdir -p build/generated/autolinking && cd react-native && npx react-native config > ../build/generated/autolinking/autolinking.json

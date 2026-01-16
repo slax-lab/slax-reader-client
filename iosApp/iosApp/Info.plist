@@ -1,46 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-    <dict>
-        <key>CADisableMinimumFrameDurationOnPhone</key>
-        <true/>
-        <key>NSAppTransportSecurity</key>
-        <dict>
-            <key>NSAllowsArbitraryLoads</key>
-            <true/>
-        </dict>
-        <key>CFBundleShortVersionString</key>
-        <string>$(BUNDLE_SHORT_VERSION_STRING)</string>
-        <key>GIDClientID</key>
-        <string>$(GID_CLIENT_ID)</string>
-        <key>GIDServerClientID</key>
-        <string>$(GID_SERVER_CLIENT_ID)</string>
-        <key>CFBundleVersion</key>
-        <string>$(BUNDLE_VERSION)</string>
-        <key>NSNetworkUsageDescription</key>
-        <string>This app needs network access to sync data.</string>
-        <key>NSAppTransportSecurity</key>
-        <dict>
-            <key>NSAllowsArbitraryLoads</key>
-            <true/>
-        </dict>
-        <key>LSSupportsOpeningDocumentsInPlace</key>
-        <true/>
-        <key>UISupportsDocumentBrowser</key>
-        <true/>
-        <key>ITSAppUsesNonExemptEncryption</key>
-        <false/>
-        <key>UIViewControllerBasedStatusBarAppearance</key>
-        <false/>
-        <key>CFBundleURLTypes</key>
-        <array>
-            <dict>
-                <key>CFBundleURLSchemes</key>
-                <array>
-                    <string>app.slax.reader</string>
-                    <string>$(GID_REVERSED_CLIENT_ID)</string>
-                </array>
-            </dict>
-        </array>
-    </dict>
+<dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>CFBundleShortVersionString</key>
+	<string>$(BUNDLE_SHORT_VERSION_STRING)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>app.slax.reader</string>
+				<string>$(GID_REVERSED_CLIENT_ID)</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>$(BUNDLE_VERSION)</string>
+	<key>GIDClientID</key>
+	<string>$(GID_CLIENT_ID)</string>
+	<key>GIDServerClientID</key>
+	<string>$(GID_SERVER_CLIENT_ID)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	<key>NSNetworkUsageDescription</key>
+	<string>This app needs network access to sync data.</string>
+	<key>RCTNewArchEnabled</key>
+	<false/>
+	<key>UISupportsDocumentBrowser</key>
+	<true/>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
+</dict>
 </plist>

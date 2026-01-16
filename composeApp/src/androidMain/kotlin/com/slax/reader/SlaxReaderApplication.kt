@@ -1,11 +1,13 @@
 package com.slax.reader
 
 import android.app.Application
+import com.facebook.react.BuildConfig
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactNativeHost
 import com.facebook.react.ReactPackage
 import com.facebook.react.defaults.DefaultReactNativeHost
 import com.facebook.react.shell.MainReactPackage
+import com.facebook.react.soloader.OpenSourceMergedSoMapping
 import com.facebook.soloader.SoLoader
 import com.slax.reader.di.configureKoin
 import com.slax.reader.reactnative.SlaxReaderReactPackage
@@ -30,7 +32,9 @@ class SlaxReaderApplication : Application(), ReactApplication {
 
             override fun getJSMainModuleName(): String = "index"
 
-            override fun getUseDeveloperSupport(): Boolean = BuildConfig.DEBUG
+            override fun getUseDeveloperSupport(): Boolean {
+                return BuildConfig.DEBUG
+            }
 
             // Disable New Architecture (Bridgeless Mode)
             override val isNewArchEnabled: Boolean = false
@@ -40,7 +44,7 @@ class SlaxReaderApplication : Application(), ReactApplication {
     override fun onCreate() {
         super.onCreate()
 
-        SoLoader.init(this, false)
+        SoLoader.init(this, OpenSourceMergedSoMapping)
 
         // Initialize Firebase and Koin
         if (GlobalContext.getOrNull() == null) {
