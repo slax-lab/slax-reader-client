@@ -52,11 +52,11 @@ fun FooterMenu(
     val viewModel = koinInject<SidebarViewModel>()
     var isSubscribed by remember { mutableStateOf(false) }
 
+    println("[watch][UI] FooterMenu recomposed")
     viewModel.viewModelScope.launch {
         isSubscribed = viewModel.checkUserIsSubscribed()
     }
 
-    println("[watch][UI] FooterMenu recomposed")
     if (isSubscribed && platformType != "android") {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp)
