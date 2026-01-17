@@ -6,12 +6,13 @@
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "lint": "eslint .",
-    "start": "react-native start",
+    "start": "react-native start --host 0.0.0.0",
     "test": "jest"
   },
   "dependencies": {
     "react": "19.0.0",
     "react-native": "0.79.7",
+    "react-native-markdown-display": "^7.0.2",
     "reakt-native-toolkit": "^0.22.0"
   },
   "devDependencies": {
