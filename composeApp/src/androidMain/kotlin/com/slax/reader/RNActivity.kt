@@ -1,24 +1,40 @@
-package com.slax.reader.reactnative.ui
+package com.slax.reader
 
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import com.facebook.react.ReactInstanceManager
 import com.facebook.react.ReactRootView
 import com.facebook.react.common.LifecycleState
 import com.facebook.react.modules.core.DefaultHardwareBackBtnHandler
 import com.facebook.react.shell.MainReactPackage
-import com.slax.reader.BuildConfig
 import com.slax.reader.reactnative.SlaxReaderReactPackage
 
-class RNDemoActivity : AppCompatActivity(), DefaultHardwareBackBtnHandler {
+class RNActivity : AppCompatActivity(), DefaultHardwareBackBtnHandler {
+
+    companion object {
+        private const val EXTRA_MODULE_NAME = "module_name"
+
+        fun createIntent(context: Context, moduleName: String): Intent {
+            return Intent(context, RNActivity::class.java).apply {
+                putExtra(EXTRA_MODULE_NAME, moduleName)
+            }
+        }
+    }
 
     private var reactRootView: ReactRootView? = null
     private var reactInstanceManager: ReactInstanceManager? = null
+    private var slaxReaderReactPackage: SlaxReaderReactPackage? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val moduleName = intent.getStringExtra(EXTRA_MODULE_NAME) ?: "SlaxReaderRN"
+
         reactRootView = ReactRootView(this)
+        slaxReaderReactPackage = SlaxReaderReactPackage()
 
         reactInstanceManager = ReactInstanceManager.builder()
             .setApplication(application)
@@ -33,18 +49,22 @@ class RNDemoActivity : AppCompatActivity(), DefaultHardwareBackBtnHandler {
                 }
             }
             .addPackage(MainReactPackage(null))
-            .addPackage(SlaxReaderReactPackage())
+            .addPackage(slaxReaderReactPackage!!)
             .setInitialLifecycleState(LifecycleState.RESUMED)
             .build()
 
-        // Start the app
-        reactRootView?.startReactApplication(reactInstanceManager, "SlaxReaderRN", null)
-
+        reactRootView?.startReactApplication(reactInstanceManager, moduleName, null)
         setContentView(reactRootView)
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                reactInstanceManager?.onBackPressed() ?: finish()
+            }
+        })
     }
 
     override fun invokeDefaultOnBackPressed() {
-        super.onBackPressed()
+        onBackPressedDispatcher.onBackPressed()
     }
 
     override fun onPause() {
@@ -61,7 +81,9 @@ class RNDemoActivity : AppCompatActivity(), DefaultHardwareBackBtnHandler {
         super.onDestroy()
         reactInstanceManager?.onHostDestroy(this)
         reactRootView?.unmountReactApplication()
+        slaxReaderReactPackage?.cleanup()
         reactRootView = null
         reactInstanceManager = null
+        slaxReaderReactPackage = null
     }
 }

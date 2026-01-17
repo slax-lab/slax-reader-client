@@ -14,10 +14,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.slax.reader.const.AboutRoutes
-import com.slax.reader.const.RNDemoRoutes
+import com.slax.reader.const.RNRoute
 import com.slax.reader.const.SettingsRoutes
 import com.slax.reader.const.SubscriptionManagerRoutes
 import com.slax.reader.domain.auth.AuthDomain
+import com.slax.reader.reactnative.navigateToRN
 import com.slax.reader.utils.i18n
 import com.slax.reader.utils.platformType
 import org.jetbrains.compose.resources.painterResource
@@ -125,8 +126,8 @@ fun FooterMenu(
                 navCtrl.navigate(SubscriptionManagerRoutes)
             }
         ),
-        "rndemo" to FooterMenuConfig(
-            title = "React Native Demo",
+        "RN Chat" to FooterMenuConfig(
+            title = "React Native Chat",
             icon = {
                 Icon(
                     painter = painterResource(Res.drawable.ic_xs_sidebar_config),
@@ -140,7 +141,25 @@ fun FooterMenu(
             ),
             onClick = {
                 onDismiss()
-                navCtrl.navigate(RNDemoRoutes)
+                navCtrl.navigateToRN(RNRoute("RNChatPage"))
+            }
+        ),
+        "RN Markdown" to FooterMenuConfig(
+            title = "React Native Markdown",
+            icon = {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_xs_sidebar_config),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(20.dp)
+                )
+            },
+            color = NavigationDrawerItemDefaults.colors(
+                unselectedContainerColor = Color.Transparent
+            ),
+            onClick = {
+                onDismiss()
+                navCtrl.navigateToRN(RNRoute("RNMarkdownPage"))
             }
         ),
         "setting" to FooterMenuConfig(

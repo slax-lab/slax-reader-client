@@ -8,9 +8,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.ComposeFoundationFlags
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
+import com.slax.reader.reactnative.setCurrentActivity
 import com.slax.reader.ui.SlaxNavigation
 
 class MainActivity : ComponentActivity() {
@@ -19,6 +18,8 @@ class MainActivity : ComponentActivity() {
         ComposeFoundationFlags.isNewContextMenuEnabled = true
 
         super.onCreate(savedInstanceState)
+
+        setCurrentActivity(this)
 
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(
@@ -36,11 +37,4 @@ class MainActivity : ComponentActivity() {
             SlaxNavigation(ctrl)
         }
     }
-}
-
-@Preview
-@Composable
-fun AppAndroidPreview() {
-    val ctrl = rememberNavController()
-    SlaxNavigation(ctrl)
 }

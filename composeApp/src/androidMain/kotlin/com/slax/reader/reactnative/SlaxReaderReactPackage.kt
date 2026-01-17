@@ -9,10 +9,12 @@ import com.facebook.react.uimanager.ViewManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 
 class SlaxReaderReactPackage : ReactPackage {
 
-    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val supervisorJob = SupervisorJob()
+    private val coroutineScope = CoroutineScope(supervisorJob + Dispatchers.Default)
 
     override fun createNativeModules(
         reactContext: ReactApplicationContext
@@ -26,5 +28,9 @@ class SlaxReaderReactPackage : ReactPackage {
         reactContext: ReactApplicationContext
     ): List<ViewManager<View, ReactShadowNode<*>>> {
         return emptyList()
+    }
+
+    fun cleanup() {
+        supervisorJob.cancel()
     }
 }

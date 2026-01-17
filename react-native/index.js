@@ -1,4 +1,6 @@
 import {AppRegistry} from 'react-native';
-import App from './App';
+import MarkdownPage from './src/Markdown';
+import ChatPage from "./src/Chat";
 
-AppRegistry.registerComponent('SlaxReaderRN', () => App);
+AppRegistry.registerComponent('RNMarkdownPage', () => MarkdownPage);
+AppRegistry.registerComponent('RNChatPage', () => ChatPage);
