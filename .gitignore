@@ -32,3 +32,4 @@ node_modules/
 .xcode.env.local
 index.android.bundle
 main.jsbundle
+AGENTS.md
