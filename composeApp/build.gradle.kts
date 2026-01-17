@@ -316,29 +316,20 @@ val bundleIOSReleaseJs = tasks.register<Exec>("bundleIOSReleaseJs") {
     }
 }
 
-val bundleReleaseJsAndAssets = tasks.register("bundleReleaseJsAndAssets") {
-    group = "react"
-    description = "Bundle React Native JavaScript and assets for Android and iOS Release"
-    dependsOn(bundleAndroidReleaseJs, bundleIOSReleaseJs)
-}
-
 dependencies {
     debugImplementation(compose.uiTooling)
 
-    // KSP dependencies for reakt-native-toolkit
     add("kspCommonMainMetadata", "de.voize:reakt-native-toolkit-ksp:0.22.0")
     add("kspAndroid", "de.voize:reakt-native-toolkit-ksp:0.22.0")
     add("kspIosArm64", "de.voize:reakt-native-toolkit-ksp:0.22.0")
     add("kspIosSimulatorArm64", "de.voize:reakt-native-toolkit-ksp:0.22.0")
 }
 
-// Task to copy generated TypeScript files to React Native project
 tasks.register<Copy>("copyGeneratedTsFiles") {
     from("build/generated/ksp/metadata/commonMain/resources")
     into(rootProject.file("react-native/src/generated"))
 }
 
-// Configure KSP task dependencies for KSP1
 tasks.configureEach {
     if (name.startsWith("ksp") && name.contains("Kotlin")) {
         finalizedBy("copyGeneratedTsFiles")
@@ -348,7 +339,6 @@ tasks.configureEach {
 kotlin.sourceSets.commonMain {
     kotlin.srcDir("build/generated/ksp/metadata/commonMain/kotlin")
 }
-
 
 fun minifyHtml(html: String): String {
     return html
@@ -497,16 +487,6 @@ val syncFirebaseIOS = tasks.register<Exec>("syncFirebaseIOS") {
 
 tasks.named("preBuild").configure {
     dependsOn(syncFirebaseAndroid)
-}
-
-tasks.configureEach {
-    if ((name.contains("assemble") || name.contains("bundle"))
-        && name.contains("Release", ignoreCase = true)
-        && name != "bundleReleaseJsAndAssets"
-        && name != "bundleAndroidReleaseJs"
-        && name != "bundleIOSReleaseJs") {
-        dependsOn(bundleReleaseJsAndAssets)
-    }
 }
 
 tasks.matching { it.name.contains("embedAndSign") && it.name.contains("FrameworkForXcode") }.configureEach {
