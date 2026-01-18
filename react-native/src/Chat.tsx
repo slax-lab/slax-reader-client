@@ -278,8 +278,6 @@ const ChatPage: React.FC = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#0A0A0F" />
-
             <View style={styles.header}>
                 <Text style={styles.title}>💬 Chat 流式对话</Text>
                 <TouchableOpacity
