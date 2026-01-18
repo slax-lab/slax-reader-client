@@ -5,10 +5,8 @@ import {
     ScrollView,
     TouchableOpacity,
     StyleSheet,
-    SafeAreaView,
-    StatusBar,
     Animated,
-    Easing,
+    Easing, SafeAreaView,
 } from 'react-native';
 import { TestModule } from "./generated/reaktNativeToolkit/typescript/modules.ts";
 import Markdown from 'react-native-markdown-display';
@@ -170,6 +168,8 @@ const MarkdownPage: React.FC = () => {
     const [helloMessage, setHelloMessage] = useState<string>('');
     const scrollViewRef = useRef<ScrollView>(null);
     const streamingRef = useRef<boolean>(false);
+    const streamingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         TestModule.hello().then(setHelloMessage).catch(console.error);
@@ -193,7 +193,10 @@ const MarkdownPage: React.FC = () => {
                 const nextIndex = Math.min(index + charsToAdd, fullContent.length);
                 setDisplayedContent(fullContent.slice(0, nextIndex));
                 index = nextIndex;
-                setTimeout(stream, 15);
+                if (streamingTimeoutRef.current) {
+                    clearTimeout(streamingTimeoutRef.current);
+                }
+                streamingTimeoutRef.current = setTimeout(stream, 15);
             } else {
                 setIsStreaming(false);
                 streamingRef.current = false;
@@ -205,14 +208,35 @@ const MarkdownPage: React.FC = () => {
 
     const stopStreaming = useCallback(() => {
         streamingRef.current = false;
+        if (streamingTimeoutRef.current) {
+            clearTimeout(streamingTimeoutRef.current);
+            streamingTimeoutRef.current = null;
+        }
         setIsStreaming(false);
     }, []);
 
     useEffect(() => {
         if (scrollViewRef.current && displayedContent) {
-            scrollViewRef.current.scrollToEnd({ animated: true });
+            if (scrollTimeoutRef.current) {
+                clearTimeout(scrollTimeoutRef.current);
+            }
+            scrollTimeoutRef.current = setTimeout(() => {
+                scrollViewRef.current?.scrollToEnd({ animated: true });
+            }, 0);
         }
     }, [displayedContent]);
+
+    useEffect(() => {
+        return () => {
+            streamingRef.current = false;
+            if (streamingTimeoutRef.current) {
+                clearTimeout(streamingTimeoutRef.current);
+            }
+            if (scrollTimeoutRef.current) {
+                clearTimeout(scrollTimeoutRef.current);
+            }
+        };
+    }, []);
 
     return (
         <SafeAreaView style={styles.container}>

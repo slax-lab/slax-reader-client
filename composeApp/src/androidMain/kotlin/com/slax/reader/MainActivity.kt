@@ -37,4 +37,9 @@ class MainActivity : ComponentActivity() {
             SlaxNavigation(ctrl)
         }
     }
+
+    override fun onDestroy() {
+        setCurrentActivity(null)
+        super.onDestroy()
+    }
 }
