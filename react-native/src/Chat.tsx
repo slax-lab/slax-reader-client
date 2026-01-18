@@ -5,10 +5,8 @@ import {
     ScrollView,
     TouchableOpacity,
     StyleSheet,
-    SafeAreaView,
-    StatusBar,
     Animated,
-    Easing,
+    Easing, SafeAreaView,
 } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 
@@ -208,6 +206,8 @@ const ChatPage: React.FC = () => {
     const [isStreaming, setIsStreaming] = useState<boolean>(false);
     const scrollViewRef = useRef<ScrollView>(null);
     const streamingRef = useRef<boolean>(false);
+    const streamingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const streamNextMessage = useCallback(
         (index: number, currentMessages: ChatMessage[]) => {
@@ -223,7 +223,13 @@ const ChatPage: React.FC = () => {
             if (msg.role === 'user') {
                 const newMessages = [...currentMessages, msg];
                 setMessages(newMessages);
-                setTimeout(() => streamNextMessage(index + 1, newMessages), 600);
+                if (streamingTimeoutRef.current) {
+                    clearTimeout(streamingTimeoutRef.current);
+                }
+                streamingTimeoutRef.current = setTimeout(
+                    () => streamNextMessage(index + 1, newMessages),
+                    600
+                );
             } else {
                 let charIndex = 0;
                 setCurrentStreamingMessage({ role: 'assistant', content: '' });
@@ -239,12 +245,21 @@ const ChatPage: React.FC = () => {
                             content: msg.content.slice(0, nextIndex),
                         });
                         charIndex = nextIndex;
-                        setTimeout(stream, 20);
+                        if (streamingTimeoutRef.current) {
+                            clearTimeout(streamingTimeoutRef.current);
+                        }
+                        streamingTimeoutRef.current = setTimeout(stream, 20);
                     } else {
                         const newMessages = [...currentMessages, msg];
                         setMessages(newMessages);
                         setCurrentStreamingMessage(null);
-                        setTimeout(() => streamNextMessage(index + 1, newMessages), 800);
+                        if (streamingTimeoutRef.current) {
+                            clearTimeout(streamingTimeoutRef.current);
+                        }
+                        streamingTimeoutRef.current = setTimeout(
+                            () => streamNextMessage(index + 1, newMessages),
+                            800
+                        );
                     }
                 };
 
@@ -264,17 +279,36 @@ const ChatPage: React.FC = () => {
 
     const stopChat = useCallback(() => {
         streamingRef.current = false;
+        if (streamingTimeoutRef.current) {
+            clearTimeout(streamingTimeoutRef.current);
+            streamingTimeoutRef.current = null;
+        }
         setIsStreaming(false);
         setCurrentStreamingMessage(null);
     }, []);
 
     useEffect(() => {
         if (scrollViewRef.current) {
-            setTimeout(() => {
+            if (scrollTimeoutRef.current) {
+                clearTimeout(scrollTimeoutRef.current);
+            }
+            scrollTimeoutRef.current = setTimeout(() => {
                 scrollViewRef.current?.scrollToEnd({ animated: true });
             }, 100);
         }
     }, [messages, currentStreamingMessage]);
+
+    useEffect(() => {
+        return () => {
+            streamingRef.current = false;
+            if (streamingTimeoutRef.current) {
+                clearTimeout(streamingTimeoutRef.current);
+            }
+            if (scrollTimeoutRef.current) {
+                clearTimeout(scrollTimeoutRef.current);
+            }
+        };
+    }, []);
 
     return (
         <SafeAreaView style={styles.container}>
