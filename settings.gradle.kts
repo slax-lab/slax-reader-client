@@ -38,5 +38,4 @@ plugins {
 
 include(":composeApp")
 
-// React Native configuration
 includeBuild("react-native/node_modules/@react-native/gradle-plugin")

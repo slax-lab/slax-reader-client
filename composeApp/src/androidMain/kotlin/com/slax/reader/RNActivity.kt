@@ -77,12 +77,4 @@ class RNActivity : AppCompatActivity(), DefaultHardwareBackBtnHandler {
         @Suppress("DEPRECATION")
         super.onBackPressed()
     }
-
-    override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_MENU && BuildConfig.DEBUG) {
-            reactInstanceManager.showDevOptionsDialog()
-            return true
-        }
-        return super.onKeyUp(keyCode, event)
-    }
 }
