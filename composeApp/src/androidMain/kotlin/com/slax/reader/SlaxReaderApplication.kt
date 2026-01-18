@@ -1,11 +1,8 @@
 package com.slax.reader
 
 import android.app.Application
-import com.facebook.react.BuildConfig
-import com.facebook.react.ReactApplication
-import com.facebook.react.ReactNativeHost
-import com.facebook.react.ReactPackage
-import com.facebook.react.defaults.DefaultReactNativeHost
+import com.facebook.react.ReactInstanceManager
+import com.facebook.react.common.LifecycleState
 import com.facebook.react.shell.MainReactPackage
 import com.facebook.react.soloader.OpenSourceMergedSoMapping
 import com.facebook.soloader.SoLoader
@@ -19,34 +16,25 @@ import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
 import org.koin.core.logger.Level
 
-class SlaxReaderApplication : Application(), ReactApplication {
+class SlaxReaderApplication : Application() {
 
-    override val reactNativeHost: ReactNativeHost =
-        object : DefaultReactNativeHost(this) {
-            override fun getPackages(): List<ReactPackage> {
-                return listOf(
-                    MainReactPackage(null),
-                    SlaxReaderReactPackage() // Register KMP-generated modules
-                )
-            }
+    companion object {
+        @Volatile
+        private var instance: SlaxReaderApplication? = null
 
-            override fun getJSMainModuleName(): String = "index"
+        fun getInstance(): SlaxReaderApplication? = instance
+    }
 
-            override fun getUseDeveloperSupport(): Boolean {
-                return BuildConfig.DEBUG
-            }
-
-            // Disable New Architecture (Bridgeless Mode)
-            override val isNewArchEnabled: Boolean = false
-            override val isHermesEnabled: Boolean = true
-        }
+    @Volatile
+    private var _reactInstanceManager: ReactInstanceManager? = null
+    private var slaxReaderReactPackage: SlaxReaderReactPackage? = null
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
 
         SoLoader.init(this, OpenSourceMergedSoMapping)
 
-        // Initialize Firebase and Koin
         if (GlobalContext.getOrNull() == null) {
             Firebase.initialize(this)
             startKoin {
@@ -55,5 +43,41 @@ class SlaxReaderApplication : Application(), ReactApplication {
                 configureKoin()
             }
         }
+    }
+
+    @Synchronized
+    fun getReactInstanceManager(): ReactInstanceManager {
+        if (_reactInstanceManager == null) {
+            slaxReaderReactPackage = SlaxReaderReactPackage()
+
+            _reactInstanceManager = ReactInstanceManager.builder()
+                .setApplication(this)
+                .setCurrentActivity(null)
+                .apply {
+                    if (BuildConfig.DEBUG) {
+                        setJSMainModulePath("index")
+                        setUseDeveloperSupport(true)
+                    } else {
+                        setBundleAssetName("index.android.bundle")
+                        setUseDeveloperSupport(false)
+                    }
+                }
+                .addPackage(MainReactPackage(null))
+                .addPackage(slaxReaderReactPackage!!)
+                .setInitialLifecycleState(LifecycleState.BEFORE_CREATE)
+                .build()
+
+            println("[SlaxReaderApplication] ReactInstanceManager initialized (lazy)")
+        }
+        return _reactInstanceManager!!
+    }
+
+    override fun onTerminate() {
+        super.onTerminate()
+        _reactInstanceManager?.destroy()
+        _reactInstanceManager = null
+        slaxReaderReactPackage?.cleanup()
+        slaxReaderReactPackage = null
+        instance = null
     }
 }

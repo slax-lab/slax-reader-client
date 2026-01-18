@@ -10,10 +10,11 @@ import {
     Animated,
     Easing,
 } from 'react-native';
+import { TestModule } from "./generated/reaktNativeToolkit/typescript/modules.ts";
 import Markdown from 'react-native-markdown-display';
 
 // 预设的 Markdown 内容
-const MARKDOWN_CONTENT = `# 🌟 欢迎来到流式渲染演示
+const MARKDOWN_CONTENT = `# 🌟 欢迎来到流sss式渲染演示
 
 这是一个**实时流式渲染**的Markdown内容展示。
 
@@ -166,10 +167,19 @@ const markdownStyles = StyleSheet.create({
 const MarkdownPage: React.FC = () => {
     const [displayedContent, setDisplayedContent] = useState<string>('');
     const [isStreaming, setIsStreaming] = useState<boolean>(false);
+    const [helloMessage, setHelloMessage] = useState<string>('');
     const scrollViewRef = useRef<ScrollView>(null);
     const streamingRef = useRef<boolean>(false);
 
+    useEffect(() => {
+        TestModule.hello().then(setHelloMessage).catch(console.error);
+    }, []);
+
     const startStreaming = useCallback(() => {
+        const fullContent = helloMessage
+            ? `> 🔗 **来自原生是模块**: ${helloMessage}\n\n${MARKDOWN_CONTENT}`
+            : MARKDOWN_CONTENT;
+
         setDisplayedContent('');
         setIsStreaming(true);
         streamingRef.current = true;
@@ -178,10 +188,10 @@ const MarkdownPage: React.FC = () => {
         const stream = () => {
             if (!streamingRef.current) return;
 
-            if (index < MARKDOWN_CONTENT.length) {
+            if (index < fullContent.length) {
                 const charsToAdd = Math.random() > 0.7 ? 3 : 1;
-                const nextIndex = Math.min(index + charsToAdd, MARKDOWN_CONTENT.length);
-                setDisplayedContent(MARKDOWN_CONTENT.slice(0, nextIndex));
+                const nextIndex = Math.min(index + charsToAdd, fullContent.length);
+                setDisplayedContent(fullContent.slice(0, nextIndex));
                 index = nextIndex;
                 setTimeout(stream, 15);
             } else {
@@ -191,7 +201,7 @@ const MarkdownPage: React.FC = () => {
         };
 
         stream();
-    }, []);
+    }, [helloMessage]);
 
     const stopStreaming = useCallback(() => {
         streamingRef.current = false;
@@ -206,8 +216,6 @@ const MarkdownPage: React.FC = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#0A0A0F" />
-
             <View style={styles.header}>
                 <Text style={styles.title}>📝 Markdown 流式渲染</Text>
                 <TouchableOpacity
@@ -238,6 +246,9 @@ const MarkdownPage: React.FC = () => {
                         <Text style={styles.placeholderText}>
                             点击上方按钮开始流式渲染演示
                         </Text>
+                        {helloMessage ? (
+                            <Markdown style={markdownStyles}>{helloMessage}</Markdown>
+                        ) : null}
                     </View>
                 )}
             </ScrollView>
