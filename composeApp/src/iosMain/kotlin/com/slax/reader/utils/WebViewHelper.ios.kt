@@ -139,6 +139,7 @@ actual fun AppWebView(
         derivedStateOf { (totalInsetPx / densityScale).coerceAtLeast(0f) }
     }
     var observedScrollView by remember { mutableStateOf<UIScrollView?>(null) }
+    var userContentController by remember { mutableStateOf<WKUserContentController?>(null) }
     val scrollObserver = remember {
         KVOObserver { keyPath, newValue, _ ->
             val scrollView = observedScrollView
@@ -217,6 +218,12 @@ actual fun AppWebView(
         }
     }
 
+    DisposableEffect(userContentController) {
+        onDispose {
+            userContentController?.removeScriptMessageHandlerForName(JS_BRIDGE_NAME)
+        }
+    }
+
     UIKitView(
         modifier = modifier,
         factory = {
@@ -225,12 +232,13 @@ actual fun AppWebView(
                     javaScriptEnabled = true
                 }
 
-                val userContentController = WKUserContentController()
-                userContentController.addScriptMessageHandler(
+                val contentController = WKUserContentController()
+                contentController.addScriptMessageHandler(
                     scriptMessageHandler = scriptMessageHandler,
                     name = JS_BRIDGE_NAME
                 )
-                this.userContentController = userContentController
+                this.userContentController = contentController
+                userContentController = contentController
             }
 
             val view = WKWebView(frame = CGRectMake(0.0, 0.0, 0.0, 0.0), configuration = config)
@@ -342,7 +350,10 @@ actual fun AppWebView(
     }
 
     DisposableEffect(Unit) {
-        onDispose { webState.webView = null }
+        onDispose {
+            webState.webView = null
+            userContentController?.removeScriptMessageHandlerForName(JS_BRIDGE_NAME)
+        }
     }
 
     if (externalUrl != null) {
@@ -504,6 +515,8 @@ actual fun WebView(
     webState: AppWebViewState,
     contentInsets: PaddingValues?,
 ) {
+    var webViewContentController by remember { mutableStateOf<WKUserContentController?>(null) }
+
     val scriptMessageHandler = remember {
         ScriptMessageHandler { message ->
             runCatching { Json.decodeFromString<WebViewMessage>(message) }
@@ -591,12 +604,13 @@ actual fun WebView(
                 preferences = WKPreferences().apply {
                     javaScriptEnabled = true
                 }
-                val userContentController = WKUserContentController()
-                userContentController.addScriptMessageHandler(
+                val contentController = WKUserContentController()
+                contentController.addScriptMessageHandler(
                     scriptMessageHandler = scriptMessageHandler,
                     name = JS_BRIDGE_NAME
                 )
-                this.userContentController = userContentController
+                this.userContentController = contentController
+                webViewContentController = contentController
             }
 
             WKWebView(
@@ -662,6 +676,13 @@ actual fun WebView(
             }
         }
     )
+
+    DisposableEffect(Unit) {
+        onDispose {
+            webState.webView = null
+            webViewContentController?.removeScriptMessageHandlerForName(JS_BRIDGE_NAME)
+        }
+    }
 }
 
 @Composable
