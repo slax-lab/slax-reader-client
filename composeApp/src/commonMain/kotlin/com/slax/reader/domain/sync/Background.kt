@@ -228,17 +228,20 @@ class BackgroundDomain(
             return response
         } catch (e: Exception) {
             println("API 调用失败 $id: ${e.message}")
-            withContext(Dispatchers.IO) {
-                updateBookmarkStatus(id, DownloadStatus.FAILED)
-            }
             val errInfo = when (e) {
-                is AppError.ApiException.HttpError -> mapOf("title" to "Error code: ${e.code}", "message" to e.message)
-                else -> mapOf("Network error" to (e.message ?: "Unknown error"))
+                is AppError.ApiException.HttpError -> mapOf(
+                    "title" to "Error code: ${e.code}",
+                    "message" to e.message
+                )
+                else -> mapOf(
+                    "title" to "Network error",
+                    "message" to (e.message ?: "Unknown error")
+                )
             }
             return SlaxConfig.DETAIL_ERROR_TEMPLATE
-                .replace("{{TITLE}}", "Failed to load content")
-                .replace("{{REASON}}", errInfo["title"]!!)
-                .replace("{{DETAIL}}", errInfo["message"]!!)
+                .replace("{{TITLE}}", "<center>Failed to load content</center>")
+                .replace("{{REASON}}", "<center>${errInfo["title"]!!}</center>")
+                .replace("{{DETAIL}}", "<center>${errInfo["message"]!!}</center>")
         } finally {
             inQueue.getAndUpdate { it - id }
         }

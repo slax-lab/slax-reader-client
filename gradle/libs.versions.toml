@@ -8,18 +8,22 @@ androidx-lifecycle = "2.9.6"
 atomicfu = "0.29.0"
 browser = "1.9.0"
 buildkonfigGradlePlugin = "0.17.1"
+componentsResources = "1.10.0"
 composeHotReload = "1.0.0"
-composeMultiplatform = "1.9.3"
+composeMultiplatform = "1.10.0"
 dotenvKotlin = "6.5.1"
 firebaseAnalytics = "2.4.0"
+foundation = "1.10.0"
 kmpauthGoogle = "2.3.1"
 kotlinGradlePlugin = "2.2.0"
 kotlinxDatetime = "0.7.1"
+material3 = "1.9.0"
 okio = "3.16.4"
 powerSyncCore = "1.10.1"
+runtimeVersion = "1.10.0"
 sketchHttp = "4.3.1"
 koinCompose = "4.1.1"
-kotlin = "2.2.21"
+kotlin = "2.2.20"
 ktorClientOkhttp = "3.3.3"
 navigationCompose = "2.9.1"
 datastore = "1.2.0"
@@ -29,16 +33,22 @@ firebaseCrashlytics = "3.0.6"
 connectivity = "2.3.0"
 markdownRenderer = "0.38.1"
 ttypic = "0.6.4"
+ui = "1.10.0"
 
 [libraries]
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
 atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu" }
+components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "componentsResources" }
 firebase-analytics = { module = "dev.gitlive:firebase-analytics", version.ref = "firebaseAnalytics" }
 firebase-app = { module = "dev.gitlive:firebase-app", version.ref = "firebaseAnalytics" }
 firebase-crashlytics = { module = "dev.gitlive:firebase-crashlytics", version.ref = "firebaseAnalytics" }
+foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "foundation" }
+jetbrains-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "runtimeVersion" }
 kmpauth-google = { module = "io.github.mirzemehdi:kmpauth-google", version.ref = "kmpauthGoogle" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
+material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
 okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
+org-jetbrains-compose-ui-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "ui" }
 powerSyncCore = { module = "com.powersync:core", version.ref = "powerSyncCore" }
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koinCompose" }
 koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koinCompose" }
@@ -73,6 +83,8 @@ ttypic-plugin = { module = "io.github.ttypic:plugin", version.ref = "ttypic" }
 buildkonfig-gradle-plugin = { module = "com.codingfeline.buildkonfig:buildkonfig-gradle-plugin", version.ref = "buildkonfigGradlePlugin" }
 dotenv-kotlin = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenvKotlin" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlinGradlePlugin" }
+ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "ui" }
+ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "ui" }
 
 
 [plugins]
