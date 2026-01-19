@@ -28,8 +28,7 @@ iosApp/iosApp/GoogleService-Info.plist
 kotzilla.json
 
 node_modules/
-.xcode.env
-.xcode.env.local
+.xcode.env*
 index.android.bundle
 main.jsbundle
 AGENTS.md
