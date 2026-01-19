@@ -40,8 +40,6 @@ class RNActivity : AppCompatActivity(), DefaultHardwareBackBtnHandler {
             ?: throw IllegalArgumentException("Module name required")
         val initialProps = intent.getBundleExtra(EXTRA_INITIAL_PROPS)
 
-        println("[RNActivity] Opening module: $moduleName")
-
         reactRootView = ReactRootView(this)
         reactRootView.startReactApplication(
             reactInstanceManager,
