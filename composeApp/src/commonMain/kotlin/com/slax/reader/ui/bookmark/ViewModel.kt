@@ -163,6 +163,16 @@ class BookmarkDetailViewModel(
         outlineDelegate.loadOutline(id)
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        contentJob?.cancel()
+        contentJob = null
+        commentDelegate.reset()
+        outlineDelegate.reset()
+        overviewDelegate.reset()
+        overlayDelegate.reset()
+    }
+
     @OptIn(kotlin.time.ExperimentalTime::class)
     suspend fun checkUserIsSubscribed(): Boolean = withContext(Dispatchers.IO) {
         val info = subscriptionDao.getSubscriptionInfo() ?: return@withContext false

@@ -487,13 +487,11 @@ val syncFirebaseIOS = tasks.register<Exec>("syncFirebaseIOS") {
 
 tasks.named("preBuild").configure {
     dependsOn(syncFirebaseAndroid)
-    dependsOn(bundleAndroidReleaseJs)
 }
 
 tasks.matching { it.name.contains("embedAndSign") && it.name.contains("FrameworkForXcode") }.configureEach {
     dependsOn(syncFirebaseIOS)
     dependsOn(syncXcodeVersionConfig)
-    dependsOn(bundleIOSReleaseJs)
 }
 
 swiftklib {
