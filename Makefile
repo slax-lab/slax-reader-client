@@ -2,13 +2,13 @@ apk-dev:
 	./gradlew assembleDebug -Pbuildkonfig.flavor=dev
 
 apk-release:
-	./gradlew :composeApp:bundleAndroidReleaseJs && ./gradlew assembleRelease -Pbuildkonfig.flavor=release
+	make rn && ./gradlew :composeApp:bundleAndroidReleaseJs && ./gradlew assembleRelease -Pbuildkonfig.flavor=release
 
 appbundle-dev:
 	./gradlew :composeApp:bundleDebug -Pbuildkonfig.flavor=dev
 
 appbundle-release:
-	./gradlew :composeApp:bundleAndroidReleaseJs && ./gradlew :composeApp:bundleRelease -Pbuildkonfig.flavor=release
+	make rn && ./gradlew :composeApp:bundleAndroidReleaseJs && ./gradlew :composeApp:bundleRelease -Pbuildkonfig.flavor=release
 
 gen-privacy:
 	cd composeApp && python3 ../script/required_reason_finder.py

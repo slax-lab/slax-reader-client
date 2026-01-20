@@ -20,6 +20,7 @@ kotlinxDatetime = "0.7.1"
 material3 = "1.9.0"
 okio = "3.16.4"
 powerSyncCore = "1.10.1"
+reaktNativeToolkit = "0.22.0"
 runtimeVersion = "1.10.0"
 sketchHttp = "4.3.1"
 koinCompose = "4.1.1"
@@ -72,6 +73,7 @@ connectivity-core = { module = "dev.jordond.connectivity:connectivity-core", ver
 connectivity-device = { module = "dev.jordond.connectivity:connectivity-device", version.ref = "connectivity" }
 connectivity-compose-device = { module = "dev.jordond.connectivity:connectivity-compose-device", version.ref = "connectivity" }
 react-android = { module = "com.facebook.react:react-android" }
+reakt-native-toolkit = { module = "de.voize:reakt-native-toolkit", version.ref = "reaktNativeToolkit" }
 sketch-animated-gif = { module = "io.github.panpf.sketch4:sketch-animated-gif", version.ref = "sketchHttp" }
 sketch-animated-gif-koral = { module = "io.github.panpf.sketch4:sketch-animated-gif-koral", version.ref = "sketchHttp" }
 sketch-compose = { module = "io.github.panpf.sketch4:sketch-compose", version.ref = "sketchHttp" }

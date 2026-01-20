@@ -195,7 +195,7 @@ kotlin {
             implementation(libs.markdown.renderer.m3)
 
             // reakt-native-toolkit
-            implementation("de.voize:reakt-native-toolkit:0.22.0")
+            implementation(libs.reakt.native.toolkit)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
