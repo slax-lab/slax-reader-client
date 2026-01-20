@@ -56,8 +56,9 @@ class BookmarkDelegate(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val selectedTagList: StateFlow<Set<UserTag>> = bookmarkFlow
-        .mapLatest { bookmarks ->
-            val tagIds = bookmarks.firstOrNull()?.metadataObj?.tags ?: emptyList()
+        .map { bookmarks -> bookmarks.firstOrNull()?.metadataObj?.tags ?: emptyList() }
+        .distinctUntilChanged()
+        .mapLatest { tagIds ->
             if (tagIds.isEmpty()) emptySet() else getTagNames(tagIds).toHashSet()
         }
         .distinctUntilChanged()
