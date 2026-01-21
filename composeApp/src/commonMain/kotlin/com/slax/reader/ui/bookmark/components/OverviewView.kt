@@ -79,7 +79,7 @@ fun OverviewView(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { onExpand() }
+                .clickable { viewModel.overlayDelegate.showOverlay(BookmarkOverlay.Overview) }
                 .padding(12.dp)
         ) {
             // 使用自定义Layout实现文本末尾附加箭头图标
@@ -187,51 +187,6 @@ private fun TextWithTrailingIcon(
                         append("...")
                     }
                 }
-                append(content)
-            }
-        }
-
-        Text(
-            text = annotatedText,
-            modifier = Modifier.fillMaxWidth(),
-            style = TextStyle(
-                fontSize = 14.sp,
-                lineHeight = 20.sp,
-                color = Color(0xFF333333)
-            ),
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
-
-@Composable
-private fun ExpandButton(onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        color = Color.Transparent,
-        modifier = Modifier.fillMaxWidth().height(45.dp),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    "overview_expand_all".i18n(),
-                    style = TextStyle(
-                        fontSize = 12.sp,
-                        lineHeight = 16.5.sp,
-                        color = Color(0xFF5490C2)
-                    )
-                )
-                Icon(
-                    painter = painterResource(Res.drawable.ic_xs_blue_down_arrow),
-                    contentDescription = null,
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(8.dp)
-                )
             }
         }
     }
