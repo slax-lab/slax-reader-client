@@ -144,15 +144,7 @@ actual fun AppWebView(
     }
 
     DisposableEffect(Unit) {
-        onDispose {
-            webState.webView?.let { webView ->
-                webView.removeJavascriptInterface(JS_BRIDGE_NAME)
-                webView.webChromeClient = null
-                webView.webViewClient = object : WebViewClient() {}
-                webView.setOnTouchListener(null)
-            }
-            webState.webView = null
-        }
+        onDispose { webState.webView = null }
     }
 
     if (externalUrl != null) {
