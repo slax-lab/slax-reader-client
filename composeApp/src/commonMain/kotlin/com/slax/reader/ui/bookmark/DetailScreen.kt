@@ -1,96 +1,106 @@
 package com.slax.reader.ui.bookmark
 
 import androidx.compose.runtime.*
-import androidx.lifecycle.viewModelScope
-import com.slax.reader.data.database.model.UserBookmark
-import com.slax.reader.ui.bookmark.components.BookmarkAlertDialog
 import com.slax.reader.ui.bookmark.components.DetailScreenSkeleton
-import kotlinx.coroutines.launch
+import com.slax.reader.ui.bookmark.states.ScrollInfo
+import com.slax.reader.utils.*
 import org.koin.compose.viewmodel.koinViewModel
 
-data class OverviewViewBounds(
-    val x: Float = 0f,
-    val y: Float = 0f,
-    val width: Float = 0f,
-    val height: Float = 0f
-)
-
-data class DetailScreenState(
-    val overviewBounds: OverviewViewBounds,
-    val onOverviewBoundsChanged: (OverviewViewBounds) -> Unit
-)
+val LocalToolbarVisible = compositionLocalOf<MutableState<Boolean>> {
+    error("LocalToolbarVisible not provided")
+}
 
 @Composable
 fun DetailScreen(bookmarkId: String, onBackClick: (() -> Unit), onNavigateToSubscription: (() -> Unit)? = null) {
-    val detailView = koinViewModel<BookmarkDetailViewModel>()
-    val backClickHandle = remember { onBackClick }
+    val viewModel = koinViewModel<BookmarkDetailViewModel>()
+    val coroutineScope = rememberCoroutineScope()
 
-    var bookmarkDetail by remember { mutableStateOf<UserBookmark?>(null) }
-    var htmlContent by remember { mutableStateOf<String?>(null) }
-    var loadError by remember { mutableStateOf<String?>(null) }
+    val toolbarVisible = remember { mutableStateOf(true) }
+    val scrollInfo = remember { mutableStateOf(ScrollInfo(0f, false)) }
+
+    val webViewState = rememberAppWebViewState(coroutineScope)
 
     LaunchedEffect(bookmarkId) {
-        detailView.setBookmarkId(bookmarkId)
+        viewModel.bind(bookmarkId)
 
-        detailView.viewModelScope.launch {
-            detailView.bookmarkDetail.collect { details ->
-                bookmarkDetail = details.firstOrNull()
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                BookmarkDetailEffect.NavigateBack -> onBackClick()
+                BookmarkDetailEffect.NavigateToSubscription -> onNavigateToSubscription?.invoke()
+                is BookmarkDetailEffect.ScrollToAnchor -> {
+                    webViewState.scrollToAnchor(effect.anchor)
+                }
             }
-        }
-        detailView.viewModelScope.runCatching {
-            htmlContent = detailView.getBookmarkContent(bookmarkId)
-        }.onFailure { e ->
-            loadError = e.message ?: "加载失败"
         }
     }
 
-    if (bookmarkDetail == null || htmlContent == null) {
+    LaunchedEffect(Unit) {
+        LifeCycleHelper.lifecycleState.collect { state ->
+            when (state) {
+                AppLifecycleState.ON_STOP -> {
+                    viewModel.onStopRecordContinue(scrollInfo.value.scrollY.toInt())
+                }
+                AppLifecycleState.ON_RESUME -> {
+                    viewModel.onResumeClearContinue()
+                }
+                else -> {}
+            }
+        }
+    }
+
+    LaunchedEffect(webViewState) {
+        webViewState.events.collect { event ->
+            when (event) {
+                is WebViewEvent.ImageClick -> {
+                    viewModel.overlayDelegate.onWebViewImageClick(event.src, event.allImages)
+                }
+                is WebViewEvent.Tap -> {
+                    val info = scrollInfo.value
+                    if (!info.isNearBottom && info.scrollY > 10f) {
+                        toolbarVisible.value = !toolbarVisible.value
+                    }
+                }
+                is WebViewEvent.RefreshContent -> {
+                    viewModel.refreshContent()
+                }
+                is WebViewEvent.Feedback -> {
+                    println("feedback")
+                }
+                else -> {}
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { scrollInfo.value }
+            .collect { info ->
+                toolbarVisible.value = when {
+                    info.isNearBottom -> true
+                    info.scrollY <= 10f -> true
+                    else -> false
+                }
+            }
+    }
+
+    val contentState by viewModel.contentState.collectAsState()
+
+    if (contentState.htmlContent == null || contentState.isLoading) {
         DetailScreenSkeleton()
         return
     }
 
-    if (loadError != null) {
-        BookmarkAlertDialog(loadError!!, onBackClick)
-        return
-    }
-
-    var overviewBounds by remember { mutableStateOf(OverviewViewBounds()) }
-
-    val screenState = remember {
-        DetailScreenState(
-            overviewBounds = OverviewViewBounds(),
-            onOverviewBoundsChanged = { bounds -> overviewBounds = bounds }
+    CompositionLocalProvider(LocalToolbarVisible provides toolbarVisible) {
+        DetailScreen(
+            htmlContent = contentState.htmlContent!!,
+            webViewState = webViewState,
+            onScrollInfoChanged = { scrollInfo.value = it }
         )
     }
-
-    DetailScreen(
-        detailViewModel = detailView,
-        detail = bookmarkDetail!!,
-        htmlContent = htmlContent!!,
-        screenState = screenState.copy(overviewBounds = overviewBounds),
-        onBackClick = backClickHandle,
-        onRefresh = {
-            detailView.viewModelScope.launch {
-                runCatching {
-                    detailView.getBookmarkContent(bookmarkId)
-                }.onSuccess { content ->
-                    htmlContent = content
-                }.onFailure { e ->
-                    loadError = e.message ?: "加载失败"
-                }
-            }
-        },
-        onNavigateToSubscription = onNavigateToSubscription,
-    )
 }
 
 @Composable
 expect fun DetailScreen(
-    detailViewModel: BookmarkDetailViewModel,
-    detail: UserBookmark,
     htmlContent: String,
-    screenState: DetailScreenState,
-    onBackClick: (() -> Unit),
-    onRefresh: (() -> Unit)? = null,
-    onNavigateToSubscription: (() -> Unit)? = null,
+    webViewState: AppWebViewState,
+    onScrollInfoChanged: (ScrollInfo) -> Unit
 )
