@@ -1,0 +1,42 @@
+{
+  "name": "slax-reader-rn",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "android": "react-native run-android",
+    "ios": "react-native run-ios",
+    "lint": "eslint .",
+    "start": "react-native start --host 0.0.0.0",
+    "test": "jest",
+    "bundle:ios": "react-native bundle --platform ios --dev false --entry-file index.js --bundle-output ../iosApp/iosApp/main.jsbundle --assets-dest ../iosApp/iosApp",
+    "bundle:android": "react-native bundle --platform android --dev false --entry-file index.js --bundle-output ../composeApp/src/androidMain/assets/index.android.bundle --assets-dest ../composeApp/src/androidMain/res"
+  },
+  "dependencies": {
+    "react": "19.0.0",
+    "react-native": "0.79.7",
+    "react-native-markdown-display": "^7.0.2",
+    "reakt-native-toolkit": "^0.22.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.0",
+    "@babel/preset-env": "^7.20.0",
+    "@babel/runtime": "^7.20.0",
+    "@react-native-community/cli": "^20.1.0",
+    "@react-native/babel-preset": "0.79.7",
+    "@react-native/eslint-config": "0.79.7",
+    "@react-native/metro-config": "0.79.7",
+    "@react-native/typescript-config": "0.79.7",
+    "@tsconfig/react-native": "^3.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-test-renderer": "^19.0.0",
+    "babel-jest": "^29.6.3",
+    "eslint": "^8.19.0",
+    "jest": "^29.6.3",
+    "prettier": "^3.0.0",
+    "react-test-renderer": "19.0.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

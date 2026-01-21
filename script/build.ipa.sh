@@ -8,6 +8,10 @@ export BUILD_FLAVOR=release
 
 ./gradlew :composeApp:syncFirebaseIOS -Pbuildkonfig.flavor=$BUILD_FLAVOR
 
+make rn
+
+./gradlew :composeApp:bundleIOSReleaseJs
+
 xcodebuild clean \
   -workspace iosApp/iosApp.xcworkspace \
   -scheme iosApp \

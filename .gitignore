@@ -32,3 +32,4 @@ node_modules/
 index.android.bundle
 main.jsbundle
 AGENTS.md
+react-native/src/generated/*

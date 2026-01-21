@@ -52,16 +52,17 @@ class BookmarkDelegate(
     @OptIn(ExperimentalCoroutinesApi::class)
     val userTagList: StateFlow<List<UserTag>> = bookmarkDao.watchUserTag()
         .distinctUntilChanged()
-        .stateIn(scope, SharingStarted.Lazily, emptyList())
+        .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val selectedTagList: StateFlow<Set<UserTag>> = bookmarkFlow
-        .mapLatest { bookmarks ->
-            val tagIds = bookmarks.firstOrNull()?.metadataObj?.tags ?: emptyList()
+        .map { bookmarks -> bookmarks.firstOrNull()?.metadataObj?.tags ?: emptyList() }
+        .distinctUntilChanged()
+        .mapLatest { tagIds ->
             if (tagIds.isEmpty()) emptySet() else getTagNames(tagIds).toHashSet()
         }
         .distinctUntilChanged()
-        .stateIn(scope, SharingStarted.Lazily, emptySet())
+        .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptySet())
 
     fun onToggleStar(isStar: Boolean) {
         scope.launch {

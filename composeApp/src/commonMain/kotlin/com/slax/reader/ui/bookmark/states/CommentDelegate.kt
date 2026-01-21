@@ -41,7 +41,7 @@ class CommentDelegate(
     private val comments: StateFlow<List<BookmarkCommentPO>> = _bookmarkId
         .flatMapLatest { id ->
             id?.let { commentDao.watchComments(it) } ?: kotlinx.coroutines.flow.flowOf(emptyList())
-        }.stateIn(scope, SharingStarted.Lazily, emptyList())
+        }.stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val commentState: StateFlow<CommentState> = combine(_status, comments) { status, commentList ->
         when {
@@ -74,7 +74,7 @@ class CommentDelegate(
                 comments = commentList
             )
         }
-    }.stateIn(scope, SharingStarted.Lazily, CommentState())
+    }.stateIn(scope, SharingStarted.WhileSubscribed(5000), CommentState())
 
 
     @OptIn(ExperimentalPowerSyncAPI::class)

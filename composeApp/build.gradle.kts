@@ -37,6 +37,8 @@ plugins {
     id("com.codingfeline.buildkonfig") version "0.17.1"
     id("org.jetbrains.kotlinx.atomicfu") version "0.29.0"
     id("io.github.ttypic.swiftklib") version "0.6.4"
+    id("com.facebook.react")
+    id("com.google.devtools.ksp") version "2.3.4"
 }
 
 repositories {
@@ -96,7 +98,7 @@ kotlin {
 
     androidTarget {
         compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
+            jvmTarget.set(JvmTarget.JVM_17)
         }
     }
 
@@ -105,6 +107,7 @@ kotlin {
             val main by getting {
                 cinterops {
                     create("StoreKitWrapper")
+                    create("ReactNativeBridge")
                     create("nskeyvalueobserving")
                 }
             }
@@ -119,6 +122,11 @@ kotlin {
             implementation(libs.koin.android)
             implementation(libs.androidx.browser)
             implementation(libs.sketch.animated.gif.koral)
+
+            // React Native
+            implementation(libs.react.android)
+            implementation(libs.hermes.android)
+            implementation(libs.soloader)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -185,6 +193,9 @@ kotlin {
             implementation(libs.connectivity.compose.device)
 
             implementation(libs.markdown.renderer.m3)
+
+            // reakt-native-toolkit
+            implementation(libs.reakt.native.toolkit)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -236,13 +247,97 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+
+react {
+    root = rootProject.file("react-native")
+    reactNativeDir = rootProject.file("react-native/node_modules/react-native")
+    codegenDir = rootProject.file("react-native/node_modules/@react-native/codegen")
+    cliFile = rootProject.file("react-native/node_modules/react-native/cli.js")
+}
+
+val bundleAndroidReleaseJs = tasks.register<Exec>("bundleAndroidReleaseJs") {
+    group = "react"
+    description = "Bundle React Native JavaScript for Android Release"
+
+    workingDir = rootProject.file("react-native")
+
+    val bundleFile = project.file("src/androidMain/assets/index.android.bundle")
+    val assetsDir = project.file("src/androidMain/assets")
+
+    doFirst {
+        bundleFile.parentFile.mkdirs()
+        println("📦 Bundling React Native JavaScript for Android...")
+    }
+
+    commandLine(
+        "npx", "react-native", "bundle",
+        "--platform", "android",
+        "--dev", "false",
+        "--entry-file", "index.js",
+        "--bundle-output", bundleFile.absolutePath,
+        "--assets-dest", assetsDir.absolutePath,
+        "--reset-cache"
+    )
+
+    doLast {
+        println("✅ Android bundle created: ${bundleFile.absolutePath}")
+    }
+}
+
+val bundleIOSReleaseJs = tasks.register<Exec>("bundleIOSReleaseJs") {
+    group = "react"
+    description = "Bundle React Native JavaScript for iOS Release"
+
+    workingDir = rootProject.file("react-native")
+
+    val bundleFile = rootProject.file("iosApp/iosApp/main.jsbundle")
+    val assetsDir = rootProject.file("iosApp/iosApp")
+
+    doFirst {
+        bundleFile.parentFile.mkdirs()
+        println("📦 Bundling React Native JavaScript for iOS...")
+    }
+
+    commandLine(
+        "npx", "react-native", "bundle",
+        "--platform", "ios",
+        "--dev", "false",
+        "--entry-file", "index.js",
+        "--bundle-output", bundleFile.absolutePath,
+        "--assets-dest", assetsDir.absolutePath
+    )
+
+    doLast {
+        println("✅ iOS bundle created: ${bundleFile.absolutePath}")
     }
 }
 
 dependencies {
     debugImplementation(compose.uiTooling)
+
+    add("kspCommonMainMetadata", "de.voize:reakt-native-toolkit-ksp:0.22.0")
+    add("kspAndroid", "de.voize:reakt-native-toolkit-ksp:0.22.0")
+    add("kspIosArm64", "de.voize:reakt-native-toolkit-ksp:0.22.0")
+    add("kspIosSimulatorArm64", "de.voize:reakt-native-toolkit-ksp:0.22.0")
+}
+
+tasks.register<Copy>("copyGeneratedTsFiles") {
+    from("build/generated/ksp/metadata/commonMain/resources")
+    into(rootProject.file("react-native/src/generated"))
+}
+
+tasks.configureEach {
+    if (name.startsWith("ksp") && name.contains("Kotlin")) {
+        finalizedBy("copyGeneratedTsFiles")
+    }
+}
+
+kotlin.sourceSets.commonMain {
+    kotlin.srcDir("build/generated/ksp/metadata/commonMain/kotlin")
 }
 
 fun minifyHtml(html: String): String {
@@ -403,6 +498,11 @@ swiftklib {
     create("StoreKitWrapper") {
         path = file("src/nativeInterop/storekit")
         packageName("app.slax.reader.storekit")
+        minIos = 14
+    }
+    create("ReactNativeBridge") {
+        path = file("src/nativeInterop/reactnative")
+        packageName("app.slax.reader.reactnative.bridge")
         minIos = 14
     }
 }

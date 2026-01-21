@@ -29,3 +29,10 @@ object DeleteAccountRoutes
 @Serializable
 object SubscriptionManagerRoutes
 
+interface ReactNativeRoute {
+    val moduleName: String
+}
+
+@Serializable
+data class RNRoute(override val moduleName: String) : ReactNativeRoute
+
