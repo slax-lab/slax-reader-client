@@ -7,33 +7,22 @@ public class ReactBridgeManager: NSObject, RCTBridgeDelegate {
 
     @objc public static let shared = ReactBridgeManager()
 
-    private var bridge: RCTBridge?
-    private var modulesHelper: ReactNativeModulesHelper?
+    private lazy var bridge: RCTBridge = RCTBridge(delegate: self, launchOptions: nil)
+    private lazy var modulesHelper = ReactNativeModulesHelper()
 
     private override init() {
         super.init()
     }
 
     @objc public func createRootView(moduleName: String, initialProperties: [String: Any]? = nil) -> RCTRootView? {
-        if bridge == nil {
-            modulesHelper = ReactNativeModulesHelper()
-            bridge = RCTBridge(delegate: self, launchOptions: nil)
-            print("[ReactBridgeManager] Bridge initialized (lazy)")
-        }
-
-        guard let bridge = bridge else {
-            print("[ReactBridgeManager] ERROR: Bridge initialization failed")
-            return nil
-        }
-
-        return RCTRootView(
+        RCTRootView(
             bridge: bridge,
             moduleName: moduleName,
             initialProperties: initialProperties
         )
     }
 
-    public func sourceURL(for bridge: RCTBridge!) -> URL! {
+    public func sourceURL(for bridge: RCTBridge) -> URL? {
         #if DEBUG
         let provider = RCTBundleURLProvider.sharedSettings()
         // provider.jsLocation = "192.168.6.221"
@@ -43,7 +32,7 @@ public class ReactBridgeManager: NSObject, RCTBridgeDelegate {
         #endif
     }
 
-    public func extraModules(for bridge: RCTBridge!) -> [RCTBridgeModule]! {
-        return modulesHelper?.createNativeModules().compactMap { $0 as? RCTBridgeModule } ?? []
+    public func extraModules(for bridge: RCTBridge) -> [RCTBridgeModule] {
+        return modulesHelper.createNativeModules().compactMap { $0 }
     }
 }

@@ -141,7 +141,14 @@ fun FooterMenu(
             ),
             onClick = {
                 onDismiss()
-                navCtrl.navigateToRN(RNRoute("RNChatPage"))
+                navCtrl.navigateToRN(
+                    route = RNRoute("RNChatPage"),
+                    params = mapOf(
+                        "userId" to "user123",
+                        "conversationId" to "conv456",
+                        "title" to "来自 KMP 的对话"
+                    )
+                )
             }
         ),
         "RN Markdown" to FooterMenuConfig(
