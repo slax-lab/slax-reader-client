@@ -162,6 +162,24 @@ fun FooterMenu(
                 navCtrl.navigateToRN(RNRoute("RNMarkdownPage"))
             }
         ),
+        "RN Feedback" to FooterMenuConfig(
+            title = "React Native Feedback",
+            icon = {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_xs_sidebar_config),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(20.dp)
+                )
+            },
+            color = NavigationDrawerItemDefaults.colors(
+                unselectedContainerColor = Color.Transparent
+            ),
+            onClick = {
+                onDismiss()
+                navCtrl.navigateToRN(RNRoute("RNFeedbackPage"))
+            }
+        ),
         "setting" to FooterMenuConfig(
             title = "sidebar_settings".i18n(),
             icon = {
