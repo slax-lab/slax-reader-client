@@ -203,3 +203,8 @@ iframe[src] {
         background-position: 0% 50%;
     }
 }
+
+.tweet-content {
+    margin-top: 32px;
+    white-space: pre-line;
+}
