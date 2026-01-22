@@ -79,10 +79,6 @@ actual fun AppWebView(
                     setRenderPriority(WebSettings.RenderPriority.HIGH)
                 }
 
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                    importantForContentCapture = android.view.View.IMPORTANT_FOR_CONTENT_CAPTURE_NO
-                }
-
                 addJavascriptInterface(object {
                     @JavascriptInterface
                     fun postMessage(message: String) {
@@ -274,11 +270,6 @@ actual fun WebView(
                     cacheMode = WebSettings.LOAD_DEFAULT
                     @Suppress("DEPRECATION")
                     setRenderPriority(WebSettings.RenderPriority.HIGH)
-                }
-
-                // 禁用 ContentCapture 服务以避免 MIUI 等系统的兼容性问题
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                    importantForContentCapture = android.view.View.IMPORTANT_FOR_CONTENT_CAPTURE_NO
                 }
 
                 setOnScrollChangeListener { view, scrollX, scrollY, _, _ ->
