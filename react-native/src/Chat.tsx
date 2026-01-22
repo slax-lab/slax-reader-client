@@ -15,6 +15,13 @@ interface ChatMessage {
     content: string;
 }
 
+interface ChatPageProps {
+    userId?: string;
+    conversationId?: string;
+    title?: string;
+    [key: string]: string | undefined;
+}
+
 const PRESET_MESSAGES: ChatMessage[] = [
     {
         role: 'user',
@@ -199,7 +206,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     );
 };
 
-const ChatPage: React.FC = () => {
+const ChatPage: React.FC<ChatPageProps> = (props) => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [currentStreamingMessage, setCurrentStreamingMessage] =
         useState<ChatMessage | null>(null);
@@ -324,6 +331,18 @@ const ChatPage: React.FC = () => {
                     </Text>
                 </TouchableOpacity>
             </View>
+
+            {Object.keys(props).length > 0 && (
+                <View style={styles.paramsContainer}>
+                    <Text style={styles.paramsTitle}>📦 接收到的参数:</Text>
+                    {Object.entries(props).map(([key, value]) => (
+                        <View key={key} style={styles.paramItem}>
+                            <Text style={styles.paramKey}>{key}:</Text>
+                            <Text style={styles.paramValue}>{value || 'null'}</Text>
+                        </View>
+                    ))}
+                </View>
+            )}
 
             <ScrollView
                 ref={scrollViewRef}
@@ -459,6 +478,36 @@ const styles = StyleSheet.create({
         color: '#5856D6',
         fontSize: 16,
         marginLeft: 2,
+    },
+    paramsContainer: {
+        marginHorizontal: 16,
+        marginTop: 12,
+        padding: 12,
+        backgroundColor: 'rgba(88, 86, 214, 0.1)',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(88, 86, 214, 0.3)',
+    },
+    paramsTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#FFFFFF',
+        marginBottom: 8,
+    },
+    paramItem: {
+        flexDirection: 'row',
+        marginVertical: 2,
+    },
+    paramKey: {
+        fontSize: 13,
+        color: 'rgba(255, 255, 255, 0.6)',
+        marginRight: 8,
+        fontWeight: '500',
+    },
+    paramValue: {
+        fontSize: 13,
+        color: '#5856D6',
+        fontWeight: '600',
     },
 });
 

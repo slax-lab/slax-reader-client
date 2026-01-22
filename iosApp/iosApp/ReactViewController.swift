@@ -8,10 +8,14 @@ public class ReactViewController: UIViewController {
     private let initialProps: [String: Any]?
 
     @objc public static func create(moduleName: String) -> ReactViewController {
-        return ReactViewController(moduleName: moduleName)
+        return ReactViewController(moduleName: moduleName, initialProps: nil)
     }
 
-    @objc public init(moduleName: String, initialProps: [String: Any]? = nil) {
+    @objc public static func create(moduleName: String, initialProps: [String: Any]?) -> ReactViewController {
+        return ReactViewController(moduleName: moduleName, initialProps: initialProps)
+    }
+
+    public init(moduleName: String, initialProps: [String: Any]? = nil) {
         self.moduleName = moduleName
         self.initialProps = initialProps
         super.init(nibName: nil, bundle: nil)
