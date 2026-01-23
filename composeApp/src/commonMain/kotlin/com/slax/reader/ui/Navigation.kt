@@ -119,6 +119,7 @@ fun SlaxNavigation(
                             feedbackParams.bookmarkId?.let { put("bookmarkId", it) }
                             feedbackParams.entryPoint?.let { put("entryPoint", it) }
                             feedbackParams.targetUrl?.let { put("targetUrl", it) }
+                            feedbackParams.version?.let { put("version", it)}
                         }
                     )
 
