@@ -14,6 +14,8 @@ sealed interface BookmarkOverlay {
     data object Toolbar : BookmarkOverlay
     data object EditTitle : BookmarkOverlay
     data object SubscriptionRequired : BookmarkOverlay
+
+    data object FeedbackRequired : BookmarkOverlay
 }
 
 class OverlayDelegate {

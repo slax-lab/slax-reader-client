@@ -16,6 +16,7 @@ import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.auth.AuthState
 import com.slax.reader.domain.coordinator.CoordinatorDomain
 import com.slax.reader.domain.sync.BackgroundDomain
+import com.slax.reader.reactnative.navigateToRN
 import com.slax.reader.ui.about.AboutScreen
 import com.slax.reader.ui.bookmark.DetailScreen
 import com.slax.reader.ui.debug.DebugScreen
@@ -108,6 +109,19 @@ fun SlaxNavigation(
                 },
                 onNavigateToSubscription = {
                     navCtrl.navigate(SubscriptionManagerRoutes)
+                },
+                onNavigateToFeedback = { feedbackParams ->
+                    navCtrl.navigateToRN(
+                        RNRoute("RNFeedbackPage"), params = buildMap {
+                            feedbackParams.title?.let { put("title", it) }
+                            feedbackParams.href?.let { put("href", it) }
+                            feedbackParams.email?.let { put("email", it) }
+                            feedbackParams.bookmarkId?.let { put("bookmarkId", it) }
+                            feedbackParams.entryPoint?.let { put("entryPoint", it) }
+                            feedbackParams.targetUrl?.let { put("targetUrl", it) }
+                        }
+                    )
+
                 }
             )
         }

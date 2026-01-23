@@ -89,6 +89,12 @@ fun BookmarkDetailOverlays() {
                 }
             }
         }
+        BookmarkOverlay.FeedbackRequired -> {
+            LaunchedEffect(Unit) {
+                viewModel.requestNavigateToFeedback()
+                viewModel.overlayDelegate.dismissOverlay(BookmarkOverlay.FeedbackRequired)
+            }
+        }
         null -> {
         }
     }

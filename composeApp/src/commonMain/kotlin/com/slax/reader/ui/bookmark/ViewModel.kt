@@ -2,11 +2,13 @@ package com.slax.reader.ui.bookmark
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.slax.reader.SlaxConfig
 import com.powersync.PowerSyncDatabase
 import com.slax.reader.data.database.dao.BookmarkCommentDao
 import com.slax.reader.data.database.dao.BookmarkDao
 import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.database.dao.SubscriptionDao
+import com.slax.reader.data.database.dao.UserDao
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.data.preferences.ContinueReadingBookmark
@@ -21,9 +23,21 @@ import com.slax.reader.utils.parseInstant
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
+data class FeedbackPageParams(
+    val title: String? = null,
+    val href: String? = null,
+    val email: String? = null,
+    val bookmarkId: String? = null,
+    val entryPoint: String? = null,
+    val targetUrl: String? = null,
+    val version: String? = null
+)
+
 sealed interface BookmarkDetailEffect {
     data object NavigateBack : BookmarkDetailEffect
     data object NavigateToSubscription : BookmarkDetailEffect
+    data class NavigateToFeedback(val params: FeedbackPageParams) : BookmarkDetailEffect
+
     data class ScrollToAnchor(val anchor: String) : BookmarkDetailEffect
 }
 
@@ -37,6 +51,7 @@ class BookmarkDetailViewModel(
     private val subscriptionDao: SubscriptionDao,
     private val localBookmarkDao: LocalBookmarkDao,
     private val commentDao: BookmarkCommentDao,
+    private val userDao: UserDao,
     private val backgroundDomain: BackgroundDomain,
     private val apiService: ApiService,
     private val appPreferences: AppPreferences,
@@ -53,6 +68,8 @@ class BookmarkDetailViewModel(
     val contentState = _contentState.asStateFlow()
 
     private var contentJob: Job? = null
+
+    val userInfo = userDao.watchUserInfo()
 
     val overlayDelegate = OverlayDelegate()
     val commentDelegate = CommentDelegate(database, commentDao, viewModelScope)
@@ -104,6 +121,24 @@ class BookmarkDetailViewModel(
         viewModelScope.launch { _effects.emit(BookmarkDetailEffect.NavigateToSubscription) }
     }
 
+    fun requestNavigateToFeedback() {
+        viewModelScope.launch {
+            val bookmarkState = bookmarkDelegate.bookmarkDetailState.value
+            val currentBookmarkId = _bookmarkId.value
+
+            val params = FeedbackPageParams(
+                title = bookmarkState.displayTitle,
+                href = bookmarkState.metadataUrl,
+                email = userInfo.value?.email,
+                bookmarkId = currentBookmarkId,
+                entryPoint = "bookmark_detail",
+                version = "${SlaxConfig.APP_VERSION_NAME} (${SlaxConfig.APP_VERSION_CODE})"
+            )
+
+            _effects.emit(BookmarkDetailEffect.NavigateToFeedback(params))
+        }
+    }
+
     fun onToolbarIconClick(pageId: String) {
         val current = bookmarkDelegate.bookmarkDetailState.value
 
@@ -122,6 +157,8 @@ class BookmarkDetailViewModel(
                     outlineDelegate.showDialog()
                 }
             }
+
+            "feedback" -> overlayDelegate.showOverlay(BookmarkOverlay.FeedbackRequired)
         }
 
         overlayDelegate.dismissOverlay(BookmarkOverlay.Toolbar)
