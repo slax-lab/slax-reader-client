@@ -219,7 +219,7 @@ class ApiService(
         return@withContext post<DeleteAccountData>("/v1/user/delete_my_account")
     }
 
-    suspend fun sendFeedback(param: FeedbackParams): HttpData<Unit> {
-        return post("/v1/user/report", body = param)
+    suspend fun sendFeedback(param: FeedbackParams): HttpData<String> = withContext(Dispatchers.IO) {
+        return@withContext post("/v1/user/report", body = param)
     }
 }

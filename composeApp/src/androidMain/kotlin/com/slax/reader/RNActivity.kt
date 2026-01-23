@@ -1,5 +1,6 @@
 package com.slax.reader
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -43,6 +44,17 @@ class RNActivity : AppCompatActivity(), DefaultHardwareBackBtnHandler {
             ?: throw IllegalArgumentException("Module name required")
         val initialProps = intent.getBundleExtra(EXTRA_INITIAL_PROPS)
 
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(
+                scrim = Color.TRANSPARENT,
+                darkScrim = Color.TRANSPARENT
+            ),
+            navigationBarStyle = SystemBarStyle.light(
+                scrim = Color.TRANSPARENT,
+                darkScrim = Color.TRANSPARENT
+            )
+        )
+
         reactRootView = ReactRootView(this)
 
         reactRootView.startReactApplication(
@@ -70,6 +82,7 @@ class RNActivity : AppCompatActivity(), DefaultHardwareBackBtnHandler {
         reactInstanceManager.onHostDestroy(this)
     }
 
+    @SuppressLint("GestureBackNavigation")
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         reactInstanceManager.onBackPressed()

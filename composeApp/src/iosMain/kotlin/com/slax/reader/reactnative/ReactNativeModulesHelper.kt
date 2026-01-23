@@ -3,7 +3,6 @@ package com.slax.reader.reactnative
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import react_native.RCTBridgeModuleProtocol
 
 class ReactNativeModulesHelper {
@@ -12,7 +11,7 @@ class ReactNativeModulesHelper {
 
     fun createNativeModules(): List<RCTBridgeModuleProtocol> {
         val providers = listOf(
-            TestModuleProvider()
+            FeedbackModuleProvider()
         )
 
         return providers.map { it.getModule(coroutineScope) }

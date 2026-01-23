@@ -6,14 +6,12 @@ import {
     TouchableOpacity,
     StyleSheet,
     SafeAreaView,
-    KeyboardAvoidingView,
     Platform,
     StatusBar,
     Image,
     Alert,
 } from 'react-native';
 import { FeedbackModule } from './generated/reaktNativeToolkit/typescript/modules';
-import { TestModule } from "./generated/reaktNativeToolkit/typescript/modules.ts";
 import type { com } from './generated/reaktNativeToolkit/typescript/models';
 
 interface FeedbackProps {
@@ -53,7 +51,7 @@ const FeedbackPage: React.FC<FeedbackProps> = (props) => {
 
         setIsSubmitting(true);
 
-        TestModule.sendFeedback(feedbackParams).then(res => {
+        FeedbackModule.sendFeedback(feedbackParams).then(res => {
             Alert.alert('成功', '反馈已提交，感谢您的反馈！', [{ text: '确定', onPress: () => {} }]);
         }).catch(e => {
             console.error('提交反馈失败:', e);
@@ -75,84 +73,78 @@ const FeedbackPage: React.FC<FeedbackProps> = (props) => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <KeyboardAvoidingView
-                style={styles.keyboardAvoidingView}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-            >
-                <View style={styles.mainContainer}>
-                    <View style={styles.header}>
-                        <TouchableOpacity
-                            style={styles.backButton}
-                            onPress={handleBack}
-                            activeOpacity={0.7}
-                        >
-                            <Image
-                                source={require('./assets/images/ic_nav_back.png')}
-                                style={styles.backIcon}
-                            />
-                        </TouchableOpacity>
-
-                        <Text style={styles.headerTitle}>Feedback</Text>
-
-                        <TouchableOpacity
-                            style={styles.submitButton}
-                            onPress={handleSubmit}
-                            activeOpacity={0.7}
-                            disabled={!isSubmitEnabled}
-                        >
-                            <Text style={[
-                                styles.submitButtonText,
-                                !isSubmitEnabled && styles.submitButtonTextDisabled
-                            ]}>
-                                {isSubmitting ? '提交中...' : '提交'}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {title && (
-                        <View style={styles.contextArea}>
-                            <Text style={styles.articleTitle} numberOfLines={1}>
-                                {title}
-                            </Text>
-                            <Text style={styles.articleUrl} numberOfLines={1}>
-                                {href}
-                            </Text>
-                        </View>
-                    )}
-
-                    <View style={styles.inputContainer}>
-                        <TextInput
-                            style={styles.textInput}
-                            value={feedbackText}
-                            onChangeText={setFeedbackText}
-                            placeholder="请输入您的反馈..."
-                            placeholderTextColor="rgba(0, 0, 0, 0.3)"
-                            multiline={true}
-                            textAlignVertical="top"
+            <View style={styles.mainContainer}>
+                <View style={styles.header}>
+                    <TouchableOpacity
+                        style={styles.backButton}
+                        onPress={handleBack}
+                        activeOpacity={0.7}
+                    >
+                        <Image
+                            source={require('./assets/images/ic_nav_back.png')}
+                            style={styles.backIcon}
                         />
-                    </View>
+                    </TouchableOpacity>
 
-                    <View style={styles.footer}>
-                        <TouchableOpacity
-                            style={styles.checkboxContainer}
-                            onPress={toggleFollowUp}
-                            activeOpacity={0.7}
-                        >
-                            <Image
-                                source={allowFollowUp
-                                    ? require('./assets/images/ic_agree_enable.png')
-                                    : require('./assets/images/ic_agree_disable.png')
-                                }
-                                style={styles.checkbox}
-                            />
-                            <Text style={styles.footerText}>
-                                Allow follow-up at {email}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
+                    <Text style={styles.headerTitle}>Feedback</Text>
+
+                    <TouchableOpacity
+                        style={styles.submitButton}
+                        onPress={handleSubmit}
+                        activeOpacity={0.7}
+                        disabled={!isSubmitEnabled}
+                    >
+                        <Text style={[
+                            styles.submitButtonText,
+                            !isSubmitEnabled && styles.submitButtonTextDisabled
+                        ]}>
+                            {isSubmitting ? '提交中...' : '提交'}
+                        </Text>
+                    </TouchableOpacity>
                 </View>
-            </KeyboardAvoidingView>
+
+                {title && (
+                    <View style={styles.contextArea}>
+                        <Text style={styles.articleTitle} numberOfLines={1}>
+                            {title}
+                        </Text>
+                        <Text style={styles.articleUrl} numberOfLines={1}>
+                            {href}
+                        </Text>
+                    </View>
+                )}
+
+                <View style={styles.inputContainer}>
+                    <TextInput
+                        style={styles.textInput}
+                        value={feedbackText}
+                        onChangeText={setFeedbackText}
+                        placeholder="请输入您的反馈..."
+                        placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                        multiline={true}
+                        textAlignVertical="top"
+                    />
+                </View>
+
+                <View style={styles.footer}>
+                    <TouchableOpacity
+                        style={styles.checkboxContainer}
+                        onPress={toggleFollowUp}
+                        activeOpacity={0.7}
+                    >
+                        <Image
+                            source={allowFollowUp
+                                ? require('./assets/images/ic_agree_enable.png')
+                                : require('./assets/images/ic_agree_disable.png')
+                            }
+                            style={styles.checkbox}
+                        />
+                        <Text style={styles.footerText}>
+                            Allow follow-up at {email}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
         </SafeAreaView>
     );
 };

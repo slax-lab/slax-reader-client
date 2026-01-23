@@ -134,49 +134,6 @@ fun FooterMenu(
                 navCtrl.navigate(SubscriptionManagerRoutes)
             }
         ),
-        "RN Chat" to FooterMenuConfig(
-            title = "React Native Chat",
-            icon = {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_xs_sidebar_config),
-                    contentDescription = null,
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(20.dp)
-                )
-            },
-            color = NavigationDrawerItemDefaults.colors(
-                unselectedContainerColor = Color.Transparent
-            ),
-            onClick = {
-                onDismiss()
-                navCtrl.navigateToRN(
-                    route = RNRoute("RNChatPage"),
-                    params = mapOf(
-                        "userId" to "user123",
-                        "conversationId" to "conv456",
-                        "title" to "来自 KMP 的对话"
-                    )
-                )
-            }
-        ),
-        "RN Markdown" to FooterMenuConfig(
-            title = "React Native Markdown",
-            icon = {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_xs_sidebar_config),
-                    contentDescription = null,
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(20.dp)
-                )
-            },
-            color = NavigationDrawerItemDefaults.colors(
-                unselectedContainerColor = Color.Transparent
-            ),
-            onClick = {
-                onDismiss()
-                navCtrl.navigateToRN(RNRoute("RNMarkdownPage"))
-            }
-        ),
         "setting" to FooterMenuConfig(
             title = "sidebar_settings".i18n(),
             icon = {
