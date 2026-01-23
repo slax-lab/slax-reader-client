@@ -53,13 +53,14 @@ const FeedbackPage: React.FC<FeedbackProps> = (props) => {
         setIsSubmitting(true);
 
         FeedbackModule.sendFeedback(feedbackParams).then(res => {
-            Alert.alert('成功', '反馈已提交，感谢您的反馈！', [{ text: '确定', onPress: () => {} }]);
+            Alert.alert('成功', '反馈已提交，感谢您的反馈！', [{ text: '确定', onPress: () => {
+                handleBack()
+            } }]);
         }).catch(e => {
             console.error('提交反馈失败:', e);
             Alert.alert('错误', `提交反馈失败，请稍后重试 ${e}`);
         }).finally(() => {
             setIsSubmitting(false);
-            handleBack()
         });
     };
 
