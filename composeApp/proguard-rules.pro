@@ -27,3 +27,5 @@
 -dontwarn com.facebook.react.**
 -dontwarn com.facebook.hermes.**
 -dontwarn com.facebook.jni.**
+
+-dontwarn kotlinx.serialization.**
