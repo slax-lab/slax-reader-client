@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -13,12 +15,14 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import app.slax.reader.SlaxConfig
 import com.slax.reader.const.AboutRoutes
 import com.slax.reader.const.RNRoute
 import com.slax.reader.const.SettingsRoutes
 import com.slax.reader.const.SubscriptionManagerRoutes
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.reactnative.navigateToRN
+import com.slax.reader.ui.sidebar.SidebarViewModel
 import com.slax.reader.utils.i18n
 import com.slax.reader.utils.platformType
 import org.jetbrains.compose.resources.painterResource
@@ -26,6 +30,7 @@ import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_xs_sidebar_about
 import slax_reader_client.composeapp.generated.resources.ic_xs_sidebar_config
+import slax_reader_client.composeapp.generated.resources.ic_xs_sidebar_feedback
 import slax_reader_client.composeapp.generated.resources.ic_xs_sidebar_logout
 import slax_reader_client.composeapp.generated.resources.ic_xs_sidebar_subscribe
 import slax_reader_client.composeapp.generated.resources.ic_xs_sidebar_subscribed
@@ -33,8 +38,8 @@ import slax_reader_client.composeapp.generated.resources.ic_xs_sidebar_yellow_ar
 
 class FooterMenuConfig(
     val title: String,
-    val icon:  @Composable (() -> Unit)? = null,
-    val color:  NavigationDrawerItemColors,
+    val icon: @Composable (() -> Unit)? = null,
+    val color: NavigationDrawerItemColors,
     val onClick: () -> Unit
 )
 
@@ -45,6 +50,9 @@ fun FooterMenu(
     onDismiss: () -> Unit,
 ) {
     val authDomain: AuthDomain = koinInject()
+    val viewModel = koinInject<SidebarViewModel>()
+
+    val userInfo by viewModel.userInfo.collectAsState()
 
     println("[watch][UI] FooterMenu recomposed")
 
@@ -169,24 +177,6 @@ fun FooterMenu(
                 navCtrl.navigateToRN(RNRoute("RNMarkdownPage"))
             }
         ),
-        "RN Feedback" to FooterMenuConfig(
-            title = "React Native Feedback",
-            icon = {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_xs_sidebar_config),
-                    contentDescription = null,
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(20.dp)
-                )
-            },
-            color = NavigationDrawerItemDefaults.colors(
-                unselectedContainerColor = Color.Transparent
-            ),
-            onClick = {
-                onDismiss()
-                navCtrl.navigateToRN(RNRoute("RNFeedbackPage"))
-            }
-        ),
         "setting" to FooterMenuConfig(
             title = "sidebar_settings".i18n(),
             icon = {
@@ -203,6 +193,30 @@ fun FooterMenu(
             onClick = {
                 onDismiss()
                 navCtrl.navigate(SettingsRoutes)
+            }
+        ),
+        "feedback" to FooterMenuConfig(
+            title = "sidebar_feedback".i18n(),
+            icon = {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_xs_sidebar_feedback),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(20.dp)
+                )
+            },
+            color = NavigationDrawerItemDefaults.colors(
+                unselectedContainerColor = Color.Transparent
+            ),
+            onClick = {
+                onDismiss()
+                navCtrl.navigateToRN(
+                    RNRoute("RNFeedbackPage"), params = mapOf(
+                        "email" to userInfo!!.email,
+                        "entryPoint" to "inbox",
+                        "version" to "${SlaxConfig.APP_VERSION_NAME} (${SlaxConfig.APP_VERSION_CODE})"
+                    )
+                )
             }
         ),
         "about" to FooterMenuConfig(
