@@ -19,12 +19,12 @@ interface FeedbackProps {
     title?: string;
     href?: string;
     email?: string;
-    bookmarkId?: number;
+    bookmarkId?: string;
     entryPoint?: string;
     version: string;
 }
 
-const FeedbackPage: React.FC<FeedbackProps> = (props) => {
+const FeedbackPage: React.FC<FeedbackProps> = (props: FeedbackProps) => {
     const { title, href, email, bookmarkId, entryPoint, version } = props;
     const [feedbackText, setFeedbackText] = useState<string>('');
     const [allowFollowUp, setAllowFollowUp] = useState<boolean>(true);
@@ -40,13 +40,14 @@ const FeedbackPage: React.FC<FeedbackProps> = (props) => {
             : `Android ${Platform.Version}`;
 
         const feedbackParams: com.slax.reader.data.network.dto.FeedbackParams = {
-            bookmark_id: bookmarkId?.toString() ?? '',
+            bookmark_uuid: bookmarkId?.toString() ?? '',
             entry_point: entryPoint ?? '',
             type: 'parse_error',
             content: feedbackText.trim(),
             platform: 'app',
             environment: environment,
             version,
+            target_url: href ?? '',
             allow_follow_up: allowFollowUp
         };
 

@@ -19,6 +19,8 @@ import com.slax.reader.domain.sync.BackgroundDomain
 import com.slax.reader.reactnative.navigateToRN
 import com.slax.reader.ui.about.AboutScreen
 import com.slax.reader.ui.bookmark.DetailScreen
+import com.slax.reader.ui.bookmark.DetailScreenEvent
+import com.slax.reader.ui.bookmark.toMap
 import com.slax.reader.ui.debug.DebugScreen
 import com.slax.reader.ui.inbox.InboxListScreen
 import com.slax.reader.ui.login.LoginScreen
@@ -104,25 +106,22 @@ fun SlaxNavigation(
             val params = backStackEntry.toRoute<BookmarkRoutes>()
             DetailScreen(
                 bookmarkId = params.bookmarkId,
-                onBackClick = {
-                    navCtrl.popBackStack()
-                },
-                onNavigateToSubscription = {
-                    navCtrl.navigate(SubscriptionManagerRoutes)
-                },
-                onNavigateToFeedback = { feedbackParams ->
-                    navCtrl.navigateToRN(
-                        RNRoute("RNFeedbackPage"), params = buildMap {
-                            feedbackParams.title?.let { put("title", it) }
-                            feedbackParams.href?.let { put("href", it) }
-                            feedbackParams.email?.let { put("email", it) }
-                            feedbackParams.bookmarkId?.let { put("bookmarkId", it) }
-                            feedbackParams.entryPoint?.let { put("entryPoint", it) }
-                            feedbackParams.targetUrl?.let { put("targetUrl", it) }
-                            feedbackParams.version?.let { put("version", it)}
+                onEvent = { event ->
+                    when (event) {
+                        DetailScreenEvent.BackClick -> {
+                            navCtrl.popBackStack()
                         }
-                    )
 
+                        DetailScreenEvent.NavigateToSubscription -> {
+                            navCtrl.navigate(SubscriptionManagerRoutes)
+                        }
+
+                        is DetailScreenEvent.NavigateToFeedback -> {
+                            navCtrl.navigateToRN(
+                                RNRoute("RNFeedbackPage"), params = event.params.toMap()
+                            )
+                        }
+                    }
                 }
             )
         }

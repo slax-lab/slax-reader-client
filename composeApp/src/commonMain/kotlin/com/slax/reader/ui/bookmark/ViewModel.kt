@@ -33,6 +33,19 @@ data class FeedbackPageParams(
     val version: String? = null
 )
 
+fun FeedbackPageParams.toMap() : Map<String, String> {
+    return buildMap {
+        title?.let { put("title", it) }
+        href?.let { put("href", it) }
+        email?.let { put("email", it) }
+        bookmarkId?.let { put("bookmarkId", it) }
+        entryPoint?.let { put("entryPoint", it) }
+        targetUrl?.let { put("targetUrl", it) }
+        version?.let { put("version", it)}
+        bookmarkId?.let { put("bookmarkId", it) }
+    }
+}
+
 sealed interface BookmarkDetailEffect {
     data object NavigateBack : BookmarkDetailEffect
     data object NavigateToSubscription : BookmarkDetailEffect
