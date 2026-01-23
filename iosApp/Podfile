@@ -22,7 +22,7 @@ target 'iosApp' do
     path: '../react-native/node_modules/react-native',
     app_path: '../react-native',
     hermes_enabled: true,
-    new_arch_enabled: false
+    new_arch_enabled: true
   )
 
   pod 'ComposeApp', :path => '../composeApp'

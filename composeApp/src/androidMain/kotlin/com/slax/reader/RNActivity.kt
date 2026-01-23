@@ -43,18 +43,8 @@ class RNActivity : AppCompatActivity(), DefaultHardwareBackBtnHandler {
             ?: throw IllegalArgumentException("Module name required")
         val initialProps = intent.getBundleExtra(EXTRA_INITIAL_PROPS)
 
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.light(
-                scrim = Color.TRANSPARENT,
-                darkScrim = Color.TRANSPARENT
-            ),
-            navigationBarStyle = SystemBarStyle.light(
-                scrim = Color.TRANSPARENT,
-                darkScrim = Color.TRANSPARENT
-            )
-        )
-
         reactRootView = ReactRootView(this)
+
         reactRootView.startReactApplication(
             reactInstanceManager,
             moduleName,
