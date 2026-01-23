@@ -162,6 +162,15 @@ const markdownStyles = StyleSheet.create({
     },
 });
 
+const useCounter = () => {
+    const count = TestModule.useCount();
+
+    return {
+        count,
+        increment: TestModule.increment
+    }
+}
+
 const MarkdownPage: React.FC = () => {
     const [displayedContent, setDisplayedContent] = useState<string>('');
     const [isStreaming, setIsStreaming] = useState<boolean>(false);
@@ -170,6 +179,8 @@ const MarkdownPage: React.FC = () => {
     const streamingRef = useRef<boolean>(false);
     const streamingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const { count, increment } = useCounter();
 
     useEffect(() => {
         TestModule.hello().then(setHelloMessage).catch(console.error);
@@ -251,6 +262,20 @@ const MarkdownPage: React.FC = () => {
                         {isStreaming ? '停止' : '开始演示'}
                     </Text>
                 </TouchableOpacity>
+            </View>
+
+            <View style={styles.counterContainer}>
+                <Text style={styles.counterLabel}>Counter 测试:</Text>
+                <View style={styles.counterContent}>
+                    <Text style={styles.counterValue}>{ count ?? 0 }</Text>
+                    <TouchableOpacity
+                        style={styles.counterButton}
+                        onPress={ increment }
+                        activeOpacity={0.7}
+                    >
+                        <Text style={styles.counterButtonText}>+1</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <ScrollView
@@ -344,6 +369,42 @@ const styles = StyleSheet.create({
         color: '#5856D6',
         fontSize: 18,
         marginLeft: 2,
+    },
+    counterContainer: {
+        marginHorizontal: 16,
+        marginTop: 12,
+        padding: 12,
+        backgroundColor: 'rgba(88, 86, 214, 0.1)',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(88, 86, 214, 0.3)',
+    },
+    counterLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#FFFFFF',
+        marginBottom: 8,
+    },
+    counterContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    counterValue: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#5856D6',
+    },
+    counterButton: {
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        backgroundColor: '#5856D6',
+        borderRadius: 10,
+    },
+    counterButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '600',
     },
 });
 
