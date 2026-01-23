@@ -55,13 +55,6 @@ class RNActivity : AppCompatActivity(), DefaultHardwareBackBtnHandler {
         )
 
         reactRootView = ReactRootView(this)
-
-        ViewCompat.setOnApplyWindowInsetsListener(reactRootView) { v, insets ->
-            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
-            insets
-        }
-
         reactRootView.startReactApplication(
             reactInstanceManager,
             moduleName,

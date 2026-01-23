@@ -31,9 +31,7 @@ const FeedbackPage: React.FC<FeedbackProps> = (props) => {
     const [allowFollowUp, setAllowFollowUp] = useState<boolean>(true);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-
-
-    const handleSubmit = async () => {
+    const handleSubmit = () => {
         if (feedbackText.trim() === '' || isSubmitting) {
             return;
         }
@@ -55,7 +53,7 @@ const FeedbackPage: React.FC<FeedbackProps> = (props) => {
 
         setIsSubmitting(true);
 
-        FeedbackModule.sendFeedback(feedbackParams).then(res => {
+        TestModule.sendFeedback(feedbackParams).then(res => {
             Alert.alert('成功', '反馈已提交，感谢您的反馈！', [{ text: '确定', onPress: () => {} }]);
         }).catch(e => {
             console.error('提交反馈失败:', e);

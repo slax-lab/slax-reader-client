@@ -1,5 +1,6 @@
 package com.slax.reader.reactnative
 
+import com.slax.reader.data.network.dto.FeedbackParams
 import de.voize.reaktnativetoolkit.annotation.ReactNativeFlow
 import de.voize.reaktnativetoolkit.annotation.ReactNativeMethod
 import de.voize.reaktnativetoolkit.annotation.ReactNativeModule
@@ -30,5 +31,17 @@ class TestModule {
     @ReactNativeMethod
     suspend fun increment() {
         counter.update { it + 1 }
+    }
+
+    @ReactNativeMethod
+    suspend fun sendFeedback(param: FeedbackParams) {
+        println("反馈反馈")
+        try {
+//            koinHelper.apiService.sendFeedback(param)
+            println("反馈发送成功")
+        } catch (e: Exception) {
+            println("发送反馈时出错: ${e.message}")
+            throw e
+        }
     }
 }
