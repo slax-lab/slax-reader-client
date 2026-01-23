@@ -19,10 +19,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.slax.reader.const.AboutRoutes
+import com.slax.reader.const.RNRoute
 import com.slax.reader.const.SettingsRoutes
 import com.slax.reader.const.SubscriptionManagerRoutes
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.ui.sidebar.SidebarViewModel
+import com.slax.reader.reactnative.navigateToRN
 import com.slax.reader.utils.i18n
 import com.slax.reader.utils.platformType
 import kotlinx.coroutines.launch
@@ -133,6 +135,49 @@ fun FooterMenu(
             onClick = {
                 onDismiss()
                 navCtrl.navigate(SubscriptionManagerRoutes)
+            }
+        ),
+        "RN Chat" to FooterMenuConfig(
+            title = "React Native Chat",
+            icon = {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_xs_sidebar_config),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(20.dp)
+                )
+            },
+            color = NavigationDrawerItemDefaults.colors(
+                unselectedContainerColor = Color.Transparent
+            ),
+            onClick = {
+                onDismiss()
+                navCtrl.navigateToRN(
+                    route = RNRoute("RNChatPage"),
+                    params = mapOf(
+                        "userId" to "user123",
+                        "conversationId" to "conv456",
+                        "title" to "来自 KMP 的对话"
+                    )
+                )
+            }
+        ),
+        "RN Markdown" to FooterMenuConfig(
+            title = "React Native Markdown",
+            icon = {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_xs_sidebar_config),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(20.dp)
+                )
+            },
+            color = NavigationDrawerItemDefaults.colors(
+                unselectedContainerColor = Color.Transparent
+            ),
+            onClick = {
+                onDismiss()
+                navCtrl.navigateToRN(RNRoute("RNMarkdownPage"))
             }
         ),
         "setting" to FooterMenuConfig(

@@ -215,7 +215,7 @@ class BackgroundDomain(
             }
 
             val response = apiService.getBookmarkRawContent(id)
-            CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            workerScope?.launch(Dispatchers.IO) {
                 try {
                     fileManager.writeDataFile(contentPath, response.encodeToByteArray())
                     updateBookmarkStatus(id, DownloadStatus.COMPLETED)

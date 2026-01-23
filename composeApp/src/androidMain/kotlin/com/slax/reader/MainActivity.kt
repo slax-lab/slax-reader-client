@@ -8,18 +8,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.ComposeFoundationFlags
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
-import com.slax.reader.di.configureKoin
+import com.slax.reader.reactnative.setCurrentActivity
 import com.slax.reader.ui.SlaxNavigation
-import dev.gitlive.firebase.Firebase
-import dev.gitlive.firebase.initialize
-import org.koin.android.ext.koin.androidContext
-import org.koin.android.ext.koin.androidLogger
-import org.koin.core.context.GlobalContext
-import org.koin.core.context.GlobalContext.startKoin
-import org.koin.core.logger.Level
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalFoundationApi::class)
@@ -28,14 +19,7 @@ class MainActivity : ComponentActivity() {
 
         super.onCreate(savedInstanceState)
 
-        if (GlobalContext.getOrNull() == null) {
-            Firebase.initialize(this@MainActivity.applicationContext)
-            startKoin {
-                androidLogger(Level.INFO)
-                androidContext(this@MainActivity.applicationContext)
-                configureKoin()
-            }
-        }
+        setCurrentActivity(this)
 
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(
@@ -53,11 +37,9 @@ class MainActivity : ComponentActivity() {
             SlaxNavigation(ctrl)
         }
     }
-}
 
-@Preview
-@Composable
-fun AppAndroidPreview() {
-    val ctrl = rememberNavController()
-    SlaxNavigation(ctrl)
+    override fun onDestroy() {
+        setCurrentActivity(null)
+        super.onDestroy()
+    }
 }
