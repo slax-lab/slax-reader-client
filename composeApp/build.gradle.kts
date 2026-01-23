@@ -127,6 +127,8 @@ kotlin {
             implementation(libs.react.android)
             implementation(libs.hermes.android)
             implementation(libs.soloader)
+
+            implementation(project   (":react-native-get-random-values"))
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
