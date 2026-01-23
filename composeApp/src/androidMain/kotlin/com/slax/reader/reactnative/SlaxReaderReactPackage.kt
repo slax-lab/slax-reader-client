@@ -19,6 +19,7 @@ class SlaxReaderReactPackage : ReactPackage {
         reactContext: ReactApplicationContext
     ): List<NativeModule> {
         return listOf(
+            NavigationModuleAndroid(reactContext, coroutineScope),
             FeedbackModuleAndroid(reactContext, coroutineScope)
         )
     }

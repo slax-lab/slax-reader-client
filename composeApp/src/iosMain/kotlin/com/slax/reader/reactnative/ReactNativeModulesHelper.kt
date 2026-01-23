@@ -11,7 +11,8 @@ class ReactNativeModulesHelper {
 
     fun createNativeModules(): List<RCTBridgeModuleProtocol> {
         val providers = listOf(
-            FeedbackModuleProvider()
+            FeedbackModuleProvider(),
+            NavigationModuleProvider()
         )
 
         return providers.map { it.getModule(coroutineScope) }

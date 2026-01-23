@@ -12,6 +12,7 @@ import {
     Alert,
 } from 'react-native';
 import { FeedbackModule } from './generated/reaktNativeToolkit/typescript/modules';
+import { NavigationModule } from "./generated/reaktNativeToolkit/typescript/modules";
 import type { com } from './generated/reaktNativeToolkit/typescript/models';
 
 interface FeedbackProps {
@@ -58,11 +59,12 @@ const FeedbackPage: React.FC<FeedbackProps> = (props) => {
             Alert.alert('错误', `提交反馈失败，请稍后重试 ${e}`);
         }).finally(() => {
             setIsSubmitting(false);
+            handleBack()
         });
     };
 
     const handleBack = () => {
-
+        NavigationModule.goBack()
     };
 
     const toggleFollowUp = () => {

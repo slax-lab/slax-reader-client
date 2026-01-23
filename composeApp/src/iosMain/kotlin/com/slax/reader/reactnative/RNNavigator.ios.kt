@@ -10,3 +10,7 @@ actual fun openReactNativePage(moduleName: String, params: Map<String, String>?)
     val reactVC = ReactNativeBridge.shared().createReactViewController(moduleName, params?.toMap()) ?: return
     NavigationHelper.pushViewController(reactVC as UIViewController)
 }
+
+actual suspend fun navigationGoBack() {
+    NavigationHelper.popViewController(animated = true)
+}

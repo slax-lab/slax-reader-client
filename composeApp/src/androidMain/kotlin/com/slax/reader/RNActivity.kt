@@ -8,11 +8,10 @@ import android.os.Bundle
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.facebook.react.ReactInstanceManager
 import com.facebook.react.ReactRootView
 import com.facebook.react.modules.core.DefaultHardwareBackBtnHandler
+import com.slax.reader.reactnative.setCurrentActivity
 
 class RNActivity : AppCompatActivity(), DefaultHardwareBackBtnHandler {
 
@@ -40,6 +39,7 @@ class RNActivity : AppCompatActivity(), DefaultHardwareBackBtnHandler {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setCurrentActivity(this)
         val moduleName = intent.getStringExtra(EXTRA_MODULE_NAME)
             ?: throw IllegalArgumentException("Module name required")
         val initialProps = intent.getBundleExtra(EXTRA_INITIAL_PROPS)
