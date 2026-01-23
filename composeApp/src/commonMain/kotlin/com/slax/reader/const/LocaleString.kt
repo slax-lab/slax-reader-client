@@ -196,6 +196,10 @@ val localeString: Map<String, Map<String, String>> = mapOf(
         "zh" to "设置",
         "en" to "Settings"
     ),
+    "sidebar_feedback" to mapOf(
+        "zh" to "反馈",
+        "en" to "Feedback"
+    ),
     "sidebar_about" to mapOf(
         "zh" to "关于",
         "en" to "About"
@@ -272,6 +276,10 @@ val localeString: Map<String, Map<String, String>> = mapOf(
     "detail_toolbar_edit_title" to mapOf(
         "zh" to "改标题",
         "en" to "Edit Title"
+    ),
+    "detail_toolbar_feedback" to mapOf(
+        "zh" to "反馈",
+        "en" to "Feedback"
     ),
 
     // 标签管理
