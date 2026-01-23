@@ -10,55 +10,70 @@ import {
     Platform,
     StatusBar,
     Image,
+    Alert,
 } from 'react-native';
+import { FeedbackModule } from './generated/reaktNativeToolkit/typescript/modules';
+import { TestModule } from "./generated/reaktNativeToolkit/typescript/modules.ts";
+import type { com } from './generated/reaktNativeToolkit/typescript/models';
 
 interface FeedbackProps {
-    articleTitle?: string;
-    articleUrl?: string;
-    userEmail?: string;
-    onSubmit?: (feedback: FeedbackData) => void;
-    onBack?: () => void;
+    title?: string;
+    href?: string;
+    email?: string;
+    bookmarkId?: number;
+    entryPoint?: string;
+    version: string;
 }
 
-interface FeedbackData {
-    feedbackText: string;
-    allowFollowUp: boolean;
-    userEmail?: string;
-}
-
-const FeedbackPage: React.FC<FeedbackProps> = ({
-    articleTitle = '中文数据占比突破80%！国产大模型加速去...',
-    articleUrl = 'https://www.pinterest.com/',
-    userEmail = 'user@example.com',
-    onSubmit,
-    onBack,
-}) => {
+const FeedbackPage: React.FC<FeedbackProps> = (props) => {
+    const { title, href, email, bookmarkId, entryPoint, version } = props;
     const [feedbackText, setFeedbackText] = useState<string>('');
     const [allowFollowUp, setAllowFollowUp] = useState<boolean>(true);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-    const handleSubmit = () => {
-        if (feedbackText.trim() === '') {
+
+
+    const handleSubmit = async () => {
+        if (feedbackText.trim() === '' || isSubmitting) {
             return;
         }
 
-        const data: FeedbackData = {
-            feedbackText: feedbackText.trim(),
-            allowFollowUp,
-            userEmail: allowFollowUp ? userEmail : undefined,
+        const environment = Platform.OS === 'ios'
+            ? `iOS ${Platform.Version}`
+            : `Android ${Platform.Version}`;
+
+        const feedbackParams: com.slax.reader.data.network.dto.FeedbackParams = {
+            bookmark_id: bookmarkId?.toString() ?? '',
+            entry_point: entryPoint ?? '',
+            type: 'parse_error',
+            content: feedbackText.trim(),
+            platform: 'app',
+            environment: environment,
+            version,
+            allow_follow_up: allowFollowUp
         };
 
-        onSubmit?.(data);
+        setIsSubmitting(true);
+
+        FeedbackModule.sendFeedback(feedbackParams).then(res => {
+            Alert.alert('成功', '反馈已提交，感谢您的反馈！', [{ text: '确定', onPress: () => {} }]);
+        }).catch(e => {
+            console.error('提交反馈失败:', e);
+            Alert.alert('错误', `提交反馈失败，请稍后重试 ${e}`);
+        }).finally(() => {
+            setIsSubmitting(false);
+        });
     };
 
     const handleBack = () => {
-        onBack?.();
+
     };
 
     const toggleFollowUp = () => {
         setAllowFollowUp(!allowFollowUp);
     };
 
-    const isSubmitEnabled = feedbackText.trim().length > 0;
+    const isSubmitEnabled = feedbackText.trim().length > 0 && !isSubmitting;
 
     return (
         <SafeAreaView style={styles.container}>
@@ -92,19 +107,21 @@ const FeedbackPage: React.FC<FeedbackProps> = ({
                                 styles.submitButtonText,
                                 !isSubmitEnabled && styles.submitButtonTextDisabled
                             ]}>
-                                提交
+                                {isSubmitting ? '提交中...' : '提交'}
                             </Text>
                         </TouchableOpacity>
                     </View>
 
-                    <View style={styles.contextArea}>
-                        <Text style={styles.articleTitle} numberOfLines={1}>
-                            {articleTitle}
-                        </Text>
-                        <Text style={styles.articleUrl} numberOfLines={1}>
-                            {articleUrl}
-                        </Text>
-                    </View>
+                    {title && (
+                        <View style={styles.contextArea}>
+                            <Text style={styles.articleTitle} numberOfLines={1}>
+                                {title}
+                            </Text>
+                            <Text style={styles.articleUrl} numberOfLines={1}>
+                                {href}
+                            </Text>
+                        </View>
+                    )}
 
                     <View style={styles.inputContainer}>
                         <TextInput
@@ -132,7 +149,7 @@ const FeedbackPage: React.FC<FeedbackProps> = ({
                                 style={styles.checkbox}
                             />
                             <Text style={styles.footerText}>
-                                Allow follow-up at {userEmail}
+                                Allow follow-up at {email}
                             </Text>
                         </TouchableOpacity>
                     </View>
