@@ -8,6 +8,7 @@ import com.facebook.react.soloader.OpenSourceMergedSoMapping
 import com.facebook.soloader.SoLoader
 import com.slax.reader.di.configureKoin
 import com.slax.reader.reactnative.SlaxReaderReactPackage
+import org.linusu.RNGetRandomValuesPackage
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.initialize
 import org.koin.android.ext.koin.androidContext
@@ -63,6 +64,7 @@ class SlaxReaderApplication : Application() {
                     }
                 }
                 .addPackage(MainReactPackage(null))
+                .addPackage(RNGetRandomValuesPackage())
                 .addPackage(slaxReaderReactPackage!!)
                 .setInitialLifecycleState(LifecycleState.BEFORE_CREATE)
                 .build()
