@@ -43,6 +43,7 @@ plugins {
 }
 
 repositories {
+    mavenLocal()
     mavenCentral()
     google()
     maven("https://jogamp.org/deployment/maven")
@@ -301,10 +302,10 @@ val bundleIOSReleaseJs = tasks.register<Exec>("bundleIOSReleaseJs") {
 dependencies {
     debugImplementation(compose.uiTooling)
 
-    add("kspCommonMainMetadata", "de.voize:reakt-native-toolkit-ksp:0.22.0")
-    add("kspAndroid", "de.voize:reakt-native-toolkit-ksp:0.22.0")
-    add("kspIosArm64", "de.voize:reakt-native-toolkit-ksp:0.22.0")
-    add("kspIosSimulatorArm64", "de.voize:reakt-native-toolkit-ksp:0.22.0")
+    add("kspCommonMainMetadata", "de.voize:reakt-native-toolkit-ksp:0.22.1-SNAPSHOT")
+    add("kspAndroid", "de.voize:reakt-native-toolkit-ksp:0.22.1-SNAPSHOT")
+    add("kspIosArm64", "de.voize:reakt-native-toolkit-ksp:0.22.1-SNAPSHOT")
+    add("kspIosSimulatorArm64", "de.voize:reakt-native-toolkit-ksp:0.22.1-SNAPSHOT")
 }
 
 ksp {
