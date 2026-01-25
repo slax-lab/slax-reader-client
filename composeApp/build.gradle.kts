@@ -9,7 +9,11 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 
 buildscript {
     repositories {
+        mavenLocal()
         google()
+        maven {
+            url = uri("https://maven.aliyun.com/repository/google/")
+        }
         mavenCentral()
         gradlePluginPortal()
         maven {
@@ -325,6 +329,11 @@ dependencies {
     add("kspAndroid", "de.voize:reakt-native-toolkit-ksp:0.22.0")
     add("kspIosArm64", "de.voize:reakt-native-toolkit-ksp:0.22.0")
     add("kspIosSimulatorArm64", "de.voize:reakt-native-toolkit-ksp:0.22.0")
+}
+
+ksp {
+    arg("reakt.native.toolkit.newArchitecture", "true")
+    arg("reakt.native.toolkit.kmpFrameworkName", "ComposeApp")
 }
 
 tasks.register<Copy>("copyGeneratedTsFiles") {

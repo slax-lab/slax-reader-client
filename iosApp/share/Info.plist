@@ -22,6 +22,6 @@
 	<key>NSExtensionJavaScriptPreprocessingFile</key>
 	<string>ExtensionClass</string>
 	<key>RCTNewArchEnabled</key>
-	<false/>
+	<true/>
 </dict>
 </plist>

@@ -10,10 +10,32 @@ import {
     StatusBar,
     Image,
     Alert,
+    NativeModules,
 } from 'react-native';
 import { FeedbackModule } from './generated/reaktNativeToolkit/typescript/modules';
 import { NavigationModule } from "./generated/reaktNativeToolkit/typescript/modules";
 import type { com } from './generated/reaktNativeToolkit/typescript/models';
+
+// 调试：检查 NativeModules
+console.log('🔍 NativeModules keys:', Object.keys(NativeModules));
+console.log('🔍 FeedbackModule in NativeModules:', NativeModules.FeedbackModule);
+console.log('🔍 NavigationModule in NativeModules:', NativeModules.NavigationModule);
+if (NativeModules.FeedbackModule) {
+    console.log('🔍 FeedbackModule methods:', Object.keys(NativeModules.FeedbackModule));
+}
+if (NativeModules.NavigationModule) {
+    console.log('🔍 NavigationModule methods:', Object.keys(NativeModules.NavigationModule));
+}
+
+// 获取调试信息
+const debugInfo = {
+    hasNativeModules: !!NativeModules,
+    nativeModulesKeys: Object.keys(NativeModules).length,
+    hasFeedbackModule: !!NativeModules.FeedbackModule,
+    hasNavigationModule: !!NativeModules.NavigationModule,
+    feedbackMethods: NativeModules.FeedbackModule ? Object.keys(NativeModules.FeedbackModule) : [],
+    navigationMethods: NativeModules.NavigationModule ? Object.keys(NativeModules.NavigationModule) : []
+};
 
 interface FeedbackProps {
     title?: string;

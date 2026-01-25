@@ -8,8 +8,8 @@ import android.os.Bundle
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import com.facebook.react.ReactInstanceManager
-import com.facebook.react.ReactRootView
+import com.facebook.react.ReactDelegate
+import com.facebook.react.ReactHost
 import com.facebook.react.modules.core.DefaultHardwareBackBtnHandler
 import com.slax.reader.reactnative.setCurrentActivity
 
@@ -31,10 +31,10 @@ class RNActivity : AppCompatActivity(), DefaultHardwareBackBtnHandler {
         }
     }
 
-    private lateinit var reactRootView: ReactRootView
+    private lateinit var reactDelegate: ReactDelegate
 
-    private val reactInstanceManager: ReactInstanceManager
-        get() = SlaxReaderApplication.getInstance()?.getReactInstanceManager()
+    private val reactHost: ReactHost
+        get() = SlaxReaderApplication.getInstance()?.getReactHost()
             ?: throw IllegalStateException("Application not initialized")
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,37 +55,32 @@ class RNActivity : AppCompatActivity(), DefaultHardwareBackBtnHandler {
             )
         )
 
-        reactRootView = ReactRootView(this)
-
-        reactRootView.startReactApplication(
-            reactInstanceManager,
-            moduleName,
-            initialProps
-        )
-
-        setContentView(reactRootView)
+        reactDelegate = ReactDelegate(this, reactHost, moduleName, initialProps)
+        reactDelegate.loadApp(moduleName)
+        setContentView(reactDelegate.reactRootView)
     }
 
     override fun onResume() {
         super.onResume()
-        reactInstanceManager.onHostResume(this, this)
+        reactDelegate.onHostResume()
     }
 
     override fun onPause() {
         super.onPause()
-        reactInstanceManager.onHostPause(this)
+        reactDelegate.onHostPause()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        reactRootView.unmountReactApplication()
-        reactInstanceManager.onHostDestroy(this)
+        reactDelegate.onHostDestroy()
     }
 
     @SuppressLint("GestureBackNavigation")
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        reactInstanceManager.onBackPressed()
+        if (!reactDelegate.onBackPressed()) {
+            super.onBackPressed()
+        }
     }
 
     override fun invokeDefaultOnBackPressed() {

@@ -7,7 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		4BB6C1386807A9E29D6E1BA3 /* Pods_share.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A80729D73D88F9A2693DCB2E /* Pods_share.framework */; };
+		6CFAFFCB3DD2E2586D8446F4 /* Pods_iosApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1493DD7C9BBB95176CC149C2 /* Pods_iosApp.framework */; };
+		6DC62F1F10CD0104F7CCDFD0 /* Pods_share.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6AE57B8903A092C5920281D3 /* Pods_share.framework */; };
+		8A11CD702F25F06100B7B45A /* NativeFeedbackModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A11CD6B2F25F06100B7B45A /* NativeFeedbackModule.swift */; };
+		8A11CD712F25F06100B7B45A /* NativeNavigationModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A11CD6C2F25F06100B7B45A /* NativeNavigationModule.swift */; };
+		8A11CD722F25F06100B7B45A /* RNTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A11CD6E2F25F06100B7B45A /* RNTypes.swift */; };
+		8A11CD732F25F06100B7B45A /* RNModuleBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = 8A11CD6D2F25F06100B7B45A /* RNModuleBridge.m */; };
 		8A1CC81C2E9A6F9300F7C101 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 8A1CC81B2E9A6F9300F7C101 /* FirebaseAnalytics */; };
 		8A1CC81E2E9A6F9300F7C101 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 8A1CC81D2E9A6F9300F7C101 /* FirebaseCrashlytics */; };
 		8A1E1BAC2EDFF24B004F9F3B /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8A1E1BAB2EDFF24B004F9F3B /* StoreKit.framework */; };
@@ -22,7 +27,6 @@
 		8ACC804A2E9CA6C70078F1FF /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 8ACC80492E9CA6C70078F1FF /* FirebaseCrashlytics */; };
 		8ACC804C2E9CA6CB0078F1FF /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 8ACC804B2E9CA6CB0078F1FF /* GoogleSignIn */; };
 		8ACC804E2E9CA6CD0078F1FF /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 8ACC804D2E9CA6CD0078F1FF /* GoogleSignInSwift */; };
-		C1665E8A5E5844C45F5B2807 /* Pods_iosApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0CCD5020CCDB585F6F508724 /* Pods_iosApp.framework */; };
 		DB54A424A0A472BC85F3DE77 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B46C0644545232A3C4B57B4F /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
@@ -52,12 +56,16 @@
 
 /* Begin PBXFileReference section */
 		04F7449A1A39313AF505F41A /* Pods-iosApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-iosApp.debug.xcconfig"; path = "Target Support Files/Pods-iosApp/Pods-iosApp.debug.xcconfig"; sourceTree = "<group>"; };
-		0CCD5020CCDB585F6F508724 /* Pods_iosApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_iosApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		1493DD7C9BBB95176CC149C2 /* Pods_iosApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_iosApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		6AE57B8903A092C5920281D3 /* Pods_share.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_share.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		7E6A546446BC10899355DC8F /* Pods-share.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-share.debug.xcconfig"; path = "Target Support Files/Pods-share/Pods-share.debug.xcconfig"; sourceTree = "<group>"; };
 		824E651F0113D77B8A9B160C /* Pods-iosApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-iosApp.release.xcconfig"; path = "Target Support Files/Pods-iosApp/Pods-iosApp.release.xcconfig"; sourceTree = "<group>"; };
+		8A11CD6B2F25F06100B7B45A /* NativeFeedbackModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeFeedbackModule.swift; sourceTree = "<group>"; };
+		8A11CD6C2F25F06100B7B45A /* NativeNavigationModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeNavigationModule.swift; sourceTree = "<group>"; };
+		8A11CD6D2F25F06100B7B45A /* RNModuleBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RNModuleBridge.m; sourceTree = "<group>"; };
+		8A11CD6E2F25F06100B7B45A /* RNTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RNTypes.swift; sourceTree = "<group>"; };
 		8A1E1BAB2EDFF24B004F9F3B /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		8AD22C002E83ED490035EA6E /* share.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = share.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		A80729D73D88F9A2693DCB2E /* Pods_share.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_share.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		B3D95CCEA2E69139FF9B1B06 /* Pods-share.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-share.release.xcconfig"; path = "Target Support Files/Pods-share/Pods-share.release.xcconfig"; sourceTree = "<group>"; };
 		B46C0644545232A3C4B57B4F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		B9DA97B12DC1472C00A4DA20 /* Slax Reader.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Slax Reader.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -99,8 +107,6 @@
 		};
 		B9DA98002DC14AA900A4DA20 /* Configuration */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = Configuration;
 			sourceTree = "<group>";
 		};
@@ -117,7 +123,7 @@
 				8ACC804A2E9CA6C70078F1FF /* FirebaseCrashlytics in Frameworks */,
 				8ACC804C2E9CA6CB0078F1FF /* GoogleSignIn in Frameworks */,
 				8ACC804E2E9CA6CD0078F1FF /* GoogleSignInSwift in Frameworks */,
-				4BB6C1386807A9E29D6E1BA3 /* Pods_share.framework in Frameworks */,
+				6DC62F1F10CD0104F7CCDFD0 /* Pods_share.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -132,7 +138,7 @@
 				8A1CC81E2E9A6F9300F7C101 /* FirebaseCrashlytics in Frameworks */,
 				8ACC80432E9CA0E90078F1FF /* GoogleSignIn in Frameworks */,
 				8A1CC81C2E9A6F9300F7C101 /* FirebaseAnalytics in Frameworks */,
-				C1665E8A5E5844C45F5B2807 /* Pods_iosApp.framework in Frameworks */,
+				6CFAFFCB3DD2E2586D8446F4 /* Pods_iosApp.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -143,8 +149,8 @@
 			isa = PBXGroup;
 			children = (
 				8A1E1BAB2EDFF24B004F9F3B /* StoreKit.framework */,
-				0CCD5020CCDB585F6F508724 /* Pods_iosApp.framework */,
-				A80729D73D88F9A2693DCB2E /* Pods_share.framework */,
+				1493DD7C9BBB95176CC149C2 /* Pods_iosApp.framework */,
+				6AE57B8903A092C5920281D3 /* Pods_share.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -160,9 +166,22 @@
 			path = Pods;
 			sourceTree = "<group>";
 		};
+		8A11CD6F2F25F06100B7B45A /* iosNewArch */ = {
+			isa = PBXGroup;
+			children = (
+				8A11CD6B2F25F06100B7B45A /* NativeFeedbackModule.swift */,
+				8A11CD6C2F25F06100B7B45A /* NativeNavigationModule.swift */,
+				8A11CD6D2F25F06100B7B45A /* RNModuleBridge.m */,
+				8A11CD6E2F25F06100B7B45A /* RNTypes.swift */,
+			);
+			name = iosNewArch;
+			path = ../composeApp/build/generated/ksp/metadata/commonMain/resources/reaktNativeToolkit/iosNewArch;
+			sourceTree = SOURCE_ROOT;
+		};
 		B9DA97A82DC1472C00A4DA20 = {
 			isa = PBXGroup;
 			children = (
+				8A11CD6F2F25F06100B7B45A /* iosNewArch */,
 				B9DA98002DC14AA900A4DA20 /* Configuration */,
 				B9DA97B32DC1472C00A4DA20 /* iosApp */,
 				8AD22C012E83ED490035EA6E /* share */,
@@ -305,9 +324,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -322,9 +345,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -339,9 +366,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-share/Pods-share-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-share/Pods-share-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -487,6 +518,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8A11CD702F25F06100B7B45A /* NativeFeedbackModule.swift in Sources */,
+				8A11CD712F25F06100B7B45A /* NativeNavigationModule.swift in Sources */,
+				8A11CD722F25F06100B7B45A /* RNTypes.swift in Sources */,
+				8A11CD732F25F06100B7B45A /* RNModuleBridge.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -528,6 +563,7 @@
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../react-native/node_modules/react-native";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -560,6 +596,7 @@
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../react-native/node_modules/react-native";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -640,10 +677,9 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_CFLAGS = "$(inherited)";
+				OTHER_CPLUSPLUSFLAGS = "$(inherited)";
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../react-native/";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
@@ -720,10 +756,9 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_CFLAGS = "$(inherited)";
+				OTHER_CPLUSPLUSFLAGS = "$(inherited)";
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../react-native/";
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -768,6 +803,7 @@
 				PRODUCT_NAME = "Slax Reader";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../react-native/node_modules/react-native";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -809,6 +845,7 @@
 				PRODUCT_NAME = "Slax Reader";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../react-native/node_modules/react-native";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

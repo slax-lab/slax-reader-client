@@ -41,3 +41,10 @@ include(":react-native-get-random-values")
 project(":react-native-get-random-values").projectDir = file("react-native/node_modules/react-native-get-random-values/android")
 
 includeBuild("react-native/node_modules/@react-native/gradle-plugin")
+
+includeBuild("../reakt-native-toolkit/kotlin") {
+    dependencySubstitution {
+        substitute(module("de.voize:reakt-native-toolkit")).using(project(":reakt-native-toolkit"))
+        substitute(module("de.voize:reakt-native-toolkit-ksp")).using(project(":reakt-native-toolkit-ksp"))
+    }
+}

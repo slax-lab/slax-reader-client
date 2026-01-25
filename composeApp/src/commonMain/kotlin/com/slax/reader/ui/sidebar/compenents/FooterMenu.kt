@@ -125,24 +125,6 @@ fun FooterMenu(
     }
 
     mapOf(
-        "subscription" to FooterMenuConfig(
-            title = "sidebar_subscription".i18n(),
-            icon = {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_xs_sidebar_subscribe),
-                    contentDescription = null,
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(20.dp)
-                )
-            },
-            color = NavigationDrawerItemDefaults.colors(
-                unselectedContainerColor = Color.Transparent
-            ),
-            onClick = {
-                onDismiss()
-                navCtrl.navigate(SubscriptionManagerRoutes)
-            }
-        ),
         "setting" to FooterMenuConfig(
             title = "sidebar_settings".i18n(),
             icon = {
