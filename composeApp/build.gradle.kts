@@ -11,9 +11,6 @@ buildscript {
     repositories {
         mavenLocal()
         google()
-        maven {
-            url = uri("https://maven.aliyun.com/repository/google/")
-        }
         mavenCentral()
         gradlePluginPortal()
         maven {
