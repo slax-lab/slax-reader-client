@@ -48,28 +48,7 @@ repositories {
     maven("https://jogamp.org/deployment/maven")
 }
 
-fun incrementVersionCode(): String {
-    val propsFile = File(rootProject.projectDir, "gradle.properties")
-    val props = Properties()
-    props.load(propsFile.inputStream())
-
-    val currentVersionCode = props.getProperty("appVersionCode")?.toInt()!!
-    val newVersionCode = currentVersionCode + 1
-
-    props.setProperty("appVersionCode", newVersionCode.toString())
-    props.store(propsFile.outputStream(), null)
-
-    return newVersionCode.toString()
-}
-
-// Only increment version code when building (assemble or build task), otherwise use existing version code
-val appVersionCode =
-    if (gradle.startParameter.taskNames.any { it.contains("assemble") || it.contains("build") }) {
-        incrementVersionCode()
-    } else {
-        project.findProperty("appVersionCode")?.toString()!!
-    }
-
+val appVersionCode = project.findProperty("appVersionCode")?.toString()!!
 val appVersionName = project.findProperty("appVersionName")?.toString()!!
 val buildFlavor = project.findProperty("buildkonfig.flavor") as? String ?: "dev"
 
