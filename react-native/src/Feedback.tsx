@@ -10,6 +10,7 @@ import {
     StatusBar,
     Image,
     Alert,
+    KeyboardAvoidingView,
 } from 'react-native';
 import { FeedbackModule } from './generated/reaktNativeToolkit/typescript/modules';
 import { NavigationModule } from "./generated/reaktNativeToolkit/typescript/modules";
@@ -78,7 +79,11 @@ const FeedbackPage: React.FC<FeedbackProps> = (props: FeedbackProps) => {
     return (
         // @ts-ignore
         <SafeAreaView style={styles.container}>
-            <View style={styles.mainContainer}>
+            <KeyboardAvoidingView
+                behavior="padding"
+                style={styles.keyboardAvoidingView}
+            >
+                <View style={styles.mainContainer}>
                 <View style={styles.header}>
                     <TouchableOpacity
                         style={styles.backButton}
@@ -150,6 +155,7 @@ const FeedbackPage: React.FC<FeedbackProps> = (props: FeedbackProps) => {
                     </TouchableOpacity>
                 </View>
             </View>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 };
