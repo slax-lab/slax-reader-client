@@ -20,6 +20,7 @@ class SlaxReaderReactPackage : ReactPackage {
     ): List<NativeModule> {
         return listOf(
             NavigationModuleAndroid(reactContext, coroutineScope),
+            LocaleModuleAndroid(reactContext, coroutineScope),
             FeedbackModuleAndroid(reactContext, coroutineScope)
         )
     }

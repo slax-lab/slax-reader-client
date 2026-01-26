@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -15,6 +15,7 @@ import {
 import { FeedbackModule } from './generated/reaktNativeToolkit/typescript/modules';
 import { NavigationModule } from "./generated/reaktNativeToolkit/typescript/modules";
 import type { com } from './generated/reaktNativeToolkit/typescript/models';
+import { t, tWithParams, initI18n } from './utils/i18n';
 
 interface FeedbackProps {
     title?: string;
@@ -30,6 +31,28 @@ const FeedbackPage: React.FC<FeedbackProps> = (props: FeedbackProps) => {
     const [feedbackText, setFeedbackText] = useState<string>('');
     const [allowFollowUp, setAllowFollowUp] = useState<boolean>(true);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [isI18nReady, setIsI18nReady] = useState<boolean>(false);
+    const [followUpText, setFollowUpText] = useState<string>('');
+
+    useEffect(() => {
+        // if (email) {
+        //     tWithParams('feedback_allow_follow_up', { email }).then(text => {
+        //         setFollowUpText(text);
+        //     });
+        // }
+
+        initI18n().then(() => {
+            setIsI18nReady(true);
+            if (email) {
+                tWithParams('feedback_allow_follow_up', { email }).then(text => {
+                    setFollowUpText(text);
+                });
+            }
+        }).catch((error) => {
+            console.error('[Feedback] i18n 初始化失败:', error);
+            setIsI18nReady(true);
+        });
+    }, [email]);
 
     const handleSubmit = () => {
         if (feedbackText.trim() === '' || isSubmitting) {
@@ -55,12 +78,17 @@ const FeedbackPage: React.FC<FeedbackProps> = (props: FeedbackProps) => {
         setIsSubmitting(true);
 
         FeedbackModule.sendFeedback(feedbackParams).then(res => {
-            Alert.alert('成功', '反馈已提交，感谢您的反馈！', [{ text: '确定', onPress: () => {
-                handleBack()
-            } }]);
+            Alert.alert(
+                t('feedback_success_title'),
+                t('feedback_success_message'),
+                [{ text: t('btn_ok'), onPress: () => handleBack() }]
+            );
         }).catch(e => {
             console.error('提交反馈失败:', e);
-            Alert.alert('错误', `提交反馈失败，请稍后重试 ${e}`);
+            Alert.alert(
+                t('feedback_error_title'),
+                `${t('feedback_error_message')} ${e}`
+            );
         }).finally(() => {
             setIsSubmitting(false);
         });
@@ -76,8 +104,17 @@ const FeedbackPage: React.FC<FeedbackProps> = (props: FeedbackProps) => {
 
     const isSubmitEnabled = feedbackText.trim().length > 0 && !isSubmitting;
 
+    // if (!isI18nReady) {
+    //     return (
+    //         <SafeAreaView style={styles.container}>
+    //             <View style={styles.loadingContainer}>
+    //                 <Text>Loading...</Text>
+    //             </View>
+    //         </SafeAreaView>
+    //     );
+    // }
+
     return (
-        // @ts-ignore
         <SafeAreaView style={styles.container}>
             <KeyboardAvoidingView
                 behavior="padding"
@@ -96,7 +133,7 @@ const FeedbackPage: React.FC<FeedbackProps> = (props: FeedbackProps) => {
                         />
                     </TouchableOpacity>
 
-                    <Text style={styles.headerTitle}>Feedback</Text>
+                    <Text style={styles.headerTitle}>{t('feedback_title')}</Text>
 
                     <TouchableOpacity
                         style={styles.submitButton}
@@ -108,7 +145,7 @@ const FeedbackPage: React.FC<FeedbackProps> = (props: FeedbackProps) => {
                             styles.submitButtonText,
                             !isSubmitEnabled && styles.submitButtonTextDisabled
                         ]}>
-                            {isSubmitting ? '提交中...' : '提交'}
+                            {isSubmitting ? t('feedback_submitting') : t('feedback_submit')}
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -129,7 +166,7 @@ const FeedbackPage: React.FC<FeedbackProps> = (props: FeedbackProps) => {
                         style={styles.textInput}
                         value={feedbackText}
                         onChangeText={setFeedbackText}
-                        placeholder="请输入您的反馈..."
+                        placeholder={t('feedback_placeholder')}
                         placeholderTextColor="rgba(0, 0, 0, 0.3)"
                         multiline={true}
                         textAlignVertical="top"
@@ -150,7 +187,7 @@ const FeedbackPage: React.FC<FeedbackProps> = (props: FeedbackProps) => {
                             style={styles.checkbox}
                         />
                         <Text style={styles.footerText}>
-                            Allow follow-up at {email}
+                            {followUpText || `Allow follow-up at ${email}`}
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -165,6 +202,11 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#F5F5F3FF',
         paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     keyboardAvoidingView: {
         flex: 1,
