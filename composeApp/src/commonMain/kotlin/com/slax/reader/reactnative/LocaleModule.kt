@@ -7,12 +7,6 @@ import de.voize.reaktnativetoolkit.annotation.ReactNativeModule
 
 /**
  * React Native 国际化桥接模块
- *
- * 功能：
- * 1. 提供获取翻译文本的方法（支持参数插值）
- * 2. 提供当前语言查询方法
- * 3. 提供语言切换方法
- * 4. 提供批量获取所有翻译的方法
  */
 @ReactNativeModule("LocaleModule")
 class LocaleModule {
@@ -29,13 +23,26 @@ class LocaleModule {
     /**
      * 获取当前语言的所有翻译文本
      * @return Map<String, String> 所有翻译的键值对
+     * @deprecated 请使用 getAllLanguagesStrings() 获取所有语言数据，以支持动态语言切换
      */
+    @Deprecated("请使用 getAllLanguagesStrings() 获取所有语言数据")
     @ReactNativeMethod
     fun getAllStrings(): Map<String, String> {
         val currentLang = LocaleString.currentLocale
         return localeString.mapNotNull { (key, translations) ->
             translations[currentLang]?.let { key to it }
         }.toMap()
+    }
+
+    /**
+     * 获取所有语言的翻译数据
+     * @return Map<String, Map<String, String>> 多语言翻译映射
+     *         外层 key 是翻译键（如 "feedback_title"）
+     *         内层 Map 的 key 是语言代码（如 "en", "zh"），value 是翻译文本
+     */
+    @ReactNativeMethod
+    fun getAllLanguagesStrings(): Map<String, Map<String, String>> {
+        return localeString
     }
 
     /**
