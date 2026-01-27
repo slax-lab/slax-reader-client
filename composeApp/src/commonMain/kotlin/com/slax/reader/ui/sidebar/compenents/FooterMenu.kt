@@ -7,10 +7,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -18,19 +14,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import app.slax.reader.SlaxConfig
 import com.slax.reader.const.AboutRoutes
 import com.slax.reader.const.RNRoute
 import com.slax.reader.const.SettingsRoutes
 import com.slax.reader.const.SubscriptionManagerRoutes
+import com.slax.reader.data.database.model.checkIsSubscribed
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.ui.sidebar.SidebarViewModel
 import com.slax.reader.reactnative.navigateToRN
 import com.slax.reader.utils.i18n
-import com.slax.reader.utils.platformType
-import kotlinx.coroutines.launch
+import com.slax.reader.utils.isAndroid
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
@@ -56,16 +51,12 @@ fun FooterMenu(
 ) {
     val authDomain: AuthDomain = koinInject()
     val viewModel = koinInject<SidebarViewModel>()
-    var isSubscribed by remember { mutableStateOf(false) }
 
     val userInfo by viewModel.userInfo.collectAsState()
+    val subscriptionInfo by viewModel.subscriptionInfo.collectAsState()
+    val isSubscribed = subscriptionInfo?.checkIsSubscribed() == true
 
-    println("[watch][UI] FooterMenu recomposed")
-    viewModel.viewModelScope.launch {
-        isSubscribed = viewModel.checkUserIsSubscribed()
-    }
-
-    if (isSubscribed && platformType != "android") {
+    if (isSubscribed && !isAndroid()) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp)
         ) {
@@ -203,7 +194,7 @@ fun FooterMenu(
             }
         )
     ).map {
-        if (it.key == "subscription" && platformType == "android") {
+        if (it.key == "subscription" && isAndroid()) {
             return@map
         }
         NavigationDrawerItem(

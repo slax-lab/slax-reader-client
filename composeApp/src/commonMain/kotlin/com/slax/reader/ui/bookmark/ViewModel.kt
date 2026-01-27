@@ -9,6 +9,7 @@ import com.slax.reader.data.database.dao.BookmarkDao
 import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.database.dao.SubscriptionDao
 import com.slax.reader.data.database.dao.UserDao
+import com.slax.reader.data.database.model.checkIsSubscribed
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.data.preferences.ContinueReadingBookmark
@@ -19,7 +20,6 @@ import com.slax.reader.ui.bookmark.states.CommentDelegate
 import com.slax.reader.ui.bookmark.states.OutlineDelegate
 import com.slax.reader.ui.bookmark.states.OverlayDelegate
 import com.slax.reader.ui.bookmark.states.OverviewDelegate
-import com.slax.reader.utils.parseInstant
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
@@ -83,6 +83,7 @@ class BookmarkDetailViewModel(
     private var contentJob: Job? = null
 
     val userInfo = userDao.watchUserInfo()
+    val subscriptionInfo = subscriptionDao.watchSubscriptionInfo()
 
     val overlayDelegate = OverlayDelegate()
     val commentDelegate = CommentDelegate(database, commentDao, viewModelScope)
@@ -161,8 +162,9 @@ class BookmarkDetailViewModel(
             "edit_title" -> overlayDelegate.showOverlay(BookmarkOverlay.EditTitle)
             "summary" -> {
                 viewModelScope.launch {
-                    val isSubscribed = checkUserIsSubscribed()
-                    if (!isSubscribed) {
+                    val isSubscribed = subscriptionInfo.value?.checkIsSubscribed() == true
+
+                    if (isSubscribed) {
                         overlayDelegate.showOverlay(BookmarkOverlay.SubscriptionRequired)
                         overlayDelegate.dismissOverlay(BookmarkOverlay.Toolbar)
                         return@launch
@@ -221,19 +223,5 @@ class BookmarkDetailViewModel(
         outlineDelegate.reset()
         overviewDelegate.reset()
         overlayDelegate.reset()
-    }
-
-    @OptIn(kotlin.time.ExperimentalTime::class)
-    suspend fun checkUserIsSubscribed(): Boolean = withContext(Dispatchers.IO) {
-        val info = subscriptionDao.getSubscriptionInfo() ?: return@withContext false
-
-        try {
-            val endTime = parseInstant(info.subscription_end_time)
-            val now = kotlin.time.Clock.System.now()
-            endTime > now
-        } catch (e: Exception) {
-            println("Error checking subscription: ${e.message}")
-            false
-        }
     }
 }
