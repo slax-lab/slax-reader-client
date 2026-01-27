@@ -1,6 +1,5 @@
 import React, { ComponentType, useState, useEffect } from 'react';
 import { View, ActivityIndicator, AppRegistry } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { I18nextProvider } from 'react-i18next';
 import i18n, { initI18n } from '../i18n/config';
 
@@ -38,11 +37,9 @@ function createComponentWrapper<P extends object>(
     }
 
     return (
-      <SafeAreaProvider>
-        <I18nextProvider i18n={i18n}>
-          <Component {...props} />
-        </I18nextProvider>
-      </SafeAreaProvider>
+      <I18nextProvider i18n={i18n}>
+        <Component {...props} />
+      </I18nextProvider>
     );
   };
 

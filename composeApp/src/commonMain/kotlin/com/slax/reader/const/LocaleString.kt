@@ -458,45 +458,5 @@ val localeString: Map<String, Map<String, String>> = mapOf(
     "subscription_required_btn_ok" to mapOf(
         "zh" to "我知道了",
         "en" to "Got it"
-    ),
-
-    // ========================================
-    // Feedback 页面（React Native）
-    // ========================================
-    "feedback_title" to mapOf(
-        "zh" to "反馈",
-        "en" to "Feedback"
-    ),
-    "feedback_submit" to mapOf(
-        "zh" to "提交",
-        "en" to "Submit"
-    ),
-    "feedback_submitting" to mapOf(
-        "zh" to "提交中...",
-        "en" to "Submitting..."
-    ),
-    "feedback_placeholder" to mapOf(
-        "zh" to "请输入您的反馈...",
-        "en" to "Please enter your feedback..."
-    ),
-    "feedback_allow_follow_up" to mapOf(
-        "zh" to "允许通过 {email} 进行跟进",
-        "en" to "Allow follow-up at {email}"
-    ),
-    "feedback_success_title" to mapOf(
-        "zh" to "成功",
-        "en" to "Success"
-    ),
-    "feedback_success_message" to mapOf(
-        "zh" to "反馈已提交，感谢您的反馈！",
-        "en" to "Feedback submitted. Thank you!"
-    ),
-    "feedback_error_title" to mapOf(
-        "zh" to "错误",
-        "en" to "Error"
-    ),
-    "feedback_error_message" to mapOf(
-        "zh" to "提交反馈失败，请稍后重试",
-        "en" to "Failed to submit feedback. Please try again later."
     )
 )

@@ -5,12 +5,13 @@ import {
     TextInput,
     TouchableOpacity,
     StyleSheet,
+    SafeAreaView,
     Platform,
+    StatusBar,
     Image,
     Alert,
     KeyboardAvoidingView
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { FeedbackModule } from './generated/reaktNativeToolkit/typescript/modules';
 import { NavigationModule } from "./generated/reaktNativeToolkit/typescript/modules";
 import type { com } from './generated/reaktNativeToolkit/typescript/models';
@@ -170,6 +171,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F5F5F3FF',
+        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     },
     keyboardAvoidingView: {
         flex: 1,
