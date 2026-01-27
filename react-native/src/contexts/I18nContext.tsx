@@ -20,14 +20,7 @@ interface I18nContextValue {
   tWithParams: (key: string, params: Record<string, string>) => Promise<string>;
 }
 
-/**
- * i18n Context
- */
 const I18nContext = createContext<I18nContextValue | null>(null);
-
-/**
- * i18n Provider Props
- */
 interface I18nProviderProps {
   children: ReactNode;
 }
@@ -36,10 +29,9 @@ interface I18nProviderProps {
  * i18n Provider - 管理语言状态并提供给子组件
  */
 export function I18nProvider({ children }: I18nProviderProps) {
-  // 语言状态
   const [locale, setLocaleState] = useState<string>(() => getCurrentLocale());
 
-  // 初始化时同步KMP端的最新语言状态
+  // 同步最新语言状态
   useEffect(() => {
     const syncLanguage = async () => {
       try {
@@ -52,12 +44,9 @@ export function I18nProvider({ children }: I18nProviderProps) {
     };
 
     syncLanguage();
-  }, []); // 仅在mount时执行一次
+  }, []);
 
-  // 订阅语言切换事件
   useEffect(() => {
-    console.log('[I18nProvider] 订阅语言切换事件');
-
     const unsubscribe = subscribeLocaleChange((newLocale) => {
       console.log('[I18nProvider] 语言切换通知:', newLocale);
       setLocaleState(newLocale);
@@ -69,25 +58,19 @@ export function I18nProvider({ children }: I18nProviderProps) {
     };
   }, []);
 
-  // 切换语言的包装函数
   const setLocale = useCallback(async (language: string) => {
     try {
       await changeLocale(language);
-      // changeLocale 会自动触发 subscribeLocaleChange 监听器
-      // 监听器会调用 setLocaleState 更新状态
     } catch (error) {
       console.error('[I18nProvider] 切换语言失败:', error);
       throw error;
     }
   }, []);
 
-  // 翻译函数（响应式）
   const t = useCallback((key: string): string => {
-    // locale 变化时，这个函数会被重新创建，从而触发使用它的组件重新渲染
     return tFunc(key, locale);
   }, [locale]);
 
-  // 带参数的翻译函数（响应式）
   const tWithParams = useCallback(async (key: string, params: Record<string, string>): Promise<string> => {
     return tWithParamsFunc(key, params, locale);
   }, [locale]);
@@ -107,19 +90,7 @@ export function I18nProvider({ children }: I18nProviderProps) {
 }
 
 /**
- * useI18n Hook - 获取 i18n 上下文
- *
- * @example
- * ```tsx
- * const { locale, t, setLocale } = useI18n();
- *
- * return (
- *   <View>
- *     <Text>{t('feedback_title')}</Text>
- *     <Button title="切换语言" onPress={() => setLocale('zh')} />
- *   </View>
- * );
- * ```
+ * useI18n Hook
  */
 export function useI18n(): I18nContextValue {
   const context = useContext(I18nContext);

@@ -21,20 +21,6 @@ class LocaleModule {
     }
 
     /**
-     * 获取当前语言的所有翻译文本
-     * @return Map<String, String> 所有翻译的键值对
-     * @deprecated 请使用 getAllLanguagesStrings() 获取所有语言数据，以支持动态语言切换
-     */
-    @Deprecated("请使用 getAllLanguagesStrings() 获取所有语言数据")
-    @ReactNativeMethod
-    fun getAllStrings(): Map<String, String> {
-        val currentLang = LocaleString.currentLocale
-        return localeString.mapNotNull { (key, translations) ->
-            translations[currentLang]?.let { key to it }
-        }.toMap()
-    }
-
-    /**
      * 获取所有语言的翻译数据
      * @return Map<String, Map<String, String>> 多语言翻译映射
      *         外层 key 是翻译键（如 "feedback_title"）

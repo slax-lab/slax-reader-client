@@ -1,9 +1,7 @@
 /**
- * React Native i18n工具类
- * 支持多语言动态切换
+ * React Native i18n 工具类
  */
 
-import { Alert } from 'react-native';
 import  { LocaleModule } from '../generated/reaktNativeToolkit/typescript/modules';
 
 let allTranslations: Record<string, Record<string, string>> = {};
