@@ -1,0 +1,11 @@
+{
+  "title": "Feedback",
+  "submit": "Submit",
+  "submitting": "Submitting...",
+  "placeholder": "Please enter your feedback...",
+  "allow_follow_up": "Allow follow-up at {{email}}",
+  "success_title": "Success",
+  "success_message": "Feedback submitted. Thank you!",
+  "error_title": "Error",
+  "error_message": "Failed to submit feedback. Please try again later."
+}

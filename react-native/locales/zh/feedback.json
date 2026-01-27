@@ -1,0 +1,11 @@
+{
+  "title": "反馈",
+  "submit": "提交",
+  "submitting": "提交中...",
+  "placeholder": "请输入您的反馈...",
+  "allow_follow_up": "允许通过 {{email}} 进行跟进",
+  "success_title": "成功",
+  "success_message": "反馈已提交，感谢您的反馈！",
+  "error_title": "错误",
+  "error_message": "提交反馈失败，请稍后重试"
+}

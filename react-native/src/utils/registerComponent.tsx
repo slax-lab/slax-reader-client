@@ -1,16 +1,12 @@
-import React, { useState, useEffect, ComponentType } from 'react';
+import React, { ComponentType, useState, useEffect } from 'react';
 import { View, ActivityIndicator, AppRegistry } from 'react-native';
-import { initI18n } from './i18n';
-import { I18nProvider } from '../contexts/I18nContext';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { I18nextProvider } from 'react-i18next';
+import i18n, { initI18n } from '../i18n/config';
 
 /**
- * 组件注册配置选项
+ * 默认加载组件
  */
-export interface RegisterComponentOptions {
-  showLoadingIndicator?: boolean;
-  loadingComponent?: ComponentType;
-}
-
 const DefaultLoadingComponent: React.FC = () => (
   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
     <ActivityIndicator size="large" />
@@ -18,14 +14,8 @@ const DefaultLoadingComponent: React.FC = () => (
 );
 
 function createComponentWrapper<P extends object>(
-  Component: ComponentType<P>,
-  options: RegisterComponentOptions = {}
+  Component: ComponentType<P>
 ): ComponentType<P> {
-  const {
-    showLoadingIndicator = true,
-    loadingComponent: LoadingComponent = DefaultLoadingComponent,
-  } = options;
-
   const WrappedComponent: React.FC<P> = (props) => {
     const [ready, setReady] = useState(false);
 
@@ -43,14 +33,16 @@ function createComponentWrapper<P extends object>(
       initialize();
     }, []);
 
-    if (!ready && showLoadingIndicator) {
-      return <LoadingComponent />;
+    if (!ready) {
+      return <DefaultLoadingComponent />;
     }
 
     return (
-      <I18nProvider>
-        <Component {...props} />
-      </I18nProvider>
+      <SafeAreaProvider>
+        <I18nextProvider i18n={i18n}>
+          <Component {...props} />
+        </I18nextProvider>
+      </SafeAreaProvider>
     );
   };
 
@@ -62,9 +54,8 @@ function createComponentWrapper<P extends object>(
  */
 export function registerRNComponent<P extends object>(
   componentName: string,
-  Component: ComponentType<P>,
-  options?: RegisterComponentOptions
+  Component: ComponentType<P>
 ): void {
-  const WrappedComponent = createComponentWrapper(Component, options);
+  const WrappedComponent = createComponentWrapper(Component);
   AppRegistry.registerComponent(componentName, () => WrappedComponent);
 }

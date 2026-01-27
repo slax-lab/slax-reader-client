@@ -6,16 +6,19 @@
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "lint": "eslint .",
-    "start": "react-native start --host 0.0.0.0",
+    "start": "react-native start --host localhost",
     "test": "jest",
     "bundle:ios": "react-native bundle --platform ios --dev false --entry-file index.tsx --bundle-output ../iosApp/iosApp/main.jsbundle --assets-dest ../iosApp/iosApp",
     "bundle:android": "react-native bundle --platform android --dev false --entry-file index.tsx --bundle-output ../composeApp/src/androidMain/assets/index.android.bundle --assets-dest ../composeApp/src/androidMain/res"
   },
   "dependencies": {
+    "i18next": "^25.8.0",
     "react": "19.2.0",
+    "react-i18next": "^16.5.3",
     "react-native": "0.83.1",
     "react-native-get-random-values": "^1.11.0",
     "react-native-markdown-display": "^7.0.2",
+    "react-native-safe-area-context": "^5.6.2",
     "reakt-native-toolkit": "^0.22.0"
   },
   "devDependencies": {

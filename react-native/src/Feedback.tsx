@@ -1,22 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
     TextInput,
     TouchableOpacity,
     StyleSheet,
-    SafeAreaView,
     Platform,
-    StatusBar,
     Image,
     Alert,
-    KeyboardAvoidingView,
-    ImageSourcePropType
+    KeyboardAvoidingView
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { FeedbackModule } from './generated/reaktNativeToolkit/typescript/modules';
 import { NavigationModule } from "./generated/reaktNativeToolkit/typescript/modules";
 import type { com } from './generated/reaktNativeToolkit/typescript/models';
-import { useI18n } from './contexts/I18nContext';
+import { useTranslation } from 'react-i18next';
 import { getImageSource} from "./resouces";
 
 interface FeedbackProps {
@@ -30,19 +28,10 @@ interface FeedbackProps {
 
 const FeedbackPage: React.FC<FeedbackProps> = (props: FeedbackProps) => {
     const { title, href, email, bookmarkId, entryPoint, version } = props;
-    const { t, tWithParams } = useI18n();
+    const { t } = useTranslation();
     const [feedbackText, setFeedbackText] = useState<string>('');
     const [allowFollowUp, setAllowFollowUp] = useState<boolean>(true);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-    const [followUpText, setFollowUpText] = useState<string>('');
-
-    useEffect(() => {
-        if (email) {
-            tWithParams('feedback_allow_follow_up', { email }).then(text => {
-                setFollowUpText(text);
-            });
-        }
-    }, [email, tWithParams]);
 
     const handleSubmit = () => {
         if (feedbackText.trim() === '' || isSubmitting) {
@@ -69,15 +58,15 @@ const FeedbackPage: React.FC<FeedbackProps> = (props: FeedbackProps) => {
 
         FeedbackModule.sendFeedback(feedbackParams).then(res => {
             Alert.alert(
-                t('feedback_success_title'),
-                t('feedback_success_message'),
-                [{ text: t('btn_ok'), onPress: () => handleBack() }]
+                t('feedback:success_title'),
+                t('feedback:success_message'),
+                [{ text: t('common:btn_ok'), onPress: () => handleBack() }]
             );
         }).catch(e => {
             console.error('提交反馈失败:', e);
             Alert.alert(
-                t('feedback_error_title'),
-                `${t('feedback_error_message')} ${e}`
+                t('feedback:error_title'),
+                `${t('feedback:error_message')} ${e}`
             );
         }).finally(() => {
             setIsSubmitting(false);
@@ -113,7 +102,7 @@ const FeedbackPage: React.FC<FeedbackProps> = (props: FeedbackProps) => {
                         />
                     </TouchableOpacity>
 
-                    <Text style={styles.headerTitle}>{t('feedback_title')}</Text>
+                    <Text style={styles.headerTitle}>{t('feedback:title')}</Text>
 
                     <TouchableOpacity
                         style={styles.submitButton}
@@ -125,7 +114,7 @@ const FeedbackPage: React.FC<FeedbackProps> = (props: FeedbackProps) => {
                             styles.submitButtonText,
                             !isSubmitEnabled && styles.submitButtonTextDisabled
                         ]}>
-                            {isSubmitting ? t('feedback_submitting') : t('feedback_submit')}
+                            {isSubmitting ? t('feedback:submitting') : t('feedback:submit')}
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -146,7 +135,7 @@ const FeedbackPage: React.FC<FeedbackProps> = (props: FeedbackProps) => {
                         style={styles.textInput}
                         value={feedbackText}
                         onChangeText={setFeedbackText}
-                        placeholder={t('feedback_placeholder')}
+                        placeholder={t('feedback:placeholder')}
                         placeholderTextColor="rgba(0, 0, 0, 0.3)"
                         multiline={true}
                         textAlignVertical="top"
@@ -167,7 +156,7 @@ const FeedbackPage: React.FC<FeedbackProps> = (props: FeedbackProps) => {
                             style={styles.checkbox}
                         />
                         <Text style={styles.footerText}>
-                            {followUpText || `Allow follow-up at ${email}`}
+                            {t('feedback:allow_follow_up', { email: email || '' })}
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -181,7 +170,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F5F5F3FF',
-        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     },
     keyboardAvoidingView: {
         flex: 1,
