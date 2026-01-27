@@ -168,7 +168,7 @@ fun LoginScreen(navController: NavHostController) {
                 )
             }
 
-            if (platformType == "ios" || true) {
+            if (platformType == "ios") {
                 val appleProvider = remember { AppleSignInProvider() }
 
                 LoginButton(
