@@ -28,7 +28,7 @@ interface FeedbackProps {
 
 const FeedbackPage: React.FC<FeedbackProps> = (props: FeedbackProps) => {
     const { title, href, email, bookmarkId, entryPoint, version } = props;
-    const { t, tWithParams } = useI18n(); // 使用 useI18n Hook 获取响应式翻译函数
+    const { t, tWithParams } = useI18n();
     const [feedbackText, setFeedbackText] = useState<string>('');
     const [allowFollowUp, setAllowFollowUp] = useState<boolean>(true);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -40,7 +40,7 @@ const FeedbackPage: React.FC<FeedbackProps> = (props: FeedbackProps) => {
                 setFollowUpText(text);
             });
         }
-    }, [email, tWithParams]); // 添加 tWithParams 到依赖项
+    }, [email, tWithParams]);
 
     const handleSubmit = () => {
         if (feedbackText.trim() === '' || isSubmitting) {
