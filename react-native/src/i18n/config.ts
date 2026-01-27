@@ -91,7 +91,6 @@ export async function initI18n(): Promise<void> {
 export async function changeLanguage(language: string): Promise<void> {
   try {
     await i18n.changeLanguage(language);
-    await LocaleModule.changeLocale(language);
     console.log('[i18n] 语言已切换:', language);
   } catch (error) {
     console.error('[i18n] 切换语言失败:', error);
