@@ -1,10 +1,9 @@
 /**
  * i18n Context - 提供响应式的国际化支持
- * 当语言切换时，所有使用 useI18n Hook 的组件会自动重新渲染
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { subscribeLocaleChange, getCurrentLocale, syncCurrentLocale, changeLocale, t as tFunc, tWithParams as tWithParamsFunc } from '../utils/i18n';
+import { subscribeLocaleChange, subscribeTranslationChange, getCurrentLocale, syncCurrentLocale, changeLocale, t as tFunc, tWithParams as tWithParamsFunc } from '../utils/i18n';
 
 /**
  * i18n Context 类型定义
@@ -30,6 +29,7 @@ interface I18nProviderProps {
  */
 export function I18nProvider({ children }: I18nProviderProps) {
   const [locale, setLocaleState] = useState<string>(() => getCurrentLocale());
+  const [, forceUpdate] = useState(0);
 
   // 同步最新语言状态
   useEffect(() => {
@@ -58,6 +58,19 @@ export function I18nProvider({ children }: I18nProviderProps) {
     };
   }, []);
 
+  // 订阅翻译更新事件
+  useEffect(() => {
+    const unsubscribe = subscribeTranslationChange(() => {
+      console.log('[I18nProvider] 翻译数据已更新，触发重新渲染');
+      forceUpdate(prev => prev + 1);
+    });
+
+    return () => {
+      console.log('[I18nProvider] 取消订阅翻译更新事件');
+      unsubscribe();
+    };
+  }, []);
+
   const setLocale = useCallback(async (language: string) => {
     try {
       await changeLocale(language);
@@ -68,8 +81,8 @@ export function I18nProvider({ children }: I18nProviderProps) {
   }, []);
 
   const t = useCallback((key: string): string => {
-    return tFunc(key, locale);
-  }, [locale]);
+    return tFunc(key);
+  }, []);
 
   const tWithParams = useCallback(async (key: string, params: Record<string, string>): Promise<string> => {
     return tWithParamsFunc(key, params, locale);
