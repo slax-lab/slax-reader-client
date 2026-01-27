@@ -38,6 +38,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        setCurrentActivity(this)
+    }
+
     override fun onDestroy() {
         setCurrentActivity(null)
         super.onDestroy()

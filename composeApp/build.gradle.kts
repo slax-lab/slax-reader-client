@@ -293,10 +293,6 @@ val bundleIOSReleaseJs = tasks.register<Exec>("bundleIOSReleaseJs") {
         "--bundle-output", bundleFile.absolutePath,
         "--assets-dest", assetsDir.absolutePath
     )
-
-    doLast {
-        println("✅ iOS bundle created: ${bundleFile.absolutePath}")
-    }
 }
 
 dependencies {

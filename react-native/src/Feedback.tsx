@@ -10,10 +10,12 @@ import {
     StatusBar,
     Image,
     Alert,
+    ImageSourcePropType,
 } from 'react-native';
 import { FeedbackModule } from './generated/reaktNativeToolkit/typescript/modules';
 import { NavigationModule } from "./generated/reaktNativeToolkit/typescript/modules";
 import type { com } from './generated/reaktNativeToolkit/typescript/models';
+import { getImageSource} from "./resouces";
 
 interface FeedbackProps {
     title?: string;
@@ -86,7 +88,7 @@ const FeedbackPage: React.FC<FeedbackProps> = (props: FeedbackProps) => {
                         activeOpacity={0.7}
                     >
                         <Image
-                            source={require('./assets/images/ic_nav_back.png')}
+                            source={getImageSource('ic_nav_back')}
                             style={styles.backIcon}
                         />
                     </TouchableOpacity>
@@ -139,8 +141,8 @@ const FeedbackPage: React.FC<FeedbackProps> = (props: FeedbackProps) => {
                     >
                         <Image
                             source={allowFollowUp
-                                ? require('./assets/images/ic_agree_enable.png')
-                                : require('./assets/images/ic_agree_disable.png')
+                                ? getImageSource('ic_agree_enable')
+                                : getImageSource('ic_agree_disable')
                             }
                             style={styles.checkbox}
                         />

@@ -26,6 +26,7 @@ target 'iosApp' do
   )
 
   pod 'ComposeApp', :path => '../composeApp'
+  pod 'react-native-get-random-values', :path => '../react-native/node_modules/react-native-get-random-values'
 
   target 'share' do
     inherit! :search_paths
