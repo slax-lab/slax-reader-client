@@ -51,35 +51,14 @@ export async function initI18n(): Promise<void> {
     return initPromise;
   }
 
-  const startTime = Date.now();
   initPromise = (async () => {
     try {
       if (!allTranslations || !Object.keys(allTranslations).length) {
       }
       allTranslations = await LocaleModule.getAllLanguagesStrings();
-
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-
-      const translationKeyCount = Object.keys(allTranslations).length;
-      const languageCount = translationKeyCount > 0
-        ? Object.keys(Object.values(allTranslations)[0] || {}).length
-        : 0;
-
       isInitialized = true;
 
       console.log('[i18n] 初始化完成');
-      console.log('[i18n] 已加载翻译键数量:', translationKeyCount);
-      console.log('[i18n] 支持语言数量:', languageCount);
-      console.log('[i18n] 加载耗时:', duration, 'ms');
-
-      // 仅在开发环境显示调试信息
-      if (__DEV__) {
-        Alert.alert(
-          'i18n 加载完成',
-          `翻译键: ${translationKeyCount}\n支持语言: ${languageCount}\n加载耗时: ${duration}ms\n\n注意：语言将在页面加载时同步`
-        );
-      }
     } catch (error) {
       console.error('[i18n] 初始化失败:', error);
       currentLocale = 'en';
