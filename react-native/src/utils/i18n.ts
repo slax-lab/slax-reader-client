@@ -9,24 +9,11 @@ let currentLocale: string = 'en';
 let isInitialized: boolean = false;
 let initPromise: Promise<void> | null = null;
 
-type LocaleChangeListener = (newLocale: string) => void;
-const localeChangeListeners: Set<LocaleChangeListener> = new Set();
-
 // 翻译缓存相关状态
 type TranslationChangeListener = () => void;
 const translationListeners: Set<TranslationChangeListener> = new Set();
 const translationCache: Record<string, string> = {}; // 缓存翻译结果
 const pendingKeys: Set<string> = new Set(); // 正在请求中的key
-
-/**
- * 订阅语言切换事件
- * @param listener 监听器函数
- * @returns 取消订阅函数
- */
-export function subscribeLocaleChange(listener: LocaleChangeListener): () => void {
-  localeChangeListeners.add(listener);
-  return () => localeChangeListeners.delete(listener);
-}
 
 /**
  * 订阅翻译更新事件
@@ -36,19 +23,6 @@ export function subscribeLocaleChange(listener: LocaleChangeListener): () => voi
 export function subscribeTranslationChange(listener: TranslationChangeListener): () => void {
   translationListeners.add(listener);
   return () => translationListeners.delete(listener);
-}
-
-/**
- * 通知所有监听器语言已切换
- */
-function notifyLocaleChange(newLocale: string): void {
-  localeChangeListeners.forEach(listener => {
-    try {
-      listener(newLocale);
-    } catch (error) {
-      console.error('[i18n] 监听器执行失败:', error);
-    }
-  });
 }
 
 /**
@@ -69,12 +43,10 @@ function notifyTranslationChange(): void {
  */
 export async function initI18n(): Promise<void> {
   if (isInitialized) {
-    console.log('[i18n] 已初始化，跳过重复调用');
     return;
   }
 
   if (initPromise) {
-    console.log('[i18n] 正在初始化中，等待完成...');
     return initPromise;
   }
 
@@ -184,26 +156,6 @@ export async function tWithParams(
 }
 
 /**
- * 切换语言
- * @param language 语言（如 "en", "zh"）
- */
-export async function changeLocale(language: string): Promise<void> {
-  if (language === currentLocale) {
-    return;
-  }
-
-  try {
-    await LocaleModule.changeLocale(language);
-    currentLocale = language;
-    clearTranslationCache();
-    notifyLocaleChange(language);
-  } catch (error) {
-    console.error('[i18n] 切换语言失败:', error);
-    throw error;
-  }
-}
-
-/**
  * 获取当前本地缓存语言
  * @returns 当前语言
  */
@@ -223,7 +175,6 @@ export async function syncCurrentLocale(): Promise<string> {
       currentLocale = latestLocale;
 
       clearTranslationCache();
-      notifyLocaleChange(latestLocale);
     }
 
     return latestLocale;
@@ -246,7 +197,7 @@ export function getSupportedLocales(): string[] {
 }
 
 /**
- * 清空翻译缓存（在语言切换时调用）
+ * 清空翻译缓存
  */
 export function clearTranslationCache(): void {
   Object.keys(translationCache).forEach(key => delete translationCache[key]);

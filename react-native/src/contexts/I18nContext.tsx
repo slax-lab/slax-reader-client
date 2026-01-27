@@ -3,7 +3,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { subscribeLocaleChange, subscribeTranslationChange, getCurrentLocale, syncCurrentLocale, changeLocale, t as tFunc, tWithParams as tWithParamsFunc } from '../utils/i18n';
+import { subscribeTranslationChange, getCurrentLocale, syncCurrentLocale, t as tFunc, tWithParams as tWithParamsFunc } from '../utils/i18n';
 
 /**
  * i18n Context 类型定义
@@ -11,8 +11,6 @@ import { subscribeLocaleChange, subscribeTranslationChange, getCurrentLocale, sy
 interface I18nContextValue {
   /** 当前语言代码 */
   locale: string;
-  /** 切换语言 */
-  setLocale: (language: string) => Promise<void>;
   /** 获取翻译文本 */
   t: (key: string) => string;
   /** 获取带参数的翻译文本 */
@@ -46,18 +44,6 @@ export function I18nProvider({ children }: I18nProviderProps) {
     syncLanguage();
   }, []);
 
-  useEffect(() => {
-    const unsubscribe = subscribeLocaleChange((newLocale) => {
-      console.log('[I18nProvider] 语言切换通知:', newLocale);
-      setLocaleState(newLocale);
-    });
-
-    return () => {
-      console.log('[I18nProvider] 取消订阅语言切换事件');
-      unsubscribe();
-    };
-  }, []);
-
   // 订阅翻译更新事件
   useEffect(() => {
     const unsubscribe = subscribeTranslationChange(() => {
@@ -71,15 +57,6 @@ export function I18nProvider({ children }: I18nProviderProps) {
     };
   }, []);
 
-  const setLocale = useCallback(async (language: string) => {
-    try {
-      await changeLocale(language);
-    } catch (error) {
-      console.error('[I18nProvider] 切换语言失败:', error);
-      throw error;
-    }
-  }, []);
-
   const t = useCallback((key: string): string => {
     return tFunc(key);
   }, []);
@@ -90,7 +67,6 @@ export function I18nProvider({ children }: I18nProviderProps) {
 
   const value: I18nContextValue = {
     locale,
-    setLocale,
     t,
     tWithParams,
   };
