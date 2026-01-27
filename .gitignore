@@ -33,3 +33,5 @@ index.android.bundle
 main.jsbundle
 AGENTS.md
 react-native/src/generated/*
+iosApp/iosApp/images/*
+composeApp/src/androidMain/assets/*

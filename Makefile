@@ -30,4 +30,5 @@ rn:
 	 mkdir -p build/generated/autolinking && cd react-native && npx react-native config > ../build/generated/autolinking/autolinking.json
 
 rn-bundle:
-	cd react-native && npm run bundle:ios && npm run bundle:android
+	./gradlew :composeApp:bundleAndroidReleaseJs
+	./gradlew :composeApp:bundleIOSReleaseJs
