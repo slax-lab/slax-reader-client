@@ -13,10 +13,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.LocalToolbarVisible
@@ -57,39 +59,35 @@ fun FloatingActionBar(
             horizontalArrangement = Arrangement.spacedBy(0.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box {
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .offset(y = 10.dp)
-                        .shadow(
-                            elevation = 40.dp,
-                            shape = RoundedCornerShape(25.dp),
-                            ambientColor = Color.Black.copy(alpha = 1.0f),
-                            spotColor = Color.Black.copy(alpha = 1.0f)
+            Row(
+                modifier = Modifier
+                    .dropShadow(
+                        shape = RoundedCornerShape(25.dp),
+                        shadow = Shadow(
+                            radius = 40.dp,
+                            spread = 0.dp,
+                            color = Color.Black.copy(alpha = 0.25f),
+                            offset = DpOffset(x = 0.dp, y = 10.dp)
                         )
+                    )
+                    .clip(RoundedCornerShape(25.dp))
+                    .border(
+                        width = 1.dp,
+                        color = Color.White,
+                        shape = RoundedCornerShape(25.dp)
+                    )
+                    .background(Color(0xFFFFFFFF))
+            ) {
+                StarButton(
+                    isStarred = isStarred,
+                    onClick = { viewModel.bookmarkDelegate.onToggleStar(!isStarred) }
                 )
 
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(25.dp))
-                        .border(
-                            width = 1.dp,
-                            color = Color.White,
-                            shape = RoundedCornerShape(25.dp)
-                        )
-                        .background(Color(0xFFFFFFFF))
-                ) {
-                    StarButton(
-                        isStarred = isStarred,
-                        onClick = { viewModel.bookmarkDelegate.onToggleStar(!isStarred) }
-                    )
+                ArchiveButton(
+                    isArchived = isArchived,
+                    onClick = { viewModel.bookmarkDelegate.onToggleArchive(!isArchived) }
+                )
 
-                    ArchiveButton(
-                        isArchived = isArchived,
-                        onClick = { viewModel.bookmarkDelegate.onToggleArchive(!isArchived) }
-                    )
-                }
             }
 
             Box(modifier = Modifier.width(12.dp))
@@ -154,12 +152,15 @@ private fun MoreButton(onClick: () -> Unit) {
             modifier = Modifier
                 .matchParentSize()
                 .offset(y = 10.dp)
-                .shadow(
-                    elevation = 40.dp,
+                .dropShadow(
                     shape = RoundedCornerShape(25.dp),
-                    ambientColor = Color.Black.copy(alpha = 1.0f),
-                    spotColor = Color.Black.copy(alpha = 1.0f)
-                )
+                    shadow = Shadow(
+                        radius = 40.dp,
+                        spread = 0.dp,
+                        color = Color.Black.copy(alpha = 0.25f),
+                        offset = DpOffset(x = 0.dp, y = 10.dp)
+                    )
+                ),
         )
 
         Surface(

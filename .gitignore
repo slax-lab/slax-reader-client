@@ -33,3 +33,6 @@ index.android.bundle
 main.jsbundle
 AGENTS.md
 react-native/src/generated/*
+iosApp/iosApp/assets/images/*
+composeApp/src/androidMain/assets/*
+composeApp/src/androidMain/res/drawable-mdpi/*

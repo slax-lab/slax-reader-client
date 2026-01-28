@@ -45,18 +45,4 @@ class SubscriptionDao (
     }
 
     fun watchSubscriptionInfo(): StateFlow<UserSubscriptionInfo?> = _subscriptionInfoFlow
-
-    suspend fun getSubscriptionInfo(): UserSubscriptionInfo? {
-        println("[database] getSubscriptionInfo")
-
-        val results = database.getAll(
-            """
-            SELECT * FROM sr_user_subscription LIMIT 1
-            """.trimIndent(),
-            parameters = listOf(),
-            mapper = subscriptionMapper
-        )
-
-        return results.firstOrNull()
-    }
 }

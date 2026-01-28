@@ -1,8 +1,10 @@
 package com.slax.reader
 
 import android.app.Application
-import com.facebook.react.ReactInstanceManager
-import com.facebook.react.common.LifecycleState
+import com.facebook.react.ReactHost
+import com.facebook.react.ReactPackage
+import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint
+import com.facebook.react.defaults.DefaultReactHost
 import com.facebook.react.shell.MainReactPackage
 import com.facebook.react.soloader.OpenSourceMergedSoMapping
 import com.facebook.soloader.SoLoader
@@ -27,14 +29,12 @@ class SlaxReaderApplication : Application() {
     }
 
     @Volatile
-    private var _reactInstanceManager: ReactInstanceManager? = null
+    private var _reactHost: ReactHost? = null
     private var slaxReaderReactPackage: SlaxReaderReactPackage? = null
 
     override fun onCreate() {
         super.onCreate()
         instance = this
-
-        SoLoader.init(this, OpenSourceMergedSoMapping)
 
         if (GlobalContext.getOrNull() == null) {
             Firebase.initialize(this)
@@ -47,37 +47,33 @@ class SlaxReaderApplication : Application() {
     }
 
     @Synchronized
-    fun getReactInstanceManager(): ReactInstanceManager {
-        if (_reactInstanceManager == null) {
+    fun getReactHost(): ReactHost {
+        if (_reactHost == null) {
+            SoLoader.init(this, OpenSourceMergedSoMapping)
+            DefaultNewArchitectureEntryPoint.load()
+
             slaxReaderReactPackage = SlaxReaderReactPackage()
-
-            _reactInstanceManager = ReactInstanceManager.builder()
-                .setApplication(this)
-                .setCurrentActivity(null)
-                .apply {
-                    if (BuildConfig.DEBUG) {
-                        setJSMainModulePath("index")
-                        setUseDeveloperSupport(true)
-                    } else {
-                        setBundleAssetName("index.android.bundle")
-                        setUseDeveloperSupport(false)
-                    }
-                }
-                .addPackage(MainReactPackage(null))
-                .addPackage(RNGetRandomValuesPackage())
-                .addPackage(slaxReaderReactPackage!!)
-                .setInitialLifecycleState(LifecycleState.BEFORE_CREATE)
-                .build()
-
-            println("[SlaxReaderApplication] ReactInstanceManager initialized (lazy)")
+            val packages: List<ReactPackage> = listOf(
+                MainReactPackage(null),
+                RNGetRandomValuesPackage(),
+                slaxReaderReactPackage!!
+            )
+            _reactHost = DefaultReactHost.getDefaultReactHost(
+                this,
+                packages,
+                jsMainModulePath = "index",
+                jsBundleAssetPath = "index.android.bundle",
+                jsRuntimeFactory = null,
+                useDevSupport = false
+            )
         }
-        return _reactInstanceManager!!
+        return _reactHost!!
     }
 
     override fun onTerminate() {
         super.onTerminate()
-        _reactInstanceManager?.destroy()
-        _reactInstanceManager = null
+        _reactHost?.invalidate()
+        _reactHost = null
         slaxReaderReactPackage?.cleanup()
         slaxReaderReactPackage = null
         instance = null

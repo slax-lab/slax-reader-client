@@ -12,11 +12,6 @@ make rn
 
 ./gradlew :composeApp:bundleIOSReleaseJs
 
-xcodebuild clean \
-  -workspace iosApp/iosApp.xcworkspace \
-  -scheme iosApp \
-  -configuration Release
-
 xcodebuild archive \
   -workspace iosApp/iosApp.xcworkspace \
   -scheme iosApp \

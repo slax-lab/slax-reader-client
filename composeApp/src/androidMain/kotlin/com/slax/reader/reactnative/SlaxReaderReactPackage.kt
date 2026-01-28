@@ -9,7 +9,6 @@ import com.facebook.react.uimanager.ViewManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 
 class SlaxReaderReactPackage : ReactPackage {
 
@@ -20,7 +19,9 @@ class SlaxReaderReactPackage : ReactPackage {
         reactContext: ReactApplicationContext
     ): List<NativeModule> {
         return listOf(
-            TestModuleAndroid(reactContext, coroutineScope)
+            NavigationModuleAndroid(reactContext, coroutineScope),
+            LocaleModuleAndroid(reactContext, coroutineScope),
+            FeedbackModuleAndroid(reactContext, coroutineScope)
         )
     }
 

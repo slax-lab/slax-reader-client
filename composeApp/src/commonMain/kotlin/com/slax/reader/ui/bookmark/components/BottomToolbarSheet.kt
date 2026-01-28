@@ -59,10 +59,10 @@ fun BottomToolbarSheet() {
 //                ToolbarIcon("underline", "划线", Res.drawable.ic_bottom_panel_underline),
 //                ToolbarIcon("comment", "评论", Res.drawable.ic_bottom_panel_comment),
                 ToolbarIcon("edit_title", "detail_toolbar_edit_title".i18n(), Res.drawable.ic_bottom_panel_edittitle),
+                ToolbarIcon("feedback", "detail_toolbar_feedback".i18n(), Res.drawable.ic_bottom_panel_feedback),
 //                ToolbarIcon("share", "分享", Res.drawable.ic_bottom_panel_share)
             )
 //            listOf(
-////                ToolbarIcon("feedback", "反馈", Res.drawable.ic_bottom_panel_feedback),
 ////                ToolbarIcon("delete", "删除", Res.drawable.ic_bottom_panel_delete),
 //            )
         )
@@ -123,7 +123,7 @@ fun BottomToolbarSheet() {
                         viewModel.onToolbarIconClick(pageId)
                         dismiss()
                     },
-                    modifier = Modifier.padding(top = 30.dp)
+                    modifier = Modifier.padding(top = 30.dp, bottom = 50.dp)
                 )
             }
         }

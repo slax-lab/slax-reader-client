@@ -10,8 +10,14 @@ val LocalToolbarVisible = compositionLocalOf<MutableState<Boolean>> {
     error("LocalToolbarVisible not provided")
 }
 
+sealed interface DetailScreenEvent {
+    data object BackClick : DetailScreenEvent
+    data object NavigateToSubscription : DetailScreenEvent
+    data class NavigateToFeedback(val params: FeedbackPageParams) : DetailScreenEvent
+}
+
 @Composable
-fun DetailScreen(bookmarkId: String, onBackClick: (() -> Unit), onNavigateToSubscription: (() -> Unit)? = null) {
+fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val coroutineScope = rememberCoroutineScope()
 
@@ -25,8 +31,11 @@ fun DetailScreen(bookmarkId: String, onBackClick: (() -> Unit), onNavigateToSubs
 
         viewModel.effects.collect { effect ->
             when (effect) {
-                BookmarkDetailEffect.NavigateBack -> onBackClick()
-                BookmarkDetailEffect.NavigateToSubscription -> onNavigateToSubscription?.invoke()
+                BookmarkDetailEffect.NavigateBack -> onEvent(DetailScreenEvent.BackClick)
+                BookmarkDetailEffect.NavigateToSubscription -> onEvent(DetailScreenEvent.NavigateToSubscription)
+                is BookmarkDetailEffect.NavigateToFeedback -> {
+                    onEvent(DetailScreenEvent.NavigateToFeedback(effect.params))
+                }
                 is BookmarkDetailEffect.ScrollToAnchor -> {
                     webViewState.scrollToAnchor(effect.anchor)
                 }

@@ -9,6 +9,7 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 
 buildscript {
     repositories {
+        mavenLocal()
         google()
         mavenCentral()
         gradlePluginPortal()
@@ -42,33 +43,13 @@ plugins {
 }
 
 repositories {
+    mavenLocal()
     mavenCentral()
     google()
     maven("https://jogamp.org/deployment/maven")
 }
 
-fun incrementVersionCode(): String {
-    val propsFile = File(rootProject.projectDir, "gradle.properties")
-    val props = Properties()
-    props.load(propsFile.inputStream())
-
-    val currentVersionCode = props.getProperty("appVersionCode")?.toInt()!!
-    val newVersionCode = currentVersionCode + 1
-
-    props.setProperty("appVersionCode", newVersionCode.toString())
-    props.store(propsFile.outputStream(), null)
-
-    return newVersionCode.toString()
-}
-
-// Only increment version code when building (assemble or build task), otherwise use existing version code
-val appVersionCode =
-    if (gradle.startParameter.taskNames.any { it.contains("assemble") || it.contains("build") }) {
-        incrementVersionCode()
-    } else {
-        project.findProperty("appVersionCode")?.toString()!!
-    }
-
+val appVersionCode = project.findProperty("appVersionCode")?.toString()!!
 val appVersionName = project.findProperty("appVersionName")?.toString()!!
 val buildFlavor = project.findProperty("buildkonfig.flavor") as? String ?: "dev"
 
@@ -268,7 +249,7 @@ val bundleAndroidReleaseJs = tasks.register<Exec>("bundleAndroidReleaseJs") {
     workingDir = rootProject.file("react-native")
 
     val bundleFile = project.file("src/androidMain/assets/index.android.bundle")
-    val assetsDir = project.file("src/androidMain/assets")
+    val assetsDir = project.file("src/androidMain/res")
 
     doFirst {
         bundleFile.parentFile.mkdirs()
@@ -312,19 +293,20 @@ val bundleIOSReleaseJs = tasks.register<Exec>("bundleIOSReleaseJs") {
         "--bundle-output", bundleFile.absolutePath,
         "--assets-dest", assetsDir.absolutePath
     )
-
-    doLast {
-        println("✅ iOS bundle created: ${bundleFile.absolutePath}")
-    }
 }
 
 dependencies {
     debugImplementation(compose.uiTooling)
 
-    add("kspCommonMainMetadata", "de.voize:reakt-native-toolkit-ksp:0.22.0")
-    add("kspAndroid", "de.voize:reakt-native-toolkit-ksp:0.22.0")
-    add("kspIosArm64", "de.voize:reakt-native-toolkit-ksp:0.22.0")
-    add("kspIosSimulatorArm64", "de.voize:reakt-native-toolkit-ksp:0.22.0")
+    add("kspCommonMainMetadata", "de.voize:reakt-native-toolkit-ksp:0.22.1-SNAPSHOT")
+    add("kspAndroid", "de.voize:reakt-native-toolkit-ksp:0.22.1-SNAPSHOT")
+    add("kspIosArm64", "de.voize:reakt-native-toolkit-ksp:0.22.1-SNAPSHOT")
+    add("kspIosSimulatorArm64", "de.voize:reakt-native-toolkit-ksp:0.22.1-SNAPSHOT")
+}
+
+ksp {
+    arg("reakt.native.toolkit.newArchitecture", "true")
+    arg("reakt.native.toolkit.kmpFrameworkName", "ComposeApp")
 }
 
 tasks.register<Copy>("copyGeneratedTsFiles") {

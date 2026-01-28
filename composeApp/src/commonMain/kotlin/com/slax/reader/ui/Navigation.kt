@@ -16,8 +16,11 @@ import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.auth.AuthState
 import com.slax.reader.domain.coordinator.CoordinatorDomain
 import com.slax.reader.domain.sync.BackgroundDomain
+import com.slax.reader.reactnative.navigateToRN
 import com.slax.reader.ui.about.AboutScreen
 import com.slax.reader.ui.bookmark.DetailScreen
+import com.slax.reader.ui.bookmark.DetailScreenEvent
+import com.slax.reader.ui.bookmark.toMap
 import com.slax.reader.ui.debug.DebugScreen
 import com.slax.reader.ui.inbox.InboxListScreen
 import com.slax.reader.ui.login.LoginScreen
@@ -103,11 +106,22 @@ fun SlaxNavigation(
             val params = backStackEntry.toRoute<BookmarkRoutes>()
             DetailScreen(
                 bookmarkId = params.bookmarkId,
-                onBackClick = {
-                    navCtrl.popBackStack()
-                },
-                onNavigateToSubscription = {
-                    navCtrl.navigate(SubscriptionManagerRoutes)
+                onEvent = { event ->
+                    when (event) {
+                        DetailScreenEvent.BackClick -> {
+                            navCtrl.popBackStack()
+                        }
+
+                        DetailScreenEvent.NavigateToSubscription -> {
+                            navCtrl.navigate(SubscriptionManagerRoutes)
+                        }
+
+                        is DetailScreenEvent.NavigateToFeedback -> {
+                            navCtrl.navigateToRN(
+                                RNRoute("RNFeedbackPage"), params = event.params.toMap()
+                            )
+                        }
+                    }
                 }
             )
         }

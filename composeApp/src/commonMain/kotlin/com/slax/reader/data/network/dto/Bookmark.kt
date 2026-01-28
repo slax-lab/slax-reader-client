@@ -190,3 +190,16 @@ data class DeleteAccountData(
 data class ProductIdsResult(
     val products: List<String>
 )
+
+@Serializable
+data class FeedbackParams(
+    val bookmark_uuid: String?,
+    val entry_point: String,
+    val type: String,
+    val content: String,
+    val platform: String,
+    val environment: String,
+    val version: String,
+    val allow_follow_up: Boolean,
+    val target_url: String?
+)
