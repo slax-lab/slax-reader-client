@@ -1,3 +1,3 @@
 package com.slax.reader.utils
 
-actual val platformType = SlaxPlatform.IOS
+actual val platformType = "ios"

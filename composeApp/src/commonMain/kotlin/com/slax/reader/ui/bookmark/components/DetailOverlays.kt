@@ -11,7 +11,8 @@ import com.slax.reader.const.component.EditNameDialog
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.states.BookmarkOverlay
 import com.slax.reader.utils.i18n
-import com.slax.reader.utils.platformType
+import com.slax.reader.utils.isAndroid
+import com.slax.reader.utils.isIOS
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -45,47 +46,44 @@ fun BookmarkDetailOverlays() {
             )
         }
         BookmarkOverlay.SubscriptionRequired -> {
-            when (platformType) {
-                "android" -> {
-                    AlertDialog(
-                        onDismissRequest = {
-                            viewModel.overlayDelegate.dismissOverlay(BookmarkOverlay.SubscriptionRequired)
-                        },
-                        containerColor = Color.White,
-                        title = {
-                            Text(
-                                text = "subscription_required_title".i18n(),
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        },
-                        text = {
-                            Text(
-                                text = "subscription_required_message".i18n(),
-                                fontSize = 16.sp,
-                                lineHeight = 24.sp
-                            )
-                        },
-                        confirmButton = {
-                            TextButton(
-                                onClick = {
-                                    viewModel.overlayDelegate.dismissOverlay(BookmarkOverlay.SubscriptionRequired)
-                                }
-                            ) {
-                                Text(
-                                    text = "subscription_required_btn_ok".i18n(),
-                                    color = Color(0xFF16b998),
-                                    fontSize = 16.sp
-                                )
-                            }
-                        }
-                    )
-                }
-                "ios" -> {
-                    LaunchedEffect(Unit) {
-                        viewModel.requestNavigateToSubscription()
+            if (isAndroid()) {
+                AlertDialog(
+                    onDismissRequest = {
                         viewModel.overlayDelegate.dismissOverlay(BookmarkOverlay.SubscriptionRequired)
+                    },
+                    containerColor = Color.White,
+                    title = {
+                        Text(
+                            text = "subscription_required_title".i18n(),
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    },
+                    text = {
+                        Text(
+                            text = "subscription_required_message".i18n(),
+                            fontSize = 16.sp,
+                            lineHeight = 24.sp
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                viewModel.overlayDelegate.dismissOverlay(BookmarkOverlay.SubscriptionRequired)
+                            }
+                        ) {
+                            Text(
+                                text = "subscription_required_btn_ok".i18n(),
+                                color = Color(0xFF16b998),
+                                fontSize = 16.sp
+                            )
+                        }
                     }
+                )
+            } else if (isIOS()) {
+                LaunchedEffect(Unit) {
+                    viewModel.requestNavigateToSubscription()
+                    viewModel.overlayDelegate.dismissOverlay(BookmarkOverlay.SubscriptionRequired)
                 }
             }
         }

@@ -249,7 +249,7 @@ val bundleAndroidReleaseJs = tasks.register<Exec>("bundleAndroidReleaseJs") {
     workingDir = rootProject.file("react-native")
 
     val bundleFile = project.file("src/androidMain/assets/index.android.bundle")
-    val assetsDir = project.file("src/androidMain/assets")
+    val assetsDir = project.file("src/androidMain/res")
 
     doFirst {
         bundleFile.parentFile.mkdirs()

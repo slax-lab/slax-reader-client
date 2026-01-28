@@ -1,1 +1,1 @@
-<resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@drawable/src_assets_images_ic_nav_back,@drawable/src_assets_images_ic_agree_enable,@drawable/src_assets_images_ic_agree_disable" />
+<resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@drawable/images_ic_nav_back,@drawable/images_ic_agree_enable,@drawable/images_ic_agree_disable" />

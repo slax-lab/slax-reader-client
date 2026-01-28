@@ -36,9 +36,6 @@ class SlaxReaderApplication : Application() {
         super.onCreate()
         instance = this
 
-        SoLoader.init(this, OpenSourceMergedSoMapping)
-        DefaultNewArchitectureEntryPoint.load()
-
         if (GlobalContext.getOrNull() == null) {
             Firebase.initialize(this)
             startKoin {
@@ -52,6 +49,9 @@ class SlaxReaderApplication : Application() {
     @Synchronized
     fun getReactHost(): ReactHost {
         if (_reactHost == null) {
+            SoLoader.init(this, OpenSourceMergedSoMapping)
+            DefaultNewArchitectureEntryPoint.load()
+
             slaxReaderReactPackage = SlaxReaderReactPackage()
             val packages: List<ReactPackage> = listOf(
                 MainReactPackage(null),
@@ -64,10 +64,8 @@ class SlaxReaderApplication : Application() {
                 jsMainModulePath = "index",
                 jsBundleAssetPath = "index.android.bundle",
                 jsRuntimeFactory = null,
-                useDevSupport = BuildConfig.DEBUG
+                useDevSupport = false
             )
-
-            println("[SlaxReaderApplication] ReactHost initialized (lazy)")
         }
         return _reactHost!!
     }
