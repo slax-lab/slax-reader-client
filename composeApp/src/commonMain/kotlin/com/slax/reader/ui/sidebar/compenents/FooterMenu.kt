@@ -56,7 +56,7 @@ fun FooterMenu(
     val subscriptionInfo by viewModel.subscriptionInfo.collectAsState()
     val isSubscribed = subscriptionInfo?.checkIsSubscribed() == true
 
-    if (isSubscribed && !isAndroid()) {
+    if (!isSubscribed && !isAndroid()) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp)
         ) {
@@ -116,6 +116,24 @@ fun FooterMenu(
     }
 
     mapOf(
+        "subscription" to FooterMenuConfig(
+            title = "sidebar_subscription".i18n(),
+            icon = {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_xs_sidebar_subscribe),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(20.dp)
+                )
+            },
+            color = NavigationDrawerItemDefaults.colors(
+                unselectedContainerColor = Color.Transparent
+            ),
+            onClick = {
+                onDismiss()
+                navCtrl.navigate(SubscriptionManagerRoutes)
+            }
+        ),
         "setting" to FooterMenuConfig(
             title = "sidebar_settings".i18n(),
             icon = {
@@ -194,8 +212,10 @@ fun FooterMenu(
             }
         )
     ).map {
-        if (it.key == "subscription" && isAndroid()) {
-            return@map
+        if (it.key == "subscription") {
+            if (!isSubscribed) {
+                return@map
+            }
         }
         NavigationDrawerItem(
             label = {

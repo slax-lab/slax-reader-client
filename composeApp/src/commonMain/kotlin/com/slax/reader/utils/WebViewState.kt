@@ -22,7 +22,6 @@ data class WebViewCookie(
     val domain: String,
     val path: String = "/",
     val secure: Boolean = false,
-    val httpOnly: Boolean = false,
     val expiresDate: Long? = null
 )
 
@@ -37,7 +36,7 @@ expect class AppWebViewState(
     fun evaluateJs(script: String)
     fun scrollToAnchor(anchor: String)
     fun reload()
-    fun setCookies(cookies: List<WebViewCookie>, url: String)
+    fun setCookies(cookies: List<WebViewCookie>, url: String, complateHandler: (() -> Unit)? = null)
 }
 
 @Stable

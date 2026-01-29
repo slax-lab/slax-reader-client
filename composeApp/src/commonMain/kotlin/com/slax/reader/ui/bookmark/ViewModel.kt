@@ -164,7 +164,7 @@ class BookmarkDetailViewModel(
                 viewModelScope.launch {
                     val isSubscribed = subscriptionInfo.value?.checkIsSubscribed() == true
 
-                    if (isSubscribed) {
+                    if (!isSubscribed) {
                         overlayDelegate.showOverlay(BookmarkOverlay.SubscriptionRequired)
                         overlayDelegate.dismissOverlay(BookmarkOverlay.Toolbar)
                         return@launch

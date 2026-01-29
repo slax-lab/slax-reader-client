@@ -39,7 +39,7 @@ actual class AppWebViewState actual constructor(
         webView?.reload()
     }
 
-    actual fun setCookies(cookies: List<WebViewCookie>, url: String) {
+    actual fun setCookies(cookies: List<WebViewCookie>, url: String, complateHandler: (() -> Unit)?) {
         val cookieManager = CookieManager.getInstance()
         cookieManager.setAcceptCookie(true)
 
@@ -49,7 +49,6 @@ actual class AppWebViewState actual constructor(
                 append("; domain=${cookie.domain}")
                 append("; path=${cookie.path}")
                 if (cookie.secure) append("; secure")
-                if (cookie.httpOnly) append("; httponly")
                 cookie.expiresDate?.let {
                     val dateFormat = SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US)
                     dateFormat.timeZone = TimeZone.getTimeZone("GMT")
@@ -60,5 +59,6 @@ actual class AppWebViewState actual constructor(
         }
 
         cookieManager.flush()
+        complateHandler?.invoke()
     }
 }
