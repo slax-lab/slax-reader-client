@@ -134,7 +134,6 @@ class SubscriptionViewModel(
                 value = token!!,
                 domain = SlaxConfig.WEB_DOMAIN,
                 path = "/",
-                httpOnly = true,
                 secure = true
             )
         )
