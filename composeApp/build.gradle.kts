@@ -305,13 +305,12 @@ dependencies {
 }
 
 ksp {
-    arg("reakt.native.toolkit.newArchitecture", "true")
     arg("reakt.native.toolkit.kmpFrameworkName", "ComposeApp")
 }
 
 tasks.register<Copy>("copyGeneratedTsFiles") {
-    from("build/generated/ksp/metadata/commonMain/resources")
-    into(rootProject.file("react-native/src/generated"))
+    from("build/generated/ksp/metadata/commonMain/resources/reaktNativeToolkit/typescript")
+    into(rootProject.file("react-native/src/generated/reaktNativeToolkit/typescript"))
 }
 
 tasks.configureEach {
