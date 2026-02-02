@@ -6,7 +6,7 @@
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "lint": "eslint .",
-    "start": "react-native start --host localhost",
+    "start": "react-native start --host 0.0.0.0",
     "test": "jest",
     "bundle:ios": "react-native bundle --platform ios --dev false --entry-file index.js --bundle-output ../iosApp/iosApp/main.jsbundle --assets-dest ../iosApp/iosApp",
     "bundle:android": "react-native bundle --platform android --dev false --entry-file index.js --bundle-output ../composeApp/src/androidMain/assets/index.android.bundle --assets-dest ../composeApp/src/androidMain/res"

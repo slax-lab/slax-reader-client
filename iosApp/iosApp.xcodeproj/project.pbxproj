@@ -7,16 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		3182F1872F28B70200495084 /* RNModuleBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = 3182F1842F28B70200495084 /* RNModuleBridge.m */; };
-		3182F1882F28B70200495084 /* RNTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3182F1852F28B70200495084 /* RNTypes.swift */; };
-		3182F1892F28B70200495084 /* NativeNavigationModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3182F1832F28B70200495084 /* NativeNavigationModule.swift */; };
-		3182F18A2F28B70200495084 /* NativeFeedbackModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3182F1812F28B70200495084 /* NativeFeedbackModule.swift */; };
-		3182F18B2F28B70200495084 /* NativeLocaleModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3182F1822F28B70200495084 /* NativeLocaleModule.swift */; };
 		6CFAFFCB3DD2E2586D8446F4 /* Pods_iosApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1493DD7C9BBB95176CC149C2 /* Pods_iosApp.framework */; };
 		6DC62F1F10CD0104F7CCDFD0 /* Pods_share.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6AE57B8903A092C5920281D3 /* Pods_share.framework */; };
 		8A1CC81C2E9A6F9300F7C101 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 8A1CC81B2E9A6F9300F7C101 /* FirebaseAnalytics */; };
 		8A1CC81E2E9A6F9300F7C101 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 8A1CC81D2E9A6F9300F7C101 /* FirebaseCrashlytics */; };
 		8A1E1BAC2EDFF24B004F9F3B /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8A1E1BAB2EDFF24B004F9F3B /* StoreKit.framework */; };
+		8A6A597B2F2B53F8007B2AB7 /* NativeLocaleModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6A59762F2B53F8007B2AB7 /* NativeLocaleModule.swift */; };
+		8A6A597C2F2B53F8007B2AB7 /* RNTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6A59792F2B53F8007B2AB7 /* RNTypes.swift */; };
+		8A6A597D2F2B53F8007B2AB7 /* NativeFeedbackModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6A59752F2B53F8007B2AB7 /* NativeFeedbackModule.swift */; };
+		8A6A597E2F2B53F8007B2AB7 /* RNModuleBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = 8A6A59782F2B53F8007B2AB7 /* RNModuleBridge.m */; };
+		8A6A597F2F2B53F8007B2AB7 /* NativeNavigationModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6A59772F2B53F8007B2AB7 /* NativeNavigationModule.swift */; };
 		8A9B3B002EA78B4100F25AB6 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 8A9B3AFF2EA78B4100F25AB6 /* FirebaseMessaging */; };
 		8A9B3B022EA78B4900F25AB6 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 8A9B3B012EA78B4900F25AB6 /* FirebaseMessaging */; };
 		8A9D0BAD2E8A989900FFDE17 /* share.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8AD22C002E83ED490035EA6E /* share.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -58,15 +58,15 @@
 /* Begin PBXFileReference section */
 		04F7449A1A39313AF505F41A /* Pods-iosApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-iosApp.debug.xcconfig"; path = "Target Support Files/Pods-iosApp/Pods-iosApp.debug.xcconfig"; sourceTree = "<group>"; };
 		1493DD7C9BBB95176CC149C2 /* Pods_iosApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_iosApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		3182F1812F28B70200495084 /* NativeFeedbackModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeFeedbackModule.swift; sourceTree = "<group>"; };
-		3182F1822F28B70200495084 /* NativeLocaleModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeLocaleModule.swift; sourceTree = "<group>"; };
-		3182F1832F28B70200495084 /* NativeNavigationModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeNavigationModule.swift; sourceTree = "<group>"; };
-		3182F1842F28B70200495084 /* RNModuleBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RNModuleBridge.m; sourceTree = "<group>"; };
-		3182F1852F28B70200495084 /* RNTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RNTypes.swift; sourceTree = "<group>"; };
 		6AE57B8903A092C5920281D3 /* Pods_share.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_share.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		7E6A546446BC10899355DC8F /* Pods-share.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-share.debug.xcconfig"; path = "Target Support Files/Pods-share/Pods-share.debug.xcconfig"; sourceTree = "<group>"; };
 		824E651F0113D77B8A9B160C /* Pods-iosApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-iosApp.release.xcconfig"; path = "Target Support Files/Pods-iosApp/Pods-iosApp.release.xcconfig"; sourceTree = "<group>"; };
 		8A1E1BAB2EDFF24B004F9F3B /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
+		8A6A59752F2B53F8007B2AB7 /* NativeFeedbackModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeFeedbackModule.swift; sourceTree = "<group>"; };
+		8A6A59762F2B53F8007B2AB7 /* NativeLocaleModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeLocaleModule.swift; sourceTree = "<group>"; };
+		8A6A59772F2B53F8007B2AB7 /* NativeNavigationModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeNavigationModule.swift; sourceTree = "<group>"; };
+		8A6A59782F2B53F8007B2AB7 /* RNModuleBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RNModuleBridge.m; sourceTree = "<group>"; };
+		8A6A59792F2B53F8007B2AB7 /* RNTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RNTypes.swift; sourceTree = "<group>"; };
 		8AD22C002E83ED490035EA6E /* share.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = share.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B3D95CCEA2E69139FF9B1B06 /* Pods-share.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-share.release.xcconfig"; path = "Target Support Files/Pods-share/Pods-share.release.xcconfig"; sourceTree = "<group>"; };
 		B46C0644545232A3C4B57B4F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
@@ -109,8 +109,6 @@
 		};
 		B9DA98002DC14AA900A4DA20 /* Configuration */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = Configuration;
 			sourceTree = "<group>";
 		};
@@ -159,19 +157,6 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		3182F1862F28B70200495084 /* iosNewArch */ = {
-			isa = PBXGroup;
-			children = (
-				3182F1812F28B70200495084 /* NativeFeedbackModule.swift */,
-				3182F1822F28B70200495084 /* NativeLocaleModule.swift */,
-				3182F1832F28B70200495084 /* NativeNavigationModule.swift */,
-				3182F1842F28B70200495084 /* RNModuleBridge.m */,
-				3182F1852F28B70200495084 /* RNTypes.swift */,
-			);
-			name = iosNewArch;
-			path = ../composeApp/build/generated/ksp/metadata/commonMain/resources/reaktNativeToolkit/iosNewArch;
-			sourceTree = SOURCE_ROOT;
-		};
 		536474E480D83EAFF0F74A58 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
@@ -183,10 +168,23 @@
 			path = Pods;
 			sourceTree = "<group>";
 		};
+		8A6A597A2F2B53F8007B2AB7 /* iOSInteropLayer */ = {
+			isa = PBXGroup;
+			children = (
+				8A6A59752F2B53F8007B2AB7 /* NativeFeedbackModule.swift */,
+				8A6A59762F2B53F8007B2AB7 /* NativeLocaleModule.swift */,
+				8A6A59772F2B53F8007B2AB7 /* NativeNavigationModule.swift */,
+				8A6A59782F2B53F8007B2AB7 /* RNModuleBridge.m */,
+				8A6A59792F2B53F8007B2AB7 /* RNTypes.swift */,
+			);
+			name = iOSInteropLayer;
+			path = ../composeApp/build/generated/ksp/metadata/commonMain/resources/reaktNativeToolkit/iOSInteropLayer;
+			sourceTree = SOURCE_ROOT;
+		};
 		B9DA97A82DC1472C00A4DA20 = {
 			isa = PBXGroup;
 			children = (
-				3182F1862F28B70200495084 /* iosNewArch */,
+				8A6A597A2F2B53F8007B2AB7 /* iOSInteropLayer */,
 				B9DA98002DC14AA900A4DA20 /* Configuration */,
 				B9DA97B32DC1472C00A4DA20 /* iosApp */,
 				8AD22C012E83ED490035EA6E /* share */,
@@ -329,9 +327,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -346,9 +348,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -363,9 +369,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-share/Pods-share-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-share/Pods-share-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -511,11 +521,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3182F1872F28B70200495084 /* RNModuleBridge.m in Sources */,
-				3182F1882F28B70200495084 /* RNTypes.swift in Sources */,
-				3182F1892F28B70200495084 /* NativeNavigationModule.swift in Sources */,
-				3182F18A2F28B70200495084 /* NativeFeedbackModule.swift in Sources */,
-				3182F18B2F28B70200495084 /* NativeLocaleModule.swift in Sources */,
+				8A6A597B2F2B53F8007B2AB7 /* NativeLocaleModule.swift in Sources */,
+				8A6A597C2F2B53F8007B2AB7 /* RNTypes.swift in Sources */,
+				8A6A597D2F2B53F8007B2AB7 /* NativeFeedbackModule.swift in Sources */,
+				8A6A597E2F2B53F8007B2AB7 /* RNModuleBridge.m in Sources */,
+				8A6A597F2F2B53F8007B2AB7 /* NativeNavigationModule.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -673,10 +683,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_CPLUSPLUSFLAGS = "$(inherited)";
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../react-native/";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
@@ -755,10 +762,7 @@
 				MTL_FAST_MATH = YES;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_CPLUSPLUSFLAGS = "$(inherited)";
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../react-native/";
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;

@@ -620,39 +620,10 @@ actual fun WebView(
                 this.navigationDelegate = navigationDelegate
 
                 val request = NSURLRequest(uRL = NSURL(string = url))
-                if (webState.initialCookies != null && webState.initialCookies.isNotEmpty()) {
-                    val cookieStore = configuration.websiteDataStore.httpCookieStore
-                    var cookiesSet = 0
-                    val totalCookies = webState.initialCookies.size
-
-                    webState.initialCookies.forEach { cookie ->
-                        val properties = mutableMapOf<Any?, Any?>(
-                            NSHTTPCookieName to cookie.name,
-                            NSHTTPCookieValue to cookie.value,
-                            NSHTTPCookieDomain to cookie.domain,
-                            NSHTTPCookiePath to cookie.path
-                        )
-
-                        if (cookie.secure) {
-                            properties[NSHTTPCookieSecure] = "TRUE"
-                        }
-
-                        cookie.expiresDate?.let {
-                            val timeInterval = it / 1000.0
-                            properties[NSHTTPCookieExpires] = NSDate.dateWithTimeIntervalSince1970(timeInterval)
-                        }
-
-                        NSHTTPCookie.cookieWithProperties(properties)?.let { nsCookie ->
-                            cookieStore.setCookie(nsCookie) {
-                                cookiesSet++
-                                if (cookiesSet == totalCookies) {
-                                    loadRequest(request)
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    loadRequest(request)
+                webState.initialCookies?.let { cookies ->
+                    webState.setCookies(cookies, url, {
+                        loadRequest(request)
+                    })
                 }
             }
         },
