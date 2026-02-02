@@ -26,10 +26,8 @@ class ReactNativeManager: RCTDefaultReactNativeFactoryDelegate {
 
     func rootViewFactory() -> RCTRootViewFactory {
         if _rootViewFactory == nil {
-            print("[ReactNativeManager] Creating RCTReactNativeFactory...")
             factory = RCTReactNativeFactory(delegate: self)
             _rootViewFactory = factory?.rootViewFactory
-            print("[ReactNativeManager] RootViewFactory created")
         }
         return _rootViewFactory!
     }
