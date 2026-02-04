@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.slax.reader.data.database.model.InboxListBookmarkItem
-import com.slax.reader.domain.coordinator.AppSyncState
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.utils.i18n
 
@@ -102,16 +101,18 @@ fun ArticleList(
 
 @Composable
 fun EmptyOrLoadingView(viewModel: InboxListViewModel) {
-    val syncState by viewModel.syncState.collectAsState()
+    val isSyncedDataReady by viewModel.isSyncedDataReady.collectAsState()
 
-    if (syncState is AppSyncState.Connected) {
+    if (isSyncedDataReady) {
         EmptyView()
     } else {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator()
+            CircularProgressIndicator(
+                color = Color(0x336A6E83)
+            )
         }
     }
 }
