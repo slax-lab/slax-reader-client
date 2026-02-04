@@ -408,6 +408,24 @@ val localeString: Map<String, Map<String, String>> = mapOf(
         "en" to "No more items"
     ),
 
+    // 空数据界面
+    "empty_inbox_icon_desc" to mapOf(
+        "zh" to "空收藏夹图标",
+        "en" to "Empty Inbox Icon"
+    ),
+    "empty_inbox_title" to mapOf(
+        "zh" to "开始收藏你的第一篇文章吧",
+        "en" to "Start saving your first article"
+    ),
+    "empty_inbox_tip_1" to mapOf(
+        "zh" to "点击上方「+」按钮添加文章",
+        "en" to "Tap the '+' button above to add articles"
+    ),
+    "empty_inbox_tip_2" to mapOf(
+        "zh" to "或从其他应用分享：点击分享 → 选择 Slax Reader",
+        "en" to "Or share from other apps: Tap Share → Select Slax Reader"
+    ),
+
     // ========================================
     // DetailScreen - 查看原网页
     // ========================================
