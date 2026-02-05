@@ -415,15 +415,15 @@ val localeString: Map<String, Map<String, String>> = mapOf(
     ),
     "empty_inbox_title" to mapOf(
         "zh" to "开始收藏文章吧",
-        "en" to "Start saving article"
+        "en" to "Start saving articles"
     ),
     "empty_inbox_tip_1" to mapOf(
         "zh" to "点击上方「+」按钮添加文章",
-        "en" to "Tap the '+' button above to add articles"
+        "en" to "Tap the「+」button above to add articles"
     ),
     "empty_inbox_tip_2" to mapOf(
         "zh" to "或从其他应用分享：点击分享 → 选择 Slax Reader",
-        "en" to "Or share from other apps: Tap Share → Select Slax Reader"
+        "en" to "Or share from any app: Share → Select Slax Reader"
     ),
 
     // ========================================
