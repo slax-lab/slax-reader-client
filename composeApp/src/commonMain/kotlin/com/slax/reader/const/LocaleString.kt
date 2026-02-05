@@ -414,8 +414,8 @@ val localeString: Map<String, Map<String, String>> = mapOf(
         "en" to "Empty Inbox Icon"
     ),
     "empty_inbox_title" to mapOf(
-        "zh" to "开始收藏你的第一篇文章吧",
-        "en" to "Start saving your first article"
+        "zh" to "开始收藏文章吧",
+        "en" to "Start saving article"
     ),
     "empty_inbox_tip_1" to mapOf(
         "zh" to "点击上方「+」按钮添加文章",

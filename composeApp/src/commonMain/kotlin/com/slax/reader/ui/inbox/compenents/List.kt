@@ -101,18 +101,21 @@ fun ArticleList(
 
 @Composable
 fun EmptyOrLoadingView(viewModel: InboxListViewModel) {
-    val isSyncedDataReady by viewModel.isSyncedDataReady.collectAsState()
+    val hasSynced by viewModel.hasSynced.collectAsState()
 
-    if (isSyncedDataReady) {
+    Box(modifier = Modifier.fillMaxSize()) {
         EmptyView()
-    } else {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator(
-                color = Color(0x336A6E83)
-            )
+
+        if (!hasSynced) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = Color(0x336A6E83)
+                )
+            }
         }
     }
 }

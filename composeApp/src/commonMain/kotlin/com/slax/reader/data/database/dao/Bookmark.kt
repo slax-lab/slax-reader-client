@@ -15,8 +15,9 @@ class BookmarkDao(
     private val scope: CoroutineScope,
     private val database: PowerSyncDatabase
 ) {
-    private val _isSyncedDataReady = MutableStateFlow(false)
-    val isSyncedDataReady: StateFlow<Boolean> = _isSyncedDataReady.asStateFlow()
+    val hasSynced: StateFlow<Boolean> = database.currentStatus.asFlow()
+        .map { status -> status.hasSynced ?: false }
+        .stateIn(scope, SharingStarted.Eagerly, false)
 
     private val _userBookmarkListFlow: StateFlow<List<InboxListBookmarkItem>> by lazy {
         println("[watch][database] _userBookmarkListFlow")
@@ -40,12 +41,6 @@ class BookmarkDao(
         }.catch { e ->
             println("Error watching user bookmarks: ${e.message}")
         }
-            .onEach { list ->
-                if ((database.currentStatus.hasSynced == true) && !_isSyncedDataReady.value) {
-                    _isSyncedDataReady.value = true
-                    println("[BookmarkDao] synced data ready, count=${list.size}")
-                }
-            }
             .distinctUntilChanged()
             .stateIn(scope, SharingStarted.Eagerly, emptyList())
     }
