@@ -15,6 +15,10 @@ class BookmarkDao(
     private val scope: CoroutineScope,
     private val database: PowerSyncDatabase
 ) {
+    val hasSynced: StateFlow<Boolean> = database.currentStatus.asFlow()
+        .map { status -> status.hasSynced ?: false }
+        .stateIn(scope, SharingStarted.Eagerly, false)
+
     private val _userBookmarkListFlow: StateFlow<List<InboxListBookmarkItem>> by lazy {
         println("[watch][database] _userBookmarkListFlow")
         database.watch(
