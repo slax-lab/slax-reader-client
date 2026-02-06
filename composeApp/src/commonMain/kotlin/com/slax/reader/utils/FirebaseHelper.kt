@@ -8,6 +8,7 @@ expect object FirebaseHelper {
     fun logEvent(name: String, params: Map<String, Any>? = null)
     fun setUserId(userId: String?)
     fun setUserProperty(name: String, value: String?)
+    fun setCrashlyticsUserId(userId: String?)
 }
 
 class EventBuilder internal constructor(private val category: String) {

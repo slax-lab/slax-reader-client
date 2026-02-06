@@ -18,6 +18,10 @@ actual object FirebaseHelper {
     actual fun setUserProperty(name: String, value: String?) {
         bridge.setUserProperty(value, forName = name)
     }
+
+    actual fun setCrashlyticsUserId(userId: String?) {
+        bridge.setCrashlyticsUserId(userId)
+    }
 }
 
 private fun Map<String, Any>.toNSDict(): Map<Any?, *>? {

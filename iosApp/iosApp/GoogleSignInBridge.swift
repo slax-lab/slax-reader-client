@@ -9,15 +9,11 @@ public class GoogleSignInBridge: NSObject {
 
     @objc public static let shared = GoogleSignInBridge()
 
-    private var completionHandler: GoogleSignInCompletion?
-
     private override init() {
         super.init()
     }
 
     @objc public func signIn(withServerClientId serverClientId: String, completion: @escaping GoogleSignInCompletion) {
-        self.completionHandler = completion
-
         guard let rootViewController = UIApplication.shared.windows.first?.rootViewController else {
             completion(nil, nil, nil, "No root view controller available")
             return
@@ -31,7 +27,7 @@ public class GoogleSignInBridge: NSObject {
         let config = GIDConfiguration(clientID: clientID, serverClientID: serverClientId)
         GIDSignIn.sharedInstance.configuration = config
 
-        GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController) { [weak self] result, error in
+        GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController) { result, error in
             if let error = error {
                 let errorMessage = error.localizedDescription
                 completion(nil, nil, nil, errorMessage)

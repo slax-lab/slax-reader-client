@@ -68,6 +68,7 @@ fun SlaxNavigation(
                     coordinator.startup()
                 }
                 FirebaseHelper.setUserId((authState as AuthState.Authenticated).userId)
+                FirebaseHelper.setCrashlyticsUserId((authState as AuthState.Authenticated).userId)
             }
 
             AuthState.Unauthenticated -> {
@@ -101,7 +102,7 @@ fun SlaxNavigation(
             LoginScreen(
                 navController = navCtrl
             )
-            userEvent.view("login").send()
+            LaunchedEffect(Unit) { userEvent.view("login").send() }
         }
         composable<BookmarkRoutes> { backStackEntry ->
             val params = backStackEntry.toRoute<BookmarkRoutes>()
@@ -127,11 +128,11 @@ fun SlaxNavigation(
                     }
                 }
             )
-            bookmarkEvent.view().send()
+            LaunchedEffect(Unit) { bookmarkEvent.view().send() }
         }
         composable<InboxRoutes> {
             InboxListScreen(navCtrl)
-            bookmarkListEvent.view().send()
+            LaunchedEffect(Unit) { bookmarkListEvent.view().send() }
         }
         composable<SettingsRoutes> {
             SettingScreen(
@@ -140,25 +141,25 @@ fun SlaxNavigation(
                 },
                 navController = navCtrl
             )
-            settingEvent.view().send()
+            LaunchedEffect(Unit) { settingEvent.view().send() }
         }
         composable<AboutRoutes> {
             AboutScreen(onBackClick = {
                 navCtrl.popBackStack()
             })
-            aboutEvent.view().send()
+            LaunchedEffect(Unit) { aboutEvent.view().send() }
         }
         composable<DeleteAccountRoutes> {
             DeleteAccountScreen(onBackClick = {
                 navCtrl.popBackStack()
             })
-            userEvent.view("delete_account").send()
+            LaunchedEffect(Unit) { userEvent.view("delete_account").send() }
         }
         composable<SubscriptionManagerRoutes> {
             SubscriptionManagerScreen(onBackClick = {
                 navCtrl.popBackStack()
             })
-            subscriptionEvent.view().send()
+            LaunchedEffect(Unit) { subscriptionEvent.view().send() }
         }
     }
 }
