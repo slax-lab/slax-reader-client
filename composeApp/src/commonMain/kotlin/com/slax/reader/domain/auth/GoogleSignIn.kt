@@ -8,5 +8,4 @@ data class GoogleSignInResult(
 
 expect class GoogleSignInProvider() {
     suspend fun signIn(): Result<GoogleSignInResult>
-    fun isAvailable(): Boolean
 }

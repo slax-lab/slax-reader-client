@@ -45,13 +45,8 @@ suspend fun collectionShare(content: String, title: String?, body: String?): Str
     val apiSvc = ApiService(httpClient)
 
     try {
-        bookmarkEvent.action("add_start").channel("app").method("share_extension").send()
         apiSvc.addBookmarkUrl(url, title)
-//        if (body == null) {
-//            apiSvc.addBookmarkUrl(url, title)
-//        } else {
-//            apiSvc.addBookmarkWithContent(url, title, body)
-//        }
+        bookmarkEvent.action("add_start").channel("app").method("share_extension").send()
         return "ok"
     } catch (e: Exception) {
         println("Collection failed: ${e.message}")

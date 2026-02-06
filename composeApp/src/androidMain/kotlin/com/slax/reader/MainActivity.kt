@@ -20,7 +20,6 @@ class MainActivity : ComponentActivity() {
 
         super.onCreate(savedInstanceState)
 
-        // Set activity reference for Google Sign-In
         GoogleSignInProvider.setActivity(this)
 
         setCurrentActivity(this)

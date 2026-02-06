@@ -3,7 +3,6 @@ package com.slax.reader.ui.bookmark.states
 import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.network.dto.OverviewResponse
-import com.slax.reader.utils.bookmarkEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO

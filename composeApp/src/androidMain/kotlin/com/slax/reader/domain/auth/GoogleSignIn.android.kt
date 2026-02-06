@@ -53,6 +53,4 @@ actual class GoogleSignInProvider {
             Result.failure(Exception("Sign in failed: ${e.message}"))
         }
     }
-
-    actual fun isAvailable(): Boolean = true
 }

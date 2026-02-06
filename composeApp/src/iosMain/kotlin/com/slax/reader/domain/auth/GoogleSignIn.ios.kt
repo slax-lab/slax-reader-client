@@ -38,6 +38,4 @@ actual class GoogleSignInProvider {
             continuation.invokeOnCancellation {
             }
         }
-
-    actual fun isAvailable(): Boolean = true
 }

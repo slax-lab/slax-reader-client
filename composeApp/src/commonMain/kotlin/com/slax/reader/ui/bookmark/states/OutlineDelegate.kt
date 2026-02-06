@@ -120,7 +120,6 @@ class OutlineDelegate(
         val previousStatus = _dialogStatus.value
         transitionTo(OutlineDialogStatus.EXPANDED)
 
-        // Track analytics based on previous state
         when (previousStatus) {
             OutlineDialogStatus.COLLAPSED -> {
                 outlineEvent.action("interact", "expand").send()
