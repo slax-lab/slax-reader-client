@@ -3,6 +3,7 @@ package com.slax.reader.ui.bookmark.states
 import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.network.dto.OverviewResponse
+import com.slax.reader.utils.bookmarkEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -41,6 +42,8 @@ class OverviewDelegate(
 
     fun loadOverview(bookmarkId: String) {
         if (_overviewState.value.overview.isNotEmpty() || _overviewState.value.isLoading) return
+
+        bookmarkEvent.action("use_overview", "open").send()
 
         scope.launch {
             val (cachedOverview, cachedKeyTakeaways) = withContext(Dispatchers.IO) {

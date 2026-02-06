@@ -24,8 +24,10 @@ import com.slax.reader.data.database.model.checkIsSubscribed
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.ui.sidebar.SidebarViewModel
 import com.slax.reader.reactnative.navigateToRN
+import com.slax.reader.utils.feedbackEvent
 import com.slax.reader.utils.i18n
 import com.slax.reader.utils.isAndroid
+import com.slax.reader.utils.subscriptionEvent
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
@@ -64,6 +66,7 @@ fun FooterMenu(
                 onClick = {
                     onDismiss()
                     navCtrl.navigate(SubscriptionManagerRoutes)
+                    subscriptionEvent.view().source("screen").send()
                 },
                 modifier = Modifier.height(36.dp),
                 shape = RoundedCornerShape(8.dp),
@@ -174,6 +177,7 @@ fun FooterMenu(
                         "version" to "${SlaxConfig.APP_VERSION_NAME} (${SlaxConfig.APP_VERSION_CODE})"
                     )
                 )
+                feedbackEvent.view().source("inbox").send()
             }
         ),
         "about" to FooterMenuConfig(

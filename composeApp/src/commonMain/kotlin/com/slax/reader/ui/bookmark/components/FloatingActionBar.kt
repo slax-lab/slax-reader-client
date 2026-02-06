@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.LocalToolbarVisible
 import com.slax.reader.ui.bookmark.states.BookmarkOverlay
+import com.slax.reader.utils.bookmarkEvent
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
 import slax_reader_client.composeapp.generated.resources.*
@@ -92,7 +93,10 @@ fun FloatingActionBar(
 
             Box(modifier = Modifier.width(12.dp))
 
-            MoreButton(onClick = { viewModel.overlayDelegate.showOverlay(BookmarkOverlay.Toolbar) })
+            MoreButton(onClick = {
+                viewModel.overlayDelegate.showOverlay(BookmarkOverlay.Toolbar)
+                bookmarkEvent.action("use_toolbar_menu").send()
+            })
         }
     }
 }

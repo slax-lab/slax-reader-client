@@ -9,6 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.ComposeFoundationFlags
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.navigation.compose.rememberNavController
+import com.slax.reader.domain.auth.GoogleSignInProvider
 import com.slax.reader.reactnative.setCurrentActivity
 import com.slax.reader.ui.SlaxNavigation
 
@@ -18,6 +19,9 @@ class MainActivity : ComponentActivity() {
         ComposeFoundationFlags.isNewContextMenuEnabled = true
 
         super.onCreate(savedInstanceState)
+
+        // Set activity reference for Google Sign-In
+        GoogleSignInProvider.setActivity(this)
 
         setCurrentActivity(this)
 

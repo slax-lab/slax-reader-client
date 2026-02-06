@@ -21,18 +21,21 @@ import com.slax.reader.ui.about.AboutScreen
 import com.slax.reader.ui.bookmark.DetailScreen
 import com.slax.reader.ui.bookmark.DetailScreenEvent
 import com.slax.reader.ui.bookmark.toMap
-import com.slax.reader.ui.debug.DebugScreen
 import com.slax.reader.ui.inbox.InboxListScreen
 import com.slax.reader.ui.login.LoginScreen
 import com.slax.reader.ui.setting.DeleteAccountScreen
 import com.slax.reader.ui.setting.SettingScreen
-import com.slax.reader.ui.space.SpaceManager
 import com.slax.reader.ui.subscription.SubscriptionManagerScreen
+import com.slax.reader.utils.FirebaseHelper
 import com.slax.reader.utils.LifeCycleHelper
 import com.slax.reader.utils.NavHostTransitionHelper
-import dev.gitlive.firebase.Firebase
-import dev.gitlive.firebase.analytics.analytics
-import dev.gitlive.firebase.crashlytics.crashlytics
+import com.slax.reader.utils.aboutEvent
+import com.slax.reader.utils.bookmarkEvent
+import com.slax.reader.utils.bookmarkListEvent
+import com.slax.reader.utils.feedbackEvent
+import com.slax.reader.utils.settingEvent
+import com.slax.reader.utils.subscriptionEvent
+import com.slax.reader.utils.userEvent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
@@ -64,10 +67,7 @@ fun SlaxNavigation(
                     backgroundDomain.startup()
                     coordinator.startup()
                 }
-                Firebase.crashlytics.setCrashlyticsCollectionEnabled(true)
-                Firebase.analytics.setAnalyticsCollectionEnabled(true)
-                Firebase.analytics.setUserId((authState as AuthState.Authenticated).userId)
-                Firebase.crashlytics.setUserId((authState as AuthState.Authenticated).userId)
+                FirebaseHelper.setUserId((authState as AuthState.Authenticated).userId)
             }
 
             AuthState.Unauthenticated -> {
@@ -101,6 +101,7 @@ fun SlaxNavigation(
             LoginScreen(
                 navController = navCtrl
             )
+            userEvent.view("login").send()
         }
         composable<BookmarkRoutes> { backStackEntry ->
             val params = backStackEntry.toRoute<BookmarkRoutes>()
@@ -114,25 +115,23 @@ fun SlaxNavigation(
 
                         DetailScreenEvent.NavigateToSubscription -> {
                             navCtrl.navigate(SubscriptionManagerRoutes)
+                            subscriptionEvent.view().source("dialog").send()
                         }
 
                         is DetailScreenEvent.NavigateToFeedback -> {
                             navCtrl.navigateToRN(
                                 RNRoute("RNFeedbackPage"), params = event.params.toMap()
                             )
+                            feedbackEvent.view().source("bookmark").send()
                         }
                     }
                 }
             )
+            bookmarkEvent.view().send()
         }
         composable<InboxRoutes> {
             InboxListScreen(navCtrl)
-        }
-        composable<DebugRoutes> {
-            DebugScreen()
-        }
-        composable<SpaceManagerRoutes> {
-            SpaceManager()
+            bookmarkListEvent.view().send()
         }
         composable<SettingsRoutes> {
             SettingScreen(
@@ -141,22 +140,25 @@ fun SlaxNavigation(
                 },
                 navController = navCtrl
             )
+            settingEvent.view().send()
         }
         composable<AboutRoutes> {
             AboutScreen(onBackClick = {
                 navCtrl.popBackStack()
             })
+            aboutEvent.view().send()
         }
         composable<DeleteAccountRoutes> {
             DeleteAccountScreen(onBackClick = {
                 navCtrl.popBackStack()
             })
+            userEvent.view("delete_account").send()
         }
-
         composable<SubscriptionManagerRoutes> {
             SubscriptionManagerScreen(onBackClick = {
                 navCtrl.popBackStack()
             })
+            subscriptionEvent.view().send()
         }
     }
 }
