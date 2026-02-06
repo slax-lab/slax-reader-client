@@ -39,6 +39,7 @@ import app.slax.reader.SlaxConfig
 import com.slax.reader.utils.WebView
 import com.slax.reader.utils.WebViewEvent
 import com.slax.reader.utils.rememberAppWebViewState
+import com.slax.reader.utils.subscriptionEvent
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
@@ -58,13 +59,19 @@ fun SubscriptionManagerScreen(onBackClick: () -> Unit) {
 
     LaunchedEffect(webState) {
         webState.events.collect { event ->
+            val subEvent = subscriptionEvent
+                .action("checkout_start")
+                .param("gateway", "apple_iap")
+
             when (event) {
                 is WebViewEvent.Purchase -> {
                     viewmodel.purchase(event.productId, event.orderId)
+                    subEvent.param("plan_id", event.productId).send()
                 }
 
                 is WebViewEvent.PurchaseWithOffer -> {
                     viewmodel.purchase(event.productId, event.orderId, event.offer)
+                    subEvent.param("plan_id", event.productId).send()
                 }
 
                 is WebViewEvent.PageLoaded -> {

@@ -1,0 +1,20 @@
+language = Objective-C
+package = com.slax.reader.firebase
+
+---
+
+#import <Foundation/Foundation.h>
+
+@interface FirebaseBridge : NSObject
+
+@property (class, nonatomic, readonly) FirebaseBridge * _Nonnull shared;
+
+- (void)configure;
+- (void)logEvent:(NSString * _Nonnull)name parameters:(NSDictionary<NSString *, id> * _Nullable)parameters;
+- (void)setUserId:(NSString * _Nullable)userId;
+- (void)setUserProperty:(NSString * _Nullable)value forName:(NSString * _Nonnull)name;
+- (void)recordError:(NSString * _Nonnull)message code:(NSInteger)code;
+- (void)log:(NSString * _Nonnull)message;
+- (void)setCrashlyticsUserId:(NSString * _Nullable)userId;
+
+@end

@@ -20,6 +20,9 @@ import com.slax.reader.ui.bookmark.states.CommentDelegate
 import com.slax.reader.ui.bookmark.states.OutlineDelegate
 import com.slax.reader.ui.bookmark.states.OverlayDelegate
 import com.slax.reader.ui.bookmark.states.OverviewDelegate
+import com.slax.reader.utils.FirebaseHelper
+import com.slax.reader.utils.bookmarkEvent
+import com.slax.reader.utils.feedbackEvent
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
@@ -163,6 +166,7 @@ class BookmarkDetailViewModel(
             "summary" -> {
                 viewModelScope.launch {
                     val isSubscribed = subscriptionInfo.value?.checkIsSubscribed() == true
+                    bookmarkEvent.action("use_outline").isSubscribed(isSubscribed).send()
 
                     if (!isSubscribed) {
                         overlayDelegate.showOverlay(BookmarkOverlay.SubscriptionRequired)

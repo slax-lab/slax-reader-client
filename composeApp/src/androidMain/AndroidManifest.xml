@@ -8,6 +8,9 @@
         android:usesCleartextTraffic="true"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:icon="@mipmap/ic_launcher">
+        <meta-data
+                android:name="google_analytics_automatic_screen_reporting_enabled"
+                android:value="false" />
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

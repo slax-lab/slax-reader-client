@@ -11,8 +11,6 @@ import com.facebook.soloader.SoLoader
 import com.slax.reader.di.configureKoin
 import com.slax.reader.reactnative.SlaxReaderReactPackage
 import org.linusu.RNGetRandomValuesPackage
-import dev.gitlive.firebase.Firebase
-import dev.gitlive.firebase.initialize
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.GlobalContext
@@ -37,7 +35,6 @@ class SlaxReaderApplication : Application() {
         instance = this
 
         if (GlobalContext.getOrNull() == null) {
-            Firebase.initialize(this)
             startKoin {
                 androidLogger(Level.INFO)
                 androidContext(this@SlaxReaderApplication)

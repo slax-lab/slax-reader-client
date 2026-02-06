@@ -30,6 +30,7 @@ import com.slax.reader.const.component.rememberDismissableVisibility
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.states.BookmarkOverlay
 import com.slax.reader.ui.bookmark.states.OverviewViewBounds
+import com.slax.reader.utils.bookmarkEvent
 import com.slax.reader.utils.i18n
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -62,6 +63,7 @@ fun OverviewDialog(
         animationDuration = 300L,
         onDismissRequest = {
             viewModel.overlayDelegate.dismissOverlay(BookmarkOverlay.Overview)
+            bookmarkEvent.action("overview_interact", "close").send()
         }
     )
 

@@ -3,6 +3,7 @@ package com.slax.reader.ui.bookmark.states
 import com.slax.reader.data.database.dao.BookmarkDao
 import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.data.database.model.UserTag
+import com.slax.reader.utils.bookmarkEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -67,12 +68,21 @@ class BookmarkDelegate(
     fun onToggleStar(isStar: Boolean) {
         scope.launch {
             runCatching { toggleStar(isStar) }
+            bookmarkEvent
+                .action("star")
+                .param("is_starred", if (isStar) "star" else "unstar")
+                .source("detail")
+                .send()
         }
     }
 
     fun onToggleArchive(isArchive: Boolean) {
         scope.launch {
             runCatching { toggleArchive(isArchive) }
+            bookmarkEvent
+                .action("archive")
+                .param("is_archived", if (isArchive) "archive" else "unarchive")
+                .source("detail").send()
         }
     }
 

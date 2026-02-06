@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.states.BookmarkOverlay
+import com.slax.reader.utils.bookmarkEvent
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
 import slax_reader_client.composeapp.generated.resources.Res
@@ -54,7 +55,10 @@ fun TagsView(
                     shape = RoundedCornerShape(3.dp)
                 ).then(
                     Modifier.clickable(
-                        onClick = { viewModel.overlayDelegate.showOverlay(BookmarkOverlay.Tags) },
+                        onClick = {
+                            viewModel.overlayDelegate.showOverlay(BookmarkOverlay.Tags)
+                            bookmarkEvent.action("use_tag").send()
+                        },
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     )

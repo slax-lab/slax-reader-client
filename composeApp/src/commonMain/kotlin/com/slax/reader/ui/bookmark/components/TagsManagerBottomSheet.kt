@@ -23,6 +23,7 @@ import com.slax.reader.const.component.rememberDismissableVisibility
 import com.slax.reader.data.database.model.UserTag
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.states.BookmarkOverlay
+import com.slax.reader.utils.bookmarkEvent
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.roundToInt
 
@@ -108,7 +109,6 @@ fun TagsManageBottomSheet(
                 animationSpec = tween(300)
             )
         ) {
-
             Surface(
                 shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
                 color = Color.White,
@@ -187,6 +187,7 @@ fun TagsManageBottomSheet(
                         }
                     )
                 }
+                bookmarkEvent.action("tag_update", "add").send()
             }
         }
     }

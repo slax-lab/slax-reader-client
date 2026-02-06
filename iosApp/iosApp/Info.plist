@@ -12,16 +12,16 @@
                 <key>CFBundleURLSchemes</key>
                 <array>
                     <string>app.slax.reader</string>
-                    <string>$(GID_REVERSED_CLIENT_ID)</string>
+                    <string>com.googleusercontent.apps.561250096193-7hjcrkob9cv49gkvt9jn544dsih1oi4g</string>
                 </array>
             </dict>
         </array>
         <key>CFBundleVersion</key>
         <string>$(BUNDLE_VERSION)</string>
         <key>GIDClientID</key>
-        <string>$(GID_CLIENT_ID)</string>
+        <string>561250096193-7hjcrkob9cv49gkvt9jn544dsih1oi4g.apps.googleusercontent.com</string>
         <key>GIDServerClientID</key>
-        <string>$(GID_SERVER_CLIENT_ID)</string>
+        <string>561250096193-gr0t8bc9j9h9hd3rds97vpqd1tq0vq2s.apps.googleusercontent.com</string>
         <key>ITSAppUsesNonExemptEncryption</key>
         <false/>
         <key>LSSupportsOpeningDocumentsInPlace</key>
@@ -31,6 +31,8 @@
             <key>NSAllowsArbitraryLoads</key>
             <true/>
         </dict>
+        <key>FirebaseAutomaticScreenReportingEnabled</key>
+        <false/>
         <key>NSNetworkUsageDescription</key>
         <string>This app needs network access to sync data.</string>
         <key>RCTNewArchEnabled</key>

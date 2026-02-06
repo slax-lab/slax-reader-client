@@ -2,6 +2,7 @@ package com.slax.reader.extension
 
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.preferences.getPreferences
+import com.slax.reader.utils.bookmarkEvent
 import io.ktor.client.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -44,6 +45,7 @@ suspend fun collectionShare(content: String, title: String?, body: String?): Str
     val apiSvc = ApiService(httpClient)
 
     try {
+        bookmarkEvent.action("add_start").channel("app").method("share_extension").send()
         apiSvc.addBookmarkUrl(url, title)
 //        if (body == null) {
 //            apiSvc.addBookmarkUrl(url, title)

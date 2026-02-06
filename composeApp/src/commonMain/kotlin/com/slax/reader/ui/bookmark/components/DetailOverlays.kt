@@ -10,6 +10,7 @@ import androidx.compose.ui.text.font.FontWeight
 import com.slax.reader.const.component.EditNameDialog
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.states.BookmarkOverlay
+import com.slax.reader.utils.bookmarkEvent
 import com.slax.reader.utils.i18n
 import com.slax.reader.utils.isAndroid
 import com.slax.reader.utils.isIOS

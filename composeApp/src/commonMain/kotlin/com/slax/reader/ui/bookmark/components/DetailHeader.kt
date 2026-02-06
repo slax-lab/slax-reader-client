@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.utils.OpenInBrowser
+import com.slax.reader.utils.bookmarkEvent
 import com.slax.reader.utils.i18n
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -67,6 +68,7 @@ fun HeaderContent(
                     "detail_view_original".i18n(),
                     modifier = Modifier.padding(start = 16.dp).clickable {
                         externalUrl = detailState.metadataUrl
+                        bookmarkEvent.view("original").send()
                     },
                     style = TextStyle(color = Color(0xFF5490C2), fontSize = 14.sp, lineHeight = 20.sp)
                 )

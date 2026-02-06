@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewModelScope
 import com.slax.reader.const.component.rememberDismissableVisibility
 import com.slax.reader.ui.inbox.InboxListViewModel
+import com.slax.reader.utils.bookmarkEvent
 import com.slax.reader.utils.getText
 import com.slax.reader.utils.i18n
 import kotlinx.coroutines.delay
@@ -103,6 +104,7 @@ fun AddLinkDialog(
             inboxView.scrollToTop()
         }
 
+        bookmarkEvent.action("add_start").channel("app").method("manual_paste").send()
         dismiss()
     }
 
