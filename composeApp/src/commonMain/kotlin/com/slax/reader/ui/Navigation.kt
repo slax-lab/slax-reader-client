@@ -123,12 +123,17 @@ fun SlaxNavigation(
                             navCtrl.navigateToRN(
                                 RNRoute("RNFeedbackPage"), params = event.params.toMap()
                             )
-                            feedbackEvent.view().source("bookmark").send()
                         }
                     }
                 }
             )
-            LaunchedEffect(Unit) { bookmarkEvent.view().send() }
+            LaunchedEffect(Unit) {
+                bookmarkEvent
+                    .view()
+                    .bookmarkUUID(params.bookmarkId)
+                    .mode("snapshot")
+                    .send()
+            }
         }
         composable<InboxRoutes> {
             InboxListScreen(navCtrl)

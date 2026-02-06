@@ -68,14 +68,21 @@ class BookmarkDelegate(
     fun onToggleStar(isStar: Boolean) {
         scope.launch {
             runCatching { toggleStar(isStar) }
-            bookmarkEvent.action("star", if (isStar) "star" else "unstar" ).source("detail").send()
+            bookmarkEvent
+                .action("star")
+                .param("is_starred", if (isStar) "star" else "unstar")
+                .source("detail")
+                .send()
         }
     }
 
     fun onToggleArchive(isArchive: Boolean) {
         scope.launch {
             runCatching { toggleArchive(isArchive) }
-            bookmarkEvent.action("archive", if (isArchive) "archive" else "unarchive" ).source("detail").send()
+            bookmarkEvent
+                .action("archive")
+                .param("is_archived", if (isArchive) "archive" else "unarchive")
+                .source("detail").send()
         }
     }
 

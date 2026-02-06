@@ -34,6 +34,7 @@ import com.slax.reader.const.BookmarkRoutes
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.utils.bookmarkEvent
+import com.slax.reader.utils.bookmarkListEvent
 import com.slax.reader.utils.i18n
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -155,8 +156,9 @@ fun BookmarkItemRow(
                         scope.launch {
                             offsetXAnimatable.animateTo(0f, animationSpec = tween(200))
                             viewModel.toggleStar(bookmark.id, bookmark.isStarred != 1)
-                            bookmarkEvent
-                                .action("star", if (bookmark.isStarred != 1) "star" else "unstar")
+                            bookmarkListEvent
+                                .action("item_interact")
+                                .param("element", "star")
                                 .source("inbox")
                                 .send()
                         }
@@ -186,8 +188,9 @@ fun BookmarkItemRow(
                         scope.launch {
                             offsetXAnimatable.animateTo(0f, animationSpec = tween(200))
                             viewModel.toggleArchive(bookmark.id, bookmark.archiveStatus != 1)
-                            bookmarkEvent
-                                .action("archive", if (bookmark.archiveStatus != 1) "archive" else "unarchive")
+                            bookmarkListEvent
+                                .action("item_interact")
+                                .param("element", "archive")
                                 .source("inbox")
                                 .send()
                         }

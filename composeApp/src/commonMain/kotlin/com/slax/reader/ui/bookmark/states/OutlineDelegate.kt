@@ -4,6 +4,7 @@ import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.network.dto.OutlineResponse
 import com.slax.reader.utils.MarkdownHelper
+import com.slax.reader.utils.outlineEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -116,15 +117,29 @@ class OutlineDelegate(
     }
 
     fun expandDialog() {
+        val previousStatus = _dialogStatus.value
         transitionTo(OutlineDialogStatus.EXPANDED)
+
+        // Track analytics based on previous state
+        when (previousStatus) {
+            OutlineDialogStatus.COLLAPSED -> {
+                outlineEvent.action("interact", "expand").send()
+            }
+            OutlineDialogStatus.NONE, OutlineDialogStatus.HIDDEN -> {
+                outlineEvent.action("interact", "open").send()
+            }
+            else -> {}
+        }
     }
 
     fun collapseDialog() {
         transitionTo(OutlineDialogStatus.COLLAPSED)
+        outlineEvent.action("interact", "collapse").send()
     }
 
     fun hideDialog() {
         _dialogStatus.value = OutlineDialogStatus.HIDDEN
+        outlineEvent.action("interact", "close").send()
     }
 
     fun reset() {

@@ -37,6 +37,7 @@ import com.slax.reader.utils.WebView
 import com.slax.reader.utils.i18n
 import com.slax.reader.utils.isIOS
 import com.slax.reader.utils.rememberAppWebViewState
+import com.slax.reader.utils.userEvent
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -150,6 +151,7 @@ fun LoginScreen(navController: NavHostController) {
                     withAgreementCheck(AgreementType.TERMS) {
                         scope.launch {
                             val result = googleProvider.signIn()
+                            userEvent.action("login_start").method("google").send()
                             if (result.isFailure) {
                                 val error = result.exceptionOrNull()
                                 if (!error?.message.orEmpty().contains("cancel", ignoreCase = true)) {
@@ -180,6 +182,7 @@ fun LoginScreen(navController: NavHostController) {
                         withAgreementCheck(AgreementType.PRIVACY) {
                             scope.launch {
                                 val result = appleProvider.signIn()
+                                userEvent.action("login_start").method("apple").send()
                                 if (result.isFailure) {
                                     val error = result.exceptionOrNull()
                                     if (!error?.message.orEmpty().contains("canceled", ignoreCase = true)) {

@@ -48,6 +48,21 @@ class EventBuilder internal constructor(private val category: String) {
             return this
         }
 
+        fun bookmarkUUID(id: String) : ActionBuilder {
+            builderParams["bookmark_uuid"] = id
+            return this
+        }
+
+        fun mode(value: String): ActionBuilder {
+            builderParams["mode"] = value
+            return this
+        }
+
+        fun channel(value: String): ActionBuilder {
+            builderParams["channel"] = value
+            return this
+        }
+
         fun send(additionalParams: Map<String, Any>? = null) {
             val eventParams = builderParams.toMutableMap()
             additionalParams?.let { eventParams.putAll(it) }
@@ -82,3 +97,4 @@ val aboutEvent get() = EventBuilder("about")
 val feedbackEvent get() = EventBuilder("feedback")
 val settingEvent get() = EventBuilder("setting")
 val userEvent get() = EventBuilder("user")
+val outlineEvent get() = EventBuilder("outline")

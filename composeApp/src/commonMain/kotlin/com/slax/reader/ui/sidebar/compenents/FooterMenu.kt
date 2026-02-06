@@ -177,7 +177,6 @@ fun FooterMenu(
                         "version" to "${SlaxConfig.APP_VERSION_NAME} (${SlaxConfig.APP_VERSION_CODE})"
                     )
                 )
-                feedbackEvent.view().source("inbox").send()
             }
         ),
         "about" to FooterMenuConfig(

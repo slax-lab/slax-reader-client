@@ -2,6 +2,7 @@ package com.slax.reader.reactnative
 
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.network.dto.FeedbackParams
+import com.slax.reader.utils.feedbackEvent
 import de.voize.reaktnativetoolkit.annotation.ReactNativeMethod
 import de.voize.reaktnativetoolkit.annotation.ReactNativeModule
 import org.koin.core.component.KoinComponent
@@ -18,6 +19,7 @@ class FeedbackModule {
     suspend fun sendFeedback(param: FeedbackParams) {
         try {
             koinHelper.apiService.sendFeedback(param)
+            feedbackEvent.action("submit_start").param("scope", "app").send()
         } catch (e: Exception) {
             throw e
         }
