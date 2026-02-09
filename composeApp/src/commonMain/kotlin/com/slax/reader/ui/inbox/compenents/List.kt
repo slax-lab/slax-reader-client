@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -47,44 +48,44 @@ fun ArticleList(
     Box(
         Modifier.fillMaxSize()
     ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().preferredFrameRate(FrameRateCategory.High),
-            verticalArrangement = Arrangement.spacedBy(0.dp),
-            contentPadding = PaddingValues(bottom = 0.dp),
-            state = lazyListState
-        ) {
-            itemsIndexed(
-                items = bookmarks,
-                key = { _, bookmark -> bookmark.id },
-                contentType = { _, _ -> "bookmark" }
-            ) { index, bookmark ->
-                BookmarkItemRow(
-                    navCtrl = navCtrl,
-                    viewModel = viewModel,
-                    bookmark = bookmark,
-                    onEditTitle = onEditTitle
-                )
-
-                dividerLine()
-            }
-
-            if (bookmarks.isEmpty()) {
-                return@LazyColumn
-            }
-
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 34.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        "list_no_more".i18n(), style = TextStyle(
-                            color = Color(0xFF999999),
-                            fontSize = 14.sp,
-                            lineHeight = 20.sp
-                        )
+        if (bookmarks.isEmpty()) {
+            EmptyOrLoadingView(viewModel = viewModel)
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().preferredFrameRate(FrameRateCategory.High),
+                verticalArrangement = Arrangement.spacedBy(0.dp),
+                contentPadding = PaddingValues(bottom = 0.dp),
+                state = lazyListState
+            ) {
+                itemsIndexed(
+                    items = bookmarks,
+                    key = { _, bookmark -> bookmark.id },
+                    contentType = { _, _ -> "bookmark" }
+                ) { index, bookmark ->
+                    BookmarkItemRow(
+                        navCtrl = navCtrl,
+                        viewModel = viewModel,
+                        bookmark = bookmark,
+                        onEditTitle = onEditTitle
                     )
+
+                    dividerLine()
+                }
+
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 34.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            "list_no_more".i18n(), style = TextStyle(
+                                color = Color(0xFF999999),
+                                fontSize = 14.sp,
+                                lineHeight = 20.sp
+                            )
+                        )
+                    }
                 }
             }
         }
@@ -95,6 +96,27 @@ fun ArticleList(
                 .fillMaxHeight()
                 .align(Alignment.TopStart),
         )
+    }
+}
+
+@Composable
+fun EmptyOrLoadingView(viewModel: InboxListViewModel) {
+    val hasSynced by viewModel.hasSynced.collectAsState()
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        EmptyView()
+
+        if (!hasSynced) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = Color(0x336A6E83)
+                )
+            }
+        }
     }
 }
 
