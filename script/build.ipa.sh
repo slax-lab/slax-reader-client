@@ -6,8 +6,6 @@ export BUILD_FLAVOR=release
 
 ./gradlew :composeApp:syncXcodeVersionConfig -Pbuildkonfig.flavor=$BUILD_FLAVOR
 
-./gradlew :composeApp:syncFirebaseIOS -Pbuildkonfig.flavor=$BUILD_FLAVOR
-
 make rn
 
 ./gradlew :composeApp:bundleIOSReleaseJs

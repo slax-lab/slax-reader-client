@@ -6,7 +6,7 @@ import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import app.slax.reader.SlaxConfig
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import java.lang.ref.WeakReference
@@ -26,9 +26,7 @@ actual class GoogleSignInProvider {
 
         val credentialManager = CredentialManager.create(activity)
 
-        val googleIdOption = GetGoogleIdOption.Builder()
-            .setServerClientId(SlaxConfig.GOOGLE_AUTH_SERVER_ID)
-            .setFilterByAuthorizedAccounts(false)
+        val googleIdOption = GetSignInWithGoogleOption.Builder(SlaxConfig.GOOGLE_AUTH_SERVER_ID)
             .build()
 
         val request = GetCredentialRequest.Builder()

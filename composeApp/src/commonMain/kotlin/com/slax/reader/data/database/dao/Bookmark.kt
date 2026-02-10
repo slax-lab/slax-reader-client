@@ -17,7 +17,7 @@ class BookmarkDao(
 ) {
     val hasSynced: StateFlow<Boolean> = database.currentStatus.asFlow()
         .map { status -> status.hasSynced ?: false }
-        .stateIn(scope, SharingStarted.Eagerly, false)
+        .stateIn(scope, SharingStarted.WhileSubscribed(5000), false)
 
     private val _userBookmarkListFlow: StateFlow<List<InboxListBookmarkItem>> by lazy {
         println("[watch][database] _userBookmarkListFlow")
