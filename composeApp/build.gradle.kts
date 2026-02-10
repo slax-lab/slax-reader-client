@@ -36,7 +36,7 @@ plugins {
     alias(libs.plugins.firebase.crashlytics)
     kotlin("native.cocoapods")
     id("com.codingfeline.buildkonfig") version "0.17.1"
-    id("org.jetbrains.kotlinx.atomicfu") version "0.29.0"
+    id("org.jetbrains.kotlinx.atomicfu") version "0.31.0"
     id("io.github.ttypic.swiftklib") version "0.6.4"
     id("com.facebook.react")
     id("com.google.devtools.ksp") version "2.3.4"
@@ -90,6 +90,8 @@ kotlin {
                     create("StoreKitWrapper")
                     create("ReactNativeBridge")
                     create("nskeyvalueobserving")
+                    create("firebaseBridge")
+                    create("googleSignInBridge")
                 }
             }
         }
@@ -108,6 +110,15 @@ kotlin {
             implementation(libs.react.android)
             implementation(libs.hermes.android)
             implementation(libs.soloader)
+
+            // firebase
+            implementation(libs.firebase.analytics.ktx)
+            implementation(libs.firebase.crashlytics.ktx)
+
+            // Google Sign-In (Credential Manager)
+            implementation(libs.android.credentials)
+            implementation(libs.android.credentials.play.services.auth)
+            implementation(libs.googleid)
 
             implementation(project   (":react-native-get-random-values"))
         }
@@ -140,7 +151,6 @@ kotlin {
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
-//            implementation(libs.ktor.server.sse)
 
             // Serialization
             implementation(libs.kotlinx.serialization.json)
@@ -155,14 +165,6 @@ kotlin {
             implementation(libs.sketch.svg)
             implementation(libs.sketch.compose.resources)
             implementation(libs.sketch.extensions.compose.resources)
-
-            // firebase
-            implementation(libs.firebase.app)
-            implementation(libs.firebase.analytics)
-            implementation(libs.firebase.crashlytics)
-
-            // auth
-            implementation(libs.kmpauth.google)
 
             // IO/File
             implementation(libs.okio)
@@ -357,7 +359,7 @@ buildkonfig {
             buildConfigField(STRING, "WEB_BASE_URL", "https://r.slax.com")
             buildConfigField(STRING, "WEB_DOMAIN", ".slax.com")
             buildConfigField(STRING, "LOG_LEVEL", "ERROR")
-        } else if (buildFlavor == "dev") {
+        } else {
             buildConfigField(STRING, "API_BASE_URL", "https://reader-api.slax.dev")
             buildConfigField(STRING, "WEB_BASE_URL", "https://r.slax.dev")
             buildConfigField(STRING, "WEB_DOMAIN", ".slax.dev")
@@ -400,80 +402,17 @@ buildkonfig {
 
 val syncXcodeVersionConfig = tasks.register<Exec>("syncXcodeVersionConfig") {
     workingDir(rootProject.projectDir)
-
-    val iOSFirebaseFile = if (buildFlavor == "release") {
-        "GoogleService-Info.release.plist"
-    } else {
-        "GoogleService-Info.dev.plist"
-    }
-
-    val envFile = if (buildFlavor == "release") {
-        ".env.release"
-    } else {
-        ".env"
-    }
-
     val script = """
-        GID_CLIENT_ID=${'$'}(/usr/libexec/PlistBuddy -c "Print :CLIENT_ID" "firebase/$iOSFirebaseFile")
-        GID_REVERSED_CLIENT_ID=${'$'}(/usr/libexec/PlistBuddy -c "Print :REVERSED_CLIENT_ID" "firebase/$iOSFirebaseFile")
-        GID_SERVER_CLIENT_ID=${'$'}(grep GOOGLE_AUTH_SERVER_ID "$envFile" | cut -d'=' -f2 | tr -d ' "')
-
         cat > iosApp/Versions.xcconfig <<EOF
 BUNDLE_SHORT_VERSION_STRING = $appVersionName
 BUNDLE_VERSION = $appVersionCode
-GID_CLIENT_ID = ${'$'}GID_CLIENT_ID
-GID_SERVER_CLIENT_ID = ${'$'}GID_SERVER_CLIENT_ID
-GID_REVERSED_CLIENT_ID = ${'$'}GID_REVERSED_CLIENT_ID
 EOF
     """.trimIndent()
 
     commandLine("sh", "-c", script)
 }
 
-val syncFirebaseAndroid = tasks.register<Exec>("syncFirebaseAndroid") {
-    group = "setup"
-    description = "Copy Android Firebase config from ./firebase directory"
-
-    workingDir(rootProject.projectDir)
-
-    val androidFile = if (buildFlavor == "release") {
-        "google-services.release.json"
-    } else {
-        "google-services.dev.json"
-    }
-
-    commandLine("cp", "firebase/$androidFile", "composeApp/google-services.json")
-
-    doFirst {
-        println("📱 Copying Android Firebase: $androidFile -> google-services.json")
-    }
-}
-
-val syncFirebaseIOS = tasks.register<Exec>("syncFirebaseIOS") {
-    group = "setup"
-    description = "Copy iOS Firebase config from ./firebase directory"
-
-    workingDir(rootProject.projectDir)
-
-    val iOSFile = if (buildFlavor == "release") {
-        "GoogleService-Info.release.plist"
-    } else {
-        "GoogleService-Info.dev.plist"
-    }
-
-    commandLine("cp", "firebase/$iOSFile", "iosApp/iosApp/GoogleService-Info.plist")
-
-    doFirst {
-        println("🍎 Copying iOS Firebase: $iOSFile -> iosApp/iosApp/GoogleService-Info.plist")
-    }
-}
-
-tasks.named("preBuild").configure {
-    dependsOn(syncFirebaseAndroid)
-}
-
 tasks.matching { it.name.contains("embedAndSign") && it.name.contains("FrameworkForXcode") }.configureEach {
-    dependsOn(syncFirebaseIOS)
     dependsOn(syncXcodeVersionConfig)
 }
 

@@ -22,6 +22,7 @@ class InboxListViewModel(
     val syncState = coordinatorDomain.syncState
 
     val bookmarks = bookmarkDao.watchUserBookmarkList()
+    val hasSynced = bookmarkDao.hasSynced
 
     val localBookmarkMap = localBookmarkDao.watchUserLocalBookmarkMap()
 

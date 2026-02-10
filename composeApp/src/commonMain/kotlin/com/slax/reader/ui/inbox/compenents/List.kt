@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -44,6 +45,16 @@ fun ArticleList(
         }
     }
 
+    if (bookmarks.isEmpty()) {
+        val hasSynced by viewModel.hasSynced.collectAsState()
+        Box(
+            Modifier.fillMaxSize()
+        ) {
+            EmptyOrLoadingView(hasSynced = hasSynced)
+        }
+        return
+    }
+
     Box(
         Modifier.fillMaxSize()
     ) {
@@ -66,10 +77,6 @@ fun ArticleList(
                 )
 
                 dividerLine()
-            }
-
-            if (bookmarks.isEmpty()) {
-                return@LazyColumn
             }
 
             item {
@@ -95,6 +102,26 @@ fun ArticleList(
                 .fillMaxHeight()
                 .align(Alignment.TopStart),
         )
+    }
+}
+
+@Composable
+fun EmptyOrLoadingView(hasSynced: Boolean) {
+    println("[watch][UI] recomposition EmptyOrLoadingView, hasSynced=$hasSynced")
+    Box(modifier = Modifier.fillMaxSize()) {
+        EmptyView()
+
+        if (!hasSynced) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = Color(0x336A6E83)
+                )
+            }
+        }
     }
 }
 

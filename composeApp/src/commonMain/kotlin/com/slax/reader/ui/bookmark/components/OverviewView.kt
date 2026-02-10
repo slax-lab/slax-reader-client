@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.states.BookmarkOverlay
 import com.slax.reader.ui.bookmark.states.OverviewViewBounds
+import com.slax.reader.utils.bookmarkEvent
 import com.slax.reader.utils.i18n
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -78,7 +79,10 @@ fun OverviewView(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { viewModel.overlayDelegate.showOverlay(BookmarkOverlay.Overview) }
+                .clickable {
+                    viewModel.overlayDelegate.showOverlay(BookmarkOverlay.Overview)
+                    bookmarkEvent.action("overview_interact", "open").send()
+                }
                 .padding(12.dp)
         ) {
             // 使用自定义Layout实现文本末尾附加箭头图标

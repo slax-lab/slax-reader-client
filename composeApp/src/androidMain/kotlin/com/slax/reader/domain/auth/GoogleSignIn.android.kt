@@ -1,0 +1,54 @@
+package com.slax.reader.domain.auth
+
+import androidx.activity.ComponentActivity
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.GetCredentialException
+import app.slax.reader.SlaxConfig
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
+import java.lang.ref.WeakReference
+
+actual class GoogleSignInProvider {
+    companion object {
+        private var activityRef: WeakReference<ComponentActivity>? = null
+
+        fun setActivity(activity: ComponentActivity) {
+            activityRef = WeakReference(activity)
+        }
+    }
+
+    actual suspend fun signIn(): Result<GoogleSignInResult> {
+        val activity = activityRef?.get()
+            ?: return Result.failure(Exception("Activity not available"))
+
+        val credentialManager = CredentialManager.create(activity)
+
+        val googleIdOption = GetSignInWithGoogleOption.Builder(SlaxConfig.GOOGLE_AUTH_SERVER_ID)
+            .build()
+
+        val request = GetCredentialRequest.Builder()
+            .addCredentialOption(googleIdOption)
+            .build()
+
+        return try {
+            val result = credentialManager.getCredential(activity, request)
+            val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(result.credential.data)
+            Result.success(
+                GoogleSignInResult(
+                    idToken = googleIdTokenCredential.idToken,
+                    email = googleIdTokenCredential.id,
+                    displayName = googleIdTokenCredential.displayName
+                )
+            )
+        } catch (e: GetCredentialCancellationException) {
+            Result.failure(Exception("Sign in canceled"))
+        } catch (e: GoogleIdTokenParsingException) {
+            Result.failure(Exception("Failed to parse Google ID token: ${e.message}"))
+        } catch (e: GetCredentialException) {
+            Result.failure(Exception("Sign in failed: ${e.message}"))
+        }
+    }
+}
