@@ -90,7 +90,6 @@ private fun DrawerContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .statusBarsPadding()
             .padding(8.dp)
     ) {
         // 关闭按钮
