@@ -101,9 +101,9 @@ fun LoginScreen(navController: NavHostController) {
     ) {
         // 顶部内容区域
         Column(
-            modifier = Modifier.weight(1f, fill = false)
+            modifier = Modifier.weight(1f, fill = true)
         ) {
-            Spacer(modifier = Modifier.heightIn(min = 48.dp, max = 128.dp).fillMaxWidth().weight(0.15f))
+            Spacer(modifier = Modifier.height(84.dp))
 
             Text(
                 text = "login_welcome_title".i18n(),
