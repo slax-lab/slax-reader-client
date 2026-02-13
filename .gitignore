@@ -36,3 +36,10 @@ react-native/src/generated/*
 iosApp/iosApp/assets/images/*
 composeApp/src/androidMain/assets/*
 composeApp/src/androidMain/res/drawable-mdpi/*
+
+reactNativeApp/.vscode
+reactNativeApp/ios
+reactNativeApp/.expo
+reactNativeApp/android
+reactNativeApp/node_modules
+reactNativeApp/artifacts

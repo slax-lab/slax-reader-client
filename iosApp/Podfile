@@ -1,7 +1,4 @@
-require_relative '../react-native/node_modules/react-native/scripts/react_native_pods.rb'
-
 platform :ios, '15.1'
-prepare_react_native_project!
 
 linkage = ENV['USE_FRAMEWORKS']
 if linkage != nil
@@ -18,15 +15,7 @@ project 'iosApp', {
 }
 
 target 'iosApp' do
-  use_react_native!(
-    path: '../react-native/node_modules/react-native',
-    app_path: '../react-native',
-    hermes_enabled: true,
-    new_arch_enabled: true
-  )
-
   pod 'ComposeApp', :path => '../composeApp'
-  pod 'react-native-get-random-values', :path => '../react-native/node_modules/react-native-get-random-values'
 
   target 'share' do
     inherit! :search_paths
@@ -35,34 +24,6 @@ target 'iosApp' do
 end
 
 post_install do |installer|
-  react_native_post_install(
-    installer,
-    '../react-native/',
-    mac_catalyst_enabled: false
-  )
-
-  rn_root = "${PODS_ROOT}/../../react-native/node_modules/react-native"
-
-  def apply_react_native_settings(targets, rn_root)
-    targets.each do |t|
-      t.build_configurations.each do |config|
-        config.build_settings['REACT_NATIVE_PATH'] = rn_root
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
-      end
-    end
-  end
-
-  apply_react_native_settings(installer.pods_project.targets, rn_root)
-
-  installer.aggregate_targets.map(&:user_project).uniq.each do |user_project|
-    apply_react_native_settings(user_project.targets, rn_root)
-    user_project.save
-  end
-
-  installer.generated_projects.each do |project|
-    apply_react_native_settings(project.targets, rn_root)
-  end
-
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
       xcconfig_path = config.base_configuration_reference.real_path
