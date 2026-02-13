@@ -15,16 +15,15 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import app.slax.reader.SlaxConfig
 import com.slax.reader.const.AboutRoutes
-import com.slax.reader.const.RNRoute
 import com.slax.reader.const.SettingsRoutes
 import com.slax.reader.const.SubscriptionManagerRoutes
+import com.slax.reader.reactnative.navigateToReactNative
 import com.slax.reader.data.database.model.checkIsSubscribed
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.ui.sidebar.SidebarViewModel
-import com.slax.reader.reactnative.navigateToRN
-import com.slax.reader.utils.feedbackEvent
 import com.slax.reader.utils.i18n
 import com.slax.reader.utils.isAndroid
 import com.slax.reader.utils.subscriptionEvent
@@ -170,9 +169,10 @@ fun FooterMenu(
             ),
             onClick = {
                 onDismiss()
-                navCtrl.navigateToRN(
-                    RNRoute("RNFeedbackPage"), params = mapOf(
-                        "email" to userInfo!!.email,
+                (navCtrl as? NavHostController)?.navigateToReactNative(
+                    route = "main",
+                    params = mapOf(
+                        "email" to (userInfo?.email ?: ""),
                         "entryPoint" to "inbox",
                         "version" to "${SlaxConfig.APP_VERSION_NAME} (${SlaxConfig.APP_VERSION_CODE})"
                     )

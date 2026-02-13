@@ -16,7 +16,7 @@ import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.auth.AuthState
 import com.slax.reader.domain.coordinator.CoordinatorDomain
 import com.slax.reader.domain.sync.BackgroundDomain
-import com.slax.reader.reactnative.navigateToRN
+import com.slax.reader.reactnative.navigateToReactNative
 import com.slax.reader.ui.about.AboutScreen
 import com.slax.reader.ui.bookmark.DetailScreen
 import com.slax.reader.ui.bookmark.DetailScreenEvent
@@ -120,8 +120,9 @@ fun SlaxNavigation(
                         }
 
                         is DetailScreenEvent.NavigateToFeedback -> {
-                            navCtrl.navigateToRN(
-                                RNRoute("RNFeedbackPage"), params = event.params.toMap()
+                            navCtrl.navigateToReactNative(
+                                route = "main",
+                                params = event.params.toMap()
                             )
                         }
                     }

@@ -1,78 +1,24 @@
 package com.slax.reader
 
 import android.app.Application
-import com.facebook.react.ReactHost
-import com.facebook.react.ReactPackage
-import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint
-import com.facebook.react.defaults.DefaultReactHost
-import com.facebook.react.shell.MainReactPackage
-import com.facebook.react.soloader.OpenSourceMergedSoMapping
-import com.facebook.soloader.SoLoader
-import com.slax.reader.di.configureKoin
-import com.slax.reader.reactnative.SlaxReaderReactPackage
-import org.linusu.RNGetRandomValuesPackage
-import org.koin.android.ext.koin.androidContext
-import org.koin.android.ext.koin.androidLogger
-import org.koin.core.context.GlobalContext
-import org.koin.core.context.startKoin
-import org.koin.core.logger.Level
+import android.content.res.Configuration
+import com.slax.reactnativeapp.BrownfieldLifecycleDispatcher
 
 class SlaxReaderApplication : Application() {
 
     companion object {
-        @Volatile
-        private var instance: SlaxReaderApplication? = null
-
-        fun getInstance(): SlaxReaderApplication? = instance
+        lateinit var instance: SlaxReaderApplication
+            private set
     }
-
-    @Volatile
-    private var _reactHost: ReactHost? = null
-    private var slaxReaderReactPackage: SlaxReaderReactPackage? = null
 
     override fun onCreate() {
         super.onCreate()
         instance = this
-
-        if (GlobalContext.getOrNull() == null) {
-            startKoin {
-                androidLogger(Level.INFO)
-                androidContext(this@SlaxReaderApplication)
-                configureKoin()
-            }
-        }
+        BrownfieldLifecycleDispatcher.onApplicationCreate(this)
     }
 
-    @Synchronized
-    fun getReactHost(): ReactHost {
-        if (_reactHost == null) {
-            SoLoader.init(this, OpenSourceMergedSoMapping)
-            DefaultNewArchitectureEntryPoint.load()
-
-            slaxReaderReactPackage = SlaxReaderReactPackage()
-            val packages: List<ReactPackage> = listOf(
-                MainReactPackage(null),
-                RNGetRandomValuesPackage(),
-                slaxReaderReactPackage!!
-            )
-            _reactHost = DefaultReactHost.getDefaultReactHost(
-                this,
-                packages,
-                jsMainModulePath = "index",
-                jsBundleAssetPath = "index.android.bundle",
-                jsRuntimeFactory = null,
-                useDevSupport = false
-            )
-        }
-        return _reactHost!!
-    }
-
-    override fun onTerminate() {
-        super.onTerminate()
-        _reactHost?.invalidate()
-        _reactHost = null
-        slaxReaderReactPackage?.cleanup()
-        slaxReaderReactPackage = null
-        instance = null
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        BrownfieldLifecycleDispatcher.onConfigurationChanged(this, newConfig)
     }
 }

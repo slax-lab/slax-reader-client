@@ -24,10 +24,23 @@ bridge:
 adb-proxy:
 	 ~/Library/Android/sdk/platform-tools/adb reverse tcp:8081 tcp:8081
 
-rn:
-	 ./gradlew :composeApp:generateCodegenArtifactsFromSchema
-	 ./gradlew kspCommonMainKotlinMetadata
-	 mkdir -p build/generated/autolinking && cd react-native && npx react-native config > ../build/generated/autolinking/autolinking.json
+rn-ln:
+	cd reactNativeApp/ios/Pods/hermes-engine/destroot/Library/Frameworks/universal/ && ln -s hermes.xcframework hermesvm.xcframework && ls -la
+
+CURRENT := ./reactNativeApp
+
+rn-debug:
+	cd $(CURRENT) && npx expo prebuild --platform ios --clean
+	cd reactNativeApp/ios/Pods/hermes-engine/destroot/Library/Frameworks/universal/ && ln -s hermes.xcframework hermesvm.xcframework
+	cd $(CURRENT) && sed -i '' '/ExpoAppDelegateWrapper/d' ios/ReactNativeAppTarget/ReactNativeHostManager.swift
+	cd $(CURRENT) && npx expo-brownfield build-ios --debug
+	cd $(CURRENT) && npx expo-brownfield build-android --all --repository MavenLocal
+	bash ./script/fix_react_native_target_path.sh
+
+rn-build:
+	cd $(CURRENT) && npx expo-brownfield build-ios --release
+	cd $(CURRENT) && npx expo-brownfield build-android --all --repository MavenLocal
+	bash ./script/fix_react_native_target_path.sh
 
 rn-bundle:
 	./gradlew :composeApp:bundleAndroidReleaseJs
