@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
     spec.name                     = 'ComposeApp'
-    spec.version                  = '1.0.5'
+    spec.version                  = '1.0.6'
     spec.homepage                 = 'https://github.com/slax-lab/slax-reader-client'
     spec.source                   = { :http=> ''}
     spec.authors                  = ''
