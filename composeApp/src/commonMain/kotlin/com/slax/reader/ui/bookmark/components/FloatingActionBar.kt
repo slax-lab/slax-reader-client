@@ -67,7 +67,7 @@ fun FloatingActionBar(
                         shadow = Shadow(
                             radius = 40.dp,
                             spread = 0.dp,
-                            color = Color.Black.copy(alpha = 0.25f),
+                            color = Color.Black.copy(alpha = 0.16f),
                             offset = DpOffset(x = 0.dp, y = 10.dp)
                         )
                     )
@@ -161,7 +161,7 @@ private fun MoreButton(onClick: () -> Unit) {
                     shadow = Shadow(
                         radius = 40.dp,
                         spread = 0.dp,
-                        color = Color.Black.copy(alpha = 0.25f),
+                        color = Color.Black.copy(alpha = 0.16f),
                         offset = DpOffset(x = 0.dp, y = 10.dp)
                     )
                 ),
