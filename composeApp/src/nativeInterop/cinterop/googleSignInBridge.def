@@ -1,0 +1,16 @@
+language = Objective-C
+package = com.slax.reader.googlesignin
+
+---
+
+#import <Foundation/Foundation.h>
+
+typedef void (^GoogleSignInCompletion)(NSString * _Nullable idToken, NSString * _Nullable email, NSString * _Nullable displayName, NSString * _Nullable error);
+
+@interface GoogleSignInBridge : NSObject
+
+@property (class, nonatomic, readonly) GoogleSignInBridge * _Nonnull shared;
+
+- (void)signInWithServerClientId:(NSString * _Nonnull)serverClientId completion:(GoogleSignInCompletion _Nonnull)completion;
+
+@end

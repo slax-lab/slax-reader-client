@@ -45,47 +45,53 @@ fun ArticleList(
         }
     }
 
+    if (bookmarks.isEmpty()) {
+        val hasSynced by viewModel.hasSynced.collectAsState()
+        Box(
+            Modifier.fillMaxSize()
+        ) {
+            EmptyOrLoadingView(hasSynced = hasSynced)
+        }
+        return
+    }
+
     Box(
         Modifier.fillMaxSize()
     ) {
-        if (bookmarks.isEmpty()) {
-            EmptyOrLoadingView(viewModel = viewModel)
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().preferredFrameRate(FrameRateCategory.High),
-                verticalArrangement = Arrangement.spacedBy(0.dp),
-                contentPadding = PaddingValues(bottom = 0.dp),
-                state = lazyListState
-            ) {
-                itemsIndexed(
-                    items = bookmarks,
-                    key = { _, bookmark -> bookmark.id },
-                    contentType = { _, _ -> "bookmark" }
-                ) { index, bookmark ->
-                    BookmarkItemRow(
-                        navCtrl = navCtrl,
-                        viewModel = viewModel,
-                        bookmark = bookmark,
-                        onEditTitle = onEditTitle
-                    )
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().preferredFrameRate(FrameRateCategory.High),
+            verticalArrangement = Arrangement.spacedBy(0.dp),
+            contentPadding = PaddingValues(bottom = 0.dp),
+            state = lazyListState
+        ) {
+            itemsIndexed(
+                items = bookmarks,
+                key = { _, bookmark -> bookmark.id },
+                contentType = { _, _ -> "bookmark" }
+            ) { index, bookmark ->
+                BookmarkItemRow(
+                    navCtrl = navCtrl,
+                    viewModel = viewModel,
+                    bookmark = bookmark,
+                    onEditTitle = onEditTitle
+                )
 
-                    dividerLine()
-                }
+                dividerLine()
+            }
 
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 34.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            "list_no_more".i18n(), style = TextStyle(
-                                color = Color(0xFF999999),
-                                fontSize = 14.sp,
-                                lineHeight = 20.sp
-                            )
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 34.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "list_no_more".i18n(), style = TextStyle(
+                            color = Color(0xFF999999),
+                            fontSize = 14.sp,
+                            lineHeight = 20.sp
                         )
-                    }
+                    )
                 }
             }
         }
@@ -100,9 +106,8 @@ fun ArticleList(
 }
 
 @Composable
-fun EmptyOrLoadingView(viewModel: InboxListViewModel) {
-    val hasSynced by viewModel.hasSynced.collectAsState()
-
+fun EmptyOrLoadingView(hasSynced: Boolean) {
+    println("[watch][UI] recomposition EmptyOrLoadingView, hasSynced=$hasSynced")
     Box(modifier = Modifier.fillMaxSize()) {
         EmptyView()
 

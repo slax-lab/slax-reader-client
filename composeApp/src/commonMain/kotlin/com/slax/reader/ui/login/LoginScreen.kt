@@ -30,15 +30,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import app.slax.reader.SlaxConfig
-import com.mmk.kmpauth.google.GoogleAuthCredentials
-import com.mmk.kmpauth.google.GoogleAuthProvider
-import com.mmk.kmpauth.google.GoogleButtonUiContainer
 import com.slax.reader.const.InboxRoutes
 import com.slax.reader.domain.auth.AppleSignInProvider
+import com.slax.reader.domain.auth.GoogleSignInProvider
 import com.slax.reader.utils.WebView
 import com.slax.reader.utils.i18n
 import com.slax.reader.utils.isIOS
 import com.slax.reader.utils.rememberAppWebViewState
+import com.slax.reader.utils.userEvent
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -73,9 +72,16 @@ fun LoginScreen(navController: NavHostController) {
         }
     }
 
-    GoogleAuthProvider.create(
-        credentials = GoogleAuthCredentials(serverId = SlaxConfig.GOOGLE_AUTH_SERVER_ID)
-    )
+    val googleProvider = remember { GoogleSignInProvider() }
+
+    val withAgreementCheck: (AgreementType, () -> Unit) -> Unit = { type, action ->
+        if (!isAgreed) {
+            pendingLoginAction = action
+            agreementType = type
+        } else {
+            action()
+        }
+    }
 
     errorMessage?.let { message ->
         AlertDialog(
@@ -95,9 +101,9 @@ fun LoginScreen(navController: NavHostController) {
     ) {
         // 顶部内容区域
         Column(
-            modifier = Modifier.weight(1f, fill = false)
+            modifier = Modifier.weight(1f, fill = true)
         ) {
-            Spacer(modifier = Modifier.heightIn(min = 48.dp, max = 128.dp).fillMaxWidth().weight(0.15f))
+            Spacer(modifier = Modifier.height(84.dp))
 
             Text(
                 text = "login_welcome_title".i18n(),
@@ -137,36 +143,32 @@ fun LoginScreen(navController: NavHostController) {
 
         // 底部登录按钮区域
         Column(modifier = Modifier.padding(bottom = 30.dp)) {
-            GoogleButtonUiContainer(onGoogleSignInResult = { googleUser ->
-                if (googleUser == null) {
-                    return@GoogleButtonUiContainer
-                }
-
-                scope.launch {
-                    viewModel.googleSignIn(
-                        googleUser,
-                        onSuccess = successHandle,
-                        onLoading = { isGoogleLoading = it },
-                        onError = {
-                            errorMessage = it
-                        },
-                    )
-                }
-            }) {
-                LoginButton(
-                    text = "login_google".i18n(),
-                    isLoading = isGoogleLoading,
-                    drawableResource = Res.drawable.ic_sm_google,
-                    onClick = {
-                        if (!isAgreed) {
-                            pendingLoginAction = { this.onClick() }
-                            agreementType = AgreementType.TERMS
-                        } else {
-                            this.onClick()
+            LoginButton(
+                text = "login_google".i18n(),
+                isLoading = isGoogleLoading,
+                drawableResource = Res.drawable.ic_sm_google,
+                onClick = {
+                    withAgreementCheck(AgreementType.TERMS) {
+                        scope.launch {
+                            val result = googleProvider.signIn()
+                            userEvent.action("login_start").method("google").send()
+                            if (result.isFailure) {
+                                val error = result.exceptionOrNull()
+                                if (!error?.message.orEmpty().contains("cancel", ignoreCase = true)) {
+                                    errorMessage = error?.message
+                                }
+                                return@launch
+                            }
+                            viewModel.googleSignIn(
+                                result = result,
+                                onSuccess = successHandle,
+                                onLoading = { isGoogleLoading = it },
+                                onError = { errorMessage = it }
+                            )
                         }
                     }
-                )
-            }
+                }
+            )
 
             if (isIOS()) {
                 val appleProvider = remember { AppleSignInProvider() }
@@ -177,29 +179,10 @@ fun LoginScreen(navController: NavHostController) {
                     isLoading = isAppleLoading,
                     text = "login_apple".i18n(),
                     onClick = {
-                        if (!isAgreed) {
-                            pendingLoginAction = {
-                                scope.launch {
-                                    val result = appleProvider.signIn()
-                                    if (result.isFailure) {
-                                        val error = result.exceptionOrNull()
-                                        if (!error?.message.orEmpty().contains("canceled", ignoreCase = true)) {
-                                            errorMessage = error?.message
-                                        }
-                                        return@launch
-                                    }
-                                    viewModel.appleSignIn(
-                                        result = result,
-                                        onSuccess = successHandle,
-                                        onLoading = { isAppleLoading = it },
-                                        onError = { errorMessage = it }
-                                    )
-                                }
-                            }
-                            agreementType = AgreementType.PRIVACY
-                        } else {
+                        withAgreementCheck(AgreementType.PRIVACY) {
                             scope.launch {
                                 val result = appleProvider.signIn()
+                                userEvent.action("login_start").method("apple").send()
                                 if (result.isFailure) {
                                     val error = result.exceptionOrNull()
                                     if (!error?.message.orEmpty().contains("canceled", ignoreCase = true)) {

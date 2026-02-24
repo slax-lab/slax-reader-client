@@ -31,8 +31,7 @@ fun SyncStatusBar(state: AppSyncState) {
     }
 
     Surface(
-        modifier = Modifier
-            .fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
         shape = RoundedCornerShape(8.dp),
         color = Color(0xFFE8EBED),
     ) {

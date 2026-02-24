@@ -85,7 +85,7 @@ fun UserAvatar() {
             is AppSyncState.Connecting -> {
                 CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),
-                    color = Color(0xFF1DA1F2),
+                    color = Color(0xFF16B998),
                     strokeWidth = 1.dp,
                     trackColor = Color(0x33333333)
                 )
