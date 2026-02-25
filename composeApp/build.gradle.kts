@@ -392,11 +392,6 @@ buildkonfig {
             "GOOGLE_AUTH_SERVER_ID",
             dotenv.get("GOOGLE_AUTH_SERVER_ID")!!
         )
-        buildConfigField(
-            STRING,
-            "REVENUE_CAT_API_KEY",
-            dotenv.get("REVENUE_CAT_API_KEY")!!
-        )
     }
 }
 
