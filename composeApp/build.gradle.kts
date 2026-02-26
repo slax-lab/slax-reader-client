@@ -113,10 +113,7 @@ kotlin {
             implementation(libs.android.credentials.play.services.auth)
             implementation(libs.googleid)
 
-            implementation(libs.reactnativeapp.get().toString()) {
-                // Exclude old hermes group - RN 0.81 publishes hermes under com.facebook.react
-                exclude(group = "com.facebook.hermes", module = "hermes-android")
-            }
+            implementation(libs.reactnativeapp)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -186,15 +183,6 @@ kotlin {
     }
 }
 
-// Provide version for com.facebook.react:hermes-android (worklets declares it without version)
-configurations.configureEach {
-    resolutionStrategy.eachDependency {
-        if (requested.group == "com.facebook.react" && requested.name == "hermes-android") {
-            useVersion("0.81.5")
-        }
-    }
-}
-
 android {
     namespace = "com.slax.reader"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -209,6 +197,10 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+        jniLibs {
+            pickFirsts += "lib/*/libworklets.so"
+            useLegacyPackaging = true
         }
     }
     signingConfigs {

@@ -31,6 +31,8 @@
         </activity>
         <activity android:name=".reactnative.ReactNativeActivity"
                   android:exported="false"
-                  android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
+                  android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+                  android:windowSoftInputMode="adjustResize"
+                  android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"/>
     </application>
 </manifest>

@@ -14,7 +14,6 @@ class SlaxReaderApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
-        BrownfieldLifecycleDispatcher.onApplicationCreate(this)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {

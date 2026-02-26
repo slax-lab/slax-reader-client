@@ -22,7 +22,6 @@ kotlinxDatetime = "0.7.1"
 material3 = "1.9.0"
 okio = "3.16.4"
 powerSyncCore = "1.10.2"
-reactnativeapp = "1.0.0"
 runtimeVersion = "1.10.1"
 sketchHttp = "4.3.1"
 koinCompose = "4.1.1"
@@ -74,7 +73,7 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 connectivity-core = { module = "dev.jordond.connectivity:connectivity-core", version.ref = "connectivity" }
 connectivity-device = { module = "dev.jordond.connectivity:connectivity-device", version.ref = "connectivity" }
 connectivity-compose-device = { module = "dev.jordond.connectivity:connectivity-compose-device", version.ref = "connectivity" }
-reactnativeapp = { module = "com.slax:reactnativeapp", version.ref = "reactnativeapp" }
+reactnativeapp = { module = "com.slax:reactnativeapp", version = "1.0.2" }
 sketch-animated-gif = { module = "io.github.panpf.sketch4:sketch-animated-gif", version.ref = "sketchHttp" }
 sketch-animated-gif-koral = { module = "io.github.panpf.sketch4:sketch-animated-gif-koral", version.ref = "sketchHttp" }
 sketch-compose = { module = "io.github.panpf.sketch4:sketch-compose", version.ref = "sketchHttp" }

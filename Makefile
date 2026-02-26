@@ -24,23 +24,21 @@ bridge:
 adb-proxy:
 	 ~/Library/Android/sdk/platform-tools/adb reverse tcp:8081 tcp:8081
 
-rn-ln:
-	cd reactNativeApp/ios/Pods/hermes-engine/destroot/Library/Frameworks/universal/ && ln -s hermes.xcframework hermesvm.xcframework && ls -la
-
 CURRENT := ./reactNativeApp
 
 rn-debug:
+	cd $(CURRENT) && npx expo prebuild --platform android --clean
 	cd $(CURRENT) && npx expo prebuild --platform ios --clean
-	cd reactNativeApp/ios/Pods/hermes-engine/destroot/Library/Frameworks/universal/ && ln -s hermes.xcframework hermesvm.xcframework
-	cd $(CURRENT) && sed -i '' '/ExpoAppDelegateWrapper/d' ios/ReactNativeAppTarget/ReactNativeHostManager.swift
-	cd $(CURRENT) && npx expo-brownfield build-ios --debug
-	cd $(CURRENT) && npx expo-brownfield build-android --all --repository MavenLocal
-	bash ./script/fix_react_native_target_path.sh
+	cd $(CURRENT) && npx expo-brownfield build:ios --debug
+	cd $(CURRENT) && npx expo-brownfield build:android --all --repository MavenLocal
 
 rn-build:
-	cd $(CURRENT) && npx expo-brownfield build-ios --release
-	cd $(CURRENT) && npx expo-brownfield build-android --all --repository MavenLocal
-	bash ./script/fix_react_native_target_path.sh
+	cd $(CURRENT) && npx expo-brownfield build:ios --release
+	cd $(CURRENT) && npx expo-brownfield build:android --release --repository MavenLocal
+
+rn-android-debug:
+	cd $(CURRENT) && npx expo prebuild --platform android --clean
+	cd $(CURRENT) && npx expo-brownfield build:android --all --repository MavenLocal
 
 rn-bundle:
 	./gradlew :composeApp:bundleAndroidReleaseJs
