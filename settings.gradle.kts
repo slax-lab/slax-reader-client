@@ -30,6 +30,8 @@ dependencyResolutionManagement {
         }
         mavenCentral()
         maven("https://maven.mozilla.org/maven2")
+        // React Native dependencies
+        maven("https://www.jitpack.io")
     }
 }
 
@@ -38,7 +40,3 @@ plugins {
 }
 
 include(":composeApp")
-include(":react-native-get-random-values")
-project(":react-native-get-random-values").projectDir = file("react-native/node_modules/react-native-get-random-values/android")
-
-includeBuild("react-native/node_modules/@react-native/gradle-plugin")

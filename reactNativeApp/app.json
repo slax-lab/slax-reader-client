@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "reactNativeApp",
+    "slug": "reactNativeApp",
+    "version": "1.0.2",
+    "orientation": "portrait",
+    "scheme": "reactnativeapp",
+    "userInterfaceStyle": "automatic",
+    "autolinking": {
+      "nativeModulesDir": "./modules"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-brownfield",
+        {
+          "ios": {
+            "targetName": "ReactNativeAppTarget",
+            "bundleIdentifier": "app.slax.reactNativeApp"
+          },
+          "android": {
+            "group": "com.slax",
+            "libraryName": "reactnativeapp",
+            "package": "com.slax.reactnativeapp",
+            "version": "1.0.2"
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "ios": {
+      "bundleIdentifier": "com.anonymous.reactNativeApp"
+    }
+  }
+}

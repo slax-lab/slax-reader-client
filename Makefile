@@ -24,10 +24,21 @@ bridge:
 adb-proxy:
 	 ~/Library/Android/sdk/platform-tools/adb reverse tcp:8081 tcp:8081
 
-rn:
-	 ./gradlew :composeApp:generateCodegenArtifactsFromSchema
-	 ./gradlew kspCommonMainKotlinMetadata
-	 mkdir -p build/generated/autolinking && cd react-native && npx react-native config > ../build/generated/autolinking/autolinking.json
+CURRENT := ./reactNativeApp
+
+rn-debug:
+	cd $(CURRENT) && npx expo prebuild --platform android --clean
+	cd $(CURRENT) && npx expo prebuild --platform ios --clean
+	cd $(CURRENT) && npx expo-brownfield build:ios --debug
+	cd $(CURRENT) && npx expo-brownfield build:android --all --repository MavenLocal
+
+rn-build:
+	cd $(CURRENT) && npx expo-brownfield build:ios --release
+	cd $(CURRENT) && npx expo-brownfield build:android --release --repository MavenLocal
+
+rn-android-debug:
+	cd $(CURRENT) && npx expo prebuild --platform android --clean
+	cd $(CURRENT) && npx expo-brownfield build:android --all --repository MavenLocal
 
 rn-bundle:
 	./gradlew :composeApp:bundleAndroidReleaseJs

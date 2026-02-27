@@ -38,8 +38,6 @@ plugins {
     id("com.codingfeline.buildkonfig") version "0.17.1"
     id("org.jetbrains.kotlinx.atomicfu") version "0.31.0"
     id("io.github.ttypic.swiftklib") version "0.6.4"
-    id("com.facebook.react")
-    id("com.google.devtools.ksp") version "2.3.4"
 }
 
 repositories {
@@ -88,10 +86,10 @@ kotlin {
             val main by getting {
                 cinterops {
                     create("StoreKitWrapper")
-                    create("ReactNativeBridge")
                     create("nskeyvalueobserving")
                     create("firebaseBridge")
                     create("googleSignInBridge")
+                    create("RNBridge")
                 }
             }
         }
@@ -106,11 +104,6 @@ kotlin {
             implementation(libs.androidx.browser)
             implementation(libs.sketch.animated.gif.koral)
 
-            // React Native
-            implementation(libs.react.android)
-            implementation(libs.hermes.android)
-            implementation(libs.soloader)
-
             // firebase
             implementation(libs.firebase.analytics.ktx)
             implementation(libs.firebase.crashlytics.ktx)
@@ -120,7 +113,9 @@ kotlin {
             implementation(libs.android.credentials.play.services.auth)
             implementation(libs.googleid)
 
-            implementation(project   (":react-native-get-random-values"))
+            implementation(libs.reactnativeapp)
+            implementation(libs.bridge.api)
+            implementation(libs.expo.core)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -178,9 +173,6 @@ kotlin {
             implementation(libs.connectivity.compose.device)
 
             implementation(libs.markdown.renderer.m3)
-
-            // reakt-native-toolkit
-            implementation(libs.reakt.native.toolkit)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -207,6 +199,10 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+        jniLibs {
+            pickFirsts += "lib/*/libworklets.so"
+            useLegacyPackaging = true
         }
     }
     signingConfigs {
@@ -235,94 +231,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-}
-
-react {
-    root = rootProject.file("react-native")
-    reactNativeDir = rootProject.file("react-native/node_modules/react-native")
-    codegenDir = rootProject.file("react-native/node_modules/@react-native/codegen")
-    cliFile = rootProject.file("react-native/node_modules/react-native/cli.js")
-}
-
-val bundleAndroidReleaseJs = tasks.register<Exec>("bundleAndroidReleaseJs") {
-    group = "react"
-    description = "Bundle React Native JavaScript for Android Release"
-
-    workingDir = rootProject.file("react-native")
-
-    val bundleFile = project.file("src/androidMain/assets/index.android.bundle")
-    val assetsDir = project.file("src/androidMain/res")
-
-    doFirst {
-        bundleFile.parentFile.mkdirs()
-        println("📦 Bundling React Native JavaScript for Android...")
-    }
-
-    commandLine(
-        "npx", "react-native", "bundle",
-        "--platform", "android",
-        "--dev", "false",
-        "--entry-file", "index.js",
-        "--bundle-output", bundleFile.absolutePath,
-        "--assets-dest", assetsDir.absolutePath,
-        "--reset-cache"
-    )
-
-    doLast {
-        println("✅ Android bundle created: ${bundleFile.absolutePath}")
-    }
-}
-
-val bundleIOSReleaseJs = tasks.register<Exec>("bundleIOSReleaseJs") {
-    group = "react"
-    description = "Bundle React Native JavaScript for iOS Release"
-
-    workingDir = rootProject.file("react-native")
-
-    val bundleFile = rootProject.file("iosApp/iosApp/main.jsbundle")
-    val assetsDir = rootProject.file("iosApp/iosApp")
-
-    doFirst {
-        bundleFile.parentFile.mkdirs()
-        println("📦 Bundling React Native JavaScript for iOS...")
-    }
-
-    commandLine(
-        "npx", "react-native", "bundle",
-        "--platform", "ios",
-        "--dev", "false",
-        "--entry-file", "index.js",
-        "--bundle-output", bundleFile.absolutePath,
-        "--assets-dest", assetsDir.absolutePath
-    )
-}
-
-dependencies {
-    debugImplementation(compose.uiTooling)
-
-    add("kspCommonMainMetadata", "de.voize:reakt-native-toolkit-ksp:0.22.1-SNAPSHOT")
-    add("kspAndroid", "de.voize:reakt-native-toolkit-ksp:0.22.1-SNAPSHOT")
-    add("kspIosArm64", "de.voize:reakt-native-toolkit-ksp:0.22.1-SNAPSHOT")
-    add("kspIosSimulatorArm64", "de.voize:reakt-native-toolkit-ksp:0.22.1-SNAPSHOT")
-}
-
-ksp {
-    arg("reakt.native.toolkit.kmpFrameworkName", "ComposeApp")
-}
-
-tasks.register<Copy>("copyGeneratedTsFiles") {
-    from("build/generated/ksp/metadata/commonMain/resources/reaktNativeToolkit/typescript")
-    into(rootProject.file("react-native/src/generated/reaktNativeToolkit/typescript"))
-}
-
-tasks.configureEach {
-    if (name.startsWith("ksp") && name.contains("Kotlin")) {
-        finalizedBy("copyGeneratedTsFiles")
-    }
-}
-
-kotlin.sourceSets.commonMain {
-    kotlin.srcDir("build/generated/ksp/metadata/commonMain/kotlin")
 }
 
 fun minifyHtml(html: String): String {
@@ -417,9 +325,9 @@ swiftklib {
         packageName("app.slax.reader.storekit")
         minIos = 14
     }
-    create("ReactNativeBridge") {
-        path = file("src/nativeInterop/reactnative")
-        packageName("app.slax.reader.reactnative.bridge")
+    create("RNBridge") {
+        path = file("src/nativeInterop/rnbridge")
+        packageName("app.slax.reader.rnbridge")
         minIos = 14
     }
 }

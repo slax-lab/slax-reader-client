@@ -9,9 +9,14 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.ComposeFoundationFlags
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.navigation.compose.rememberNavController
+import com.slax.reader.di.configureKoin
 import com.slax.reader.domain.auth.GoogleSignInProvider
-import com.slax.reader.reactnative.setCurrentActivity
 import com.slax.reader.ui.SlaxNavigation
+import org.koin.android.ext.koin.androidContext
+import org.koin.android.ext.koin.androidLogger
+import org.koin.core.context.GlobalContext
+import org.koin.core.context.startKoin
+import org.koin.core.logger.Level
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalFoundationApi::class)
@@ -21,8 +26,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         GoogleSignInProvider.setActivity(this)
-
-        setCurrentActivity(this)
 
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(
@@ -35,6 +38,14 @@ class MainActivity : ComponentActivity() {
             )
         )
 
+        if (GlobalContext.getOrNull() == null) {
+            startKoin {
+                androidLogger(Level.INFO)
+                androidContext(this@MainActivity.applicationContext)
+                configureKoin()
+            }
+        }
+
         setContent {
             val ctrl = rememberNavController()
             SlaxNavigation(ctrl)
@@ -43,11 +54,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        setCurrentActivity(this)
     }
 
     override fun onDestroy() {
-        setCurrentActivity(null)
         super.onDestroy()
     }
 }
