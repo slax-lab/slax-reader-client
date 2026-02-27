@@ -6,9 +6,10 @@ import com.slax.reader.utils.NavigationHelper
 import platform.UIKit.UIViewController
 
 actual fun NavHostController.navigateToReactNative(
-    route: String,
-    params: Map<String, Any>?
+    screen: String,
+    params: Map<String, String>,
 ) {
-    val reactVC = RNBridge.createReactViewController(route, params?.toMap()) ?: return
+    val props: Map<Any?, Any?> = mapOf("route" to screen) + params
+    val reactVC = RNBridge.createReactViewController("main", props) ?: return
     NavigationHelper.pushViewController(reactVC as UIViewController)
 }

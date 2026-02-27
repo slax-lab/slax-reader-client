@@ -6,20 +6,11 @@
     "orientation": "portrait",
     "scheme": "reactnativeapp",
     "userInterfaceStyle": "automatic",
+    "autolinking": {
+      "nativeModulesDir": "./modules"
+    },
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
-          "dark": {
-            "backgroundColor": "#000000"
-          }
-        }
-      ],
       [
         "expo-brownfield",
         {
@@ -39,9 +30,6 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    },
-    "android": {
-      "package": "com.anonymous.reactNativeApp"
     },
     "ios": {
       "bundleIdentifier": "com.anonymous.reactNativeApp"

@@ -17,6 +17,7 @@ import com.slax.reader.domain.auth.AuthState
 import com.slax.reader.domain.coordinator.CoordinatorDomain
 import com.slax.reader.domain.sync.BackgroundDomain
 import com.slax.reader.reactnative.navigateToReactNative
+import com.slax.reader.utils.LocaleString
 import com.slax.reader.ui.about.AboutScreen
 import com.slax.reader.ui.bookmark.DetailScreen
 import com.slax.reader.ui.bookmark.DetailScreenEvent
@@ -32,7 +33,6 @@ import com.slax.reader.utils.NavHostTransitionHelper
 import com.slax.reader.utils.aboutEvent
 import com.slax.reader.utils.bookmarkEvent
 import com.slax.reader.utils.bookmarkListEvent
-import com.slax.reader.utils.feedbackEvent
 import com.slax.reader.utils.settingEvent
 import com.slax.reader.utils.subscriptionEvent
 import com.slax.reader.utils.userEvent
@@ -121,8 +121,10 @@ fun SlaxNavigation(
 
                         is DetailScreenEvent.NavigateToFeedback -> {
                             navCtrl.navigateToReactNative(
-                                route = "main",
-                                params = event.params.toMap()
+                                screen = "feedback",
+                                params = event.params.toMap() + mapOf(
+                                    "language" to LocaleString.currentLocale
+                                )
                             )
                         }
                     }
@@ -169,4 +171,3 @@ fun SlaxNavigation(
         }
     }
 }
-

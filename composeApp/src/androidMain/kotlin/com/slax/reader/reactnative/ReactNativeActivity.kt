@@ -10,7 +10,11 @@ class ReactNativeActivity : BrownfieldActivity(), DefaultHardwareBackBtnHandler 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         try {
-            showReactNativeFragment()
+            BrownfieldMessagingBridge.ensureRegistered()
+            val launchOptions = intent?.extras?.let { extras ->
+                Bundle(extras)
+            }
+            showReactNativeFragment(launchOptions)
         } catch (e: Throwable) {
             Log.e("ReactNativeActivity", "Failed to show RN fragment", e)
         }

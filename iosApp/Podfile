@@ -16,6 +16,7 @@ project 'iosApp', {
 
 target 'iosApp' do
   pod 'ComposeApp', :path => '../composeApp'
+  pod 'SlaxBridgeCore', :path => '../reactNativeApp/modules/slax-bridge-core'
 
   target 'share' do
     inherit! :search_paths

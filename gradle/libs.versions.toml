@@ -12,6 +12,7 @@ componentsResources = "1.10.1"
 composeHotReload = "1.0.0"
 composeMultiplatform = "1.10.1"
 dotenvKotlin = "6.5.1"
+expoCore = "55.0.0-canary-20260223-05214f1"
 firebaseAnalyticsKtx = "22.5.0"
 firebaseCrashlyticsKtx = "19.4.4"
 foundation = "1.10.1"
@@ -74,6 +75,8 @@ connectivity-core = { module = "dev.jordond.connectivity:connectivity-core", ver
 connectivity-device = { module = "dev.jordond.connectivity:connectivity-device", version.ref = "connectivity" }
 connectivity-compose-device = { module = "dev.jordond.connectivity:connectivity-compose-device", version.ref = "connectivity" }
 reactnativeapp = { module = "com.slax:reactnativeapp", version = "1.0.2" }
+bridge-api = { module = "com.slax:com.slax.bridge.api", version = "1.0.0" }
+expo-core = { module = "host.exp.exponent:expo.core", version.ref = "expoCore" }
 sketch-animated-gif = { module = "io.github.panpf.sketch4:sketch-animated-gif", version.ref = "sketchHttp" }
 sketch-animated-gif-koral = { module = "io.github.panpf.sketch4:sketch-animated-gif-koral", version.ref = "sketchHttp" }
 sketch-compose = { module = "io.github.panpf.sketch4:sketch-compose", version.ref = "sketchHttp" }

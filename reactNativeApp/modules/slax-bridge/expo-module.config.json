@@ -1,0 +1,10 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "podspecPath": "./SlaxBridge.podspec",
+    "modules": ["SlaxBridgeModule"]
+  },
+  "android": {
+    "modules": ["com.slax.bridge.SlaxBridgeModule"]
+  }
+}

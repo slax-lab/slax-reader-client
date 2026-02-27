@@ -1,5 +1,7 @@
 import UIKit
 import ReactNativeAppTarget
+import ComposeApp
+import SlaxBridgeCore
 
 @objc(RNViewController)
 public class RNViewController: NSObject {
@@ -14,10 +16,23 @@ public class RNViewController: NSObject {
         }
         #endif
         ReactNativeHostManager.shared.initialize()
+
+        SlaxBridgeRegistry.handler = { method, payload, callback in
+            ReactNativeMessageDispatcher.shared.invoke(method: method, payload: payload) { result, error in
+                if let error = error {
+                    callback(.failure(error))
+                } else {
+                    callback(.success(result as? [String: Any] ?? [:]))
+                }
+            }
+        }
     }()
 
     @objc public static func create(moduleName: String, initialProps: NSDictionary?) -> UIViewController {
         _ = once
-        return ReactNativeViewController(moduleName: moduleName)
+        return ReactNativeViewController(
+            moduleName: moduleName,
+            initialProps: initialProps as? [AnyHashable: Any]
+        )
     }
 }

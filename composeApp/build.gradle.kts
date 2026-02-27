@@ -114,6 +114,8 @@ kotlin {
             implementation(libs.googleid)
 
             implementation(libs.reactnativeapp)
+            implementation(libs.bridge.api)
+            implementation(libs.expo.core)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
