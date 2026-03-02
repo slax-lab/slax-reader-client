@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  SafeAreaView, Platform, StatusBar, Image, Alert,
+  Platform, StatusBar, Image, Alert,
   KeyboardAvoidingView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { popToNative } from 'expo-brownfield';
 import { t } from '@/constants/i18n';
 import { invokeNative } from '@/modules/slax-bridge/src';
@@ -11,6 +12,7 @@ import { getInitialProps } from '@/constants/initial-props';
 
 export default function FeedbackPage() {
   const { title, href, email, bookmarkId, entryPoint, version, language } = getInitialProps();
+  const insets = useSafeAreaInsets();
 
   const lang = language ?? 'en';
 
@@ -58,7 +60,8 @@ export default function FeedbackPage() {
   const isSubmitEnabled = feedbackText.trim().length > 0 && !isSubmitting;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F5F5F3" />
       <KeyboardAvoidingView behavior="padding" style={styles.keyboardAvoidingView}>
         <View style={styles.mainContainer}>
           <View style={styles.header}>
@@ -118,7 +121,7 @@ export default function FeedbackPage() {
           </View>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -126,7 +129,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F3',
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   keyboardAvoidingView: { flex: 1 },
   mainContainer: { flex: 1, flexDirection: 'column' },
