@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.slax.reader.const.BookmarkRoutes
 import com.slax.reader.const.component.EditNameDialog
 import com.slax.reader.data.database.model.InboxListBookmarkItem
@@ -37,7 +38,7 @@ import slax_reader_client.composeapp.generated.resources.ic_inbox_tab
 import slax_reader_client.composeapp.generated.resources.ic_xs_inbox_add
 
 @Composable
-fun InboxListScreen(navCtrl: NavController) {
+fun InboxListScreen(navCtrl: NavHostController) {
     val inboxViewModel = koinInject<InboxListViewModel>()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()

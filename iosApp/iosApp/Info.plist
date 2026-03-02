@@ -37,8 +37,6 @@
 	<false/>
 	<key>NSNetworkUsageDescription</key>
 	<string>This app needs network access to sync data.</string>
-	<key>RCTNewArchEnabled</key>
-	<true/>
 	<key>UISupportsDocumentBrowser</key>
 	<true/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>

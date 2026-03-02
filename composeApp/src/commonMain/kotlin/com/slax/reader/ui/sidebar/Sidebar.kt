@@ -17,14 +17,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.github.panpf.sketch.rememberAsyncImagePainter
 import com.github.panpf.sketch.request.ComposableImageRequest
 import com.github.panpf.sketch.request.error
 import com.github.panpf.sketch.request.placeholder
-import com.slax.reader.const.AboutRoutes
-import com.slax.reader.const.SettingsRoutes
-import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.coordinator.AppSyncState
 import com.slax.reader.ui.sidebar.compenents.FooterMenu
 import com.slax.reader.ui.sidebar.compenents.SyncStatusBar
@@ -38,7 +35,7 @@ import slax_reader_client.composeapp.generated.resources.ic_xs_sidebar_close
 
 @Composable
 fun Sidebar(
-    navCtrl: NavController,
+    navCtrl: NavHostController,
     drawerState: DrawerState,
     content: @Composable () -> Unit
 ) {
@@ -69,7 +66,7 @@ fun Sidebar(
 
 @Composable
 private fun DrawerContent(
-    navCtrl: NavController,
+    navCtrl: NavHostController,
     onDismiss: () -> Unit
 ) {
     val viewModel = koinInject<SidebarViewModel>()

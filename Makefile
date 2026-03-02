@@ -2,13 +2,13 @@ apk-dev:
 	./gradlew assembleDebug -Pbuildkonfig.flavor=dev
 
 apk-release:
-	make rn && ./gradlew :composeApp:bundleAndroidReleaseJs && ./gradlew assembleRelease -Pbuildkonfig.flavor=release
+	cd $(CURRENT) && npx expo export -p android && cd .. && ./gradlew assembleRelease -Pbuildkonfig.flavor=release
 
 appbundle-dev:
 	./gradlew :composeApp:bundleDebug -Pbuildkonfig.flavor=dev
 
 appbundle-release:
-	make rn && ./gradlew :composeApp:bundleAndroidReleaseJs && ./gradlew :composeApp:bundleRelease -Pbuildkonfig.flavor=release
+	cd $(CURRENT) && npx expo export -p android && cd .. && ./gradlew :composeApp:bundleRelease -Pbuildkonfig.flavor=release
 
 gen-privacy:
 	cd composeApp && python3 ../script/required_reason_finder.py
@@ -24,11 +24,10 @@ bridge:
 adb-proxy:
 	 ~/Library/Android/sdk/platform-tools/adb reverse tcp:8081 tcp:8081
 
-rn:
-	 ./gradlew :composeApp:generateCodegenArtifactsFromSchema
-	 ./gradlew kspCommonMainKotlinMetadata
-	 mkdir -p build/generated/autolinking && cd react-native && npx react-native config > ../build/generated/autolinking/autolinking.json
+CURRENT := ./reactNativeApp
 
-rn-bundle:
-	./gradlew :composeApp:bundleAndroidReleaseJs
-	./gradlew :composeApp:bundleIOSReleaseJs
+rn-debug:
+	cd $(CURRENT) && npx expo prebuild --platform android --clean
+	cd $(CURRENT) && npx expo prebuild --platform ios --clean
+	cd $(CURRENT) && npx expo-brownfield build:ios --debug
+	cd $(CURRENT) && npx expo-brownfield build:android --all --repository MavenLocal
