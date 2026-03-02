@@ -75,7 +75,7 @@ connectivity-core = { module = "dev.jordond.connectivity:connectivity-core", ver
 connectivity-device = { module = "dev.jordond.connectivity:connectivity-device", version.ref = "connectivity" }
 connectivity-compose-device = { module = "dev.jordond.connectivity:connectivity-compose-device", version.ref = "connectivity" }
 reactnativeapp = { module = "com.slax:reactnativeapp", version = "1.0.2" }
-bridge-api = { module = "com.slax:com.slax.bridge.api", version = "1.0.0" }
+bridge-api = { module = "com.slax:slax.bridge.core", version = "1.0.0" }
 expo-core = { module = "host.exp.exponent:expo.core", version.ref = "expoCore" }
 sketch-animated-gif = { module = "io.github.panpf.sketch4:sketch-animated-gif", version.ref = "sketchHttp" }
 sketch-animated-gif-koral = { module = "io.github.panpf.sketch4:sketch-animated-gif-koral", version.ref = "sketchHttp" }

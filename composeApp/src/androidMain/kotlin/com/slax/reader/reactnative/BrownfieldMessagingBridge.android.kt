@@ -1,6 +1,5 @@
 package com.slax.reader.reactnative
 
-import com.slax.bridge.api.NativeBridgeHandler
 import com.slax.bridge.api.NativeBridgeRegistry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -12,7 +11,7 @@ object BrownfieldMessagingBridge {
 
     fun ensureRegistered() {
         if (NativeBridgeRegistry.handler != null) return
-        NativeBridgeRegistry.handler = NativeBridgeHandler { method, payload, callback ->
+        NativeBridgeRegistry.handler = { method, payload, callback ->
             scope.launch {
                 try {
                     val result = ReactNativeMessageDispatcher.invoke(method, payload)

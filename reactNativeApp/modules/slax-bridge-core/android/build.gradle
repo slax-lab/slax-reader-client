@@ -3,18 +3,14 @@ plugins {
   id 'expo-module-gradle-plugin'
 }
 
-group = 'com.slax.bridge'
+group = 'com.slax'
 version = '1.0.0'
 
 android {
-  namespace 'com.slax.bridge'
+  namespace 'slax.bridge.core'
 
   defaultConfig {
     versionCode 1
     versionName '1.0.0'
   }
-}
-
-dependencies {
-  implementation project(':slax-bridge-core')
 }
