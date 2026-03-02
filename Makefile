@@ -2,13 +2,13 @@ apk-dev:
 	./gradlew assembleDebug -Pbuildkonfig.flavor=dev
 
 apk-release:
-	make rn && ./gradlew :composeApp:bundleAndroidReleaseJs && ./gradlew assembleRelease -Pbuildkonfig.flavor=release
+	cd $(CURRENT) && npx expo export -p android && cd .. && ./gradlew assembleRelease -Pbuildkonfig.flavor=release
 
 appbundle-dev:
 	./gradlew :composeApp:bundleDebug -Pbuildkonfig.flavor=dev
 
 appbundle-release:
-	make rn && ./gradlew :composeApp:bundleAndroidReleaseJs && ./gradlew :composeApp:bundleRelease -Pbuildkonfig.flavor=release
+	cd $(CURRENT) && npx expo export -p android && cd .. && ./gradlew :composeApp:bundleRelease -Pbuildkonfig.flavor=release
 
 gen-privacy:
 	cd composeApp && python3 ../script/required_reason_finder.py
@@ -31,15 +31,3 @@ rn-debug:
 	cd $(CURRENT) && npx expo prebuild --platform ios --clean
 	cd $(CURRENT) && npx expo-brownfield build:ios --debug
 	cd $(CURRENT) && npx expo-brownfield build:android --all --repository MavenLocal
-
-rn-build:
-	cd $(CURRENT) && npx expo-brownfield build:ios --release
-	cd $(CURRENT) && npx expo-brownfield build:android --release --repository MavenLocal
-
-rn-android-debug:
-	cd $(CURRENT) && npx expo prebuild --platform android --clean
-	cd $(CURRENT) && npx expo-brownfield build:android --all --repository MavenLocal
-
-rn-bundle:
-	./gradlew :composeApp:bundleAndroidReleaseJs
-	./gradlew :composeApp:bundleIOSReleaseJs

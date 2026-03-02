@@ -6,9 +6,7 @@ export BUILD_FLAVOR=release
 
 ./gradlew :composeApp:syncXcodeVersionConfig -Pbuildkonfig.flavor=$BUILD_FLAVOR
 
-make rn
-
-./gradlew :composeApp:bundleIOSReleaseJs
+cd reactNativeApp && npx expo export -p ios && cd ..
 
 xcodebuild archive \
   -workspace iosApp/iosApp.xcworkspace \
