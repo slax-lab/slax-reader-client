@@ -1,7 +1,6 @@
 import UIKit
 import ReactNativeAppTarget
 import ComposeApp
-import SlaxBridgeCore
 
 @objc(RNViewController)
 public class RNViewController: NSObject {
@@ -15,9 +14,7 @@ public class RNViewController: NSObject {
             UserDefaults.standard.set(ip, forKey: "RCT_jsLocation")
         }
         #endif
-        ReactNativeHostManager.shared.initialize()
-
-        SlaxBridgeRegistry.handler = { method, payload, callback in
+        ReactNativeHostManager.setSlaxBridgeHandler { method, payload, callback in
             ReactNativeMessageDispatcher.shared.invoke(method: method, payload: payload) { result, error in
                 if let error = error {
                     callback(.failure(error))
@@ -26,6 +23,8 @@ public class RNViewController: NSObject {
                 }
             }
         }
+
+        ReactNativeHostManager.shared.initialize()
     }()
 
     @objc public static func create(moduleName: String, initialProps: NSDictionary?) -> UIViewController {

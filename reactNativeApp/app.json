@@ -25,7 +25,8 @@
             "version": "1.0.2"
           }
         }
-      ]
+      ],
+      "./plugins/withSlaxBridgeCoreReexport"
     ],
     "experiments": {
       "typedRoutes": true,
