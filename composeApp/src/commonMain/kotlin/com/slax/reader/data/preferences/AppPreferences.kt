@@ -34,6 +34,11 @@ data class ContinueReadingBookmark(
     val scrollY: Int
 )
 
+@Serializable
+data class BookmarkReadPositions(
+    val positions: Map<String, Float> = emptyMap()
+)
+
 class AppPreferences(private val dataStore: DataStore<Preferences>) {
     companion object {
         private val AUTH_TOKEN_KEY = stringPreferencesKey("auth_token")
@@ -45,6 +50,8 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
         private val POWER_SYNC_CONNECT_URL = stringPreferencesKey("powersync_connect_url")
 
         private val CONTINUE_READING_BOOKMARK_KEY = stringPreferencesKey("continue_reading_bookmark")
+
+        private val BOOKMARK_READ_POSITIONS_KEY = stringPreferencesKey("bookmark_read_positions")
 
         private val USER_SETTING_DETAIL_DO_NOT_ALERT = stringPreferencesKey("user_setting_detail_do_not_alert")
 
@@ -152,6 +159,51 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
     suspend fun setUserLanguage(language: String) = withContext(Dispatchers.IO) {
         dataStore.edit { preferences ->
             preferences[USER_LANGUAGE_KEY] = language
+        }
+    }
+
+    // 获取指定书签的阅读位置
+    suspend fun getBookmarkReadPosition(bookmarkId: String): Float? = withContext(Dispatchers.IO) {
+        val prefs = dataStore.data.first()
+        val jsonString = prefs[BOOKMARK_READ_POSITIONS_KEY]
+        return@withContext if (jsonString != null) {
+            try {
+                val positions = Json.decodeFromString<BookmarkReadPositions>(jsonString)
+                positions.positions[bookmarkId]
+            } catch (_: Exception) {
+                null
+            }
+        } else {
+            null
+        }
+    }
+
+    // 保存指定书签的阅读位置
+    suspend fun setBookmarkReadPosition(bookmarkId: String, scrollY: Float) = withContext(Dispatchers.IO) {
+        dataStore.edit { preferences ->
+            val jsonString = preferences[BOOKMARK_READ_POSITIONS_KEY]
+            val currentPositions = if (jsonString != null) {
+                try {
+                    Json.decodeFromString<BookmarkReadPositions>(jsonString)
+                } catch (_: Exception) {
+                    BookmarkReadPositions()
+                }
+            } else {
+                BookmarkReadPositions()
+            }
+
+            val updatedPositions = currentPositions.positions.toMutableMap()
+            updatedPositions[bookmarkId] = scrollY
+
+            // 只保留最近 100 个阅读位置，避免数据过大
+            val trimmedPositions = if (updatedPositions.size > 100) {
+                updatedPositions.entries.toList().takeLast(100).associate { it.key to it.value }
+            } else {
+                updatedPositions
+            }
+
+            val newData = BookmarkReadPositions(trimmedPositions)
+            preferences[BOOKMARK_READ_POSITIONS_KEY] = Json.encodeToString(newData)
         }
     }
 }
