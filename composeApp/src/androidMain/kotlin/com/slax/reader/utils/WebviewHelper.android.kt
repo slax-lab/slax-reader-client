@@ -126,6 +126,11 @@ actual fun AppWebView(
                         }
                         return true
                     }
+
+                    override fun onPageFinished(view: WebView?, url: String?) {
+                        super.onPageFinished(view, url)
+                        webState.dispatchEvent(WebViewEvent.PageLoaded)
+                    }
                 }
 
                 loadDataWithBaseURL(null, htmlContent, "text/html", "utf-8", null)

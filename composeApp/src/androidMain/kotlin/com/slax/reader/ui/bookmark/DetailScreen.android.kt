@@ -23,6 +23,7 @@ import com.slax.reader.utils.AppWebViewState
 import com.slax.reader.utils.WebViewEvent
 import com.slax.reader.utils.wrapBookmarkDetailHtml
 import kotlinx.serialization.Serializable
+import org.koin.compose.viewmodel.koinViewModel
 
 @Serializable
 data class WebViewMessage(
@@ -44,7 +45,23 @@ actual fun DetailScreen(
 ) {
     println("[watch][UI] recomposition DetailScreen")
 
+    val viewModel = koinViewModel<BookmarkDetailViewModel>()
+    val bookmarkId by viewModel.bookmarkId.collectAsState()
+
     val wrappedHtmlContent = remember(htmlContent) { wrapBookmarkDetailHtml(htmlContent) }
+
+    // 读取保存的阅读位置
+    val savedPosition = remember(bookmarkId) {
+        mutableStateOf<Float?>(null)
+    }
+
+    LaunchedEffect(bookmarkId) {
+        bookmarkId?.let { id ->
+            val res = viewModel.getSavedReadPosition(id)
+            print("[watch][UI] loaded saved position: $res")
+            savedPosition.value = res
+        }
+    }
 
     val scrollState = rememberScrollState()
 
@@ -65,16 +82,32 @@ actual fun DetailScreen(
         }
     }
 
+    // 标记是否已恢复位置
+    var hasRestoredPosition by remember(bookmarkId) { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         snapshotFlow { scrollState.value.toFloat() to isNearBottom }
             .collect { (scrollY, nearBottom) ->
                 onScrollInfoChanged(ScrollInfo(scrollY, nearBottom))
+                // 保存阅读位置（带防抖）
+                print("[watch][UI] scrollY: $scrollY, isNearBottom: $nearBottom")
+                viewModel.saveReadPosition(scrollY)
             }
     }
 
     LaunchedEffect(webViewState) {
         webViewState.events.collect { event ->
             when (event) {
+                is WebViewEvent.PageLoaded -> {
+                    // WebView 加载完成后恢复滚动位置
+                    val position = savedPosition.value
+                    if (position != null && position > 0f && !hasRestoredPosition) {
+                        println("[watch][UI] restoring scroll position: $position")
+                        kotlinx.coroutines.delay(100) // 等待布局稳定
+                        scrollState.scrollTo(position.toInt())
+                        hasRestoredPosition = true
+                    }
+                }
                 is WebViewEvent.ScrollToPosition -> {
                     val targetInWebView = webViewHeightState.floatValue * event.percentage
                     val target = (headerHeightState.floatValue + targetInWebView - screenHeightPx / 4).toInt()
