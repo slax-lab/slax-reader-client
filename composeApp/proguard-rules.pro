@@ -29,3 +29,15 @@
 -dontwarn com.facebook.jni.**
 
 -dontwarn kotlinx.serialization.**
+
+-keep class expo.modules.** { *; }
+-dontwarn expo.modules.**
+
+-keep class * implements com.facebook.react.turbomodule.core.interfaces.TurboModule { *; }
+-keep class * implements com.facebook.react.ReactPackage { *; }
+
+-keep class com.slax.reactnativeapp.** { *; }
+
+-keep class com.facebook.react.defaults.** { *; }
+-keep class com.facebook.react.config.** { *; }
+-keep class com.facebook.react.internal.** { *; }

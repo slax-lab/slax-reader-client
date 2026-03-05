@@ -202,7 +202,6 @@ android {
         }
         jniLibs {
             pickFirsts += "lib/*/libworklets.so"
-            useLegacyPackaging = true
         }
     }
     signingConfigs {

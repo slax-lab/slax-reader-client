@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { withFinalizedMod } = require('expo/config-plugins');
+const { withFinalizedMod, withXcodeProject, IOSConfig } = require('expo/config-plugins');
 
 function getBrownfieldTargetName(config) {
   const plugins = config?.plugins ?? [];
@@ -50,8 +50,48 @@ function injectSlaxBridgeCoreReexport(filePath) {
   fs.writeFileSync(filePath, patched);
 }
 
+// Fix expo-brownfield's hardcoded -Onone optimization level
+function fixBrownfieldOptimization(config) {
+  return withXcodeProject(config, (config) => {
+    const project = config.modResults;
+    const { Target } = IOSConfig;
+
+    // Get all native targets
+    const nativeTargets = Target.getNativeTargets(project);
+
+    for (const [, target] of nativeTargets) {
+      const buildConfigListId = target.buildConfigurationList;
+      const buildConfigs = IOSConfig.XcodeUtils.getBuildConfigurationsForListId(project, buildConfigListId);
+
+      for (const [, configuration] of buildConfigs) {
+        const { buildSettings } = configuration;
+
+        // Only fix Release builds
+        if (configuration.name === 'Release' && buildSettings) {
+          // Fix Swift optimization
+          if (buildSettings.SWIFT_OPTIMIZATION_LEVEL === '"-Onone"') {
+            buildSettings.SWIFT_OPTIMIZATION_LEVEL = '"-Osize"';
+            buildSettings.STRIP_INSTALLED_PRODUCT = 'YES';
+            buildSettings.STRIP_SWIFT_SYMBOLS = 'YES';
+            buildSettings.DEAD_CODE_STRIPPING = 'YES';
+            buildSettings.DEPLOYMENT_POSTPROCESSING = 'YES';
+          }
+
+          // Add GCC optimization if missing
+          if (!buildSettings.GCC_OPTIMIZATION_LEVEL) {
+            buildSettings.GCC_OPTIMIZATION_LEVEL = 's';
+          }
+        }
+      }
+    }
+
+    return config;
+  });
+}
+
 function withSlaxBridgeCoreReexport(config) {
-  return withFinalizedMod(config, [
+  // Fix Swift file imports
+  config = withFinalizedMod(config, [
     'ios',
     (modConfig) => {
       const targetName = getBrownfieldTargetName(modConfig);
@@ -65,6 +105,11 @@ function withSlaxBridgeCoreReexport(config) {
       return modConfig;
     },
   ]);
+
+  // Fix Xcode build settings
+  config = fixBrownfieldOptimization(config);
+
+  return config;
 }
 
 module.exports = withSlaxBridgeCoreReexport;
