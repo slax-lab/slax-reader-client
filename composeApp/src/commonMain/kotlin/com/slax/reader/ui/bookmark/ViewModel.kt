@@ -83,6 +83,9 @@ class BookmarkDetailViewModel(
     private val _contentState = MutableStateFlow(BookmarkContentState(isLoading = false))
     val contentState = _contentState.asStateFlow()
 
+    // 保存阅读位置的防抖 Job
+    private var savePositionJob: Job? = null
+
     private var contentJob: Job? = null
 
     val userInfo = userDao.watchUserInfo()
@@ -219,8 +222,31 @@ class BookmarkDetailViewModel(
         outlineDelegate.loadOutline(id)
     }
 
+    // 获取书签的保存阅读位置
+    suspend fun getSavedReadPosition(bookmarkId: String): Float? {
+        return appPreferences.getBookmarkReadPosition(bookmarkId)
+    }
+
+    // 保存阅读位置（带防抖）
+    fun saveReadPosition(scrollY: Float) {
+        val id = _bookmarkId.value ?: return
+
+        // 取消之前的保存任务
+        savePositionJob?.cancel()
+
+        // 延迟 500ms 后保存，避免频繁写入
+        savePositionJob = viewModelScope.launch {
+            delay(500)
+            runCatching {
+                appPreferences.setBookmarkReadPosition(id, scrollY)
+            }
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
+        savePositionJob?.cancel()
+        savePositionJob = null
         contentJob?.cancel()
         contentJob = null
         commentDelegate.reset()
