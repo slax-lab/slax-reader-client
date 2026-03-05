@@ -92,6 +92,10 @@ actual fun AppWebView(
             runCatching { Json.decodeFromString<WebViewMessage>(message) }
                 .onSuccess { msg ->
                     when (msg.type) {
+                        "domReady" -> {
+                            webState.dispatchEvent(WebViewEvent.PageLoaded)
+                        }
+
                         "imageClick" -> {
                             webState.dispatchEvent(
                                 WebViewEvent.ImageClick(msg.src!!, msg.allImages!!)
@@ -174,9 +178,6 @@ actual fun AppWebView(
             }
 
             override fun webView(webView: WKWebView, didFinishNavigation: WKNavigation?) {
-                // 触发 PageLoaded 事件
-                webState.dispatchEvent(WebViewEvent.PageLoaded)
-
                 // 移除导致双击上下翻页的双击手势识别器
                 webView.scrollView.subviews.forEach { subview ->
                     (subview as UIView).gestureRecognizers?.forEach {
