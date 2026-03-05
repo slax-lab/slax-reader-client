@@ -50,6 +50,17 @@ actual fun DetailScreen(
 
     val wrappedHtmlContent = remember(htmlContent) { wrapBookmarkDetailHtml(htmlContent) }
 
+    // 读取保存的阅读位置
+    val savedPosition = remember(bookmarkId) {
+        mutableStateOf<Float?>(null)
+    }
+
+    LaunchedEffect(bookmarkId) {
+        bookmarkId?.let { id ->
+            savedPosition.value = viewModel.getSavedReadPosition(id)
+        }
+    }
+
     // WebView 滚动偏移
     val webViewScrollY = remember { mutableFloatStateOf(0f) }
 
@@ -73,6 +84,10 @@ actual fun DetailScreen(
         snapshotFlow { webViewScrollY.floatValue to isNearBottom }
             .collect { (scrollY, nearBottom) ->
                 onScrollInfoChanged(ScrollInfo(scrollY, nearBottom))
+
+                print("[watch][UI] scrollY: $scrollY, isNearBottom: $nearBottom")
+                // 保存阅读位置（带防抖）
+                viewModel.saveReadPosition(scrollY)
             }
     }
 
@@ -87,9 +102,30 @@ actual fun DetailScreen(
         webViewState.topContentInsetPx = headerMeasuredHeightState.floatValue
     }
 
+    // 标记是否已恢复位置
+    var hasRestoredPosition by remember(bookmarkId) { mutableStateOf(false) }
+
+    val density = LocalDensity.current
+    val densityScale = density.density
+
     LaunchedEffect(webViewState) {
         webViewState.events.collect { event ->
             when (event) {
+                is WebViewEvent.PageLoaded -> {
+                    // WebView 加载完成后恢复滚动位置
+                    val position = savedPosition.value
+                    if (position != null && position > 0f && !hasRestoredPosition) {
+                        println("[watch][UI] restoring scroll position: $position px")
+                        kotlinx.coroutines.delay(100) // 等待布局稳定
+
+                        // 将像素值转换为 points（逻辑像素）
+                        val positionPoints = position / densityScale
+                        println("[watch][UI] converted to points: $positionPoints")
+                        webViewState.evaluateJs("window.scrollTo(0, $positionPoints)")
+
+                        hasRestoredPosition = true
+                    }
+                }
                 is WebViewEvent.ScrollChange -> {
                     webViewScrollY.floatValue = max(event.scrollY, 0f)
                     contentHeightPx = event.contentHeight

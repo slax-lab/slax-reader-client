@@ -174,6 +174,9 @@ actual fun AppWebView(
             }
 
             override fun webView(webView: WKWebView, didFinishNavigation: WKNavigation?) {
+                // 触发 PageLoaded 事件
+                webState.dispatchEvent(WebViewEvent.PageLoaded)
+
                 // 移除导致双击上下翻页的双击手势识别器
                 webView.scrollView.subviews.forEach { subview ->
                     (subview as UIView).gestureRecognizers?.forEach {
