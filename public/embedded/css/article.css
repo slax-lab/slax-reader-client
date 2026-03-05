@@ -241,13 +241,15 @@ iframe[src] {
 /* --- 卡片头部 --- */
 .quote-tweet-container .quote-tweet .quote-header {
     display: flex;
+    justify-content: start;
     align-items: center;
 }
 
 .quote-tweet-container .quote-tweet .quote-header img {
-    width: 32px;
+    width: 32px !important;
     height: 32px;
-    border-radius: 50%;
+    border-radius: 16px;
+    overflow: hidden;
 }
 
 .quote-tweet-container .quote-tweet .quote-header .quote-title {
