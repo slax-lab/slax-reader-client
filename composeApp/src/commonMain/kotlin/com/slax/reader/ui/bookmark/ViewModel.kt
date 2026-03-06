@@ -224,7 +224,13 @@ class BookmarkDetailViewModel(
 
     // 获取书签的保存阅读位置
     suspend fun getSavedReadPosition(bookmarkId: String): Float? {
-        return appPreferences.getBookmarkReadPosition(bookmarkId)
+        val position = appPreferences.getBookmarkReadPosition(bookmarkId)
+        // 检查 bookmarkId 是否仍然是当前的，防止竞态条件
+        return if (_bookmarkId.value == bookmarkId) {
+            position
+        } else {
+            null
+        }
     }
 
     // 保存阅读位置（带防抖）
@@ -245,6 +251,12 @@ class BookmarkDetailViewModel(
 
     override fun onCleared() {
         super.onCleared()
+        // 在清理前批量持久化阅读位置
+        viewModelScope.launch {
+            runCatching {
+                appPreferences.flushPositionsCache()
+            }
+        }
         savePositionJob?.cancel()
         savePositionJob = null
         contentJob?.cancel()

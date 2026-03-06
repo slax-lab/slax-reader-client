@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -57,6 +59,11 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
 
         private val USER_LANGUAGE_KEY = stringPreferencesKey("user_language")
     }
+
+    // 阅读位置内存缓存
+    private val positionsCache = mutableMapOf<String, Float>()
+    private var cacheLoaded = false
+    private val cacheLock = Mutex()
 
     suspend fun getLastRefreshTime(): Long? {
         return dataStore.data.map { preferences ->
@@ -162,47 +169,51 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
         }
     }
 
-    // 获取指定书签的阅读位置
-    suspend fun getBookmarkReadPosition(bookmarkId: String): Float? = withContext(Dispatchers.IO) {
-        val prefs = dataStore.data.first()
-        val jsonString = prefs[BOOKMARK_READ_POSITIONS_KEY]
-        return@withContext if (jsonString != null) {
-            try {
-                val positions = Json.decodeFromString<BookmarkReadPositions>(jsonString)
-                positions.positions[bookmarkId]
-            } catch (_: Exception) {
-                null
+    // 确保缓存已加载
+    private suspend fun ensureCacheLoaded() {
+        if (cacheLoaded) return
+        cacheLock.withLock {
+            if (cacheLoaded) return
+            val prefs = dataStore.data.first()
+            val jsonString = prefs[BOOKMARK_READ_POSITIONS_KEY]
+            if (jsonString != null) {
+                try {
+                    val positions = Json.decodeFromString<BookmarkReadPositions>(jsonString)
+                    positionsCache.putAll(positions.positions)
+                } catch (_: Exception) {
+                    // 忽略解析错误
+                }
             }
-        } else {
-            null
+            cacheLoaded = true
         }
     }
 
-    // 保存指定书签的阅读位置
-    suspend fun setBookmarkReadPosition(bookmarkId: String, scrollY: Float) = withContext(Dispatchers.IO) {
+    // 获取指定书签的阅读位置（从内存缓存读取）
+    suspend fun getBookmarkReadPosition(bookmarkId: String): Float? {
+        ensureCacheLoaded()
+        return cacheLock.withLock {
+            positionsCache[bookmarkId]
+        }
+    }
+
+    // 保存指定书签的阅读位置（只更新内存缓存）
+    suspend fun setBookmarkReadPosition(bookmarkId: String, scrollY: Float) {
+        ensureCacheLoaded()
+        cacheLock.withLock {
+            positionsCache[bookmarkId] = scrollY
+        }
+        // 不立即写入 DataStore，由 flushPositionsCache 批量写入
+    }
+
+    // 批量持久化阅读位置到 DataStore
+    suspend fun flushPositionsCache() = withContext(Dispatchers.IO) {
+        if (!cacheLoaded) return@withContext
+        val snapshot = cacheLock.withLock {
+            positionsCache.toMap()
+        }
+
         dataStore.edit { preferences ->
-            val jsonString = preferences[BOOKMARK_READ_POSITIONS_KEY]
-            val currentPositions = if (jsonString != null) {
-                try {
-                    Json.decodeFromString<BookmarkReadPositions>(jsonString)
-                } catch (_: Exception) {
-                    BookmarkReadPositions()
-                }
-            } else {
-                BookmarkReadPositions()
-            }
-
-            val updatedPositions = currentPositions.positions.toMutableMap()
-            updatedPositions[bookmarkId] = scrollY
-
-            // 只保留最近 100 个阅读位置，避免数据过大
-            val trimmedPositions = if (updatedPositions.size > 100) {
-                updatedPositions.entries.toList().takeLast(100).associate { it.key to it.value }
-            } else {
-                updatedPositions
-            }
-
-            val newData = BookmarkReadPositions(trimmedPositions)
+            val newData = BookmarkReadPositions(snapshot)
             preferences[BOOKMARK_READ_POSITIONS_KEY] = Json.encodeToString(newData)
         }
     }
