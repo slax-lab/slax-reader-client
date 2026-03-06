@@ -11,6 +11,12 @@ object ReadPositionConstants {
     const val SAVE_DEBOUNCE_MS = 500L
 
     /**
+     * 自动持久化延迟时间（毫秒）
+     * 在无新更新后自动将缓存持久化到磁盘
+     */
+    const val AUTO_FLUSH_DELAY_MS = 1000L
+
+    /**
      * 视觉间距（dp）
      * iOS 平台用于计算 contentInset
      */

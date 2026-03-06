@@ -5,13 +5,19 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.slax.reader.ui.bookmark.ReadPositionConstants
 import com.slax.reader.utils.timeUnix
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -64,6 +70,9 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
     private val positionsCache = mutableMapOf<String, Float>()
     private var cacheLoaded = false
     private val cacheLock = Mutex()
+
+    private var autoFlushJob: Job? = null
+    private val autoFlushScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     suspend fun getLastRefreshTime(): Long? {
         return dataStore.data.map { preferences ->
@@ -210,21 +219,24 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
      * @param scrollY 滚动位置（像素值）
      *
      * 注意：此方法只更新内存缓存，不立即持久化到磁盘。
-     * 需要调用 flushPositionsCache() 来批量持久化。
      */
     suspend fun setBookmarkReadPosition(bookmarkId: String, scrollY: Float) {
         ensureCacheLoaded()
         cacheLock.withLock {
             positionsCache[bookmarkId] = scrollY
         }
-        // 不立即写入 DataStore，由 flushPositionsCache 批量写入
+
+        autoFlushJob?.cancel()
+        autoFlushJob = autoFlushScope.launch {
+            delay(ReadPositionConstants.AUTO_FLUSH_DELAY_MS)
+            println("[ReadPosition] 自动持久化阅读位置到 DataStore")
+            flushPositionsCache()
+        }
     }
 
     /**
      * 批量持久化阅读位置到 DataStore
-     *
      * 将内存缓存中的所有阅读位置一次性写入 DataStore。
-     * 通常在 ViewModel 的 onCleared() 中调用，确保数据不丢失。
      */
     suspend fun flushPositionsCache() = withContext(Dispatchers.IO) {
         if (!cacheLoaded) return@withContext

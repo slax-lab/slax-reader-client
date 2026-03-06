@@ -268,12 +268,7 @@ class BookmarkDetailViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        // 在清理前批量持久化阅读位置
-        viewModelScope.launch {
-            runCatching {
-                appPreferences.flushPositionsCache()
-            }
-        }
+
         savePositionJob?.cancel()
         savePositionJob = null
         contentJob?.cancel()
