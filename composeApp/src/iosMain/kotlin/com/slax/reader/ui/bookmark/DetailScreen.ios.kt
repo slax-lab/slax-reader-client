@@ -71,16 +71,16 @@ actual fun DetailScreen(
         }
     }
 
-    // 标记是否已恢复位置
     LaunchedEffect(Unit) {
         snapshotFlow { webViewScrollY.floatValue to isNearBottom }
             .collect { (scrollY, nearBottom) ->
-                // 只在恢复位置后才处理滚动事件
-                if (hasRestoredPosition) {
-                    onScrollInfoChanged(ScrollInfo(scrollY, nearBottom))
-                    print("[watch][UI] scrollY: $scrollY, isNearBottom: $nearBottom")
-                    viewModel.saveReadPosition(scrollY)
+                if (!hasRestoredPosition) {
+                    return@collect
                 }
+
+                onScrollInfoChanged(ScrollInfo(scrollY, nearBottom))
+                print("[watch][UI] scrollY: $scrollY, isNearBottom: $nearBottom")
+                viewModel.saveReadPosition(scrollY)
             }
     }
 
@@ -98,7 +98,6 @@ actual fun DetailScreen(
     val density = LocalDensity.current
     val densityScale = density.density
 
-    // 获取 statusBarsPadding 高度
     val windowInsets = WindowInsets.statusBars
     val statusBarHeightPx = windowInsets.getTop(density).toFloat()
 
@@ -111,7 +110,6 @@ actual fun DetailScreen(
                         val totalInsetPx = webViewState.topContentInsetPx + statusBarHeightPx +
                                 ReadPositionConstants.VISUAL_SPACING_DP * density.density
 
-                        // 将像素值转换为 points（逻辑像素）
                         val positionPoints = (position - totalInsetPx) / densityScale
                         webViewState.evaluateJs("window.scrollTo(0, $positionPoints)")
                     }

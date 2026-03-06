@@ -71,16 +71,16 @@ actual fun DetailScreen(
         }
     }
 
-    // 标记是否已恢复位置
     LaunchedEffect(Unit) {
         snapshotFlow { scrollState.value.toFloat() to isNearBottom }
             .collect { (scrollY, nearBottom) ->
-                // 只在恢复位置后才处理滚动事件
-                if (hasRestoredPosition) {
-                    onScrollInfoChanged(ScrollInfo(scrollY, nearBottom))
-                    print("[watch][UI] scrollY: $scrollY, isNearBottom: $nearBottom")
-                    viewModel.saveReadPosition(scrollY)
+                if (!hasRestoredPosition) {
+                    return@collect
                 }
+
+                onScrollInfoChanged(ScrollInfo(scrollY, nearBottom))
+                print("[watch][UI] scrollY: $scrollY, isNearBottom: $nearBottom")
+                viewModel.saveReadPosition(scrollY)
             }
     }
 

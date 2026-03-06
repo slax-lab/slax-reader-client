@@ -85,9 +85,6 @@ actual fun AppWebView(
                         runCatching { Json.decodeFromString<WebViewMessage>(message) }
                             .onSuccess { msg ->
                                 when (msg.type) {
-                                    "domReady" -> {
-                                    }
-
                                     "imageClick" -> {
                                         webState.dispatchEvent(
                                             WebViewEvent.ImageClick(msg.src!!, msg.allImages!!)
