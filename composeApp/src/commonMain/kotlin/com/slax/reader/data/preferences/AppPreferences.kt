@@ -9,11 +9,13 @@ import com.slax.reader.ui.bookmark.ReadPositionConstants
 import com.slax.reader.utils.timeUnix
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.IO
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -70,9 +72,22 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
     private val positionsCache = mutableMapOf<String, Float>()
     private var cacheLoaded = false
     private val cacheLock = Mutex()
-
-    private var autoFlushJob: Job? = null
+    private val flushTriggerFlow = MutableSharedFlow<Unit>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
     private val autoFlushScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    init {
+        autoFlushScope.launch {
+            @OptIn(FlowPreview::class)
+            flushTriggerFlow
+                .debounce(ReadPositionConstants.AUTO_FLUSH_DELAY_MS)
+                .collect {
+                    flushPositionsCache()
+                }
+        }
+    }
 
     suspend fun getLastRefreshTime(): Long? {
         return dataStore.data.map { preferences ->
@@ -219,6 +234,7 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
      * @param scrollY 滚动位置（像素值）
      *
      * 注意：此方法只更新内存缓存，不立即持久化到磁盘。
+     * 会触发自动持久化机制，在 1 秒无更新后自动写入 DataStore。
      */
     suspend fun setBookmarkReadPosition(bookmarkId: String, scrollY: Float) {
         ensureCacheLoaded()
@@ -226,12 +242,7 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
             positionsCache[bookmarkId] = scrollY
         }
 
-        autoFlushJob?.cancel()
-        autoFlushJob = autoFlushScope.launch {
-            delay(ReadPositionConstants.AUTO_FLUSH_DELAY_MS)
-            println("[ReadPosition] 自动持久化阅读位置到 DataStore")
-            flushPositionsCache()
-        }
+        flushTriggerFlow.tryEmit(Unit)
     }
 
     /**
