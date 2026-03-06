@@ -86,7 +86,6 @@ actual fun AppWebView(
                             .onSuccess { msg ->
                                 when (msg.type) {
                                     "domReady" -> {
-                                        webState.dispatchEvent(WebViewEvent.PageLoaded)
                                     }
 
                                     "imageClick" -> {
@@ -133,6 +132,7 @@ actual fun AppWebView(
 
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
+                        webState.dispatchEvent(WebViewEvent.PageLoaded)
                     }
                 }
 

@@ -90,7 +90,6 @@ actual fun DetailScreen(
                 is WebViewEvent.PageLoaded -> {
                     val position = savedPosition
                     if (position != null && position > 0f && !hasRestoredPosition) {
-                        kotlinx.coroutines.delay(100) // 等待布局稳定
                         scrollState.scrollTo(position.toInt())
                     }
 
