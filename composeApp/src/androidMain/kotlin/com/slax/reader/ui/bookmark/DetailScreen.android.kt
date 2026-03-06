@@ -79,7 +79,6 @@ actual fun DetailScreen(
                 }
 
                 onScrollInfoChanged(ScrollInfo(scrollY, nearBottom))
-                print("[watch][UI] scrollY: $scrollY, isNearBottom: $nearBottom")
                 viewModel.saveReadPosition(scrollY)
             }
     }
