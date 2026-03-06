@@ -89,9 +89,11 @@ actual fun DetailScreen(
         snapshotFlow { scrollState.value.toFloat() to isNearBottom }
             .collect { (scrollY, nearBottom) ->
                 onScrollInfoChanged(ScrollInfo(scrollY, nearBottom))
-                // 保存阅读位置（带防抖）
                 print("[watch][UI] scrollY: $scrollY, isNearBottom: $nearBottom")
-                viewModel.saveReadPosition(scrollY)
+                // 只有在恢复位置后才开始保存新的阅读位置
+                if (hasRestoredPosition) {
+                    viewModel.saveReadPosition(scrollY)
+                }
             }
     }
 
@@ -105,6 +107,9 @@ actual fun DetailScreen(
                         println("[watch][UI] restoring scroll position: $position")
                         kotlinx.coroutines.delay(100) // 等待布局稳定
                         scrollState.scrollTo(position.toInt())
+                        hasRestoredPosition = true
+                    } else if (position == null || position <= 0f) {
+                        // 没有保存的位置，直接允许保存
                         hasRestoredPosition = true
                     }
                 }

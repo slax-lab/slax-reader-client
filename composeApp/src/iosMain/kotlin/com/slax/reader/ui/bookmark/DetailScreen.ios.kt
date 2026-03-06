@@ -80,14 +80,19 @@ actual fun DetailScreen(
         }
     }
 
+    // 标记是否已恢复位置
+    var hasRestoredPosition by remember(bookmarkId) { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         snapshotFlow { webViewScrollY.floatValue to isNearBottom }
             .collect { (scrollY, nearBottom) ->
                 onScrollInfoChanged(ScrollInfo(scrollY, nearBottom))
 
                 print("[watch][UI] scrollY: $scrollY, isNearBottom: $nearBottom")
-                // 保存阅读位置（带防抖）
-                viewModel.saveReadPosition(scrollY)
+                // 只有在恢复位置后才开始保存新的阅读位置
+                if (hasRestoredPosition) {
+                    viewModel.saveReadPosition(scrollY)
+                }
             }
     }
 
@@ -101,9 +106,6 @@ actual fun DetailScreen(
     LaunchedEffect(headerMeasuredHeightState.floatValue) {
         webViewState.topContentInsetPx = headerMeasuredHeightState.floatValue
     }
-
-    // 标记是否已恢复位置
-    var hasRestoredPosition by remember(bookmarkId) { mutableStateOf(false) }
 
     val density = LocalDensity.current
     val densityScale = density.density
@@ -130,6 +132,9 @@ actual fun DetailScreen(
                         println("[watch][UI] converted to points: $positionPoints")
                         webViewState.evaluateJs("window.scrollTo(0, $positionPoints)")
 
+                        hasRestoredPosition = true
+                    } else if (position == null || position <= 0f) {
+                        // 没有保存的位置，直接允许保存
                         hasRestoredPosition = true
                     }
                 }
