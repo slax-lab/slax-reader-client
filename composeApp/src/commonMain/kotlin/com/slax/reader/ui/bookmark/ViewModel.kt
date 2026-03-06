@@ -24,6 +24,7 @@ import com.slax.reader.utils.FirebaseHelper
 import com.slax.reader.utils.bookmarkEvent
 import com.slax.reader.utils.feedbackEvent
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 
 data class FeedbackPageParams(
@@ -90,8 +91,24 @@ class BookmarkDetailViewModel(
     private val _hasRestoredPosition = MutableStateFlow(false)
     val hasRestoredPosition = _hasRestoredPosition.asStateFlow()
 
-    // 保存阅读位置的防抖 Job
-    private var savePositionJob: Job? = null
+    private val scrollPositionFlow = MutableSharedFlow<Float>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+
+    init {
+        viewModelScope.launch {
+            @OptIn(FlowPreview::class)
+            scrollPositionFlow
+                .debounce(ReadPositionConstants.SAVE_DEBOUNCE_MS)
+                .collect { scrollY ->
+                    val id = _bookmarkId.value ?: return@collect
+                    runCatching {
+                        appPreferences.setBookmarkReadPosition(id, scrollY)
+                    }
+                }
+        }
+    }
 
     private var contentJob: Job? = null
 
@@ -253,24 +270,14 @@ class BookmarkDetailViewModel(
         _hasRestoredPosition.value = true
     }
 
-    // 保存阅读位置（带防抖）
+    // 保存阅读位置（使用 Flow 防抖）
     fun saveReadPosition(scrollY: Float) {
-        val id = _bookmarkId.value ?: return
-
-        savePositionJob?.cancel()
-        savePositionJob = viewModelScope.launch {
-            delay(ReadPositionConstants.SAVE_DEBOUNCE_MS)
-            runCatching {
-                appPreferences.setBookmarkReadPosition(id, scrollY)
-            }
-        }
+        scrollPositionFlow.tryEmit(scrollY)
     }
 
     override fun onCleared() {
         super.onCleared()
 
-        savePositionJob?.cancel()
-        savePositionJob = null
         contentJob?.cancel()
         contentJob = null
         commentDelegate.reset()
