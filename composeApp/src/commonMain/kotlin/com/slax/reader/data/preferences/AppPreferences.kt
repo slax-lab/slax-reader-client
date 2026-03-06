@@ -188,7 +188,14 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
         }
     }
 
-    // 获取指定书签的阅读位置（从内存缓存读取）
+    /**
+     * 获取指定书签的阅读位置
+     *
+     * @param bookmarkId 书签 ID
+     * @return 阅读位置（像素值），如果未保存则返回 null
+     *
+     * 注意：此方法从内存缓存读取，首次调用会触发缓存加载（在后台线程执行）
+     */
     suspend fun getBookmarkReadPosition(bookmarkId: String): Float? {
         ensureCacheLoaded()
         return cacheLock.withLock {
@@ -196,7 +203,15 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
         }
     }
 
-    // 保存指定书签的阅读位置（只更新内存缓存）
+    /**
+     * 保存指定书签的阅读位置
+     *
+     * @param bookmarkId 书签 ID
+     * @param scrollY 滚动位置（像素值）
+     *
+     * 注意：此方法只更新内存缓存，不立即持久化到磁盘。
+     * 需要调用 flushPositionsCache() 来批量持久化。
+     */
     suspend fun setBookmarkReadPosition(bookmarkId: String, scrollY: Float) {
         ensureCacheLoaded()
         cacheLock.withLock {
@@ -205,7 +220,12 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
         // 不立即写入 DataStore，由 flushPositionsCache 批量写入
     }
 
-    // 批量持久化阅读位置到 DataStore
+    /**
+     * 批量持久化阅读位置到 DataStore
+     *
+     * 将内存缓存中的所有阅读位置一次性写入 DataStore。
+     * 通常在 ViewModel 的 onCleared() 中调用，确保数据不丢失。
+     */
     suspend fun flushPositionsCache() = withContext(Dispatchers.IO) {
         if (!cacheLoaded) return@withContext
         val snapshot = cacheLock.withLock {

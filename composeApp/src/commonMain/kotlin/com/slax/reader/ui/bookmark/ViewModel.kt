@@ -240,11 +240,12 @@ class BookmarkDetailViewModel(
 
     // 加载书签的保存阅读位置
     private suspend fun loadSavedPosition(bookmarkId: String) {
-        val position = appPreferences.getBookmarkReadPosition(bookmarkId)
-        // 检查 bookmarkId 是否仍然是当前的，防止竞态条件
-        if (_bookmarkId.value == bookmarkId) {
-            _savedPosition.value = position
+        if (_bookmarkId.value != bookmarkId) {
+            return
         }
+
+        val position = appPreferences.getBookmarkReadPosition(bookmarkId)
+        _savedPosition.value = position
     }
 
     // 标记位置已恢复
@@ -256,12 +257,9 @@ class BookmarkDetailViewModel(
     fun saveReadPosition(scrollY: Float) {
         val id = _bookmarkId.value ?: return
 
-        // 取消之前的保存任务
         savePositionJob?.cancel()
-
-        // 延迟 500ms 后保存，避免频繁写入
         savePositionJob = viewModelScope.launch {
-            delay(500)
+            delay(ReadPositionConstants.SAVE_DEBOUNCE_MS)
             runCatching {
                 appPreferences.setBookmarkReadPosition(id, scrollY)
             }

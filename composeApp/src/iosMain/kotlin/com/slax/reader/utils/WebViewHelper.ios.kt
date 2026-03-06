@@ -15,6 +15,7 @@ import androidx.compose.ui.viewinterop.UIKitView
 import app.slax.reader.SlaxConfig
 import com.slax.reader.const.JS_BRIDGE_NAME
 import com.slax.reader.data.preferences.AppPreferences
+import com.slax.reader.ui.bookmark.ReadPositionConstants
 import com.slax.reader.ui.bookmark.WebViewMessage
 import kotlinx.cinterop.*
 import kotlinx.serialization.json.Json
@@ -133,7 +134,7 @@ actual fun AppWebView(
     val statusBarHeightPx = windowInsets.getTop(density).toFloat()
 
     // iOS contentInset 需要完整高度：Column + statusBarsPadding + 视觉间距
-    val totalInsetPx = webState.topContentInsetPx + statusBarHeightPx + 16f * density.density
+    val totalInsetPx = webState.topContentInsetPx + statusBarHeightPx + ReadPositionConstants.VISUAL_SPACING_DP * density.density
 
     var externalUrl by remember { mutableStateOf<String?>(null) }
     val appPreference: AppPreferences = koinInject()

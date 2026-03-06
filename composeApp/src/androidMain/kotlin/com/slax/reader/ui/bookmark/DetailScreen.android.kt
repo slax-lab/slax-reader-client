@@ -88,10 +88,8 @@ actual fun DetailScreen(
         webViewState.events.collect { event ->
             when (event) {
                 is WebViewEvent.PageLoaded -> {
-                    // WebView 加载完成后恢复滚动位置
                     val position = savedPosition
                     if (position != null && position > 0f && !hasRestoredPosition) {
-                        println("[watch][UI] restoring scroll position: $position")
                         kotlinx.coroutines.delay(100) // 等待布局稳定
                         scrollState.scrollTo(position.toInt())
                     }

@@ -106,18 +106,13 @@ actual fun DetailScreen(
         webViewState.events.collect { event ->
             when (event) {
                 is WebViewEvent.PageLoaded -> {
-                    // WebView 加载完成后恢复滚动位置
                     val position = savedPosition
                     if (position != null && position > 0f && !hasRestoredPosition) {
-                        // iOS contentInset 需要完整高度：Column + statusBarsPadding + 视觉间距
-                        val totalInsetPx = webViewState.topContentInsetPx + statusBarHeightPx + 16f * density.density
-
-                        println("[watch][UI] restoring scroll position: $position px")
-                        kotlinx.coroutines.delay(100) // 等待布局稳定
+                        val totalInsetPx = webViewState.topContentInsetPx + statusBarHeightPx +
+                                ReadPositionConstants.VISUAL_SPACING_DP * density.density
 
                         // 将像素值转换为 points（逻辑像素）
                         val positionPoints = (position - totalInsetPx) / densityScale
-                        println("[watch][UI] converted to points: $positionPoints")
                         webViewState.evaluateJs("window.scrollTo(0, $positionPoints)")
                     }
 
