@@ -83,6 +83,13 @@ class BookmarkDetailViewModel(
     private val _contentState = MutableStateFlow(BookmarkContentState(isLoading = false))
     val contentState = _contentState.asStateFlow()
 
+    // 阅读位置状态管理
+    private val _savedPosition = MutableStateFlow<Float?>(null)
+    val savedPosition = _savedPosition.asStateFlow()
+
+    private val _hasRestoredPosition = MutableStateFlow(false)
+    val hasRestoredPosition = _hasRestoredPosition.asStateFlow()
+
     // 保存阅读位置的防抖 Job
     private var savePositionJob: Job? = null
 
@@ -103,10 +110,19 @@ class BookmarkDetailViewModel(
         _bookmarkId.value = bookmarkId
         _contentState.value = BookmarkContentState(isLoading = true)
 
+        // 重置阅读位置状态
+        _savedPosition.value = null
+        _hasRestoredPosition.value = false
+
         overlayDelegate.reset()
         outlineDelegate.reset()
         overviewDelegate.reset()
         commentDelegate.reset()
+
+        // 异步加载保存的阅读位置，不阻塞主流程
+        viewModelScope.launch(Dispatchers.IO) {
+            loadSavedPosition(bookmarkId)
+        }
 
         refreshContent()
     }
@@ -222,15 +238,18 @@ class BookmarkDetailViewModel(
         outlineDelegate.loadOutline(id)
     }
 
-    // 获取书签的保存阅读位置
-    suspend fun getSavedReadPosition(bookmarkId: String): Float? {
+    // 加载书签的保存阅读位置
+    private suspend fun loadSavedPosition(bookmarkId: String) {
         val position = appPreferences.getBookmarkReadPosition(bookmarkId)
         // 检查 bookmarkId 是否仍然是当前的，防止竞态条件
-        return if (_bookmarkId.value == bookmarkId) {
-            position
-        } else {
-            null
+        if (_bookmarkId.value == bookmarkId) {
+            _savedPosition.value = position
         }
+    }
+
+    // 标记位置已恢复
+    fun markPositionRestored() {
+        _hasRestoredPosition.value = true
     }
 
     // 保存阅读位置（带防抖）

@@ -169,11 +169,11 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
         }
     }
 
-    // 确保缓存已加载
-    private suspend fun ensureCacheLoaded() {
-        if (cacheLoaded) return
+    // 确保缓存已加载（在 IO 线程执行）
+    private suspend fun ensureCacheLoaded() = withContext(Dispatchers.IO) {
+        if (cacheLoaded) return@withContext
         cacheLock.withLock {
-            if (cacheLoaded) return
+            if (cacheLoaded) return@withContext
             val prefs = dataStore.data.first()
             val jsonString = prefs[BOOKMARK_READ_POSITIONS_KEY]
             if (jsonString != null) {

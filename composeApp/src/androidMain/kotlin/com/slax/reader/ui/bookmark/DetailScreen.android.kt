@@ -47,21 +47,10 @@ actual fun DetailScreen(
 
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val bookmarkId by viewModel.bookmarkId.collectAsState()
+    val savedPosition by viewModel.savedPosition.collectAsState()
+    val hasRestoredPosition by viewModel.hasRestoredPosition.collectAsState()
 
     val wrappedHtmlContent = remember(htmlContent) { wrapBookmarkDetailHtml(htmlContent) }
-
-    // 读取保存的阅读位置
-    val savedPosition = remember(bookmarkId) {
-        mutableStateOf<Float?>(null)
-    }
-
-    LaunchedEffect(bookmarkId) {
-        bookmarkId?.let { id ->
-            val res = viewModel.getSavedReadPosition(id)
-            print("[watch][UI] loaded saved position: $res")
-            savedPosition.value = res
-        }
-    }
 
     val scrollState = rememberScrollState()
 
@@ -83,15 +72,13 @@ actual fun DetailScreen(
     }
 
     // 标记是否已恢复位置
-    var hasRestoredPosition by remember(bookmarkId) { mutableStateOf(false) }
-
     LaunchedEffect(Unit) {
         snapshotFlow { scrollState.value.toFloat() to isNearBottom }
             .collect { (scrollY, nearBottom) ->
-                onScrollInfoChanged(ScrollInfo(scrollY, nearBottom))
-                print("[watch][UI] scrollY: $scrollY, isNearBottom: $nearBottom")
-                // 只有在恢复位置后才开始保存新的阅读位置
+                // 只在恢复位置后才处理滚动事件
                 if (hasRestoredPosition) {
+                    onScrollInfoChanged(ScrollInfo(scrollY, nearBottom))
+                    print("[watch][UI] scrollY: $scrollY, isNearBottom: $nearBottom")
                     viewModel.saveReadPosition(scrollY)
                 }
             }
@@ -102,16 +89,14 @@ actual fun DetailScreen(
             when (event) {
                 is WebViewEvent.PageLoaded -> {
                     // WebView 加载完成后恢复滚动位置
-                    val position = savedPosition.value
+                    val position = savedPosition
                     if (position != null && position > 0f && !hasRestoredPosition) {
                         println("[watch][UI] restoring scroll position: $position")
                         kotlinx.coroutines.delay(100) // 等待布局稳定
                         scrollState.scrollTo(position.toInt())
-                        hasRestoredPosition = true
-                    } else if (position == null || position <= 0f) {
-                        // 没有保存的位置，直接允许保存
-                        hasRestoredPosition = true
                     }
+
+                    viewModel.markPositionRestored()
                 }
                 is WebViewEvent.ScrollToPosition -> {
                     val targetInWebView = webViewHeightState.floatValue * event.percentage
