@@ -33,7 +33,7 @@ fun SettingScreen(
     val coroutineScope = rememberCoroutineScope()
     var showLanguageDialog by remember { mutableStateOf(false) }
     var selectedCacheCount by remember { mutableStateOf(30) }
-    var downloadImages by remember { mutableStateOf(false) }
+    var isDownloadImages by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -75,8 +75,8 @@ fun SettingScreen(
             OfflineCacheCard(
                 selectedCacheCount = selectedCacheCount,
                 onCacheCountChange = { selectedCacheCount = it },
-                downloadImages = downloadImages,
-                onDownloadImagesChange = { downloadImages = it }
+                downloadImages = isDownloadImages,
+                onDownloadImagesChange = { isDownloadImages = it }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
