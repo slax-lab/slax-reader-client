@@ -106,7 +106,7 @@ fun SettingScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp),
+                    .height(55.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0x141A1A1A)
@@ -240,7 +240,6 @@ private fun OfflineCacheCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 缓存逻辑说明
             Text(
                 text = "setting_offline_cache_desc".i18n(),
                 fontSize = 14.sp,
@@ -270,11 +269,9 @@ private fun OfflineCacheCard(
                         onDownloadImagesChange(!downloadImages)
                     }
             ) {
-                // 勾选框和标题行
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // 自定义勾选框
                     Box(
                         modifier = Modifier
                             .size(12.dp)
@@ -310,7 +307,6 @@ private fun OfflineCacheCard(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // 说明文字
                 Text(
                     text = "setting_download_images_desc".i18n(),
                     fontSize = 14.sp,
