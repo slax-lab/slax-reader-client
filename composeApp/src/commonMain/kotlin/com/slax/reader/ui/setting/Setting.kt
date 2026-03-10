@@ -201,10 +201,11 @@ private fun OfflineCacheCard(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 分段选择器
-            Row(
+            // 缓存数量选择
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 val options = listOf(10, 30, 50, 100, 200)
                 options.forEach { value ->
@@ -249,7 +250,6 @@ private fun OfflineCacheCard(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 分割线
             HorizontalDivider(
                 modifier = Modifier.fillMaxWidth(),
                 thickness = 0.5.dp,
