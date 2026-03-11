@@ -379,16 +379,19 @@ private class CachingInputStream(
 ) : java.io.InputStream() {
     private val source: java.io.InputStream = connection.inputStream
     private val buffer = java.io.ByteArrayOutputStream()
+    private var completed = false
 
     override fun read(): Int {
         val b = source.read()
         if (b != -1) buffer.write(b)
+        else completed = true
         return b
     }
 
     override fun read(b: ByteArray, off: Int, len: Int): Int {
         val n = source.read(b, off, len)
         if (n > 0) buffer.write(b, off, n)
+        else if (n == -1) completed = true
         return n
     }
 
@@ -397,12 +400,14 @@ private class CachingInputStream(
     override fun close() {
         source.close()
         connection.disconnect()
-        val data = buffer.toByteArray()
-        if (data.isNotEmpty()) {
-            try {
-                manager.cacheData(url, bookmarkId, data)
-            } catch (e: Exception) {
-                println("[SchemeHandler] 缓存写入失败: $url, ${e.message}")
+        if (completed) {
+            val data = buffer.toByteArray()
+            if (data.isNotEmpty()) {
+                try {
+                    manager.cacheData(url, bookmarkId, data)
+                } catch (e: Exception) {
+                    println("[SchemeHandler] 缓存写入失败: $url, ${e.message}")
+                }
             }
         }
     }

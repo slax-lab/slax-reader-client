@@ -39,7 +39,7 @@ class LocalBookmarkDao(
     suspend fun updateLocalBookmarkDownloadStatus(
         bookmarkId: String,
         downloadStatus: Int,
-        isAutoCached: Boolean = true
+        isAutoCached: Boolean
     ) = withContext(Dispatchers.IO) {
         database.writeTransaction { tx ->
             tx.execute(
@@ -55,6 +55,30 @@ class LocalBookmarkDao(
             """.trimIndent(),
                 parameters = listOf(bookmarkId, downloadStatus, if (isAutoCached) 1 else 0)
             )
+        }
+    }
+
+    suspend fun batchResetDownloadStatus(
+        bookmarkIds: List<String>,
+        downloadStatus: Int = 0,
+        isAutoCached: Boolean = false
+    ) = withContext(Dispatchers.IO) {
+        database.writeTransaction { tx ->
+            bookmarkIds.forEach { bookmarkId ->
+                tx.execute(
+                    """
+                    INSERT INTO ps_data_local__local_bookmark_info (id, data)
+                    VALUES (?, json_object('is_downloaded', ?, 'is_auto_cached', ?))
+                    ON CONFLICT(id) DO UPDATE SET
+                    data = json_set(
+                        data,
+                        '$.is_downloaded', json_extract(excluded.data, '$.is_downloaded'),
+                        '$.is_auto_cached', json_extract(excluded.data, '$.is_auto_cached')
+                    );
+                """.trimIndent(),
+                    parameters = listOf(bookmarkId, downloadStatus, if (isAutoCached) 1 else 0)
+                )
+            }
         }
     }
 

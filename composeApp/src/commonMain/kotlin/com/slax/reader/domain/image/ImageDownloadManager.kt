@@ -4,6 +4,7 @@ import com.slax.reader.data.file.FileManager
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.statement.readRawBytes
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -44,16 +45,19 @@ class ImageDownloadManager(
         }
 
         if (isOwner) {
-            val result = try {
+            try {
                 val data = httpClient.get(originalUrl).readRawBytes()
                 fileManager.writeDataFile(path, data)
-                data
+                deferred.complete(data)
+            } catch (e: CancellationException) {
+                deferred.cancel(e)
+                throw e
             } catch (e: Exception) {
                 println("[ImageDownloadManager] 下载失败: $originalUrl, ${e.message}")
-                null
+                deferred.complete(null)
+            } finally {
+                mutex.withLock { inFlightRequests.remove(originalUrl) }
             }
-            deferred.complete(result)
-            mutex.withLock { inFlightRequests.remove(originalUrl) }
         }
 
         return deferred.await()

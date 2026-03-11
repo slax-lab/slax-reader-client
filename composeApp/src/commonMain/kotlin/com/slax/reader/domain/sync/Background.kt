@@ -90,7 +90,7 @@ class BackgroundDomain(
                         windowCount++
                         cacheWindowIds.add(item.id)
 
-                        if (item.id !in currentQueue && local?.isDownloaded() == false) {
+                        if (item.id !in currentQueue && local?.isDownloaded() != true) {
                             toDownload.add(TaskItem(item.id, item.updatedAt, TaskType.DOWNLOAD_METADATA))
                         }
                     }
@@ -194,12 +194,10 @@ class BackgroundDomain(
                     println("[BackgroundDomain] 删除文件夹失败 $id: ${e.message}")
                 }
             }
-            ids.forEach { id ->
-                try {
-                    localBookmarkDao.updateLocalBookmarkDownloadStatus(id, 0, isAutoCached = false)
-                } catch (e: Exception) {
-                    println("[BackgroundDomain] 重置状态失败 $id: ${e.message}")
-                }
+            try {
+                localBookmarkDao.batchResetDownloadStatus(ids)
+            } catch (e: Exception) {
+                println("[BackgroundDomain] 批量重置状态失败: ${e.message}")
             }
             println("[BackgroundDomain] 批量清理完成，共清理 ${ids.size} 个")
         } finally {

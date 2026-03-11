@@ -105,10 +105,10 @@ class CustomURLSchemeHandler(
                         offset += chunk.size
                     }
                 }
-                imageDownloadManager.cacheData(url, bookmarkId, fullData)
 
                 withContext(Dispatchers.Main) {
                     if (task !in activeTasks) return@withContext
+                    imageDownloadManager.cacheData(url, bookmarkId, fullData)
                     task.didFinish()
                     activeTasks.remove(task)
                 }
