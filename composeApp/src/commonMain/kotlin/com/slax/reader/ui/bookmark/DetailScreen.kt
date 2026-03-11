@@ -100,6 +100,7 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
 
     CompositionLocalProvider(LocalToolbarVisible provides toolbarVisible) {
         DetailScreen(
+            bookmarkId = bookmarkId,
             htmlContent = contentState.htmlContent!!,
             webViewState = webViewState,
             onScrollInfoChanged = { scrollInfo.value = it }
@@ -109,6 +110,7 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
 
 @Composable
 expect fun DetailScreen(
+    bookmarkId: String,
     htmlContent: String,
     webViewState: AppWebViewState,
     onScrollInfoChanged: (ScrollInfo) -> Unit

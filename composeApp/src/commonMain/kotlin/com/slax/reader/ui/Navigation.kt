@@ -140,6 +140,11 @@ fun SlaxNavigation(
             LaunchedEffect(Unit) { bookmarkListEvent.view().send() }
         }
         composable<SettingsRoutes> {
+            DisposableEffect(Unit) {
+                onDispose {
+                    backgroundDomain.restart()
+                }
+            }
             SettingScreen(
                 onBackClick = {
                     navCtrl.popBackStack()

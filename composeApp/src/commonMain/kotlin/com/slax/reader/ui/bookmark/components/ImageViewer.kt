@@ -27,13 +27,16 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.github.panpf.sketch.AsyncImage
 import com.github.panpf.sketch.rememberAsyncImageState
+import com.github.panpf.sketch.request.ComposableImageRequest
 import com.slax.reader.const.component.rememberDismissableVisibility
+import com.slax.reader.domain.image.ImageDownloadManager
+import com.slax.reader.domain.image.SlaxStaticFetcher
+import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.compose.koinInject
 
-/**
- * 图片浏览器组件
- */
 @Composable
 fun ImageViewer(
     imageUrls: List<String>,
@@ -41,8 +44,17 @@ fun ImageViewer(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val viewModel = koinViewModel<BookmarkDetailViewModel>()
+    val imageDownloadManager: ImageDownloadManager = koinInject()
+
+    val bookmarkId by viewModel.bookmarkId.collectAsState()
+
     val initialPage = remember(imageUrls, initialImageUrl) {
         imageUrls.indexOf(initialImageUrl).coerceAtLeast(0)
+    }
+
+    val fetcherFactory = remember(imageDownloadManager, bookmarkId) {
+        SlaxStaticFetcher.Factory(imageDownloadManager, bookmarkId!!)
     }
 
     val (visible, dismiss) = rememberDismissableVisibility(
@@ -57,6 +69,7 @@ fun ImageViewer(
         exit = fadeOut(animationSpec = tween(300))
     ) {
         ImageViewerContent(
+            fetcherFactory = fetcherFactory,
             imageUrls = imageUrls,
             initialPage = initialPage,
             onDismiss = {
@@ -73,6 +86,7 @@ fun ImageViewer(
  */
 @Composable
 private fun ImageViewerContent(
+    fetcherFactory: SlaxStaticFetcher.Factory,
     imageUrls: List<String>,
     initialPage: Int,
     onDismiss: () -> Unit,
@@ -113,6 +127,7 @@ private fun ImageViewerContent(
             beyondViewportPageCount = 2
         ) { page ->
             ZoomableImagePage(
+                fetcherFactory = fetcherFactory,
                 imageUrl = imageUrls[page],
                 scaleState = scaleStates.getOrNull(page) ?: remember { mutableStateOf(1f) },
                 currentPage = page,
@@ -152,6 +167,7 @@ private fun ImageViewerContent(
  */
 @Composable
 private fun ZoomableImagePage(
+    fetcherFactory: SlaxStaticFetcher.Factory,
     imageUrl: String,
     scaleState: MutableState<Float>,
     currentPage: Int,
@@ -405,7 +421,13 @@ private fun ZoomableImagePage(
         contentAlignment = Alignment.Center
     ) {
         AsyncImage(
-            uri = imageUrl,
+            request = ComposableImageRequest(imageUrl) {
+                if ((imageUrl.startsWith("slaxstatics://") || imageUrl.startsWith("slaxstatic://"))) {
+                    components {
+                        addFetcher(fetcherFactory)
+                    }
+                }
+            },
             contentDescription = "photo",
             state = asyncImageState,
             modifier = Modifier.fillMaxSize().graphicsLayer {

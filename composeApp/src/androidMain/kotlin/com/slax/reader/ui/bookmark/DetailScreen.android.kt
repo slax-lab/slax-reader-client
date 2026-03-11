@@ -38,6 +38,7 @@ data class WebViewMessage(
 @SuppressLint("UseKtx", "ConfigurationScreenWidthHeight")
 @Composable
 actual fun DetailScreen(
+    bookmarkId: String,
     htmlContent: String,
     webViewState: AppWebViewState,
     onScrollInfoChanged: (ScrollInfo) -> Unit
@@ -111,7 +112,8 @@ actual fun DetailScreen(
                     .fillMaxWidth()
                     .preferredFrameRate(FrameRateCategory.High)
                     .onSizeChanged(onWebViewSizeChanged),
-                webState = webViewState
+                webState = webViewState,
+                bookmarkId = bookmarkId
             )
         }
 

@@ -3,6 +3,7 @@ package com.slax.reader.data.preferences
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.slax.reader.utils.timeUnix
@@ -49,6 +50,9 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
         private val USER_SETTING_DETAIL_DO_NOT_ALERT = stringPreferencesKey("user_setting_detail_do_not_alert")
 
         private val USER_LANGUAGE_KEY = stringPreferencesKey("user_language")
+
+        private val CACHE_COUNT_KEY = intPreferencesKey("cache_count")
+        private val DOWNLOAD_IMAGES_KEY = intPreferencesKey("download_images")
     }
 
     suspend fun getLastRefreshTime(): Long? {
@@ -153,5 +157,17 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
         dataStore.edit { preferences ->
             preferences[USER_LANGUAGE_KEY] = language
         }
+    }
+
+    fun getCacheCount(): Flow<Int> = dataStore.data.map { it[CACHE_COUNT_KEY] ?: 50 }
+
+    suspend fun setCacheCount(count: Int) = withContext(Dispatchers.IO) {
+        dataStore.edit { it[CACHE_COUNT_KEY] = count }
+    }
+
+    fun getDownloadImages(): Flow<Boolean> = dataStore.data.map { (it[DOWNLOAD_IMAGES_KEY] ?: 1) == 1 }
+
+    suspend fun setDownloadImages(enabled: Boolean) = withContext(Dispatchers.IO) {
+        dataStore.edit { it[DOWNLOAD_IMAGES_KEY] = if (enabled) 1 else 0 }
     }
 }

@@ -39,14 +39,12 @@ data class WebViewMessage(
 
 @Composable
 actual fun DetailScreen(
+    bookmarkId: String,
     htmlContent: String,
     webViewState: AppWebViewState,
     onScrollInfoChanged: (ScrollInfo) -> Unit
 ) {
     println("[watch][UI] recomposition DetailScreen.ios")
-
-    val viewModel = koinViewModel<BookmarkDetailViewModel>()
-    val bookmarkId by viewModel.bookmarkId.collectAsState()
 
     val wrappedHtmlContent = remember(htmlContent) { wrapBookmarkDetailHtml(htmlContent) }
 
@@ -116,7 +114,8 @@ actual fun DetailScreen(
             AppWebView(
                 htmlContent = wrappedHtmlContent,
                 modifier = Modifier.fillMaxSize().preferredFrameRate(FrameRateCategory.High),
-                webState = webViewState
+                webState = webViewState,
+                bookmarkId = bookmarkId
             )
         }
 

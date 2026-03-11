@@ -43,6 +43,7 @@ class FileManager(val fileSystem: FileSystem) {
             path.parent?.let { parentDir ->
                 fileSystem.createDirectories(parentDir)
             }
+            if (!fileSystem.exists(path)) return null
             fileSystem.read(path) {
                 readByteArray()
             }

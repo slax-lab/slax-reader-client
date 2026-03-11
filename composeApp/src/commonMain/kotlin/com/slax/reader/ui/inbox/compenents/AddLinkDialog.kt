@@ -180,8 +180,7 @@ fun AddLinkDialog(
                     }
 
                     Spacer(modifier = Modifier.height(25.dp))
-                    BasicTextField(
-                        state = inputState,
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp)
@@ -194,40 +193,38 @@ fun AddLinkDialog(
                                 color = Color.White,
                                 shape = RoundedCornerShape(8.dp)
                             )
-                            .focusRequester(focusRequester),
-                        textStyle = TextStyle(
-                            fontSize = 16.sp,
-                            lineHeight = 24.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = Color(0xFF333333)
-                        ),
-                        lineLimits = TextFieldLineLimits.SingleLine,
-                        cursorBrush = SolidColor(Color(0xFF16b998)),
-                        onKeyboardAction = {
-                            onConfirm()
-                        },
-                        decorator = { innerTextField ->
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(horizontal = 12.dp),
-                                contentAlignment = Alignment.CenterStart
-                            ) {
-                                if (inputState.text.isEmpty()) {
-                                    Text(
-                                        text = "add_link_placeholder".i18n(),
-                                        style = TextStyle(
-                                            fontSize = 16.sp,
-                                            lineHeight = 24.sp,
-                                            fontWeight = FontWeight.Normal,
-                                            color = Color(0xFF999999)
-                                        )
-                                    )
-                                }
-                                innerTextField()
-                            }
+                            .padding(horizontal = 12.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        if (inputState.text.isEmpty()) {
+                            Text(
+                                text = "add_link_placeholder".i18n(),
+                                style = TextStyle(
+                                    fontSize = 16.sp,
+                                    lineHeight = 24.sp,
+                                    fontWeight = FontWeight.Normal,
+                                    color = Color(0xFF999999)
+                                )
+                            )
                         }
-                    )
+                        BasicTextField(
+                            state = inputState,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(focusRequester),
+                            textStyle = TextStyle(
+                                fontSize = 16.sp,
+                                lineHeight = 24.sp,
+                                fontWeight = FontWeight.Normal,
+                                color = Color(0xFF333333)
+                            ),
+                            lineLimits = TextFieldLineLimits.SingleLine,
+                            cursorBrush = SolidColor(Color(0xFF16b998)),
+                            onKeyboardAction = {
+                                onConfirm()
+                            }
+                        )
+                    }
 
                     // 错误提示
                     if (errorMessage != null) {

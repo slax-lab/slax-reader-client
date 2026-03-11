@@ -21,6 +21,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import com.slax.reader.const.JS_BRIDGE_NAME
 import com.slax.reader.data.preferences.AppPreferences
+import com.slax.reader.domain.image.ImageDownloadManager
 import com.slax.reader.ui.bookmark.WebViewMessage
 import kotlinx.serialization.json.Json
 import org.koin.compose.koinInject
@@ -31,12 +32,14 @@ import kotlin.math.roundToInt
 actual fun AppWebView(
     htmlContent: String,
     modifier: Modifier,
-    webState: AppWebViewState
+    webState: AppWebViewState,
+    bookmarkId: String
 ) {
     println("[watch][UI] recomposition AppWebView")
 
     var externalUrl by remember { mutableStateOf<String?>(null) }
     val appPreference: AppPreferences = koinInject()
+    val imageDownloadManager: ImageDownloadManager = koinInject()
     var doNotAlert by remember { mutableStateOf<Boolean?>(null) }
 
     AndroidView(
@@ -125,6 +128,38 @@ actual fun AppWebView(
                             externalUrl = url
                         }
                         return true
+                    }
+
+                    override fun shouldInterceptRequest(
+                        view: WebView?,
+                        request: WebResourceRequest?
+                    ): WebResourceResponse? {
+                        val url = request?.url?.toString() ?: return null
+
+                        if (!url.startsWith("slaxstatics://") && !url.startsWith("slaxstatic://")) {
+                            return super.shouldInterceptRequest(view, request)
+                        }
+
+                        val cached = imageDownloadManager.getCachedData(url, bookmarkId)
+                        if (cached != null) {
+                            return WebResourceResponse(getMimeTypeFromUrl(url), null, cached.inputStream())
+                        }
+
+                        return try {
+                            val originalUrl = imageDownloadManager.resolveUrl(url)
+                            val connection = java.net.URL(originalUrl).openConnection() as java.net.HttpURLConnection
+                            connection.connectTimeout = 15_000
+                            connection.readTimeout = 30_000
+
+                            WebResourceResponse(
+                                connection.contentType?.substringBefore(";") ?: getMimeTypeFromUrl(url),
+                                null,
+                                CachingInputStream(connection, url, bookmarkId, imageDownloadManager)
+                            )
+                        } catch (e: Exception) {
+                            println("[SchemeHandler] 代理失败: $url, ${e.message}")
+                            null
+                        }
                     }
                 }
 
@@ -334,4 +369,41 @@ actual fun OpenInBrowser(url: String) {
     val builder = CustomTabsIntent.Builder()
     val customTabsIntent = builder.build()
     customTabsIntent.launchUrl(ctx, url.toUri())
+}
+
+private class CachingInputStream(
+    private val connection: java.net.HttpURLConnection,
+    private val url: String,
+    private val bookmarkId: String,
+    private val manager: ImageDownloadManager
+) : java.io.InputStream() {
+    private val source: java.io.InputStream = connection.inputStream
+    private val buffer = java.io.ByteArrayOutputStream()
+
+    override fun read(): Int {
+        val b = source.read()
+        if (b != -1) buffer.write(b)
+        return b
+    }
+
+    override fun read(b: ByteArray, off: Int, len: Int): Int {
+        val n = source.read(b, off, len)
+        if (n > 0) buffer.write(b, off, n)
+        return n
+    }
+
+    override fun available(): Int = source.available()
+
+    override fun close() {
+        source.close()
+        connection.disconnect()
+        val data = buffer.toByteArray()
+        if (data.isNotEmpty()) {
+            try {
+                manager.cacheData(url, bookmarkId, data)
+            } catch (e: Exception) {
+                println("[SchemeHandler] 缓存写入失败: $url, ${e.message}")
+            }
+        }
+    }
 }
