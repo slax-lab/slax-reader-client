@@ -31,8 +31,7 @@ data class PowerSyncAuthInfo(
 @Serializable
 data class ContinueReadingBookmark(
     val bookmarkId: String,
-    val title: String,
-    val scrollY: Int
+    val title: String
 )
 
 class AppPreferences(private val dataStore: DataStore<Preferences>) {

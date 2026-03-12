@@ -134,6 +134,42 @@ class LocalBookmarkDao(
         return result
     }
 
+    suspend fun updateLocalBookmarkReadPosition(
+        bookmarkId: String,
+        readPosition: Float
+    ) = withContext(Dispatchers.IO) {
+        database.writeTransaction { tx ->
+            tx.execute(
+                """
+                INSERT INTO ps_data_local__local_bookmark_info (id, data)
+                VALUES (?, json_object('read_position', ?))
+                ON CONFLICT(id) DO UPDATE SET
+                data = json_set(
+                    ps_data_local__local_bookmark_info.data,
+                    '$.read_position', json_extract(excluded.data, '$.read_position')
+                );
+            """.trimIndent(),
+                parameters = listOf(bookmarkId, readPosition.toString())
+            )
+        }
+    }
+
+    suspend fun getLocalBookmarkReadPosition(bookmarkId: String): Float? {
+        val raw = database.getOptional(
+            """
+            SELECT
+                json_extract(data, '$.read_position') AS read_position
+            FROM ps_data_local__local_bookmark_info
+            WHERE id = ?
+            """.trimIndent(),
+            parameters = listOf(bookmarkId),
+            mapper = { cursor ->
+                cursor.getStringOptional("read_position") ?: ""
+            }
+        )
+        return raw?.takeIf { it.isNotEmpty() }?.toFloatOrNull()
+    }
+
     suspend fun updateLocalBookmarkOutline(
         bookmarkId: String,
         outline: String,
