@@ -1,6 +1,19 @@
 package com.slax.reader.ui.bookmark
 
 import androidx.compose.runtime.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.slax.reader.ui.bookmark.components.DetailScreenSkeleton
 import com.slax.reader.ui.bookmark.states.ScrollInfo
 import com.slax.reader.utils.*
@@ -92,10 +105,42 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
     }
 
     val contentState by viewModel.contentState.collectAsState()
+    val detailState by viewModel.bookmarkDelegate.bookmarkDetailState.collectAsState()
 
     if (contentState.htmlContent == null || contentState.isLoading) {
         DetailScreenSkeleton()
         return
+    }
+
+    // 删除加载对话框
+    if (detailState.isDeleting) {
+        Dialog(
+            onDismissRequest = { },
+            properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(200.dp)
+                    .background(Color.White, shape = RoundedCornerShape(8.dp))
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    CircularProgressIndicator(
+                        color = Color(0xFF16B998),
+                        strokeWidth = 3.dp,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Text(
+                        text = "删除中...",
+                        style = TextStyle(fontSize = 16.sp)
+                    )
+                }
+            }
+        }
     }
 
     CompositionLocalProvider(LocalToolbarVisible provides toolbarVisible) {

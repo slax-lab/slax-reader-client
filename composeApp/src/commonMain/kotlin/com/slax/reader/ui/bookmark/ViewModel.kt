@@ -178,6 +178,15 @@ class BookmarkDetailViewModel(
             }
 
             "feedback" -> overlayDelegate.showOverlay(BookmarkOverlay.FeedbackRequired)
+            "delete" -> bookmarkDelegate.onDeleteBookmark(
+                onSuccess = {
+                    bookmarkEvent.action("delete").send()
+                    requestNavigateBack()
+                },
+                onFailure = {
+                    bookmarkEvent.action("delete_failed").send()
+                }
+            )
         }
 
         overlayDelegate.dismissOverlay(BookmarkOverlay.Toolbar)

@@ -60,6 +60,7 @@ fun BottomToolbarSheet() {
 //                ToolbarIcon("comment", "评论", Res.drawable.ic_bottom_panel_comment),
                 ToolbarIcon("edit_title", "detail_toolbar_edit_title".i18n(), Res.drawable.ic_bottom_panel_edittitle),
                 ToolbarIcon("feedback", "detail_toolbar_feedback".i18n(), Res.drawable.ic_bottom_panel_feedback),
+                ToolbarIcon("delete", "删除", Res.drawable.ic_bottom_panel_delete),
 //                ToolbarIcon("share", "分享", Res.drawable.ic_bottom_panel_share)
             )
 //            listOf(
