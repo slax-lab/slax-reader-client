@@ -24,7 +24,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.unit.dp
+import com.github.panpf.sketch.request.LoadState
 import com.github.panpf.sketch.AsyncImage
 import com.github.panpf.sketch.rememberAsyncImageState
 import com.slax.reader.const.component.rememberDismissableVisibility
@@ -415,5 +417,27 @@ private fun ZoomableImagePage(
                 translationY = if (isDoubleTapAnimating) animatedOffsetY else offsetY
             }
         )
+
+        // 图片加载中时显示进度圈
+        if (asyncImageState.loadState is LoadState.Started) {
+            val progress = asyncImageState.progress?.decimalProgress
+            if (progress != null && progress > 0f) {
+                // 确定性进度圈（显示具体进度）
+                CircularProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.align(Alignment.Center),
+                    color = Color.White,
+                    trackColor = Color.White.copy(alpha = 0.3f),
+                    strokeWidth = 3.dp
+                )
+            } else {
+                // 不确定性进度圈（无法获取进度时）
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = Color.White,
+                    strokeWidth = 3.dp
+                )
+            }
+        }
     }
 }
