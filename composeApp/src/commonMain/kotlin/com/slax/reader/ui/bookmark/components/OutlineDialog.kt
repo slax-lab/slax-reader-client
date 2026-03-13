@@ -156,61 +156,11 @@ private fun ExpandedOutlineDialog() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 0.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 0.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                .navigationBarsPadding(),
             ) {
-                val collapseInteractionSource = remember { MutableInteractionSource() }
-                val isCollapsePressed by collapseInteractionSource.collectIsPressedAsState()
-
-                Box(
-                    modifier = Modifier
-                        .alpha(if (isCollapsePressed) 0.5f else 1f)
-                        .clickable(
-                            interactionSource = collapseInteractionSource,
-                            indication = null,
-                            onClick = { viewModel.outlineDelegate.collapseDialog() }
-                        )
-                        .padding(vertical = 18.dp, horizontal = 20.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_outline_dialog_shrink),
-                        contentDescription = "outline_collapse".i18n(),
-                        tint = Color(0xFF666666),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-
-                val closeInteractionSource = remember { MutableInteractionSource() }
-                val isClosePressed by closeInteractionSource.collectIsPressedAsState()
-
-                Box(
-                    modifier = Modifier
-                        .alpha(if (isClosePressed) 0.5f else 1f)
-                        .clickable(
-                            interactionSource = closeInteractionSource,
-                            indication = null,
-                            onClick = { viewModel.outlineDelegate.hideDialog() }
-                        )
-                        .padding(vertical = 18.dp, horizontal = 20.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_outline_dialog_close),
-                        contentDescription = "btn_close".i18n(),
-                        tint = Color(0xFF666666),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-
             Box(
                 modifier = Modifier
+                    .padding(top = 32.dp)
                     .padding(horizontal = 20.dp)
                     .weight(1f)
                     .fillMaxWidth()
@@ -255,6 +205,80 @@ private fun ExpandedOutlineDialog() {
                             }
                         }
                     }
+                }
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(55.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val collapseInteractionSource = remember { MutableInteractionSource() }
+                val isCollapsePressed by collapseInteractionSource.collectIsPressedAsState()
+
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .alpha(if (isCollapsePressed) 0.5f else 1f)
+                        .clickable(
+                            interactionSource = collapseInteractionSource,
+                            indication = null,
+                            onClick = { viewModel.outlineDelegate.collapseDialog() }
+                        ),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_outline_dialog_shrink),
+                        contentDescription = "outline_collapse".i18n(),
+                        tint = Color(0xFF666666),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        text = "outline_minimize".i18n(),
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        color = Color(0xCC333333)
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(16.dp)
+                        .background(Color(0x14333333))
+                )
+
+                val closeInteractionSource = remember { MutableInteractionSource() }
+                val isClosePressed by closeInteractionSource.collectIsPressedAsState()
+
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .alpha(if (isClosePressed) 0.5f else 1f)
+                        .clickable(
+                            interactionSource = closeInteractionSource,
+                            indication = null,
+                            onClick = { viewModel.outlineDelegate.hideDialog() }
+                        ),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_outline_dialog_close),
+                        contentDescription = "btn_close".i18n(),
+                        tint = Color(0xFF666666),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        text = "btn_close".i18n(),
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        color = Color(0xCC333333)
+                    )
                 }
             }
         }

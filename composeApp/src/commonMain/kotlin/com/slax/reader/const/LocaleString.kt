@@ -345,6 +345,10 @@ val localeString: Map<String, Map<String, String>> = mapOf(
         "zh" to "加载失败",
         "en" to "Load failed"
     ),
+    "outline_minimize" to mapOf(
+        "zh" to "最小化",
+        "en" to "Minimize"
+    ),
 
     // 通用按钮
     "btn_cancel" to mapOf(
