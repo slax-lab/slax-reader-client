@@ -272,8 +272,7 @@ private fun ExpandedOutlineDialog() {
 }
 
 /**
- * 收缩态圆形按钮，样式与 FloatingActionBar 中的 MoreButton 完全一致
- * 总结中状态叠加 dot 旋转加载环
+ * 收缩态圆形按钮
  */
 @Composable
 private fun CollapsedOutlineButton() {
@@ -282,7 +281,6 @@ private fun CollapsedOutlineButton() {
     val isLoading = outlineState.isLoading
 
     Box(contentAlignment = Alignment.Center) {
-        // 阴影层（与 MoreButton 一致）
         Box(
             modifier = Modifier
                 .size(50.dp)
@@ -298,7 +296,6 @@ private fun CollapsedOutlineButton() {
                 )
         )
 
-        // 按钮主体（与 MoreButton 一致）
         Surface(
             onClick = { viewModel.outlineDelegate.expandDialog() },
             modifier = Modifier.size(50.dp),
@@ -316,7 +313,6 @@ private fun CollapsedOutlineButton() {
             }
         }
 
-        // 总结中状态叠加 dot 旋转加载环
         if (isLoading) {
             DotLoadingRing(modifier = Modifier.size(27.dp))
         }
@@ -325,7 +321,6 @@ private fun CollapsedOutlineButton() {
 
 /**
  * dot 旋转加载环
- * 20 个 dot 均匀分布在圆周上，颜色从 #16B998 渐变到 #ECF9F6，匀速旋转
  */
 @Composable
 private fun DotLoadingRing(modifier: Modifier = Modifier) {

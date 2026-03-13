@@ -248,6 +248,14 @@ val localeString: Map<String, Map<String, String>> = mapOf(
         "zh" to "删除",
         "en" to "Delete"
     ),
+    "bookmark_delete_confirm_title" to mapOf(
+        "zh" to "确认删除",
+        "en" to "Confirm Delete"
+    ),
+    "bookmark_delete_confirm_message" to mapOf(
+        "zh" to "确定要删除吗？",
+        "en" to "Are you sure you want to delete?"
+    ),
 
     // ========================================
     // 关于页面

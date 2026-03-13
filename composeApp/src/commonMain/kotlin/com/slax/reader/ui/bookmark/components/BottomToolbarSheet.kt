@@ -10,7 +10,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +44,7 @@ fun BottomToolbarSheet() {
     println("[watch][UI] recomposition BottomToolbarSheet")
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val detailState by viewModel.bookmarkDelegate.bookmarkDetailState.collectAsState()
+    var showDeleteConfirm by remember { mutableStateOf(false) }
 
     val toolbarPages = remember(detailState.isStarred, detailState.isArchived) {
         listOf(
@@ -121,12 +125,38 @@ fun BottomToolbarSheet() {
                 PagerToolbar(
                     pages = toolbarPages,
                     onIconClick = { pageId, iconIndex ->
-                        viewModel.onToolbarIconClick(pageId)
-                        dismiss()
+                        if (pageId == "delete") {
+                            showDeleteConfirm = true
+                        } else {
+                            viewModel.onToolbarIconClick(pageId)
+                            dismiss()
+                        }
                     },
                     modifier = Modifier.padding(top = 30.dp, bottom = 50.dp)
                 )
             }
         }
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            containerColor = Color.White,
+            title = { Text(text = "bookmark_delete_confirm_title".i18n()) },
+            text = { Text(text = "bookmark_delete_confirm_message".i18n()) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    viewModel.onToolbarIconClick("delete")
+                }) {
+                    Text(text = "btn_confirm".i18n(), color = Color(0xFFF45454))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text(text = "btn_cancel".i18n())
+                }
+            }
+        )
     }
 }

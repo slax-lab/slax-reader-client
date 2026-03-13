@@ -21,7 +21,6 @@ data class BookmarkDetailState(
     val displayTitle: String = "",
     val displayTime: String = "",
     val metadataUrl: String? = null,
-    val isDeleting: Boolean = false,
 )
 
 class BookmarkDelegate(
@@ -29,8 +28,6 @@ class BookmarkDelegate(
     private val bookmarkIdFlow: StateFlow<String?>,
     private val scope: CoroutineScope
 ) {
-    private val _isDeleting = MutableStateFlow(false)
-
     @OptIn(ExperimentalCoroutinesApi::class)
     private val bookmarkFlow: StateFlow<List<UserBookmark>> = bookmarkIdFlow
         .filterNotNull()
@@ -38,21 +35,18 @@ class BookmarkDelegate(
         .distinctUntilChanged()
         .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val bookmarkDetailState: StateFlow<BookmarkDetailState> = combine(
-        bookmarkFlow,
-        _isDeleting
-    ) { list, isDeleting ->
-        list.firstOrNull()?.let { b ->
-            BookmarkDetailState(
-                isStarred = b.isStarred == 1,
-                isArchived = b.archiveStatus == 1,
-                displayTitle = b.displayTitle,
-                displayTime = b.displayTime,
-                metadataUrl = b.metadataUrl,
-                isDeleting = isDeleting,
-            )
-        } ?: BookmarkDetailState(isDeleting = isDeleting)
-    }
+    val bookmarkDetailState: StateFlow<BookmarkDetailState> = bookmarkFlow
+        .map { list ->
+            list.firstOrNull()?.let { b ->
+                BookmarkDetailState(
+                    isStarred = b.isStarred == 1,
+                    isArchived = b.archiveStatus == 1,
+                    displayTitle = b.displayTitle,
+                    displayTime = b.displayTime,
+                    metadataUrl = b.metadataUrl,
+                )
+            } ?: BookmarkDetailState()
+        }
         .distinctUntilChanged()
         .stateIn(scope, SharingStarted.WhileSubscribed(5000), BookmarkDetailState())
 
@@ -106,16 +100,13 @@ class BookmarkDelegate(
 
     fun onDeleteBookmark(onSuccess: () -> Unit, onFailure: () -> Unit) {
         scope.launch {
-            _isDeleting.value = true
             runCatching {
                 bookmarkIdFlow.value?.let { id ->
                     bookmarkDao.deleteBookmark(id)
                 }
             }.onSuccess {
-                _isDeleting.value = false
                 onSuccess()
             }.onFailure {
-                _isDeleting.value = false
                 onFailure()
             }
         }

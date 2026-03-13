@@ -219,7 +219,7 @@ private fun TextWithTrailingIcon(
         textLayoutResult?.let { layout ->
             if (layout.lineCount > 0) {
                 val lastLine = minOf(layout.lineCount - 1, 2)
-                val lineTop = layout.getLineTop(lastLine)
+                val lineTop = layout.getLineTop(lastLine) + 10
                 val lineBottom = layout.getLineBottom(lastLine)
                 val lineRight = layout.getLineRight(lastLine)
 
