@@ -1,6 +1,7 @@
 package com.slax.reader.ui.bookmark.components
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -40,9 +41,19 @@ fun FloatingActionBar(
     val isStarred by remember { derivedStateOf { detailState.isStarred } }
     val isArchived by remember { derivedStateOf { detailState.isArchived } }
 
+    // 观察大纲收缩状态，用于整体居中动画
+    val outlineStatus by viewModel.outlineDelegate.dialogStatus.collectAsState()
+    val isOutlineCollapsed by remember { derivedStateOf { outlineStatus == com.slax.reader.ui.bookmark.states.OutlineDialogStatus.COLLAPSED } }
+
     val density = LocalDensity.current
     val hiddenOffsetPx = remember(density) { with(density) { 150.dp.toPx() } }
     val translationY = remember { Animatable(if (visible) 0f else hiddenOffsetPx) }
+
+    // 水平偏移动画：收缩态时向右偏移 31dp，与 CollapsedOutlineButton 整体居中
+    // 计算依据：组合总宽 224dp = Button(50) + Gap(12) + FAB(162)
+    // FAB 需向右偏移 (224/2 - 162/2) = 31dp
+    val collapsedOffsetPx = remember(density) { with(density) { 31.dp.toPx() } }
+    val translationX = remember { Animatable(0f) }
 
     LaunchedEffect(visible) {
         translationY.animateTo(
@@ -51,9 +62,17 @@ fun FloatingActionBar(
         )
     }
 
+    LaunchedEffect(isOutlineCollapsed) {
+        translationX.animateTo(
+            targetValue = if (isOutlineCollapsed) collapsedOffsetPx else 0f,
+            animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing)
+        )
+    }
+
     Box(
         modifier = modifier.graphicsLayer {
             this.translationY = translationY.value
+            this.translationX = translationX.value
         }
     ) {
         Row(

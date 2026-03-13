@@ -2,6 +2,7 @@ package com.slax.reader.ui.bookmark.components
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -18,25 +19,26 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.draw.drawBehind
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.states.OutlineDialogStatus
 import com.slax.reader.utils.i18n
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
 import slax_reader_client.composeapp.generated.resources.Res
-import slax_reader_client.composeapp.generated.resources.ic_outline_banner_analyzed
-import slax_reader_client.composeapp.generated.resources.ic_outline_banner_analyzing
-import slax_reader_client.composeapp.generated.resources.ic_outline_banner_close
-import slax_reader_client.composeapp.generated.resources.ic_outline_banner_expand
+import slax_reader_client.composeapp.generated.resources.ic_outline_collapsed
 import slax_reader_client.composeapp.generated.resources.ic_outline_dialog_close
 import slax_reader_client.composeapp.generated.resources.ic_outline_dialog_shrink
+import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.graphics.shadow.Shadow
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 
 @Composable
 fun OutlineDialog() {
@@ -53,19 +55,24 @@ fun OutlineDialog() {
     }
 
     if (status == OutlineDialogStatus.NONE) return
-    val isExpanded = status == OutlineDialogStatus.EXPANDED
-    val isCollapsed = status == OutlineDialogStatus.COLLAPSED
+
+    // 使用 updateTransition 驱动协调动画
+    val transition = updateTransition(targetState = status, label = "outlineTransition")
 
     Box(modifier = Modifier.fillMaxSize()) {
-        AnimatedVisibility(
-            visible = isExpanded,
-            enter = fadeIn(animationSpec = tween(300)),
-            exit = fadeOut(animationSpec = tween(300))
-        ) {
+        // 1. 背景遮罩（仅 EXPANDED 时可见）
+        val bgAlpha by transition.animateFloat(
+            label = "bgAlpha",
+            transitionSpec = { tween(300) }
+        ) { state ->
+            if (state == OutlineDialogStatus.EXPANDED) 0.5f else 0f
+        }
+
+        if (bgAlpha > 0f) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f))
+                    .background(Color.Black.copy(alpha = bgAlpha))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -74,62 +81,41 @@ fun OutlineDialog() {
             )
         }
 
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.BottomCenter
+        // 2. 展开态弹窗（从底部弹出 + 淡入，向下掉落 + 淡出）
+        transition.AnimatedVisibility(
+            visible = { it == OutlineDialogStatus.EXPANDED },
+            enter = slideInVertically(tween(300, easing = FastOutSlowInEasing)) { it } + fadeIn(tween(250)),
+            exit = slideOutVertically(tween(250, easing = FastOutSlowInEasing)) { it } + fadeOut(tween(200))
         ) {
-            AnimatedVisibility(
-                visible = isExpanded,
-                enter = slideInVertically(
-                    initialOffsetY = { it },
-                    animationSpec = tween(300)
-                ),
-                exit = slideOutVertically(
-                    targetOffsetY = { it },
-                    animationSpec = tween(300)
-                )
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.BottomCenter
             ) {
                 ExpandedOutlineDialog()
             }
         }
 
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.TopCenter
+        // 3. 收缩态按钮（简单淡入淡出）
+        // 偏移量：整体居中后，按钮中心在屏幕中心左偏 87dp
+        // 计算依据：组合总宽 224dp = Button(50) + Gap(12) + FAB(162)
+        // Button 中心 = -(224/2 - 50/2) = -87dp
+        transition.AnimatedVisibility(
+            visible = { it == OutlineDialogStatus.COLLAPSED },
+            enter = fadeIn(tween(200)),
+            exit = fadeOut(tween(200))
         ) {
-            AnimatedVisibility(
-                visible = isCollapsed,
-                enter = scaleIn(
-                    initialScale = 0.3f,
-                    animationSpec = tween(350, delayMillis = 100)
-                ) + fadeIn(
-                    animationSpec = tween(300, delayMillis = 100)
-                ),
-                exit = if (isExpanded) {
-                    slideOutVertically(
-                        targetOffsetY = { it },
-                        animationSpec = tween(350)
-                    ) + scaleOut(
-                        targetScale = 3.0f,
-                        animationSpec = tween(350)
-                    ) + fadeOut(
-                        animationSpec = tween(250)
-                    )
-                } else {
-                    scaleOut(
-                        targetScale = 0.3f,
-                        animationSpec = tween(300)
-                    ) + fadeOut(
-                        animationSpec = tween(250)
-                    )
-                }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 58.dp)
+                    .offset(x = (-87).dp),
+                contentAlignment = Alignment.BottomCenter
             ) {
-                CollapsedOutlineBanner()
+                CollapsedOutlineButton()
             }
         }
     }
 }
-
 /**
  * 全屏展开状态的弹窗
  */
@@ -286,146 +272,102 @@ private fun ExpandedOutlineDialog() {
 }
 
 /**
- * 收缩状态的小banner
- * 根据 outline 加载状态显示不同的文本和图标
+ * 收缩态圆形按钮，样式与 FloatingActionBar 中的 MoreButton 完全一致
+ * 总结中状态叠加 dot 旋转加载环
  */
 @Composable
-private fun CollapsedOutlineBanner() {
-    val viewModel =  koinViewModel<BookmarkDetailViewModel>()
-
-    // 订阅状态
+private fun CollapsedOutlineButton() {
+    val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val outlineState by viewModel.outlineDelegate.outlineState.collectAsState()
-    val uiState by viewModel.bookmarkDelegate.bookmarkDetailState.collectAsState()
-    val displayTitle by remember { derivedStateOf { uiState.displayTitle } }
-
-    // 根据状态确定显示内容
     val isLoading = outlineState.isLoading
-    val isCompleted = !isLoading && outlineState.outline.isNotEmpty() && outlineState.error == null
 
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        shadowElevation = 4.dp,
-        modifier = Modifier
-            .fillMaxWidth()
-            .statusBarsPadding() // 添加状态栏间距
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) {
-                viewModel.outlineDelegate.expandDialog()
-            }
-    ) {
-        Row(
+    Box(contentAlignment = Alignment.Center) {
+        // 阴影层（与 MoreButton 一致）
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 17.dp, horizontal = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .size(50.dp)
+                .offset(y = 10.dp)
+                .dropShadow(
+                    shape = RoundedCornerShape(25.dp),
+                    shadow = Shadow(
+                        radius = 40.dp,
+                        spread = 0.dp,
+                        color = Color.Black.copy(alpha = 0.16f),
+                        offset = DpOffset(x = 0.dp, y = 10.dp)
+                    )
+                )
+        )
+
+        // 按钮主体（与 MoreButton 一致）
+        Surface(
+            onClick = { viewModel.outlineDelegate.expandDialog() },
+            modifier = Modifier.size(50.dp),
+            color = Color(0xFFFFFFFF),
+            shape = RoundedCornerShape(25.dp),
+            border = BorderStroke(1.dp, Color.White)
         ) {
-            // 左边：图标 + 文本
-            Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // 状态图标
+            Box(contentAlignment = Alignment.Center) {
                 Icon(
-                    painter = painterResource(
-                        if (isCompleted) {
-                            Res.drawable.ic_outline_banner_analyzed
-                        } else {
-                            Res.drawable.ic_outline_banner_analyzing
-                        }
-                    ),
-                    contentDescription = if (isCompleted) "outline_completed".i18n() else "outline_summarizing".i18n(),
-                    tint = Color.Unspecified, // 使用原始颜色
+                    painter = painterResource(Res.drawable.ic_outline_collapsed),
+                    contentDescription = "outline_expand".i18n(),
+                    tint = Color.Unspecified,
                     modifier = Modifier.size(20.dp)
                 )
-
-                // 状态文本（使用 AnnotatedString 实现不同颜色）
-                Text(
-                    modifier = Modifier.padding(start = 8.dp),
-                    text = buildAnnotatedString {
-                        withStyle(
-                            style = SpanStyle(
-                                color = if (isCompleted) Color(0xFF16B998) else Color(0xFFA28D64),
-                                fontSize = 15.sp
-                            )
-                        ) {
-                            append(if (isCompleted) "outline_completed_prefix".i18n() else "outline_summarizing_prefix".i18n())
-                        }
-                        withStyle(
-                            style = SpanStyle(
-                                color = Color(0xFF333333),
-                                fontSize = 15.sp
-                            )
-                        ) {
-                            append(displayTitle)
-                        }
-                    },
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            // 分割线
-            Box(
-                modifier = Modifier
-                    .padding(start = 16.dp, end = 12.dp)
-                    .width(1.dp)
-                    .height(16.dp)
-                    .background(Color(0x3DCAA68E))
-            )
-
-            if (isCompleted) {
-                // 展开按钮
-                val expandInteractionSource = remember { MutableInteractionSource() }
-                val isExpandPressed by expandInteractionSource.collectIsPressedAsState()
-
-                Box(
-                    modifier = Modifier
-                        .alpha(if (isExpandPressed) 0.5f else 1f)
-                        .clickable(
-                            interactionSource = expandInteractionSource,
-                            indication = null,
-                            onClick = { viewModel.outlineDelegate.expandDialog() }
-                        )
-                        .padding(4.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_outline_banner_expand),
-                        contentDescription = "outline_expand".i18n(),
-                        modifier = Modifier.size(12.dp)
-                    )
-                }
-            } else {
-                // 关闭按钮
-                val closeBannerInteractionSource = remember { MutableInteractionSource() }
-                val isCloseBannerPressed by closeBannerInteractionSource.collectIsPressedAsState()
-
-                Box(
-                    modifier = Modifier
-                        .alpha(if (isCloseBannerPressed) 0.5f else 1f)
-                        .clickable(
-                            interactionSource = closeBannerInteractionSource,
-                            indication = null,
-                            onClick = { viewModel.outlineDelegate.hideDialog() }
-                        )
-                        .padding(4.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_outline_banner_close),
-                        contentDescription = "btn_close".i18n(),
-                        modifier = Modifier.size(12.dp)
-                    )
-                }
             }
         }
+
+        // 总结中状态叠加 dot 旋转加载环
+        if (isLoading) {
+            DotLoadingRing(modifier = Modifier.size(27.dp))
+        }
     }
+}
+
+/**
+ * dot 旋转加载环
+ * 20 个 dot 均匀分布在圆周上，颜色从 #16B998 渐变到 #ECF9F6，匀速旋转
+ */
+@Composable
+private fun DotLoadingRing(modifier: Modifier = Modifier) {
+    val infiniteTransition = rememberInfiniteTransition(label = "dotRingRotation")
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1500, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "rotation"
+    )
+
+    val startColor = Color(0xFF16B998)
+    val endColor = Color(0xFFECF9F6)
+    val dotCount = 20
+
+    val dotColors = remember {
+        List(dotCount) { i -> lerp(startColor, endColor, i.toFloat() / dotCount) }
+    }
+
+    Box(
+        modifier = modifier.graphicsLayer { rotationZ = rotation }.drawBehind {
+            val radius = size.minDimension / 2f
+            val dotRadius = 1.5.dp.toPx() / 2f
+            val center = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f)
+
+            for (i in 0 until dotCount) {
+                val angle = (2.0 * PI * i / dotCount - PI / 2).toFloat()
+                val dotCenter = androidx.compose.ui.geometry.Offset(
+                    x = center.x + radius * cos(angle),
+                    y = center.y + radius * sin(angle)
+                )
+                drawCircle(
+                    color = dotColors[i],
+                    radius = dotRadius,
+                    center = dotCenter
+                )
+            }
+        }
+    )
 }
 
 /**
@@ -467,23 +409,6 @@ private fun LoadingAnimation() {
                     )
             )
         }
-    }
-}
-
-/**
- * 空状态视图
- */
-@Composable
-private fun EmptyView() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "outline_empty".i18n(),
-            fontSize = 14.sp,
-            color = Color(0xFF999999)
-        )
     }
 }
 
@@ -534,7 +459,7 @@ private fun DotLoadingAnimation() {
     Row(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.height(8.dp) // 留出上下移动的空间
+        modifier = Modifier.height(8.dp)
     ) {
         dotColors.forEachIndexed { index, color ->
             val offsetY by infiniteTransition.animateFloat(
@@ -543,13 +468,9 @@ private fun DotLoadingAnimation() {
                 animationSpec = infiniteRepeatable(
                     animation = keyframes {
                         durationMillis = 1400
-                        // 0%, 100%
                         0f at 0
-                        // 25%
-                        -2.4f at 350  // 1400 * 0.25
-                        // 75%
-                        2.4f at 1050  // 1400 * 0.75
-                        // 100%
+                        -2.4f at 350
+                        2.4f at 1050
                         0f at 1400
                     },
                     repeatMode = RepeatMode.Restart,
