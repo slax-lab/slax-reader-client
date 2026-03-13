@@ -171,8 +171,7 @@ fun TagCreatingScreen(
                 }
 
                 item {
-                    BasicTextField(
-                        state = inputState,
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 24.dp)
@@ -186,38 +185,36 @@ fun TagCreatingScreen(
                                 color = Color(0xF2F5F5F3),
                                 shape = RoundedCornerShape(4.dp)
                             )
-                            .focusRequester(focusRequester),
-                        textStyle = TextStyle(
-                            fontSize = 15.sp,
-                            color = Color(0xFF0F1419),
-                            fontWeight = FontWeight.Bold
-                        ),
-                        lineLimits = TextFieldLineLimits.SingleLine,
-                        cursorBrush = SolidColor(Color(0xFF16b998)),
-                        onKeyboardAction = {
-                            createNewTag()
-                        },
-                        decorator = { innerTextField ->
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(horizontal = 12.dp),
-                                contentAlignment = Alignment.CenterStart
-                            ) {
-                                if (inputState.text.isEmpty()) {
-                                    Text(
-                                        text = "tags_input_placeholder".i18n(),
-                                        style = TextStyle(
-                                            fontSize = 15.sp,
-                                            color = Color(0x99A28D64),
-                                            lineHeight = 21.sp
-                                        )
-                                    )
-                                }
-                                innerTextField()
-                            }
+                            .padding(horizontal = 12.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        if (inputState.text.isEmpty()) {
+                            Text(
+                                text = "tags_input_placeholder".i18n(),
+                                style = TextStyle(
+                                    fontSize = 15.sp,
+                                    color = Color(0x99A28D64),
+                                    lineHeight = 21.sp
+                                )
+                            )
                         }
-                    )
+                        BasicTextField(
+                            state = inputState,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(focusRequester),
+                            textStyle = TextStyle(
+                                fontSize = 15.sp,
+                                color = Color(0xFF0F1419),
+                                fontWeight = FontWeight.Bold
+                            ),
+                            lineLimits = TextFieldLineLimits.SingleLine,
+                            cursorBrush = SolidColor(Color(0xFF16b998)),
+                            onKeyboardAction = {
+                                createNewTag()
+                            }
+                        )
+                    }
                 }
 
                 if (inputState.text.isNotBlank() && !hasExactMatch) {

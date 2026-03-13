@@ -1,14 +1,16 @@
 package com.slax.reader.ui.setting
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.network.dto.DeleteAccountReason
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
+import com.slax.reader.data.preferences.AppPreferences
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 sealed class DeleteAccountState {
     data object Idle : DeleteAccountState()
@@ -20,9 +22,30 @@ sealed class DeleteAccountState {
     data class Error(val message: String) : DeleteAccountState()
 }
 
-class SettingViewModel(private val apiService: ApiService) : ViewModel() {
+class SettingViewModel(
+    private val apiService: ApiService,
+    private val appPreferences: AppPreferences
+) : ViewModel() {
     private val _deleteAccountState = MutableStateFlow<DeleteAccountState>(DeleteAccountState.Idle)
     val deleteAccountState: StateFlow<DeleteAccountState> = _deleteAccountState.asStateFlow()
+
+    val cacheCount: StateFlow<Int> = appPreferences.getCacheCount()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 50)
+
+    val downloadImages: StateFlow<Boolean> = appPreferences.getDownloadImages()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    fun updateCacheCount(count: Int) {
+        viewModelScope.launch {
+            appPreferences.setCacheCount(count)
+        }
+    }
+
+    fun updateDownloadImages(enabled: Boolean) {
+        viewModelScope.launch {
+            appPreferences.setDownloadImages(enabled)
+        }
+    }
 
     /**
      * 删除账号

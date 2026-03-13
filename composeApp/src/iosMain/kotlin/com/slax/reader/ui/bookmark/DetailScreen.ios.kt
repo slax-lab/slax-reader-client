@@ -39,6 +39,7 @@ data class WebViewMessage(
 
 @Composable
 actual fun DetailScreen(
+    bookmarkId: String,
     htmlContent: String,
     webViewState: AppWebViewState,
     onScrollInfoChanged: (ScrollInfo) -> Unit
@@ -46,7 +47,6 @@ actual fun DetailScreen(
     println("[watch][UI] recomposition DetailScreen.ios")
 
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
-    val bookmarkId by viewModel.bookmarkId.collectAsState()
 
     val wrappedHtmlContent = remember(htmlContent) { wrapBookmarkDetailHtml(htmlContent) }
 
@@ -87,9 +87,24 @@ actual fun DetailScreen(
         webViewState.topContentInsetPx = headerMeasuredHeightState.floatValue
     }
 
+    val density = LocalDensity.current
+    val densityScale = density.density
+
+    val windowInsets = WindowInsets.statusBars
+    val statusBarHeightPx = windowInsets.getTop(density).toFloat()
+
     LaunchedEffect(webViewState) {
         webViewState.events.collect { event ->
             when (event) {
+                is WebViewEvent.PageLoaded -> {
+                    viewModel.consumeInitialReadPosition()?.let { position ->
+                        val totalInsetPx = webViewState.topContentInsetPx + statusBarHeightPx +
+                                16f * density.density
+
+                        val positionPoints = (position - totalInsetPx) / densityScale
+                        webViewState.evaluateJs("window.scrollTo(0, $positionPoints)")
+                    }
+                }
                 is WebViewEvent.ScrollChange -> {
                     webViewScrollY.floatValue = max(event.scrollY, 0f)
                     contentHeightPx = event.contentHeight
@@ -116,7 +131,8 @@ actual fun DetailScreen(
             AppWebView(
                 htmlContent = wrappedHtmlContent,
                 modifier = Modifier.fillMaxSize().preferredFrameRate(FrameRateCategory.High),
-                webState = webViewState
+                webState = webViewState,
+                bookmarkId = bookmarkId
             )
         }
 

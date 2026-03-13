@@ -321,7 +321,7 @@ fun BookmarkItemRow(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        ItemStatus(bookmark.id, viewModel)
+                        ItemStatus(bookmark.downloadStatus)
 
                         Text(
                             text = bookmark.displayTitle(),

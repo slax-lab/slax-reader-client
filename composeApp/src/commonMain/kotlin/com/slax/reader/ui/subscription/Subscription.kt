@@ -38,6 +38,7 @@ import androidx.compose.ui.window.DialogProperties
 import app.slax.reader.SlaxConfig
 import com.slax.reader.utils.WebView
 import com.slax.reader.utils.WebViewEvent
+import com.slax.reader.utils.i18n
 import com.slax.reader.utils.rememberAppWebViewState
 import com.slax.reader.utils.subscriptionEvent
 import org.jetbrains.compose.resources.painterResource
@@ -98,7 +99,7 @@ fun SubscriptionManagerScreen(onBackClick: () -> Unit) {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             painter = painterResource(Res.drawable.ic_sm_back),
-                            contentDescription = "返回",
+                            contentDescription = "btn_back".i18n(),
                             tint = Color.Unspecified,
                             modifier = Modifier.size(24.dp)
                         )

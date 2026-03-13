@@ -179,6 +179,9 @@ kotlin {
 
             implementation(libs.markdown.renderer.m3)
 
+            // ksoup
+            implementation(libs.ksoup)
+
             // reakt-native-toolkit
             implementation(libs.reakt.native.toolkit)
         }

@@ -15,6 +15,8 @@ import androidx.compose.ui.viewinterop.UIKitView
 import app.slax.reader.SlaxConfig
 import com.slax.reader.const.JS_BRIDGE_NAME
 import com.slax.reader.data.preferences.AppPreferences
+import com.slax.reader.domain.image.ImageDownloadManager
+import io.ktor.client.HttpClient
 import com.slax.reader.ui.bookmark.WebViewMessage
 import kotlinx.cinterop.*
 import kotlinx.serialization.json.Json
@@ -80,18 +82,31 @@ private class ScriptMessageHandler(
 actual fun AppWebView(
     htmlContent: String,
     modifier: Modifier,
-    webState: AppWebViewState
+    webState: AppWebViewState,
+    bookmarkId: String
 ) {
     val tapHandler = remember {
         TapHandler { webState.dispatchEvent(WebViewEvent.Tap) }
     }
     val singleTapGestureDelegate = remember { SingleTapGestureDelegate() }
 
+    val imageDownloadManager: ImageDownloadManager = koinInject()
+    val httpClient: HttpClient = koinInject()
+    val scope = rememberCoroutineScope()
+
+    val customSchemeHandler = remember(bookmarkId) {
+        CustomURLSchemeHandler(imageDownloadManager, httpClient, bookmarkId, scope)
+    }
+
     val scriptMessageHandler = remember {
         ScriptMessageHandler { message ->
             runCatching { Json.decodeFromString<WebViewMessage>(message) }
                 .onSuccess { msg ->
                     when (msg.type) {
+                        "domReady" -> {
+                            webState.dispatchEvent(WebViewEvent.PageLoaded)
+                        }
+
                         "imageClick" -> {
                             webState.dispatchEvent(
                                 WebViewEvent.ImageClick(msg.src!!, msg.allImages!!)
@@ -224,6 +239,9 @@ actual fun AppWebView(
                 preferences = WKPreferences().apply {
                     javaScriptEnabled = true
                 }
+
+                setURLSchemeHandler(customSchemeHandler, forURLScheme = "slaxstatics")
+                setURLSchemeHandler(customSchemeHandler, forURLScheme = "slaxstatic")
 
                 val userContentController = WKUserContentController()
                 userContentController.addScriptMessageHandler(

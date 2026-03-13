@@ -93,7 +93,10 @@ data class InboxListBookmarkItem(
     val isStarred: Int,
     val metadataStatus: String?,
     val metadataTitle: String?,
-    val metadataUrl: String?
+    val metadataUrl: String?,
+
+    val downloadStatus: Int = 0,
+    val isAutoCached: Boolean = false
 ) {
     fun displayTitle(): String {
         return when {

@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
@@ -18,8 +19,12 @@ import com.slax.reader.utils.LocaleString
 import com.slax.reader.utils.i18n
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
+import org.koin.compose.viewmodel.koinViewModel
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_sm_back
+
+private const val UNLIMIT = -1
+private val CacheCountSteps = listOf(10, 30, 50, 100, 200, UNLIMIT)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,11 +33,14 @@ fun SettingScreen(
     navController: NavHostController
 ) {
     val coroutineScope = rememberCoroutineScope()
+    val viewModel: SettingViewModel = koinViewModel()
     var showLanguageDialog by remember { mutableStateOf(false) }
+    val selectedCacheCount by viewModel.cacheCount.collectAsState()
+    val isDownloadImages by viewModel.downloadImages.collectAsState()
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
                     Text(
                         text = "setting_title".i18n(),
@@ -45,7 +53,7 @@ fun SettingScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             painter = painterResource(Res.drawable.ic_sm_back),
-                            contentDescription = "btn_back".i18n(),
+                            contentDescription = "返回",
                             tint = Color.Unspecified,
                             modifier = Modifier.size(24.dp)
                         )
@@ -62,43 +70,58 @@ fun SettingScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = 12.dp)
         ) {
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
+            // 离线缓存设置卡片
+            OfflineCacheCard(
+                selectedCacheCount = selectedCacheCount,
+                onCacheCountChange = { viewModel.updateCacheCount(it) },
+                downloadImages = isDownloadImages,
+                onDownloadImagesChange = { viewModel.updateDownloadImages(it) }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // 语言设置卡片
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 color = Color.White,
                 shadowElevation = 1.dp
             ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    // 语言选择
-                    SettingItem(
-                        title = "setting_language".i18n(),
-                        rightText = if (LocaleString.currentLocale == "zh") "language_chinese".i18n() else "language_english".i18n(),
-                        onClick = {
-                            showLanguageDialog = true
-                        }
-                    )
+                SettingItem(
+                    title = "setting_language".i18n(),
+                    rightText = if (LocaleString.currentLocale == "zh") "language_chinese".i18n() else "language_english".i18n(),
+                    onClick = {
+                        showLanguageDialog = true
+                    }
+                )
+            }
 
-                    HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        thickness = 0.5.dp,
-                        color = Color(0x1E000000)
-                    )
+            Spacer(modifier = Modifier.height(12.dp))
 
-                    // 删除账号
-                    SettingItem(
-                        title = "setting_delete_account".i18n(),
-                        color = Color(0xFFF45454),
-                        onClick = {
-                            navController.navigate(DeleteAccountRoutes)
-                        }
-                    )
-                }
+            // 注销账号按钮
+            Button(
+                onClick = {
+                    navController.navigate(DeleteAccountRoutes)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(55.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0x141A1A1A)
+                )
+            ) {
+                Text(
+                    text = "setting_delete_account".i18n(),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFFF45454),
+                    lineHeight = 22.5.sp
+                )
             }
         }
     }
@@ -136,6 +159,191 @@ fun SettingScreen(
             },
             confirmButton = { }
         )
+    }
+}
+
+@Composable
+private fun OfflineCacheCard(
+    selectedCacheCount: Int,
+    onCacheCountChange: (Int) -> Unit,
+    downloadImages: Boolean,
+    onDownloadImagesChange: (Boolean) -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = Color.White,
+        shadowElevation = 1.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            // 标题
+            Text(
+                text = "setting_offline_cache_title".i18n(),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF0F1419),
+                lineHeight = 22.5.sp
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            CacheCountStepper(
+                value = selectedCacheCount,
+                onValueChange = onCacheCountChange
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "setting_offline_cache_desc".i18n(),
+                fontSize = 14.sp,
+                color = Color(0xCC333333),
+                lineHeight = 20.sp
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            HorizontalDivider(
+                modifier = Modifier.fillMaxWidth(),
+                thickness = 0.5.dp,
+                color = Color(0x14333333)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 图片下载开关
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        onDownloadImagesChange(!downloadImages)
+                    },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "setting_download_images".i18n(),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF0F1419),
+                        lineHeight = 21.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "setting_download_images_desc".i18n(),
+                        fontSize = 13.sp,
+                        color = Color(0xCC333333),
+                        lineHeight = 18.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Switch(
+                    checked = downloadImages,
+                    onCheckedChange = { onDownloadImagesChange(it) },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = Color(0xFF16b998),
+                        uncheckedThumbColor = Color.White,
+                        uncheckedTrackColor = Color(0xFFE0E0E0),
+                        uncheckedBorderColor = Color.Transparent
+                    )
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CacheCountStepper(
+    value: Int,
+    onValueChange: (Int) -> Unit
+) {
+    val currentIndex = CacheCountSteps.indexOf(value).coerceAtLeast(0)
+    val canDecrease = currentIndex > 0
+    val canIncrease = currentIndex < CacheCountSteps.lastIndex
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // 减号按钮
+        Surface(
+            modifier = Modifier.size(44.dp),
+            shape = RoundedCornerShape(8.dp),
+            color = if (canDecrease) Color(0xFFF5F5F3) else Color(0xFFFAFAF9),
+            onClick = {
+                if (canDecrease) {
+                    onValueChange(CacheCountSteps[currentIndex - 1])
+                }
+            }
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    text = "−",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = if (canDecrease) Color(0xFF333333) else Color(0xFFCCCCCC)
+                )
+            }
+        }
+
+        // 中间数字 / 无限符号（加大间隔）
+        Box(
+            modifier = Modifier
+                .widthIn(min = 120.dp)
+                .padding(horizontal = 32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            if (value == UNLIMIT) {
+                Text(
+                    text = "∞",
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF0F1419),
+                    textAlign = TextAlign.Center
+                )
+            } else {
+                Text(
+                    text = "$value",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF0F1419),
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+
+        // 加号按钮
+        Surface(
+            modifier = Modifier.size(44.dp),
+            shape = RoundedCornerShape(8.dp),
+            color = if (canIncrease) Color(0xFFF5F5F3) else Color(0xFFFAFAF9),
+            onClick = {
+                if (canIncrease) {
+                    onValueChange(CacheCountSteps[currentIndex + 1])
+                }
+            }
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    text = "+",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = if (canIncrease) Color(0xFF333333) else Color(0xFFCCCCCC)
+                )
+            }
+        }
     }
 }
 
@@ -195,8 +403,9 @@ private fun SettingItem(
         Text(
             text = title,
             fontSize = 16.sp,
-            fontWeight = FontWeight.Normal,
-            color = color
+            fontWeight = FontWeight.Medium,
+            color = color,
+            lineHeight = 22.5.sp
         )
 
         if (rightText != null) {
@@ -204,7 +413,8 @@ private fun SettingItem(
                 text = rightText,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Normal,
-                color = Color(0xFF999999)
+                color = Color(0xFF999999),
+                lineHeight = 20.sp
             )
         }
     }

@@ -1,15 +1,21 @@
 package com.slax.reader.ui.inbox
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.slax.reader.data.database.dao.BookmarkDao
 import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.database.dao.UserDao
+import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.domain.coordinator.CoordinatorDomain
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
 
 class InboxListViewModel(
@@ -21,10 +27,20 @@ class InboxListViewModel(
     val userInfo = userDao.watchUserInfo()
     val syncState = coordinatorDomain.syncState
 
-    val bookmarks = bookmarkDao.watchUserBookmarkList()
+    val bookmarks: StateFlow<List<InboxListBookmarkItem>> = combine(
+        bookmarkDao.watchUserBookmarkList(),
+        localBookmarkDao.watchUserLocalBookmarkMap()
+    ) { bookmarks, localMap ->
+        bookmarks.map { bookmark ->
+            val local = localMap[bookmark.id]
+            if (local != null) {
+                bookmark.copy(downloadStatus = local.downloadStatus, isAutoCached = local.isAutoCached)
+            } else {
+                bookmark
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val hasSynced = bookmarkDao.hasSynced
-
-    val localBookmarkMap = localBookmarkDao.watchUserLocalBookmarkMap()
 
     private val _scrollToTopEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val scrollToTopEvent: SharedFlow<Unit> = _scrollToTopEvent.asSharedFlow()

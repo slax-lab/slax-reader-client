@@ -120,8 +120,7 @@ fun EditNameDialog(
 
                     Spacer(modifier = Modifier.height(25.dp))
 
-                    BasicTextField(
-                        state = inputState,
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp)
@@ -134,33 +133,31 @@ fun EditNameDialog(
                                 color = Color.White,
                                 shape = RoundedCornerShape(8.dp)
                             )
-                            .focusRequester(focusRequester),
-                        textStyle = TextStyle(
-                            fontSize = 16.sp,
-                            lineHeight = 24.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = Color(0xFF333333)
-                        ),
-                        lineLimits = TextFieldLineLimits.SingleLine,
-                        cursorBrush = SolidColor(Color(0xFF16b998)),
-                        onKeyboardAction = {
-                            val text = inputState.text.toString().trim()
-                            if (text.isNotEmpty()) {
-                                onConfirm(text)
-                                dismiss()
+                            .padding(horizontal = 12.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        BasicTextField(
+                            state = inputState,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(focusRequester),
+                            textStyle = TextStyle(
+                                fontSize = 16.sp,
+                                lineHeight = 24.sp,
+                                fontWeight = FontWeight.Normal,
+                                color = Color(0xFF333333)
+                            ),
+                            lineLimits = TextFieldLineLimits.SingleLine,
+                            cursorBrush = SolidColor(Color(0xFF16b998)),
+                            onKeyboardAction = {
+                                val text = inputState.text.toString().trim()
+                                if (text.isNotEmpty()) {
+                                    onConfirm(text)
+                                    dismiss()
+                                }
                             }
-                        },
-                        decorator = { innerTextField ->
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(horizontal = 12.dp),
-                                contentAlignment = Alignment.CenterStart
-                            ) {
-                                innerTextField()
-                            }
-                        }
-                    )
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(24.dp))
 
