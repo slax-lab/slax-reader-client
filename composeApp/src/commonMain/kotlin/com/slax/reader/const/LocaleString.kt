@@ -149,7 +149,7 @@ val localeString: Map<String, Map<String, String>> = mapOf(
         "en" to "Settings"
     ),
     "setting_delete_account" to mapOf(
-        "zh" to "删除账号",
+        "zh" to "注销账号",
         "en" to "Delete Account"
     ),
     "setting_language" to mapOf(
@@ -163,6 +163,24 @@ val localeString: Map<String, Map<String, String>> = mapOf(
     "language_english" to mapOf(
         "zh" to "English",
         "en" to "English"
+    ),
+
+    // 离线缓存设置
+    "setting_offline_cache_title" to mapOf(
+        "zh" to "离线缓存数量：",
+        "en" to "Offline Cache Limit:"
+    ),
+    "setting_offline_cache_desc" to mapOf(
+        "zh" to "超出上限时，最早的缓存文章将从本地删除。所有快照均已永久保存至云端，联网后随时访问。",
+        "en" to "New saves automatically replace the oldest local cache. All snapshots are saved forever in the cloud."
+    ),
+    "setting_download_images" to mapOf(
+        "zh" to "下载图片",
+        "en" to "Download Images"
+    ),
+    "setting_download_images_desc" to mapOf(
+        "zh" to "勾选后将离线缓存图片，取消勾选可节省存储空间。仅对新增文章生效。",
+        "en" to "Check to cache images for offline reading. Uncheck to save storage space. Only applies to future downloads."
     ),
 
     // ========================================

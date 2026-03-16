@@ -20,9 +20,7 @@ import com.slax.reader.ui.bookmark.states.CommentDelegate
 import com.slax.reader.ui.bookmark.states.OutlineDelegate
 import com.slax.reader.ui.bookmark.states.OverlayDelegate
 import com.slax.reader.ui.bookmark.states.OverviewDelegate
-import com.slax.reader.utils.FirebaseHelper
 import com.slax.reader.utils.bookmarkEvent
-import com.slax.reader.utils.feedbackEvent
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
@@ -74,6 +72,10 @@ class BookmarkDetailViewModel(
     private val database: PowerSyncDatabase,
 ) : ViewModel() {
 
+    companion object {
+        private const val SAVE_DEBOUNCE_MS = 2000L
+    }
+
     private val _bookmarkId = MutableStateFlow<String?>(null)
     val bookmarkId = _bookmarkId.asStateFlow()
 
@@ -82,6 +84,12 @@ class BookmarkDetailViewModel(
 
     private val _contentState = MutableStateFlow(BookmarkContentState(isLoading = false))
     val contentState = _contentState.asStateFlow()
+
+    // 阅读位置：一次性消费，PageLoaded 时读取并清空
+    private var initialReadPosition: Float? = null
+
+    private var currentPosition: Float = -1f
+    private var savePositionJob: Job? = null
 
     private var contentJob: Job? = null
 
@@ -100,10 +108,20 @@ class BookmarkDetailViewModel(
         _bookmarkId.value = bookmarkId
         _contentState.value = BookmarkContentState(isLoading = true)
 
+        // 重置阅读位置状态
+        initialReadPosition = null
+        currentPosition = -1f
+        savePositionJob?.cancel()
+
         overlayDelegate.reset()
         outlineDelegate.reset()
         overviewDelegate.reset()
         commentDelegate.reset()
+
+        // 异步加载保存的阅读位置，不阻塞主流程
+        viewModelScope.launch(Dispatchers.IO) {
+            loadSavedPosition(bookmarkId)
+        }
 
         refreshContent()
     }
@@ -192,23 +210,22 @@ class BookmarkDetailViewModel(
         overlayDelegate.dismissOverlay(BookmarkOverlay.Toolbar)
     }
 
-    fun onStopRecordContinue(scrollY: Int) {
-        viewModelScope.launch { runCatching { recordContinueBookmark(scrollY) } }
+    fun onStopRecordContinue() {
+        viewModelScope.launch { runCatching { recordContinueBookmark() } }
     }
 
     fun onResumeClearContinue() {
         viewModelScope.launch { runCatching { clearContinueBookmark() } }
     }
 
-    private suspend fun recordContinueBookmark(scrollY: Int) = withContext(Dispatchers.IO) {
+    private suspend fun recordContinueBookmark() = withContext(Dispatchers.IO) {
         _bookmarkId.value?.let { id ->
             val state = bookmarkDelegate.bookmarkDetailState.value
             if (state.displayTitle.isEmpty()) return@withContext
             appPreferences.setContinueReadingBookmark(
                 ContinueReadingBookmark(
                     bookmarkId = id,
-                    title = state.displayTitle,
-                    scrollY = scrollY
+                    title = state.displayTitle
                 )
             )
         }
@@ -228,8 +245,46 @@ class BookmarkDetailViewModel(
         outlineDelegate.loadOutline(id)
     }
 
+    // 加载书签的保存阅读位置
+    private suspend fun loadSavedPosition(bookmarkId: String) {
+        if (_bookmarkId.value != bookmarkId) return
+        initialReadPosition = localBookmarkDao.getLocalBookmarkReadPosition(bookmarkId)
+    }
+
+    // 一次性消费初始阅读位置，PageLoaded 时调用
+    fun consumeInitialReadPosition(): Float? {
+        val pos = initialReadPosition
+        initialReadPosition = null
+        return pos?.takeIf { it > 0f }
+    }
+
+    fun saveReadPosition(scrollY: Float) {
+        currentPosition = scrollY
+        savePositionJob?.cancel()
+        savePositionJob = viewModelScope.launch {
+            delay(SAVE_DEBOUNCE_MS)
+            val id = _bookmarkId.value ?: return@launch
+            withContext(Dispatchers.IO) {
+                localBookmarkDao.updateLocalBookmarkReadPosition(id, scrollY)
+            }
+        }
+    }
+
+    fun flushReadPosition() {
+        savePositionJob?.cancel()
+        val id = _bookmarkId.value ?: return
+        val position = currentPosition
+        if (position < 0f) return
+        viewModelScope.launch(Dispatchers.IO) {
+            localBookmarkDao.updateLocalBookmarkReadPosition(id, position)
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
+
+        flushReadPosition()
+
         contentJob?.cancel()
         contentJob = null
         commentDelegate.reset()

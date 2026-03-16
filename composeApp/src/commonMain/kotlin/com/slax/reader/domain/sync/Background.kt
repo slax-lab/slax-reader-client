@@ -1,25 +1,23 @@
 package com.slax.reader.domain.sync
 
 import app.slax.reader.SlaxConfig
+import com.fleeksoft.ksoup.Ksoup
 import com.slax.reader.const.AppError
 import com.slax.reader.data.database.dao.BookmarkDao
 import com.slax.reader.data.database.dao.LocalBookmarkDao
-import com.slax.reader.data.database.model.InboxListBookmarkItem
+import com.slax.reader.data.database.model.isDownloaded
 import com.slax.reader.data.file.FileManager
 import com.slax.reader.data.network.ApiService
-import com.slax.reader.utils.parseInstant
+import com.slax.reader.data.preferences.AppPreferences
+import com.slax.reader.domain.image.ImageDownloadManager
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.getAndUpdate
-import kotlinx.atomicfu.update
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlin.collections.mapOf
-import kotlin.time.Clock
-import kotlin.time.Duration.Companion.days
-import kotlin.time.ExperimentalTime
 
 enum class TaskType {
     DOWNLOAD_METADATA,
@@ -39,75 +37,89 @@ class TaskItem(
     val type: TaskType
 )
 
+private data class ProcessedContent(val html: String, val imageUrls: List<String>)
+
 class BackgroundDomain(
     private val bookmarkDao: BookmarkDao,
     private val localBookmarkDao: LocalBookmarkDao,
     private val fileManager: FileManager,
     private val apiService: ApiService,
+    private val imageDownloadManager: ImageDownloadManager,
+    private val appPreferences: AppPreferences,
 ) {
     private val successStatus = "success"
     private var workerScope: CoroutineScope? = null
 
-    // max size 5G
-    private val maximumSize = 5L * 1024 * 1024 * 1024
-
-    // max save cache 30day
-    private val longestSaveDuration = 30L * 24 * 60 * 60 * 1000
-
-    // auto download recent 3 days
-    private val recentDownloadDuration = 3.days
-
-    // max download concurrent
     private val maxDownloadConcurrent = 3
 
     private val inQueue = atomic(setOf<String>())
 
     private var downloadQueue: Channel<TaskItem>? = null
 
-    @OptIn(ExperimentalTime::class)
-    private fun shouldDownload(bookmark: InboxListBookmarkItem): Boolean {
-        if (bookmark.metadataStatus != successStatus) return false
+    private val isCleaningUp = atomic(false)
 
-        val updateAt = parseInstant(bookmark.createdAt)
-        val now = Clock.System.now()
-        val age = now - updateAt
-
-        if (age > recentDownloadDuration) return false
-
-        return inQueue.getAndUpdate { currentSet ->
-            if (bookmark.id in currentSet) currentSet else currentSet + bookmark.id
-        }.let { oldSet -> bookmark.id !in oldSet }
-    }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
+    @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     fun startup() {
-        workerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        downloadQueue = Channel(100)
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val queue = Channel<TaskItem>(100)
+        workerScope = scope
+        downloadQueue = queue
 
-        workerScope!!.launch {
-            bookmarkDao.watchUserBookmarkList().collect { bookmarkList ->
-                println("[BackgroundDomain] Collect triggered! Received ${bookmarkList.size} bookmarks")
-                val filtered = bookmarkList.filter { shouldDownload(it) }
-                println("[BackgroundDomain] Filtered to ${filtered.size} bookmarks for download")
+        scope.launch {
+            val localBookmarkState = localBookmarkDao.watchUserLocalBookmarkMap()
+            bookmarkDao.watchUserBookmarkList()
+                .collect { bookmarkList ->
+                    val cacheCountSetting = appPreferences.getCacheCount().first()
+                    val recentDownloadCount = if (cacheCountSetting == -1) Int.MAX_VALUE else cacheCountSetting
 
-                filtered.forEach { bookmark ->
-                    println("[BackgroundDomain] Adding download task for: ${bookmark.id}")
-                    val task = TaskItem(
-                        bookmarkId = bookmark.id,
-                        updatedAt = bookmark.updatedAt,
-                        type = TaskType.DOWNLOAD_METADATA
-                    )
-                    val sent = downloadQueue!!.trySend(task).isSuccess
-                    if (!sent) {
-                        inQueue.update { currentSet -> currentSet - bookmark.id }
-                        println("Download queue full, dropping task for bookmark ${bookmark.id}")
+                    val localMap = localBookmarkState.value
+                    val currentQueue = inQueue.value
+
+                    val cacheWindowIds = mutableSetOf<String>()
+                    val toDownload = mutableListOf<TaskItem>()
+                    var windowCount = 0
+
+                    for (item in bookmarkList) {
+                        if (item.metadataStatus != successStatus) continue
+
+                        val local = localMap[item.id]
+
+                        if (local != null && !local.isAutoCached && local.isDownloaded()) continue
+
+                        if (windowCount >= recentDownloadCount) break
+                        windowCount++
+                        cacheWindowIds.add(item.id)
+
+                        if (item.id !in currentQueue && local?.isDownloaded() != true) {
+                            toDownload.add(TaskItem(item.id, item.updatedAt, TaskType.DOWNLOAD_METADATA))
+                        }
+                    }
+
+                    val toCleanupIds = mutableListOf<String>()
+                    val activeIds = bookmarkList.asSequence().map { it.id }.toHashSet()
+                    for ((id, info) in localMap) {
+                        if (id in activeIds && id !in cacheWindowIds && info.isAutoCached && info.downloadStatus == 2) {
+                            toCleanupIds.add(id)
+                        }
+                    }
+
+                    println("[BackgroundDomain] window=$windowCount, toDownload=${toDownload.size}, toCleanup=${toCleanupIds.size}")
+
+                    if (toCleanupIds.isNotEmpty()) {
+                        cleanupOldCache(toCleanupIds)
+                    }
+
+                    for (task in toDownload) {
+                        val added = inQueue.getAndUpdate { it + task.bookmarkId }.let { task.bookmarkId !in it }
+                        if (added) {
+                            queue.send(task)
+                        }
                     }
                 }
-            }
         }
 
-        workerScope!!.launch {
-            downloadQueue!!.receiveAsFlow()
+        scope.launch {
+            queue.receiveAsFlow()
                 .flatMapMerge(maxDownloadConcurrent) { task ->
                     flow {
                         processTask(task)
@@ -134,38 +146,35 @@ class BackgroundDomain(
         }
     }
 
-    @OptIn(ExperimentalTime::class)
     suspend fun downloadBookmarkItem(item: TaskItem) {
-        val bookmarkDir = "bookmark/${item.bookmarkId}"
-        val contentInfo = "$bookmarkDir/content.html"
+        val contentPath = "bookmark/${item.bookmarkId}/content.html"
 
         try {
-            val fileInfo = fileManager.getDataFileInfo(contentInfo)
-            val needDownload = if (fileInfo == null) {
-                // 文件不存在，需要下载
-                println("[BackgroundDomain] File doesn't exist, need download")
-                true
-            } else {
-                // 文件存在，比较修改时间
-                val fileModifiedTime = fileInfo.lastModifiedAtMillis ?: 0L
-                val bookmarkUpdatedTime = parseInstant(item.updatedAt).toEpochMilliseconds()
-                // bookmark 更新了,需要重新下载
-                val needUpdate = bookmarkUpdatedTime > fileModifiedTime
-                println("[BackgroundDomain] File exists, need update: $needUpdate")
-                needUpdate
-            }
-
-            if (!needDownload) return
-
             updateBookmarkStatus(item.bookmarkId, DownloadStatus.DOWNLOADING)
 
             val response = apiService.getBookmarkRawContent(item.bookmarkId)
+            val content = processContent(response)
+            fileManager.writeDataFile(contentPath, content.html.encodeToByteArray())
 
-            fileManager.writeDataFile(contentInfo, response.encodeToByteArray())
+            val downloadImages = appPreferences.getDownloadImages().first()
+            if (downloadImages && content.imageUrls.isNotEmpty()) {
+                println("[BackgroundDomain] 开始下载 ${content.imageUrls.size} 张图片")
+                coroutineScope {
+                    launch {
+                        content.imageUrls.forEach { url ->
+                            try {
+                                imageDownloadManager.ensureCached(url, item.bookmarkId)
+                            } catch (e: Exception) {
+                                println("[BackgroundDomain] 图片缓存失败: $url, ${e.message}")
+                            }
+                        }
 
-            println("[BackgroundDomain] Download successful!")
+                    }
+                }
+                println("[BackgroundDomain] 图片下载完成")
+            }
+
             updateBookmarkStatus(item.bookmarkId, DownloadStatus.COMPLETED)
-
         } catch (e: Exception) {
             println("下载失败 ${item.bookmarkId}: ${e.message}")
             e.printStackTrace()
@@ -175,6 +184,32 @@ class BackgroundDomain(
         }
     }
 
+    private suspend fun cleanupOldCache(ids: List<String>) {
+        if (!isCleaningUp.compareAndSet(expect = false, update = true)) return
+        try {
+            ids.forEach { id ->
+                try {
+                    fileManager.deleteDataDirectory("bookmark/$id")
+                } catch (e: Exception) {
+                    println("[BackgroundDomain] 删除文件夹失败 $id: ${e.message}")
+                }
+            }
+            try {
+                localBookmarkDao.batchResetDownloadStatus(ids)
+            } catch (e: Exception) {
+                println("[BackgroundDomain] 批量重置状态失败: ${e.message}")
+            }
+            println("[BackgroundDomain] 批量清理完成，共清理 ${ids.size} 个")
+        } finally {
+            isCleaningUp.value = false
+        }
+    }
+
+    fun restart() {
+        cleanup()
+        startup()
+    }
+
     fun cleanup() {
         downloadQueue?.cancel()
         downloadQueue = null
@@ -182,7 +217,7 @@ class BackgroundDomain(
         workerScope = null
     }
 
-    private suspend fun updateBookmarkStatus(id: String, status: DownloadStatus) {
+    private suspend fun updateBookmarkStatus(id: String, status: DownloadStatus, isAutoCached: Boolean = true) {
         val statusCode = when (status) {
             DownloadStatus.NONE -> 0
             DownloadStatus.DOWNLOADING -> 1
@@ -190,13 +225,35 @@ class BackgroundDomain(
             DownloadStatus.FAILED -> 3
         }
         try {
-            localBookmarkDao.updateLocalBookmarkDownloadStatus(id, statusCode)
+            localBookmarkDao.updateLocalBookmarkDownloadStatus(id, statusCode, isAutoCached)
         } catch (e: Exception) {
             println("[BackgroundDomain] 更新下载状态到数据库失败: ${e.message}")
         }
     }
 
-    @OptIn(ExperimentalTime::class)
+    private fun processImageUrl(url: String): String {
+        return url.replace(HTTPS_REGEX, "slaxstatics://").replace(HTTP_REGEX, "slaxstatic://")
+    }
+
+    private fun processContent(html: String): ProcessedContent {
+        return try {
+            val doc = Ksoup.parse(html)
+            val urls = mutableListOf<String>()
+            doc.select("img").forEach { img ->
+                val src = img.attr("src")
+                if (src.isNotEmpty() && !src.startsWith("data:")) {
+                    val converted = processImageUrl(src)
+                    img.attr("src", converted)
+                    urls.add(converted)
+                }
+            }
+            ProcessedContent(doc.html(), urls)
+        } catch (e: Exception) {
+            println("[BackgroundDomain] HTML 处理失败: ${e.message}")
+            ProcessedContent(html, emptyList())
+        }
+    }
+
     suspend fun getBookmarkContent(id: String): String {
         val bookmarkDir = "bookmark/$id"
         val contentPath = "$bookmarkDir/content.html"
@@ -204,28 +261,32 @@ class BackgroundDomain(
         val existingContent = fileManager.streamDataFile(contentPath)
 
         if (existingContent != null) {
-            return existingContent.decodeToString()
+            val htmlContent = existingContent.decodeToString()
+            return processContent(htmlContent).html
         }
 
         inQueue.getAndUpdate { it + id }
 
         try {
             withContext(Dispatchers.IO) {
-                updateBookmarkStatus(id, DownloadStatus.DOWNLOADING)
+                updateBookmarkStatus(id, DownloadStatus.DOWNLOADING, isAutoCached = false)
             }
 
             val response = apiService.getBookmarkRawContent(id)
+
+            val content = processContent(response)
+
             workerScope?.launch(Dispatchers.IO) {
                 try {
-                    fileManager.writeDataFile(contentPath, response.encodeToByteArray())
-                    updateBookmarkStatus(id, DownloadStatus.COMPLETED)
+                    fileManager.writeDataFile(contentPath, content.html.encodeToByteArray())
+                    updateBookmarkStatus(id, DownloadStatus.COMPLETED, isAutoCached = false)
                 } catch (e: Exception) {
                     println("后台写入失败 $id: ${e.message}")
-                    updateBookmarkStatus(id, DownloadStatus.FAILED)
+                    updateBookmarkStatus(id, DownloadStatus.FAILED, isAutoCached = false)
                 }
             }
 
-            return response
+            return content.html
         } catch (e: Exception) {
             println("API 调用失败 $id: ${e.message}")
             val errInfo = when (e) {
@@ -233,6 +294,7 @@ class BackgroundDomain(
                     "title" to "Error code: ${e.code}",
                     "message" to e.message
                 )
+
                 else -> mapOf(
                     "title" to "Network error",
                     "message" to (e.message ?: "Unknown error")
@@ -245,5 +307,10 @@ class BackgroundDomain(
         } finally {
             inQueue.getAndUpdate { it - id }
         }
+    }
+
+    companion object {
+        private val HTTPS_REGEX = Regex("^https://")
+        private val HTTP_REGEX = Regex("^http://")
     }
 }

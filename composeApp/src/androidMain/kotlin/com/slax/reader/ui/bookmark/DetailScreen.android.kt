@@ -23,6 +23,7 @@ import com.slax.reader.utils.AppWebViewState
 import com.slax.reader.utils.WebViewEvent
 import com.slax.reader.utils.wrapBookmarkDetailHtml
 import kotlinx.serialization.Serializable
+import org.koin.compose.viewmodel.koinViewModel
 
 @Serializable
 data class WebViewMessage(
@@ -38,11 +39,14 @@ data class WebViewMessage(
 @SuppressLint("UseKtx", "ConfigurationScreenWidthHeight")
 @Composable
 actual fun DetailScreen(
+    bookmarkId: String,
     htmlContent: String,
     webViewState: AppWebViewState,
     onScrollInfoChanged: (ScrollInfo) -> Unit
 ) {
     println("[watch][UI] recomposition DetailScreen")
+
+    val viewModel = koinViewModel<BookmarkDetailViewModel>()
 
     val wrappedHtmlContent = remember(htmlContent) { wrapBookmarkDetailHtml(htmlContent) }
 
@@ -75,6 +79,11 @@ actual fun DetailScreen(
     LaunchedEffect(webViewState) {
         webViewState.events.collect { event ->
             when (event) {
+                is WebViewEvent.PageLoaded -> {
+                    viewModel.consumeInitialReadPosition()?.let { position ->
+                        scrollState.scrollTo(position.toInt())
+                    }
+                }
                 is WebViewEvent.ScrollToPosition -> {
                     val targetInWebView = webViewHeightState.floatValue * event.percentage
                     val target = (headerHeightState.floatValue + targetInWebView - screenHeightPx / 4).toInt()
@@ -111,7 +120,8 @@ actual fun DetailScreen(
                     .fillMaxWidth()
                     .preferredFrameRate(FrameRateCategory.High)
                     .onSizeChanged(onWebViewSizeChanged),
-                webState = webViewState
+                webState = webViewState,
+                bookmarkId = bookmarkId
             )
         }
 

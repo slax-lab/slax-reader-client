@@ -6,22 +6,17 @@ import com.powersync.db.getString
 
 @Immutable
 data class LocalBookmarkInfo(
-    /** 书签 ID（关联 sr_user_bookmark.id） */
     val id: String,
-
-    /** 概要内容缓存 */
     val overview: String?,
-
-    /** 关键要点缓存 */
     val keyTakeaways: String?,
-
-    /** 下载状态：0=NONE, 1=下载中，2=已完成，3=失败 */
-    val downloadStatus: Int
+    val downloadStatus: Int,
+    val isAutoCached: Boolean = true
 )
 
-/**
- * 将 SqlCursor 映射为 LocalBookmarkInfo 对象
- */
+fun LocalBookmarkInfo.isDownloaded() : Boolean {
+    return downloadStatus == 2
+}
+
 fun mapperToLocalBookmarkInfo(cursor: SqlCursor): LocalBookmarkInfo {
     return LocalBookmarkInfo(
         id = cursor.getString("id"),
@@ -35,6 +30,11 @@ fun mapperToLocalBookmarkInfo(cursor: SqlCursor): LocalBookmarkInfo {
         } catch (_: Exception) {
             null
         },
-        downloadStatus = cursor.getString("is_downloaded").toIntOrNull() ?: 0
+        downloadStatus = cursor.getString("is_downloaded").toIntOrNull() ?: 0,
+        isAutoCached = try {
+            cursor.getString("is_auto_cached").toIntOrNull() == 1
+        } catch (_: Exception) {
+            true
+        }
     )
 }

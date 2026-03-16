@@ -47,7 +47,8 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
         LifeCycleHelper.lifecycleState.collect { state ->
             when (state) {
                 AppLifecycleState.ON_STOP -> {
-                    viewModel.onStopRecordContinue(scrollInfo.value.scrollY.toInt())
+                    viewModel.flushReadPosition()
+                    viewModel.onStopRecordContinue()
                 }
                 AppLifecycleState.ON_RESUME -> {
                     viewModel.onResumeClearContinue()
@@ -88,6 +89,7 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
                     info.scrollY <= 10f -> true
                     else -> false
                 }
+                viewModel.saveReadPosition(info.scrollY)
             }
     }
 
@@ -100,6 +102,7 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
 
     CompositionLocalProvider(LocalToolbarVisible provides toolbarVisible) {
         DetailScreen(
+            bookmarkId = bookmarkId,
             htmlContent = contentState.htmlContent!!,
             webViewState = webViewState,
             onScrollInfoChanged = { scrollInfo.value = it }
@@ -109,6 +112,7 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
 
 @Composable
 expect fun DetailScreen(
+    bookmarkId: String,
     htmlContent: String,
     webViewState: AppWebViewState,
     onScrollInfoChanged: (ScrollInfo) -> Unit

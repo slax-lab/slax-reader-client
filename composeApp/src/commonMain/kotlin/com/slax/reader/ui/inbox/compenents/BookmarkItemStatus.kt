@@ -13,23 +13,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import com.slax.reader.ui.inbox.InboxListViewModel
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_cell_internet
 
 @Composable
-fun ItemStatus(bookmarkId: String, viewModel: InboxListViewModel) {
+fun ItemStatus(downloadStatus: Int) {
     val iconResource = painterResource(Res.drawable.ic_cell_internet)
     val iconPainter = remember { iconResource }
-
-    val localBookmarkMap by viewModel.localBookmarkMap.collectAsState()
-    val downloadStatus by remember(bookmarkId) {
-        derivedStateOf {
-            val status = localBookmarkMap[bookmarkId]?.downloadStatus
-            if (status == null || status != 2) null else 2
-        }
-    }
 
     Box(
         modifier = Modifier

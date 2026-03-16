@@ -15,7 +15,8 @@ fun wrapBookmarkDetailHtml(htmlContent: String): String {
 expect fun AppWebView(
     htmlContent: String,
     modifier: Modifier = Modifier,
-    webState: AppWebViewState
+    webState: AppWebViewState,
+    bookmarkId: String
 )
 
 @Composable
