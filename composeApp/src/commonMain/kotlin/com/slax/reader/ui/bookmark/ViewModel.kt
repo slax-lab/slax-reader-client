@@ -123,6 +123,9 @@ class BookmarkDetailViewModel(
             loadSavedPosition(bookmarkId)
         }
 
+        // 后台预加载 Outline（缓存优先，无缓存时流式请求 API）
+        loadOutline()
+
         refreshContent()
     }
 

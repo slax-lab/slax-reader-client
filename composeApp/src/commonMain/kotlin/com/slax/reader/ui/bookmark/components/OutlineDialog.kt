@@ -40,14 +40,7 @@ fun OutlineDialog() {
     println("[watch][UI] recomposition OutlineDialog")
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
 
-    val bookmarkId by viewModel.bookmarkId.collectAsState()
     val status by viewModel.outlineDelegate.dialogStatus.collectAsState()
-
-    LaunchedEffect(bookmarkId) {
-        if (bookmarkId != null) {
-            viewModel.loadOutline()
-        }
-    }
 
     if (status == OutlineDialogStatus.NONE) return
 
@@ -159,9 +152,6 @@ fun OutlineDialog() {
         }
     ) { 0f }
 
-    // 基于实际 alpha 值控制组合树的存在，alpha=0 时立即移除，
-    // 避免 Surface(shadowElevation) 的阴影在 graphicsLayer { alpha=0 } 下仍被平台渲染器绘制
-    val expandedVisible = expandedAlpha > 0f
     val collapsedVisible = status == OutlineDialogStatus.COLLAPSED || collapsedAlpha > 0f
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -194,18 +184,21 @@ fun OutlineDialog() {
             )
         }
 
-        if (expandedVisible) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        alpha = expandedAlpha
-                        translationY = expandedSlideOffset * screenHeightPx
-                    },
-                contentAlignment = Alignment.BottomCenter
-            ) {
-                ExpandedOutlineDialog()
-            }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    alpha = expandedAlpha
+                    // 不可见时移至屏幕外，避免透明状态下仍拦截触摸事件
+                    translationY = if (expandedAlpha > 0f) {
+                        expandedSlideOffset * screenHeightPx
+                    } else {
+                        screenHeightPx
+                    }
+                },
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            ExpandedOutlineDialog()
         }
 
         if (collapsedVisible) {
@@ -331,11 +324,28 @@ private fun ExpandedOutlineDialog() {
                     }
 
                     else -> {
+                        val scrollState = rememberScrollState()
+
+                        // 布局完成后恢复滚动位置
+                        LaunchedEffect(Unit) {
+                            val savedPos = viewModel.outlineDelegate.savedScrollPosition
+                            if (savedPos > 0) {
+                                scrollState.scrollTo(savedPos)
+                            }
+                        }
+
+                        // 离开组合树时保存滚动位置
+                        DisposableEffect(Unit) {
+                            onDispose {
+                                viewModel.outlineDelegate.saveScrollPosition(scrollState.value)
+                            }
+                        }
+
                         Box(modifier = Modifier.fillMaxSize()) {
                             Column(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .verticalScroll(rememberScrollState())
+                                    .verticalScroll(scrollState)
                                     .padding(top = 4.dp)
                             ) {
                                 MarkdownRenderer(

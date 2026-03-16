@@ -40,6 +40,14 @@ class OutlineDelegate(
     private val _dialogStatus = MutableStateFlow(OutlineDialogStatus.NONE)
     val dialogStatus = _dialogStatus.asStateFlow()
 
+    // 记住 Outline 弹窗的滚动位置（ViewModel 生命周期内有效，不持久化）
+    var savedScrollPosition: Int = 0
+        private set
+
+    fun saveScrollPosition(position: Int) {
+        savedScrollPosition = position
+    }
+
     fun loadOutline(bookmarkId: String) {
         if (_outlineState.value.isLoading) {
             return
@@ -144,6 +152,7 @@ class OutlineDelegate(
     fun reset() {
         _outlineState.value = OutlineState()
         _dialogStatus.value = OutlineDialogStatus.NONE
+        savedScrollPosition = 0
     }
 
     private fun transitionTo(target: OutlineDialogStatus) {
