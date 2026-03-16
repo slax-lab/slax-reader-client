@@ -1,6 +1,5 @@
 package com.slax.reader.ui.bookmark.components
 
-import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -16,17 +15,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp as lerpDp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.draw.drawBehind
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.states.OutlineDialogStatus
 import com.slax.reader.utils.i18n
@@ -38,9 +34,6 @@ import slax_reader_client.composeapp.generated.resources.ic_outline_dialog_close
 import slax_reader_client.composeapp.generated.resources.ic_outline_dialog_shrink
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.shadow.Shadow
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
 
 @Composable
 fun OutlineDialog() {
@@ -223,7 +216,29 @@ fun OutlineDialog() {
                     .offset(x = (-87).dp),
                 contentAlignment = Alignment.BottomCenter
             ) {
-                CollapsedOutlineButton(collapsedAlpha)
+                Box(contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier
+                            .size(50.dp)
+                            .offset(y = 10.dp)
+                            .dropShadow(
+                                shape = RoundedCornerShape(25.dp),
+                                shadow = Shadow(
+                                    radius = 40.dp,
+                                    spread = 0.dp,
+                                    color = Color.Black.copy(alpha = 0.16f),
+                                    offset = DpOffset(x = 0.dp, y = 10.dp)
+                                )
+                            )
+                    )
+
+                    // 隔离阴影动画
+                    Box(modifier = Modifier.graphicsLayer { alpha = collapsedAlpha },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CollapsedOutlineButton()
+                    }
+                }
             }
         }
     }
@@ -430,136 +445,30 @@ private fun ExpandedOutlineDialog() {
  * 收缩态圆形按钮
  */
 @Composable
-private fun CollapsedOutlineButton(animateAlpha: Float = 1f) {
+private fun CollapsedOutlineButton() {
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val outlineState by viewModel.outlineDelegate.outlineState.collectAsState()
     val isLoading = outlineState.isLoading
 
-    Box(contentAlignment = Alignment.Center) {
-        Box(
-            modifier = Modifier
-                .size(50.dp)
-                .offset(y = 10.dp)
-                .dropShadow(
-                    shape = RoundedCornerShape(25.dp),
-                    shadow = Shadow(
-                        radius = 40.dp,
-                        spread = 0.dp,
-                        color = Color.Black.copy(alpha = 0.16f),
-                        offset = DpOffset(x = 0.dp, y = 10.dp)
-                    )
-                )
-        )
-
-        Surface(
-            onClick = { viewModel.outlineDelegate.expandDialog() },
-            modifier = Modifier.size(50.dp)
-                .graphicsLayer { alpha = animateAlpha },
-            color = Color(0xFFFFFFFF),
-            shape = RoundedCornerShape(25.dp),
-            border = BorderStroke(1.dp, Color.White)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_outline_collapsed),
-                    contentDescription = "outline_expand".i18n(),
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-
-        if (isLoading) {
-            DotLoadingRing(modifier = Modifier.size(27.dp))
-        }
-    }
-}
-
-/**
- * dot 旋转加载环
- */
-@Composable
-private fun DotLoadingRing(modifier: Modifier = Modifier) {
-    val infiniteTransition = rememberInfiniteTransition(label = "dotRingRotation")
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1500, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "rotation"
-    )
-
-    val startColor = Color(0xFF16B998)
-    val endColor = Color(0xFFECF9F6)
-    val dotCount = 20
-
-    val dotColors = remember {
-        List(dotCount) { i -> lerp(startColor, endColor, i.toFloat() / dotCount) }
-    }
-
-    Box(
-        modifier = modifier.graphicsLayer { rotationZ = rotation }.drawBehind {
-            val radius = size.minDimension / 2f
-            val dotRadius = 1.5.dp.toPx() / 2f
-            val center = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f)
-
-            for (i in 0 until dotCount) {
-                val angle = (2.0 * PI * i / dotCount - PI / 2).toFloat()
-                val dotCenter = androidx.compose.ui.geometry.Offset(
-                    x = center.x + radius * cos(angle),
-                    y = center.y + radius * sin(angle)
-                )
-                drawCircle(
-                    color = dotColors[i],
-                    radius = dotRadius,
-                    center = dotCenter
-                )
-            }
-        }
-    )
-}
-
-/**
- * 加载动画组件
- * 显示三个渐变色横条闪动效果
- */
-@Composable
-private fun LoadingAnimation() {
-    val infiniteTransition = rememberInfiniteTransition(label = "loadingAnimation")
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "alphaAnimation"
-    )
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    Surface(
+        onClick = { viewModel.outlineDelegate.expandDialog() },
+        modifier = Modifier.size(50.dp),
+        color = Color(0xFFFFFFFF),
+        shape = RoundedCornerShape(25.dp),
+        border = BorderStroke(1.dp, Color.White)
     ) {
-        repeat(3) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(18.dp)
-                    .alpha(alpha)
-                    .background(
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(
-                                Color(0xFFF5F5F3),
-                                Color(0x99F5F5F3),
-                            )
-                        ),
-                        shape = RoundedCornerShape(4.dp)
-                    )
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                painter = painterResource(Res.drawable.ic_outline_collapsed),
+                contentDescription = "outline_expand".i18n(),
+                tint = Color.Unspecified,
+                modifier = Modifier.size(20.dp)
             )
         }
+    }
+
+    if (isLoading) {
+        DotLoadingRing(modifier = Modifier.size(27.dp))
     }
 }
 
@@ -586,60 +495,6 @@ private fun ErrorView(error: String) {
                 text = error,
                 fontSize = 12.sp,
                 color = Color(0xFF999999)
-            )
-        }
-    }
-}
-
-/**
- * 圆点加载组件
- */
-@Composable
-private fun DotLoadingAnimation() {
-    val infiniteTransition = rememberInfiniteTransition(label = "dotLoadingAnimation")
-
-    val dotColors = listOf(
-        Color(0xFF16B998),
-        Color(0xFFFFC255),
-        Color(0xFF56CAF2),
-        Color(0xFFFB8F6C)
-    )
-
-    val delays = listOf(0, 250, 500, 750)
-
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.height(8.dp)
-    ) {
-        dotColors.forEachIndexed { index, color ->
-            val offsetY by infiniteTransition.animateFloat(
-                initialValue = 0f,
-                targetValue = 0f,
-                animationSpec = infiniteRepeatable(
-                    animation = keyframes {
-                        durationMillis = 1400
-                        0f at 0
-                        -2.4f at 350
-                        2.4f at 1050
-                        0f at 1400
-                    },
-                    repeatMode = RepeatMode.Restart,
-                    initialStartOffset = StartOffset(delays[index])
-                ),
-                label = "offsetY$index"
-            )
-
-            Box(
-                modifier = Modifier
-                    .size(4.dp)
-                    .graphicsLayer {
-                        translationY = offsetY
-                    }
-                    .background(
-                        color = color,
-                        shape = RoundedCornerShape(50)
-                    )
             )
         }
     }
