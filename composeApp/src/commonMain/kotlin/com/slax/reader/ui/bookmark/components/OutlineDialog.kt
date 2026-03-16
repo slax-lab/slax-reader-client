@@ -20,9 +20,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp as lerpDp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.draw.drawBehind
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
@@ -56,18 +58,127 @@ fun OutlineDialog() {
 
     if (status == OutlineDialogStatus.NONE) return
 
-    // 使用 updateTransition 驱动协调动画
     val transition = updateTransition(targetState = status, label = "outlineTransition")
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        // 1. 背景遮罩（仅 EXPANDED 时可见）
-        val bgAlpha by transition.animateFloat(
-            label = "bgAlpha",
-            transitionSpec = { tween(300) }
-        ) { state ->
-            if (state == OutlineDialogStatus.EXPANDED) 0.5f else 0f
-        }
+    // === 背景遮罩透明度 ===
+    val bgAlpha by transition.animateFloat(
+        label = "bgAlpha",
+        transitionSpec = { tween(300) }
+    ) { state ->
+        if (state == OutlineDialogStatus.EXPANDED) 0.5f else 0f
+    }
 
+    // === 展开弹窗透明度（方向感知：EXPANDED↔HIDDEN 标准淡入淡出，EXPANDED↔COLLAPSED 快速配合变形）===
+    val expandedAlpha by transition.animateFloat(
+        label = "expandedAlpha",
+        transitionSpec = {
+            when {
+                OutlineDialogStatus.HIDDEN isTransitioningTo OutlineDialogStatus.EXPANDED ->
+                    tween(250)
+                OutlineDialogStatus.COLLAPSED isTransitioningTo OutlineDialogStatus.EXPANDED ->
+                    tween(180, delayMillis = 380)
+                OutlineDialogStatus.EXPANDED isTransitioningTo OutlineDialogStatus.COLLAPSED ->
+                    tween(120)
+                OutlineDialogStatus.EXPANDED isTransitioningTo OutlineDialogStatus.HIDDEN ->
+                    tween(200)
+                else -> snap()
+            }
+        }
+    ) { state -> if (state == OutlineDialogStatus.EXPANDED) 1f else 0f }
+
+    // === 展开弹窗滑动偏移（仅 HIDDEN↔EXPANDED 方向有效，其他方向 snap 到 0）===
+    val expandedSlideOffset by transition.animateFloat(
+        label = "expandedSlideOffset",
+        transitionSpec = {
+            when {
+                OutlineDialogStatus.HIDDEN isTransitioningTo OutlineDialogStatus.EXPANDED ->
+                    tween(300, easing = FastOutSlowInEasing)
+                OutlineDialogStatus.EXPANDED isTransitioningTo OutlineDialogStatus.HIDDEN ->
+                    tween(250, easing = FastOutSlowInEasing)
+                else -> snap()
+            }
+        }
+    ) { state ->
+        when (state) {
+            OutlineDialogStatus.EXPANDED -> 0f
+            OutlineDialogStatus.HIDDEN -> 1f
+            else -> 0f
+        }
+    }
+
+    // === 收缩按钮透明度（方向感知：EXPANDED↔COLLAPSED 时配合变形时序，其他方向标准淡入淡出）===
+    val collapsedAlpha by transition.animateFloat(
+        label = "collapsedAlpha",
+        transitionSpec = {
+            when {
+                OutlineDialogStatus.EXPANDED isTransitioningTo OutlineDialogStatus.COLLAPSED ->
+                    tween(150, delayMillis = 430)
+                OutlineDialogStatus.COLLAPSED isTransitioningTo OutlineDialogStatus.EXPANDED ->
+                    tween(100)
+                OutlineDialogStatus.HIDDEN isTransitioningTo OutlineDialogStatus.COLLAPSED ->
+                    tween(200)
+                OutlineDialogStatus.COLLAPSED isTransitioningTo OutlineDialogStatus.HIDDEN ->
+                    tween(200)
+                else -> snap()
+            }
+        }
+    ) { state -> if (state == OutlineDialogStatus.COLLAPSED) 1f else 0f }
+
+    // === 变形进度：0f = 收缩圆形位置，1f = 展开矩形位置（仅 EXPANDED↔COLLAPSED 时动画）===
+    val morphProgress by transition.animateFloat(
+        label = "morphProgress",
+        transitionSpec = {
+            when {
+                OutlineDialogStatus.EXPANDED isTransitioningTo OutlineDialogStatus.COLLAPSED ->
+                    tween(380, delayMillis = 100, easing = FastOutSlowInEasing)
+                OutlineDialogStatus.COLLAPSED isTransitioningTo OutlineDialogStatus.EXPANDED ->
+                    tween(380, delayMillis = 80, easing = FastOutSlowInEasing)
+                else -> snap()
+            }
+        }
+    ) { state -> if (state == OutlineDialogStatus.EXPANDED) 1f else 0f }
+
+    // === 变形遮罩透明度（keyframes 精确控制：仅在 EXPANDED↔COLLAPSED 过渡期间可见）===
+    val morphAlpha by transition.animateFloat(
+        label = "morphAlpha",
+        transitionSpec = {
+            when {
+                OutlineDialogStatus.EXPANDED isTransitioningTo OutlineDialogStatus.COLLAPSED ->
+                    keyframes {
+                        durationMillis = 580
+                        0f at 0 using LinearEasing
+                        1f at 80 using LinearEasing
+                        1f at 480 using LinearEasing
+                        0f at 580
+                    }
+                OutlineDialogStatus.COLLAPSED isTransitioningTo OutlineDialogStatus.EXPANDED ->
+                    keyframes {
+                        durationMillis = 560
+                        0f at 0 using LinearEasing
+                        1f at 60 using LinearEasing
+                        1f at 460 using LinearEasing
+                        0f at 560
+                    }
+                else -> snap()
+            }
+        }
+    ) { 0f }
+
+    // 用 transition 的当前/目标状态控制子组件的渲染，避免透明但仍占用资源的情况
+    val expandedVisible = transition.currentState == OutlineDialogStatus.EXPANDED ||
+            transition.targetState == OutlineDialogStatus.EXPANDED
+    val collapsedVisible = transition.currentState == OutlineDialogStatus.COLLAPSED ||
+            transition.targetState == OutlineDialogStatus.COLLAPSED
+
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val screenWidth = maxWidth
+        val screenHeight = maxHeight
+        val density = LocalDensity.current
+        val screenHeightPx = with(density) { screenHeight.toPx() }
+        val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+        val dialogHeight = screenHeight - statusBarHeight - 36.dp
+
+        // 1. 背景遮罩（仅 EXPANDED 时可见）
         if (bgAlpha > 0f) {
             Box(
                 modifier = Modifier
@@ -81,34 +192,39 @@ fun OutlineDialog() {
             )
         }
 
-        // 2. 展开态弹窗（从底部弹出 + 淡入，向下掉落 + 淡出）
-        transition.AnimatedVisibility(
-            visible = { it == OutlineDialogStatus.EXPANDED },
-            enter = slideInVertically(tween(300, easing = FastOutSlowInEasing)) { it } + fadeIn(tween(250)),
-            exit = slideOutVertically(tween(250, easing = FastOutSlowInEasing)) { it } + fadeOut(tween(200))
-        ) {
+        // 2. 展开态弹窗（graphicsLayer 控制 alpha + translationY，不触发重新布局）
+        if (expandedVisible) {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        alpha = expandedAlpha
+                        translationY = expandedSlideOffset * screenHeightPx
+                    },
                 contentAlignment = Alignment.BottomCenter
             ) {
                 ExpandedOutlineDialog()
             }
         }
 
-        // 3. 收缩态按钮（简单淡入淡出）
-        // 偏移量：整体居中后，按钮中心在屏幕中心左偏 87dp
-        // 计算依据：组合总宽 224dp = Button(50) + Gap(12) + FAB(162)
-        // Button 中心 = -(224/2 - 50/2) = -87dp
-        transition.AnimatedVisibility(
-            visible = { it == OutlineDialogStatus.COLLAPSED },
-            enter = fadeIn(tween(200)),
-            exit = fadeOut(tween(200))
-        ) {
+        // 3. 变形遮罩层（仅 EXPANDED↔COLLAPSED 过渡期间存在，用于模拟容器变形效果）
+        if (morphAlpha > 0f) {
+            MorphOverlay(
+                morphAlpha = morphAlpha,
+                morphProgress = morphProgress,
+                screenWidth = screenWidth,
+                dialogHeight = dialogHeight
+            )
+        }
+
+        // 4. 收缩态按钮（graphicsLayer 控制 alpha）
+        if (collapsedVisible) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(bottom = 58.dp)
-                    .offset(x = (-87).dp),
+                    .offset(x = (-87).dp)
+                    .graphicsLayer { alpha = collapsedAlpha },
                 contentAlignment = Alignment.BottomCenter
             ) {
                 CollapsedOutlineButton()
@@ -116,12 +232,56 @@ fun OutlineDialog() {
         }
     }
 }
+
+/**
+ * 变形遮罩层：在 EXPANDED ↔ COLLAPSED 过渡期间，以白色形状模拟容器从矩形变形为圆形的效果。
+ *
+ * morphProgress：0f = 收缩态（50dp 圆形，位于按钮位置），1f = 展开态（全宽矩形，位于弹窗位置）
+ * morphAlpha：由 keyframes 控制，仅在过渡期间可见，静止时始终为 0f。
+ */
+@Composable
+private fun MorphOverlay(
+    morphAlpha: Float,
+    morphProgress: Float,
+    screenWidth: androidx.compose.ui.unit.Dp,
+    dialogHeight: androidx.compose.ui.unit.Dp
+) {
+    val width = lerpDp(50.dp, screenWidth, morphProgress)
+    val height = lerpDp(50.dp, dialogHeight, morphProgress)
+    val topCorner = lerpDp(25.dp, 20.dp, morphProgress)
+    val bottomCorner = lerpDp(25.dp, 0.dp, morphProgress)
+    val offsetX = lerpDp((-87).dp, 0.dp, morphProgress)
+    val bottomPadding = lerpDp(58.dp, 0.dp, morphProgress)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(bottom = bottomPadding),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Surface(
+            modifier = Modifier
+                .offset(x = offsetX)
+                .size(width, height)
+                .graphicsLayer { alpha = morphAlpha },
+            shape = RoundedCornerShape(
+                topStart = topCorner,
+                topEnd = topCorner,
+                bottomStart = bottomCorner,
+                bottomEnd = bottomCorner
+            ),
+            color = Color.White,
+            shadowElevation = lerpDp(0.dp, 8.dp, morphProgress)
+        ) {}
+    }
+}
+
 /**
  * 全屏展开状态的弹窗
  */
 @Composable
 private fun ExpandedOutlineDialog() {
-    val viewModel =  koinViewModel<BookmarkDetailViewModel>()
+    val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val outlineState by viewModel.outlineDelegate.outlineState.collectAsState()
 
     Surface(
