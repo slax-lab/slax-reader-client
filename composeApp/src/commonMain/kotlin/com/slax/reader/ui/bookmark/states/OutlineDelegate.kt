@@ -8,6 +8,8 @@ import com.slax.reader.utils.outlineEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -34,18 +36,45 @@ class OutlineDelegate(
     private val apiService: ApiService,
     private val scope: CoroutineScope
 ) {
+    companion object {
+        private const val SAVE_DEBOUNCE_MS = 2000L
+    }
+
     private val _outlineState = MutableStateFlow(OutlineState())
     val outlineState = _outlineState.asStateFlow()
 
     private val _dialogStatus = MutableStateFlow(OutlineDialogStatus.NONE)
     val dialogStatus = _dialogStatus.asStateFlow()
 
-    // 记住 Outline 弹窗的滚动位置（ViewModel 生命周期内有效，不持久化）
     var savedScrollPosition: Int = 0
         private set
 
+    private var currentBookmarkId: String? = null
+    private var currentScrollPosition: Int = -1
+    private var saveScrollJob: Job? = null
+
     fun saveScrollPosition(position: Int) {
         savedScrollPosition = position
+        currentScrollPosition = position
+        saveScrollJob?.cancel()
+        saveScrollJob = scope.launch {
+            delay(SAVE_DEBOUNCE_MS)
+            val id = currentBookmarkId ?: return@launch
+            withContext(Dispatchers.IO) {
+                localBookmarkDao.updateLocalBookmarkOutlineScrollPosition(id, position)
+            }
+        }
+    }
+
+    fun flushScrollPosition() {
+        saveScrollJob?.cancel()
+        val id = currentBookmarkId ?: return
+        val position = currentScrollPosition
+        if (position < 0) return
+        // 使用独立 CoroutineScope，避免 ViewModel scope 取消导致写入丢失
+        CoroutineScope(Dispatchers.IO).launch {
+            localBookmarkDao.updateLocalBookmarkOutlineScrollPosition(id, position)
+        }
     }
 
     fun loadOutline(bookmarkId: String) {
@@ -53,7 +82,17 @@ class OutlineDelegate(
             return
         }
 
+        currentBookmarkId = bookmarkId
+
         scope.launch {
+            // 先加载保存的滚动位置，确保在 outline 内容更新前就绑定到 savedScrollPosition
+            val savedPos = withContext(Dispatchers.IO) {
+                localBookmarkDao.getLocalBookmarkOutlineScrollPosition(bookmarkId)
+            }
+            if (savedPos != null && savedPos > 0) {
+                savedScrollPosition = savedPos
+            }
+
             val cacheOutline = withContext(Dispatchers.IO) {
                 localBookmarkDao.getLocalBookmarkOutline(bookmarkId)
             }
@@ -150,9 +189,12 @@ class OutlineDelegate(
     }
 
     fun reset() {
+        flushScrollPosition()
         _outlineState.value = OutlineState()
         _dialogStatus.value = OutlineDialogStatus.NONE
         savedScrollPosition = 0
+        currentScrollPosition = -1
+        currentBookmarkId = null
     }
 
     private fun transitionTo(target: OutlineDialogStatus) {

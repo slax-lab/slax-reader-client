@@ -204,4 +204,40 @@ class LocalBookmarkDao(
             }
         )?.takeIf { it.isNotEmpty() }
     }
+
+    suspend fun updateLocalBookmarkOutlineScrollPosition(
+        bookmarkId: String,
+        scrollPosition: Int
+    ) = withContext(Dispatchers.IO) {
+        database.writeTransaction { tx ->
+            tx.execute(
+                """
+                INSERT INTO ps_data_local__local_bookmark_info (id, data)
+                VALUES (?, json_object('outline_scroll_position', ?))
+                ON CONFLICT(id) DO UPDATE SET
+                data = json_set(
+                    ps_data_local__local_bookmark_info.data,
+                    '$.outline_scroll_position', json_extract(excluded.data, '$.outline_scroll_position')
+                );
+            """.trimIndent(),
+                parameters = listOf(bookmarkId, scrollPosition.toString())
+            )
+        }
+    }
+
+    suspend fun getLocalBookmarkOutlineScrollPosition(bookmarkId: String): Int? {
+        val raw = database.getOptional(
+            """
+            SELECT
+                json_extract(data, '$.outline_scroll_position') AS outline_scroll_position
+            FROM ps_data_local__local_bookmark_info
+            WHERE id = ?
+            """.trimIndent(),
+            parameters = listOf(bookmarkId),
+            mapper = { cursor ->
+                cursor.getStringOptional("outline_scroll_position") ?: ""
+            }
+        )
+        return raw?.takeIf { it.isNotEmpty() }?.toIntOrNull()
+    }
 }

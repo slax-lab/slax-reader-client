@@ -34,6 +34,8 @@ import slax_reader_client.composeapp.generated.resources.ic_outline_dialog_close
 import slax_reader_client.composeapp.generated.resources.ic_outline_dialog_shrink
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.shadow.Shadow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 
 @Composable
 fun OutlineDialog() {
@@ -326,19 +328,23 @@ private fun ExpandedOutlineDialog() {
                     else -> {
                         val scrollState = rememberScrollState()
 
-                        // 布局完成后恢复滚动位置
+                        // 等待内容布局完成后恢复滚动位置
                         LaunchedEffect(Unit) {
                             val savedPos = viewModel.outlineDelegate.savedScrollPosition
                             if (savedPos > 0) {
-                                scrollState.scrollTo(savedPos)
+                                snapshotFlow { scrollState.maxValue }
+                                    .first { it > 0 }
+                                scrollState.scrollTo(savedPos.coerceAtMost(scrollState.maxValue))
                             }
                         }
 
-                        // 离开组合树时保存滚动位置
-                        DisposableEffect(Unit) {
-                            onDispose {
-                                viewModel.outlineDelegate.saveScrollPosition(scrollState.value)
-                            }
+                        // 滚动过程中持续保存位置（防抖写入 DB）
+                        LaunchedEffect(scrollState) {
+                            snapshotFlow { scrollState.value }
+                                .distinctUntilChanged()
+                                .collect { position ->
+                                    viewModel.outlineDelegate.saveScrollPosition(position)
+                                }
                         }
 
                         Box(modifier = Modifier.fillMaxSize()) {
