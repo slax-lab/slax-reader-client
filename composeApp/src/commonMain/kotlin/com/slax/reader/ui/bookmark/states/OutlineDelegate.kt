@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.yield
+
 
 data class OutlineState(
     val outline: String = "",
@@ -147,14 +147,6 @@ class OutlineDelegate(
     }
 
     private fun transitionTo(target: OutlineDialogStatus) {
-        if (_dialogStatus.value == OutlineDialogStatus.NONE) {
-            _dialogStatus.value = OutlineDialogStatus.HIDDEN
-            scope.launch {
-                yield()
-                _dialogStatus.value = target
-            }
-        } else {
-            _dialogStatus.value = target
-        }
+        _dialogStatus.value = target
     }
 }

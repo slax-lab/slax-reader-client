@@ -58,7 +58,9 @@ fun OutlineDialog() {
 
     if (status == OutlineDialogStatus.NONE) return
 
-    val transition = updateTransition(targetState = status, label = "outlineTransition")
+    val transitionState = remember { MutableTransitionState(OutlineDialogStatus.HIDDEN) }
+    transitionState.targetState = status
+    val transition = rememberTransition(transitionState, label = "outlineTransition")
 
     // === 背景遮罩透明度 ===
     val bgAlpha by transition.animateFloat(
@@ -147,7 +149,7 @@ fun OutlineDialog() {
                     keyframes {
                         durationMillis = 580
                         0f at 0 using LinearEasing
-                        1f at 80 using LinearEasing
+                        1f at 0 using LinearEasing
                         1f at 480 using LinearEasing
                         0f at 580
                     }
@@ -164,11 +166,10 @@ fun OutlineDialog() {
         }
     ) { 0f }
 
-    // 用 transition 的当前/目标状态控制子组件的渲染，避免透明但仍占用资源的情况
-    val expandedVisible = transition.currentState == OutlineDialogStatus.EXPANDED ||
-            transition.targetState == OutlineDialogStatus.EXPANDED
-    val collapsedVisible = transition.currentState == OutlineDialogStatus.COLLAPSED ||
-            transition.targetState == OutlineDialogStatus.COLLAPSED
+    // 基于实际 alpha 值控制组合树的存在，alpha=0 时立即移除，
+    // 避免 Surface(shadowElevation) 的阴影在 graphicsLayer { alpha=0 } 下仍被平台渲染器绘制
+    val expandedVisible = expandedAlpha > 0f
+    val collapsedVisible = status == OutlineDialogStatus.COLLAPSED || collapsedAlpha > 0f
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val screenWidth = maxWidth
@@ -178,7 +179,6 @@ fun OutlineDialog() {
         val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
         val dialogHeight = screenHeight - statusBarHeight - 36.dp
 
-        // 1. 背景遮罩（仅 EXPANDED 时可见）
         if (bgAlpha > 0f) {
             Box(
                 modifier = Modifier
@@ -192,7 +192,15 @@ fun OutlineDialog() {
             )
         }
 
-        // 2. 展开态弹窗（graphicsLayer 控制 alpha + translationY，不触发重新布局）
+        if (morphAlpha > 0f) {
+            MorphOverlay(
+                morphAlpha = morphAlpha,
+                morphProgress = morphProgress,
+                screenWidth = screenWidth,
+                dialogHeight = dialogHeight
+            )
+        }
+
         if (expandedVisible) {
             Box(
                 modifier = Modifier
@@ -207,27 +215,15 @@ fun OutlineDialog() {
             }
         }
 
-        // 3. 变形遮罩层（仅 EXPANDED↔COLLAPSED 过渡期间存在，用于模拟容器变形效果）
-        if (morphAlpha > 0f) {
-            MorphOverlay(
-                morphAlpha = morphAlpha,
-                morphProgress = morphProgress,
-                screenWidth = screenWidth,
-                dialogHeight = dialogHeight
-            )
-        }
-
-        // 4. 收缩态按钮（graphicsLayer 控制 alpha）
         if (collapsedVisible) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(bottom = 58.dp)
-                    .offset(x = (-87).dp)
-                    .graphicsLayer { alpha = collapsedAlpha },
+                    .offset(x = (-87).dp),
                 contentAlignment = Alignment.BottomCenter
             ) {
-                CollapsedOutlineButton()
+                CollapsedOutlineButton(collapsedAlpha)
             }
         }
     }
@@ -270,8 +266,7 @@ private fun MorphOverlay(
                 bottomStart = bottomCorner,
                 bottomEnd = bottomCorner
             ),
-            color = Color.White,
-            shadowElevation = lerpDp(0.dp, 8.dp, morphProgress)
+            color = Color.White
         ) {}
     }
 }
@@ -435,7 +430,7 @@ private fun ExpandedOutlineDialog() {
  * 收缩态圆形按钮
  */
 @Composable
-private fun CollapsedOutlineButton() {
+private fun CollapsedOutlineButton(animateAlpha: Float = 1f) {
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val outlineState by viewModel.outlineDelegate.outlineState.collectAsState()
     val isLoading = outlineState.isLoading
@@ -458,7 +453,8 @@ private fun CollapsedOutlineButton() {
 
         Surface(
             onClick = { viewModel.outlineDelegate.expandDialog() },
-            modifier = Modifier.size(50.dp),
+            modifier = Modifier.size(50.dp)
+                .graphicsLayer { alpha = animateAlpha },
             color = Color(0xFFFFFFFF),
             shape = RoundedCornerShape(25.dp),
             border = BorderStroke(1.dp, Color.White)
