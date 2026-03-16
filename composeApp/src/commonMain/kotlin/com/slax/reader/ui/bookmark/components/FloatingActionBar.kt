@@ -24,7 +24,10 @@ import androidx.compose.ui.unit.dp
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.LocalToolbarVisible
 import com.slax.reader.ui.bookmark.states.BookmarkOverlay
+import com.slax.reader.ui.bookmark.states.OutlineDialogStatus
 import com.slax.reader.utils.bookmarkEvent
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
 import slax_reader_client.composeapp.generated.resources.*
@@ -33,7 +36,6 @@ import slax_reader_client.composeapp.generated.resources.*
 fun FloatingActionBar(
     modifier: Modifier = Modifier,
 ) {
-    println("[watch][UI] recomposition FloatingActionBar")
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val visible by LocalToolbarVisible.current
 
@@ -42,8 +44,11 @@ fun FloatingActionBar(
     val isArchived by remember { derivedStateOf { detailState.isArchived } }
 
     // 观察大纲收缩状态，用于整体居中动画
-    val outlineStatus by viewModel.outlineDelegate.dialogStatus.collectAsState()
-    val isOutlineCollapsed by remember { derivedStateOf { outlineStatus == com.slax.reader.ui.bookmark.states.OutlineDialogStatus.COLLAPSED } }
+    // 使用 map + distinctUntilChanged 避免每次 outlineStatus 变化都触发重组
+    val isOutlineCollapsed by viewModel.outlineDelegate.dialogStatus
+        .map { it == OutlineDialogStatus.COLLAPSED }
+        .distinctUntilChanged()
+        .collectAsState(initial = false)
 
     val density = LocalDensity.current
     val hiddenOffsetPx = remember(density) { with(density) { 150.dp.toPx() } }

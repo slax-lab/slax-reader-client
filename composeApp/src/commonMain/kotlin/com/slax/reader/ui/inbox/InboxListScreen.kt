@@ -161,16 +161,12 @@ private fun NavigationBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
 
-            Box(
-                modifier = Modifier
-            ) {
-                Image(
-                    painter = painterResource(Res.drawable.ic_inbox_tab),
-                    contentDescription = "Menu",
-                    modifier = Modifier.padding(start = 24.dp).padding(vertical = 10.dp).size(24.dp, 24.dp),
-                    contentScale = ContentScale.Fit
-                )
-            }
+            Image(
+                painter = painterResource(Res.drawable.ic_inbox_tab),
+                contentDescription = "Menu",
+                modifier = Modifier.padding(start = 24.dp).padding(vertical = 10.dp).size(24.dp, 24.dp),
+                contentScale = ContentScale.Fit
+            )
 
             UserAvatar()
         }

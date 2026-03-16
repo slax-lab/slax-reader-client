@@ -442,24 +442,35 @@ private fun ZoomableImagePage(
 
         // 图片加载中时显示进度圈
         if (asyncImageState.loadState is LoadState.Started) {
-            val progress = asyncImageState.progress?.decimalProgress
-            if (progress != null && progress > 0f) {
-                // 确定性进度圈（显示具体进度）
-                CircularProgressIndicator(
-                    progress = { progress },
-                    modifier = Modifier.align(Alignment.Center),
-                    color = Color.White,
-                    trackColor = Color.White.copy(alpha = 0.3f),
-                    strokeWidth = 3.dp
-                )
-            } else {
-                // 不确定性进度圈（无法获取进度时）
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
-                    color = Color.White,
-                    strokeWidth = 3.dp
-                )
-            }
+            ImageLoadingIndicator(
+                progress = asyncImageState.progress?.decimalProgress,
+                modifier = Modifier.align(Alignment.Center)
+            )
         }
+    }
+}
+
+/**
+ * 图片加载进度指示器，有进度时显示确定性圆形进度条，否则显示不确定性进度条
+ */
+@Composable
+private fun ImageLoadingIndicator(
+    progress: Float?,
+    modifier: Modifier = Modifier
+) {
+    if (progress != null && progress > 0f) {
+        CircularProgressIndicator(
+            progress = { progress },
+            modifier = modifier,
+            color = Color.White,
+            trackColor = Color.White.copy(alpha = 0.3f),
+            strokeWidth = 3.dp
+        )
+    } else {
+        CircularProgressIndicator(
+            modifier = modifier,
+            color = Color.White,
+            strokeWidth = 3.dp
+        )
     }
 }

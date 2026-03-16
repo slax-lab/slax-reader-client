@@ -318,7 +318,7 @@ private fun ExpandedOutlineDialog() {
             ) {
                 when {
                     outlineState.isLoading && outlineState.isPending -> {
-                        LoadingAnimation()
+                        SkeletonLoadingAnimation()
                     }
 
                     outlineState.error != null -> {
@@ -369,7 +369,7 @@ private fun ExpandedOutlineDialog() {
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.Center
                                     ) {
-                                        DotLoadingAnimation()
+                                        DotsLineLoadingAnimation()
                                     }
                                 }
 
@@ -484,7 +484,7 @@ private fun CollapsedOutlineButton() {
     }
 
     if (isLoading) {
-        DotLoadingRing(modifier = Modifier.size(27.dp))
+        DotsRingLoadingAnimation(modifier = Modifier.size(27.dp))
     }
 }
 

@@ -82,6 +82,9 @@ class BookmarkDetailViewModel(
     private val _effects = MutableSharedFlow<BookmarkDetailEffect>(extraBufferCapacity = 8)
     val effects: SharedFlow<BookmarkDetailEffect> = _effects.asSharedFlow()
 
+    private val _deleteConfirmVisible = MutableStateFlow(false)
+    val deleteConfirmVisible: StateFlow<Boolean> = _deleteConfirmVisible.asStateFlow()
+
     private val _contentState = MutableStateFlow(BookmarkContentState(isLoading = false))
     val contentState = _contentState.asStateFlow()
 
@@ -177,6 +180,30 @@ class BookmarkDetailViewModel(
         }
     }
 
+    fun requestDeleteBookmark() {
+        _deleteConfirmVisible.value = true
+    }
+
+    fun dismissDeleteConfirmation() {
+        _deleteConfirmVisible.value = false
+    }
+
+    fun confirmDeleteBookmark() {
+        viewModelScope.launch {
+            runCatching { bookmarkDelegate.deleteBookmark() }
+                .onSuccess {
+                    bookmarkEvent.action("delete").send()
+                    _deleteConfirmVisible.value = false
+                    overlayDelegate.dismissOverlay(BookmarkOverlay.Toolbar)
+                    requestNavigateBack()
+                }
+                .onFailure {
+                    bookmarkEvent.action("delete_failed").send()
+                    _deleteConfirmVisible.value = false
+                }
+        }
+    }
+
     fun onToolbarIconClick(pageId: String) {
         val current = bookmarkDelegate.bookmarkDetailState.value
 
@@ -197,17 +224,7 @@ class BookmarkDetailViewModel(
                     outlineDelegate.showDialog()
                 }
             }
-
             "feedback" -> overlayDelegate.showOverlay(BookmarkOverlay.FeedbackRequired)
-            "delete" -> bookmarkDelegate.onDeleteBookmark(
-                onSuccess = {
-                    bookmarkEvent.action("delete").send()
-                    requestNavigateBack()
-                },
-                onFailure = {
-                    bookmarkEvent.action("delete_failed").send()
-                }
-            )
         }
 
         overlayDelegate.dismissOverlay(BookmarkOverlay.Toolbar)

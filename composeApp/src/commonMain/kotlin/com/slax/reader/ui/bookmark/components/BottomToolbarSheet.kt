@@ -41,10 +41,9 @@ data class ToolbarIcon(
  */
 @Composable
 fun BottomToolbarSheet() {
-    println("[watch][UI] recomposition BottomToolbarSheet")
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val detailState by viewModel.bookmarkDelegate.bookmarkDetailState.collectAsState()
-    var showDeleteConfirm by remember { mutableStateOf(false) }
+    val showDeleteConfirm by viewModel.deleteConfirmVisible.collectAsState()
 
     val toolbarPages = remember(detailState.isStarred, detailState.isArchived) {
         listOf(
@@ -126,7 +125,7 @@ fun BottomToolbarSheet() {
                     pages = toolbarPages,
                     onIconClick = { pageId, iconIndex ->
                         if (pageId == "delete") {
-                            showDeleteConfirm = true
+                            viewModel.requestDeleteBookmark()
                         } else {
                             viewModel.onToolbarIconClick(pageId)
                             dismiss()
@@ -140,20 +139,17 @@ fun BottomToolbarSheet() {
 
     if (showDeleteConfirm) {
         AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
+            onDismissRequest = { viewModel.dismissDeleteConfirmation() },
             containerColor = Color.White,
             title = { Text(text = "bookmark_delete_confirm_title".i18n()) },
             text = { Text(text = "bookmark_delete_confirm_message".i18n()) },
             confirmButton = {
-                TextButton(onClick = {
-                    showDeleteConfirm = false
-                    viewModel.onToolbarIconClick("delete")
-                }) {
+                TextButton(onClick = { viewModel.confirmDeleteBookmark() }) {
                     Text(text = "btn_confirm".i18n(), color = Color(0xFFF45454))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) {
+                TextButton(onClick = { viewModel.dismissDeleteConfirmation() }) {
                     Text(text = "btn_cancel".i18n())
                 }
             }

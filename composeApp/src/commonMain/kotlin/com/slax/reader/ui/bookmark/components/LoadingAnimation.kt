@@ -36,12 +36,12 @@ import kotlin.math.sin
 
 
 /**
- * 加载动画组件
- * 显示三个渐变色横条闪动效果
+ * 骨架屏加载动画 - 用于 Outline 内容初始加载状态
+ * 显示三个渐变色横条持续闪动，占位正文区域
  */
 @Composable
-fun LoadingAnimation() {
-    val infiniteTransition = rememberInfiniteTransition(label = "loadingAnimation")
+fun SkeletonLoadingAnimation() {
+    val infiniteTransition = rememberInfiniteTransition(label = "skeletonLoadingAnimation")
     val alpha by infiniteTransition.animateFloat(
         initialValue = 0.3f,
         targetValue = 1f,
@@ -78,11 +78,12 @@ fun LoadingAnimation() {
 }
 
 /**
- * dot 旋转加载环
+ * 旋转点环加载动画 - 用于收缩态按钮（CollapsedOutlineButton）的加载状态
+ * 显示 20 个渐变色圆点组成的旋转环形
  */
 @Composable
-fun DotLoadingRing(modifier: Modifier = Modifier) {
-    val infiniteTransition = rememberInfiniteTransition(label = "dotRingRotation")
+fun DotsRingLoadingAnimation(modifier: Modifier = Modifier) {
+    val infiniteTransition = rememberInfiniteTransition(label = "dotsRingRotation")
     val rotation by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
@@ -124,11 +125,12 @@ fun DotLoadingRing(modifier: Modifier = Modifier) {
 }
 
 /**
- * 圆点加载组件
+ * 四色跳动点加载动画 - 用于 Outline 流式内容加载过程中的底部提示
+ * 显示 4 个彩色圆点依次上下弹跳
  */
 @Composable
-fun DotLoadingAnimation() {
-    val infiniteTransition = rememberInfiniteTransition(label = "dotLoadingAnimation")
+fun DotsLineLoadingAnimation() {
+    val infiniteTransition = rememberInfiniteTransition(label = "dotsLineLoadingAnimation")
 
     val dotColors = listOf(
         Color(0xFF16B998),

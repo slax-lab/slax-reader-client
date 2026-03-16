@@ -98,17 +98,9 @@ class BookmarkDelegate(
         }
     }
 
-    fun onDeleteBookmark(onSuccess: () -> Unit, onFailure: () -> Unit) {
-        scope.launch {
-            runCatching {
-                bookmarkIdFlow.value?.let { id ->
-                    bookmarkDao.deleteBookmark(id)
-                }
-            }.onSuccess {
-                onSuccess()
-            }.onFailure {
-                onFailure()
-            }
+    suspend fun deleteBookmark(): Unit = withContext(Dispatchers.IO) {
+        bookmarkIdFlow.value?.let { id ->
+            bookmarkDao.deleteBookmark(id)
         }
     }
 

@@ -9,6 +9,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -71,8 +72,8 @@ class OutlineDelegate(
         val id = currentBookmarkId ?: return
         val position = currentScrollPosition
         if (position < 0) return
-        // 使用独立 CoroutineScope，避免 ViewModel scope 取消导致写入丢失
-        CoroutineScope(Dispatchers.IO).launch {
+        // 使用 NonCancellable 确保 ViewModel scope 取消（页面关闭）时写入操作仍能完成
+        scope.launch(NonCancellable + Dispatchers.IO) {
             localBookmarkDao.updateLocalBookmarkOutlineScrollPosition(id, position)
         }
     }
@@ -159,6 +160,16 @@ class OutlineDelegate(
         }
     }
 
+    /**
+     * 对话框状态转换矩阵：
+     *
+     * NONE    ──showDialog──────► EXPANDED
+     * HIDDEN  ──expandDialog────► EXPANDED
+     * EXPANDED──collapseDialog──► COLLAPSED
+     * COLLAPSED─expandDialog────► EXPANDED
+     * EXPANDED/COLLAPSED──hideDialog──► HIDDEN
+     * HIDDEN  ──reset───────────► NONE
+     */
     fun showDialog() {
         transitionTo(OutlineDialogStatus.EXPANDED)
     }
