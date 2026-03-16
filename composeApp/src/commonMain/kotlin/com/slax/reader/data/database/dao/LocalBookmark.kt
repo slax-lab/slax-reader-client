@@ -213,11 +213,11 @@ class LocalBookmarkDao(
             tx.execute(
                 """
                 INSERT INTO ps_data_local__local_bookmark_info (id, data)
-                VALUES (?, json_object('outline_scroll_position', ?))
+                VALUES (?, json_object('outline_read_position', ?))
                 ON CONFLICT(id) DO UPDATE SET
                 data = json_set(
                     ps_data_local__local_bookmark_info.data,
-                    '$.outline_scroll_position', json_extract(excluded.data, '$.outline_scroll_position')
+                    '$.outline_read_position', json_extract(excluded.data, '$.outline_read_position')
                 );
             """.trimIndent(),
                 parameters = listOf(bookmarkId, scrollPosition.toString())
@@ -229,13 +229,13 @@ class LocalBookmarkDao(
         val raw = database.getOptional(
             """
             SELECT
-                json_extract(data, '$.outline_scroll_position') AS outline_scroll_position
+                json_extract(data, '$.outline_read_position') AS outline_read_position
             FROM ps_data_local__local_bookmark_info
             WHERE id = ?
             """.trimIndent(),
             parameters = listOf(bookmarkId),
             mapper = { cursor ->
-                cursor.getStringOptional("outline_scroll_position") ?: ""
+                cursor.getStringOptional("outline_read_position") ?: ""
             }
         )
         return raw?.takeIf { it.isNotEmpty() }?.toIntOrNull()
