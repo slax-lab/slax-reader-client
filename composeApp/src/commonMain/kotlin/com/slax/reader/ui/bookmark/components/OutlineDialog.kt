@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp as lerpDp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
+import com.slax.reader.ui.bookmark.LocalToolbarVisible
 import com.slax.reader.ui.bookmark.states.OutlineDialogStatus
 import com.slax.reader.ui.bookmark.states.OutlineDialogStatus.*
 import com.slax.reader.utils.i18n
@@ -54,6 +55,19 @@ fun OutlineDialog() {
 
     val anim = transition.outlineAnimations()
     val collapsedVisible = status == COLLAPSED || anim.collapsedAlpha > 0f
+
+    // 跟随 FloatingActionBar 的动画
+    val visible by LocalToolbarVisible.current
+    val density = LocalDensity.current
+    val hiddenOffsetPx = remember(density) { with(density) { 150.dp.toPx() } }
+    val collapsedTranslationY = remember { Animatable(if (visible) 0f else hiddenOffsetPx) }
+
+    LaunchedEffect(visible) {
+        collapsedTranslationY.animateTo(
+            targetValue = if (visible) 0f else hiddenOffsetPx,
+            animationSpec = tween(durationMillis = 300)
+        )
+    }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val screenWidth = maxWidth
@@ -106,7 +120,8 @@ fun OutlineDialog() {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(bottom = 58.dp)
-                    .offset(x = (-87).dp),
+                    .offset(x = (-87).dp)
+                    .graphicsLayer { translationY = collapsedTranslationY.value },
                 contentAlignment = Alignment.BottomCenter
             ) {
                 Box(contentAlignment = Alignment.Center) {
