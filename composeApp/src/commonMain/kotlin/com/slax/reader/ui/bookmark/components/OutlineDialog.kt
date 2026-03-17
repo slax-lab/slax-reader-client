@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.lerp as lerpDp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.states.OutlineDialogStatus
+import com.slax.reader.ui.bookmark.states.OutlineDialogStatus.*
 import com.slax.reader.utils.i18n
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -45,117 +46,14 @@ fun OutlineDialog() {
 
     val status by viewModel.outlineDelegate.dialogStatus.collectAsState()
 
-    if (status == OutlineDialogStatus.NONE) return
+    if (status == NONE) return
 
-    val transitionState = remember { MutableTransitionState(OutlineDialogStatus.HIDDEN) }
+    val transitionState = remember { MutableTransitionState(HIDDEN) }
     transitionState.targetState = status
     val transition = rememberTransition(transitionState, label = "outlineTransition")
 
-    // === 背景遮罩透明度 ===
-    val bgAlpha by transition.animateFloat(
-        label = "bgAlpha",
-        transitionSpec = { tween(300) }
-    ) { state ->
-        if (state == OutlineDialogStatus.EXPANDED) 0.5f else 0f
-    }
-
-    // === 展开弹窗透明度（方向感知：EXPANDED↔HIDDEN 标准淡入淡出，EXPANDED↔COLLAPSED 快速配合变形）===
-    val expandedAlpha by transition.animateFloat(
-        label = "expandedAlpha",
-        transitionSpec = {
-            when {
-                OutlineDialogStatus.HIDDEN isTransitioningTo OutlineDialogStatus.EXPANDED ->
-                    tween(250)
-                OutlineDialogStatus.COLLAPSED isTransitioningTo OutlineDialogStatus.EXPANDED ->
-                    tween(180, delayMillis = 380)
-                OutlineDialogStatus.EXPANDED isTransitioningTo OutlineDialogStatus.COLLAPSED ->
-                    tween(120)
-                OutlineDialogStatus.EXPANDED isTransitioningTo OutlineDialogStatus.HIDDEN ->
-                    tween(200)
-                else -> snap()
-            }
-        }
-    ) { state -> if (state == OutlineDialogStatus.EXPANDED) 1f else 0f }
-
-    // === 展开弹窗滑动偏移（仅 HIDDEN↔EXPANDED 方向有效，其他方向 snap 到 0）===
-    val expandedSlideOffset by transition.animateFloat(
-        label = "expandedSlideOffset",
-        transitionSpec = {
-            when {
-                OutlineDialogStatus.HIDDEN isTransitioningTo OutlineDialogStatus.EXPANDED ->
-                    tween(300, easing = FastOutSlowInEasing)
-                OutlineDialogStatus.EXPANDED isTransitioningTo OutlineDialogStatus.HIDDEN ->
-                    tween(250, easing = FastOutSlowInEasing)
-                else -> snap()
-            }
-        }
-    ) { state ->
-        when (state) {
-            OutlineDialogStatus.EXPANDED -> 0f
-            OutlineDialogStatus.HIDDEN -> 1f
-            else -> 0f
-        }
-    }
-
-    // === 收缩按钮透明度（方向感知：EXPANDED↔COLLAPSED 时配合变形时序，其他方向标准淡入淡出）===
-    val collapsedAlpha by transition.animateFloat(
-        label = "collapsedAlpha",
-        transitionSpec = {
-            when {
-                OutlineDialogStatus.EXPANDED isTransitioningTo OutlineDialogStatus.COLLAPSED ->
-                    tween(150, delayMillis = 430)
-                OutlineDialogStatus.COLLAPSED isTransitioningTo OutlineDialogStatus.EXPANDED ->
-                    tween(100)
-                OutlineDialogStatus.HIDDEN isTransitioningTo OutlineDialogStatus.COLLAPSED ->
-                    tween(200)
-                OutlineDialogStatus.COLLAPSED isTransitioningTo OutlineDialogStatus.HIDDEN ->
-                    tween(200)
-                else -> snap()
-            }
-        }
-    ) { state -> if (state == OutlineDialogStatus.COLLAPSED) 1f else 0f }
-
-    // === 变形进度：0f = 收缩圆形位置，1f = 展开矩形位置（仅 EXPANDED↔COLLAPSED 时动画）===
-    val morphProgress by transition.animateFloat(
-        label = "morphProgress",
-        transitionSpec = {
-            when {
-                OutlineDialogStatus.EXPANDED isTransitioningTo OutlineDialogStatus.COLLAPSED ->
-                    tween(380, delayMillis = 100, easing = FastOutSlowInEasing)
-                OutlineDialogStatus.COLLAPSED isTransitioningTo OutlineDialogStatus.EXPANDED ->
-                    tween(380, delayMillis = 80, easing = FastOutSlowInEasing)
-                else -> snap()
-            }
-        }
-    ) { state -> if (state == OutlineDialogStatus.EXPANDED) 1f else 0f }
-
-    // === 变形遮罩透明度（keyframes 精确控制：仅在 EXPANDED↔COLLAPSED 过渡期间可见）===
-    val morphAlpha by transition.animateFloat(
-        label = "morphAlpha",
-        transitionSpec = {
-            when {
-                OutlineDialogStatus.EXPANDED isTransitioningTo OutlineDialogStatus.COLLAPSED ->
-                    keyframes {
-                        durationMillis = 580
-                        0f at 0 using LinearEasing
-                        1f at 0 using LinearEasing
-                        1f at 480 using LinearEasing
-                        0f at 580
-                    }
-                OutlineDialogStatus.COLLAPSED isTransitioningTo OutlineDialogStatus.EXPANDED ->
-                    keyframes {
-                        durationMillis = 560
-                        0f at 0 using LinearEasing
-                        1f at 60 using LinearEasing
-                        1f at 460 using LinearEasing
-                        0f at 560
-                    }
-                else -> snap()
-            }
-        }
-    ) { 0f }
-
-    val collapsedVisible = status == OutlineDialogStatus.COLLAPSED || collapsedAlpha > 0f
+    val anim = transition.outlineAnimations()
+    val collapsedVisible = status == COLLAPSED || anim.collapsedAlpha > 0f
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val screenWidth = maxWidth
@@ -165,11 +63,11 @@ fun OutlineDialog() {
         val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
         val dialogHeight = screenHeight - statusBarHeight - 36.dp
 
-        if (bgAlpha > 0f) {
+        if (anim.bgAlpha > 0f) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = bgAlpha))
+                    .background(Color.Black.copy(alpha = anim.bgAlpha))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -178,10 +76,10 @@ fun OutlineDialog() {
             )
         }
 
-        if (morphAlpha > 0f) {
+        if (anim.morphAlpha > 0f) {
             MorphOverlay(
-                morphAlpha = morphAlpha,
-                morphProgress = morphProgress,
+                morphAlpha = anim.morphAlpha,
+                morphProgress = anim.morphProgress,
                 screenWidth = screenWidth,
                 dialogHeight = dialogHeight
             )
@@ -191,9 +89,9 @@ fun OutlineDialog() {
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer {
-                    alpha = expandedAlpha
-                    translationY = if (expandedAlpha > 0f) {
-                        expandedSlideOffset * screenHeightPx
+                    alpha = anim.expandedAlpha
+                    translationY = if (anim.expandedAlpha > 0f) {
+                        anim.expandedSlideOffset * screenHeightPx
                     } else {
                         screenHeightPx
                     }
@@ -228,7 +126,7 @@ fun OutlineDialog() {
                     )
 
                     // 隔离阴影动画
-                    Box(modifier = Modifier.graphicsLayer { alpha = collapsedAlpha },
+                    Box(modifier = Modifier.graphicsLayer { alpha = anim.collapsedAlpha },
                         contentAlignment = Alignment.Center
                     ) {
                         CollapsedOutlineButton()
@@ -510,4 +408,110 @@ private fun ErrorView(error: String) {
             )
         }
     }
+}
+
+// Outline 展开收起最小化 过渡动画定义
+
+private data class OutlineAnimations(
+    val bgAlpha: Float,
+    val expandedAlpha: Float,
+    val expandedSlideOffset: Float,
+    val collapsedAlpha: Float,
+    val morphProgress: Float,
+    val morphAlpha: Float,
+)
+
+/**
+ * 根据过渡方向匹配动画规格，未匹配时回退 snap()
+ */
+private fun Transition.Segment<OutlineDialogStatus>.specFor(
+    vararg pairs: Pair<Pair<OutlineDialogStatus, OutlineDialogStatus>, FiniteAnimationSpec<Float>>
+): FiniteAnimationSpec<Float> {
+    for ((transition, spec) in pairs) {
+        if (transition.first isTransitioningTo transition.second) return spec
+    }
+    return snap()
+}
+
+@Composable
+private fun Transition<OutlineDialogStatus>.outlineAnimations(): OutlineAnimations {
+    val bgAlpha by animateFloat(
+        label = "bgAlpha",
+        transitionSpec = { tween(300) }
+    ) { if (it == EXPANDED) 0.5f else 0f }
+
+    val expandedAlpha by animateFloat(
+        label = "expandedAlpha",
+        transitionSpec = {
+            specFor(
+                (HIDDEN to EXPANDED) to tween(250),
+                (COLLAPSED to EXPANDED) to tween(180, delayMillis = 380),
+                (EXPANDED to COLLAPSED) to tween(120),
+                (EXPANDED to HIDDEN) to tween(200),
+            )
+        }
+    ) { if (it == EXPANDED) 1f else 0f }
+
+    val expandedSlideOffset by animateFloat(
+        label = "expandedSlideOffset",
+        transitionSpec = {
+            specFor(
+                (HIDDEN to EXPANDED) to tween(300, easing = FastOutSlowInEasing),
+                (EXPANDED to HIDDEN) to tween(250, easing = FastOutSlowInEasing),
+            )
+        }
+    ) { if (it == EXPANDED) 0f else if (it == HIDDEN) 1f else 0f }
+
+    val collapsedAlpha by animateFloat(
+        label = "collapsedAlpha",
+        transitionSpec = {
+            specFor(
+                (EXPANDED to COLLAPSED) to tween(150, delayMillis = 430),
+                (COLLAPSED to EXPANDED) to tween(100),
+                (HIDDEN to COLLAPSED) to tween(200),
+                (COLLAPSED to HIDDEN) to tween(200),
+            )
+        }
+    ) { if (it == COLLAPSED) 1f else 0f }
+
+    val morphProgress by animateFloat(
+        label = "morphProgress",
+        transitionSpec = {
+            specFor(
+                (EXPANDED to COLLAPSED) to tween(380, delayMillis = 100, easing = FastOutSlowInEasing),
+                (COLLAPSED to EXPANDED) to tween(380, delayMillis = 80, easing = FastOutSlowInEasing),
+            )
+        }
+    ) { if (it == EXPANDED) 1f else 0f }
+
+    val morphAlpha by animateFloat(
+        label = "morphAlpha",
+        transitionSpec = {
+            specFor(
+                (EXPANDED to COLLAPSED) to keyframes {
+                    durationMillis = 580
+                    0f at 0 using LinearEasing
+                    1f at 0 using LinearEasing
+                    1f at 480 using LinearEasing
+                    0f at 580
+                },
+                (COLLAPSED to EXPANDED) to keyframes {
+                    durationMillis = 560
+                    0f at 0 using LinearEasing
+                    1f at 60 using LinearEasing
+                    1f at 460 using LinearEasing
+                    0f at 560
+                },
+            )
+        }
+    ) { 0f }
+
+    return OutlineAnimations(
+        bgAlpha = bgAlpha,
+        expandedAlpha = expandedAlpha,
+        expandedSlideOffset = expandedSlideOffset,
+        collapsedAlpha = collapsedAlpha,
+        morphProgress = morphProgress,
+        morphAlpha = morphAlpha,
+    )
 }
