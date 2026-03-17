@@ -22,6 +22,9 @@ object DeleteAccountRoutes
 @Serializable
 object SubscriptionManagerRoutes
 
+@Serializable
+object DebugRoutes
+
 interface ReactNativeRoute {
     val moduleName: String
 }
