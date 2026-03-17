@@ -451,7 +451,7 @@ private fun ZoomableImagePage(
 }
 
 /**
- * 图片加载进度指示器，有进度时显示确定性圆形进度条，否则显示不确定性进度条
+ * 图片加载进度指示器
  */
 @Composable
 private fun ImageLoadingIndicator(
@@ -467,6 +467,7 @@ private fun ImageLoadingIndicator(
             strokeWidth = 3.dp
         )
     } else {
+        // 若获取不到进度则显示转圈
         CircularProgressIndicator(
             modifier = modifier,
             color = Color.White,
