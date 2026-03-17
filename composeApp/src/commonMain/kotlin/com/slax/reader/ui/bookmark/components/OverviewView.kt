@@ -1,11 +1,13 @@
 package com.slax.reader.ui.bookmark.components
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -79,7 +81,10 @@ fun OverviewView(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable {
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = ripple(color = Color.Black.copy(alpha = 0.08f))
+                ) {
                     viewModel.overlayDelegate.showOverlay(BookmarkOverlay.Overview)
                     bookmarkEvent.action("overview_interact", "open").send()
                 }
