@@ -72,8 +72,7 @@ class OutlineDelegate(
         val id = currentBookmarkId ?: return
         val position = currentScrollPosition
         if (position < 0) return
-        // 使用 NonCancellable 确保 ViewModel scope 取消（页面关闭）时写入操作仍能完成
-        scope.launch(NonCancellable + Dispatchers.IO) {
+        scope.launch(Dispatchers.IO) {
             localBookmarkDao.updateLocalBookmarkOutlineScrollPosition(id, position)
         }
     }
@@ -86,10 +85,10 @@ class OutlineDelegate(
         currentBookmarkId = bookmarkId
 
         scope.launch {
-            // 先加载保存的滚动位置，确保在 outline 内容更新前就绑定到 savedScrollPosition
             val savedPos = withContext(Dispatchers.IO) {
                 localBookmarkDao.getLocalBookmarkOutlineScrollPosition(bookmarkId)
             }
+
             if (savedPos != null && savedPos > 0) {
                 savedScrollPosition = savedPos
             }
@@ -160,16 +159,6 @@ class OutlineDelegate(
         }
     }
 
-    /**
-     * 对话框状态转换矩阵：
-     *
-     * NONE    ──showDialog──────► EXPANDED
-     * HIDDEN  ──expandDialog────► EXPANDED
-     * EXPANDED──collapseDialog──► COLLAPSED
-     * COLLAPSED─expandDialog────► EXPANDED
-     * EXPANDED/COLLAPSED──hideDialog──► HIDDEN
-     * HIDDEN  ──reset───────────► NONE
-     */
     fun showDialog() {
         transitionTo(OutlineDialogStatus.EXPANDED)
     }

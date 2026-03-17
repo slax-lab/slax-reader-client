@@ -192,7 +192,6 @@ fun OutlineDialog() {
                 .fillMaxSize()
                 .graphicsLayer {
                     alpha = expandedAlpha
-                    // 不可见时移至屏幕外，避免透明状态下仍拦截触摸事件
                     translationY = if (expandedAlpha > 0f) {
                         expandedSlideOffset * screenHeightPx
                     } else {
@@ -242,9 +241,6 @@ fun OutlineDialog() {
 
 /**
  * 变形遮罩层：在 EXPANDED ↔ COLLAPSED 过渡期间，以白色形状模拟容器从矩形变形为圆形的效果。
- *
- * morphProgress：0f = 收缩态（50dp 圆形，位于按钮位置），1f = 展开态（全宽矩形，位于弹窗位置）
- * morphAlpha：由 keyframes 控制，仅在过渡期间可见，静止时始终为 0f。
  */
 @Composable
 private fun MorphOverlay(
@@ -338,7 +334,6 @@ private fun ExpandedOutlineDialog() {
                                 scrollState.scrollTo(savedPos.coerceAtMost(scrollState.maxValue))
                             }
 
-                            // 恢复完成后再开始监听，顺序执行避免竞态
                             @OptIn(kotlinx.coroutines.FlowPreview::class)
                             snapshotFlow { scrollState.value }
                                 .distinctUntilChanged()

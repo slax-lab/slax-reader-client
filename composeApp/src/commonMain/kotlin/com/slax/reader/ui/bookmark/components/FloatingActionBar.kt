@@ -43,8 +43,7 @@ fun FloatingActionBar(
     val isStarred by remember { derivedStateOf { detailState.isStarred } }
     val isArchived by remember { derivedStateOf { detailState.isArchived } }
 
-    // 观察大纲收缩状态，用于整体居中动画
-    // 使用 map + distinctUntilChanged 避免每次 outlineStatus 变化都触发重组
+    // Outline收缩状态，使用 map + distinctUntilChanged 避免每次 outlineStatus 变化都触发重组
     val isOutlineCollapsed by viewModel.outlineDelegate.dialogStatus
         .map { it == OutlineDialogStatus.COLLAPSED }
         .distinctUntilChanged()
@@ -54,9 +53,6 @@ fun FloatingActionBar(
     val hiddenOffsetPx = remember(density) { with(density) { 150.dp.toPx() } }
     val translationY = remember { Animatable(if (visible) 0f else hiddenOffsetPx) }
 
-    // 水平偏移动画：收缩态时向右偏移 31dp，与 CollapsedOutlineButton 整体居中
-    // 计算依据：组合总宽 224dp = Button(50) + Gap(12) + FAB(162)
-    // FAB 需向右偏移 (224/2 - 162/2) = 31dp
     val collapsedOffsetPx = remember(density) { with(density) { 31.dp.toPx() } }
     val translationX = remember { Animatable(0f) }
 

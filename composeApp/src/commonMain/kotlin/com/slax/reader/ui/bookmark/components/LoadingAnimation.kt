@@ -36,8 +36,7 @@ import kotlin.math.sin
 
 
 /**
- * 骨架屏加载动画 - 用于 Outline 内容初始加载状态
- * 显示三个渐变色横条持续闪动，占位正文区域
+ * 骨架屏加载动画
  */
 @Composable
 fun SkeletonLoadingAnimation() {
@@ -78,8 +77,7 @@ fun SkeletonLoadingAnimation() {
 }
 
 /**
- * 旋转点环加载动画 - 用于收缩态按钮（CollapsedOutlineButton）的加载状态
- * 显示 20 个渐变色圆点组成的旋转环形
+ * 旋转点环加载动画
  */
 @Composable
 fun DotsRingLoadingAnimation(modifier: Modifier = Modifier) {
@@ -125,8 +123,7 @@ fun DotsRingLoadingAnimation(modifier: Modifier = Modifier) {
 }
 
 /**
- * 四色跳动点加载动画 - 用于 Outline 流式内容加载过程中的底部提示
- * 显示 4 个彩色圆点依次上下弹跳
+ * 跳动点加载动画
  */
 @Composable
 fun DotsLineLoadingAnimation() {
