@@ -103,7 +103,10 @@ fun LoginScreen(navController: NavHostController) {
         Column(
             modifier = Modifier.weight(1f, fill = true)
         ) {
-            Spacer(modifier = Modifier.height(84.dp))
+            BoxWithConstraints {
+                val topSpacing = (maxWidth * 128f / 375f).coerceAtMost(128.dp)
+                Spacer(modifier = Modifier.height(topSpacing))
+            }
 
             Text(
                 text = "login_welcome_title".i18n(),
