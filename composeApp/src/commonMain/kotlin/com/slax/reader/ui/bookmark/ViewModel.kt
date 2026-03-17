@@ -127,6 +127,15 @@ class BookmarkDetailViewModel(
         }
 
         loadOutline()
+
+        // 如果订阅了，Outline 按钮默认展示
+        viewModelScope.launch {
+            val isSubscribed = subscriptionInfo.value?.checkIsSubscribed() == true
+            if (isSubscribed) {
+                outlineDelegate.showCollapsed()
+            }
+        }
+
         refreshContent()
     }
 

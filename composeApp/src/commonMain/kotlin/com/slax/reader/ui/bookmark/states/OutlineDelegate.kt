@@ -159,6 +159,12 @@ class OutlineDelegate(
         }
     }
 
+    fun showCollapsed() {
+        if (_dialogStatus.value == OutlineDialogStatus.NONE) {
+            _dialogStatus.value = OutlineDialogStatus.COLLAPSED
+        }
+    }
+
     fun showDialog() {
         transitionTo(OutlineDialogStatus.EXPANDED)
     }
