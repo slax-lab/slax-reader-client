@@ -112,7 +112,7 @@ fun OutlineDialog() {
                 },
             contentAlignment = Alignment.BottomCenter
         ) {
-            ExpandedOutlineDialog()
+            ExpandedOutlineDialog(animationSettled = transitionState.isIdle)
         }
 
         if (collapsedVisible) {
@@ -195,7 +195,7 @@ private fun MorphOverlay(
  * 全屏展开状态的弹窗
  */
 @Composable
-private fun ExpandedOutlineDialog() {
+private fun ExpandedOutlineDialog(animationSettled: Boolean = false) {
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val outlineState by viewModel.outlineDelegate.outlineState.collectAsState()
 
@@ -238,6 +238,12 @@ private fun ExpandedOutlineDialog() {
                     else -> {
                         val scrollState = rememberScrollState()
 
+                        // 只有在动画完全结束后才显示 Markdown 内容，避免在动画过程与 Markdown 内容渲染重合导致卡顿
+                        var contentReady by remember { mutableStateOf(false) }
+                        LaunchedEffect(animationSettled) {
+                            if (animationSettled) contentReady = true
+                        }
+
                         LaunchedEffect(Unit) {
                             // 恢复滚动位置
                             val savedPos = viewModel.outlineDelegate.savedScrollPosition
@@ -263,14 +269,16 @@ private fun ExpandedOutlineDialog() {
                                     .verticalScroll(scrollState)
                                     .padding(top = 4.dp)
                             ) {
-                                MarkdownRenderer(
-                                    onLinkClick = { url ->
-                                        if (url.startsWith("#")) {
-                                            val anchorText = url.removePrefix("#")
-                                            viewModel.requestScrollToAnchor(anchorText)
+                                if (contentReady) {
+                                    MarkdownRenderer(
+                                        onLinkClick = { url ->
+                                            if (url.startsWith("#")) {
+                                                val anchorText = url.removePrefix("#")
+                                                viewModel.requestScrollToAnchor(anchorText)
+                                            }
                                         }
-                                    }
-                                )
+                                    )
+                                }
 
                                 if (outlineState.isLoading) {
                                     Row(
