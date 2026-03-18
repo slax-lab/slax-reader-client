@@ -9,13 +9,18 @@ import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.domain.coordinator.CoordinatorDomain
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class InboxListViewModel(
@@ -45,11 +50,35 @@ class InboxListViewModel(
     private val _scrollToTopEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val scrollToTopEvent: SharedFlow<Unit> = _scrollToTopEvent.asSharedFlow()
 
+    private val _pendingDeleteId = MutableStateFlow<String?>(null)
+    val pendingDeleteId: StateFlow<String?> = _pendingDeleteId.asStateFlow()
+
+    private var pendingDeleteJob: Job? = null
+
     private val _processingUrlEvent = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val processingUrlEvent: SharedFlow<String> = _processingUrlEvent.asSharedFlow()
 
     fun scrollToTop() {
         _scrollToTopEvent.tryEmit(Unit)
+    }
+
+    fun markPendingDelete(bookmarkId: String) {
+        _pendingDeleteId.value = bookmarkId
+        // 在 viewModelScope 中启动兜底删除，即使动画被中断也能执行
+        pendingDeleteJob?.cancel()
+        pendingDeleteJob = viewModelScope.launch {
+            delay(1500L)
+            commitDelete()
+        }
+    }
+
+    fun commitDelete() {
+        pendingDeleteJob?.cancel()
+        val id = _pendingDeleteId.value ?: return
+        _pendingDeleteId.value = null
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { bookmarkDao.deleteBookmark(id) }
+        }
     }
 
     fun emitProcessingUrl(url: String) {

@@ -1,5 +1,11 @@
 package com.slax.reader.ui.inbox.compenents
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -23,6 +29,7 @@ import androidx.navigation.NavController
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.utils.i18n
+import kotlinx.coroutines.delay
 
 @Composable
 fun ArticleList(
@@ -33,6 +40,7 @@ fun ArticleList(
     println("[watch][UI] recomposition ArticleList")
 
     val bookmarks by viewModel.bookmarks.collectAsState()
+    val pendingDeleteId by viewModel.pendingDeleteId.collectAsState()
 
     val lazyListState = rememberLazyListState()
     val dividerLine: @Composable () -> Unit = remember {
@@ -69,14 +77,59 @@ fun ArticleList(
                 key = { _, bookmark -> bookmark.id },
                 contentType = { _, _ -> "bookmark" }
             ) { index, bookmark ->
-                BookmarkItemRow(
-                    navCtrl = navCtrl,
-                    viewModel = viewModel,
-                    bookmark = bookmark,
-                    onEditTitle = onEditTitle
-                )
+                var itemVisible by remember { mutableStateOf(true) }
+                val overlayAlpha = remember { Animatable(0f) }
 
-                dividerLine()
+                val baseDuration = 600
+
+                LaunchedEffect(pendingDeleteId) {
+                    if (bookmark.id == pendingDeleteId && itemVisible) {
+                        delay(50)
+                        // 先播放背景变暗动画
+                        overlayAlpha.animateTo(
+                            targetValue = 0.08f,
+                            animationSpec = tween(baseDuration / 2)
+                        )
+                        delay(100)
+                        // 再触发收缩消失
+                        itemVisible = false
+                    }
+                }
+
+
+                AnimatedVisibility(
+                    visible = itemVisible,
+                    exit = shrinkVertically(
+                        animationSpec = tween(baseDuration + 100, easing = FastOutSlowInEasing)
+                    ) + fadeOut(animationSpec = tween(baseDuration)),
+                ) {
+                    Box {
+                        Column {
+                            BookmarkItemRow(
+                                navCtrl = navCtrl,
+                                viewModel = viewModel,
+                                bookmark = bookmark,
+                                onEditTitle = onEditTitle
+                            )
+                            dividerLine()
+                        }
+                        // 变暗遮罩层
+                        if (overlayAlpha.value > 0f) {
+                            Box(
+                                modifier = Modifier
+                                    .matchParentSize()
+                                    .background(Color.Black.copy(alpha = overlayAlpha.value))
+                            )
+                        }
+                    }
+                }
+
+                if (!itemVisible) {
+                    LaunchedEffect(Unit) {
+                        delay(baseDuration + 150L)
+                        viewModel.commitDelete()
+                    }
+                }
             }
 
             item {

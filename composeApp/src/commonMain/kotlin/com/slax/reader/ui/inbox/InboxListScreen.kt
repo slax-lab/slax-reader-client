@@ -37,13 +37,20 @@ import slax_reader_client.composeapp.generated.resources.ic_inbox_tab
 import slax_reader_client.composeapp.generated.resources.ic_xs_inbox_add
 
 @Composable
-fun InboxListScreen(navCtrl: NavController) {
+fun InboxListScreen(navCtrl: NavController, deletedBookmarkId: String? = null) {
     val inboxViewModel = koinInject<InboxListViewModel>()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
     var showAddLinkDialog by remember { mutableStateOf(false) }
     var editingBookmark by remember { mutableStateOf<InboxListBookmarkItem?>(null) }
+
+    // 从详情页返回时触发删除动画
+    LaunchedEffect(deletedBookmarkId) {
+        if (deletedBookmarkId != null) {
+            inboxViewModel.markPendingDelete(deletedBookmarkId)
+        }
+    }
 
     println("[watch][UI] recomposition InboxListScreen")
 

@@ -51,7 +51,7 @@ sealed interface BookmarkDetailEffect {
     data object NavigateBack : BookmarkDetailEffect
     data object NavigateToSubscription : BookmarkDetailEffect
     data class NavigateToFeedback(val params: FeedbackPageParams) : BookmarkDetailEffect
-
+    data class DeleteAndNavigateBack(val bookmarkId: String) : BookmarkDetailEffect
     data class ScrollToAnchor(val anchor: String) : BookmarkDetailEffect
 }
 
@@ -196,18 +196,12 @@ class BookmarkDetailViewModel(
     }
 
     fun confirmDeleteBookmark() {
+        val id = _bookmarkId.value ?: return
+        _deleteConfirmVisible.value = false
+        overlayDelegate.dismissOverlay(BookmarkOverlay.Toolbar)
+        bookmarkEvent.action("delete").send()
         viewModelScope.launch {
-            runCatching { bookmarkDelegate.deleteBookmark() }
-                .onSuccess {
-                    bookmarkEvent.action("delete").send()
-                    _deleteConfirmVisible.value = false
-                    overlayDelegate.dismissOverlay(BookmarkOverlay.Toolbar)
-                    requestNavigateBack()
-                }
-                .onFailure {
-                    bookmarkEvent.action("delete_failed").send()
-                    _deleteConfirmVisible.value = false
-                }
+            _effects.emit(BookmarkDetailEffect.DeleteAndNavigateBack(id))
         }
     }
 
