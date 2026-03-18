@@ -48,6 +48,7 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
             when (state) {
                 AppLifecycleState.ON_STOP -> {
                     viewModel.flushReadPosition()
+                    viewModel.flushOutlineScrollPosition()
                     viewModel.onStopRecordContinue()
                 }
                 AppLifecycleState.ON_RESUME -> {

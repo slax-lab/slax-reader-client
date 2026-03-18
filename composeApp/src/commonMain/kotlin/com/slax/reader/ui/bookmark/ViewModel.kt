@@ -307,6 +307,10 @@ class BookmarkDetailViewModel(
         }
     }
 
+    fun flushOutlineScrollPosition() {
+        outlineDelegate.flushScrollPosition()
+    }
+
     override fun onCleared() {
         super.onCleared()
 
