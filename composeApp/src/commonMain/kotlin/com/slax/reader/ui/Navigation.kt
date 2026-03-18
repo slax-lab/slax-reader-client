@@ -114,13 +114,6 @@ fun SlaxNavigation(
                             navCtrl.popBackStack()
                         }
 
-                        is DetailScreenEvent.DeleteAndBack -> {
-                            navCtrl.previousBackStackEntry?.savedStateHandle?.set(
-                                "deletedBookmarkId", event.bookmarkId
-                            )
-                            navCtrl.popBackStack()
-                        }
-
                         DetailScreenEvent.NavigateToSubscription -> {
                             navCtrl.navigate(SubscriptionManagerRoutes)
                             subscriptionEvent.view().source("dialog").send()
@@ -142,18 +135,8 @@ fun SlaxNavigation(
                     .send()
             }
         }
-        composable<InboxRoutes> { backStackEntry ->
-            val deletedBookmarkId by backStackEntry.savedStateHandle
-                .getStateFlow<String?>("deletedBookmarkId", null)
-                .collectAsState()
-
-            InboxListScreen(navCtrl, deletedBookmarkId = deletedBookmarkId)
-
-            LaunchedEffect(deletedBookmarkId) {
-                if (deletedBookmarkId != null) {
-                    backStackEntry.savedStateHandle.remove<String>("deletedBookmarkId")
-                }
-            }
+        composable<InboxRoutes> {
+            InboxListScreen(navCtrl)
             LaunchedEffect(Unit) { bookmarkListEvent.view().send() }
         }
         composable<SettingsRoutes> {

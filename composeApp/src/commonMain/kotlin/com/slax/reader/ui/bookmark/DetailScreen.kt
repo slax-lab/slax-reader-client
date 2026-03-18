@@ -14,7 +14,6 @@ sealed interface DetailScreenEvent {
     data object BackClick : DetailScreenEvent
     data object NavigateToSubscription : DetailScreenEvent
     data class NavigateToFeedback(val params: FeedbackPageParams) : DetailScreenEvent
-    data class DeleteAndBack(val bookmarkId: String) : DetailScreenEvent
 }
 
 @Composable
@@ -36,9 +35,6 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
                 BookmarkDetailEffect.NavigateToSubscription -> onEvent(DetailScreenEvent.NavigateToSubscription)
                 is BookmarkDetailEffect.NavigateToFeedback -> {
                     onEvent(DetailScreenEvent.NavigateToFeedback(effect.params))
-                }
-                is BookmarkDetailEffect.DeleteAndNavigateBack -> {
-                    onEvent(DetailScreenEvent.DeleteAndBack(effect.bookmarkId))
                 }
                 is BookmarkDetailEffect.ScrollToAnchor -> {
                     webViewState.scrollToAnchor(effect.anchor)

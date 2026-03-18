@@ -1,11 +1,5 @@
 package com.slax.reader.ui.inbox.compenents
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -26,10 +20,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.slax.reader.const.component.DismissableItem
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.utils.i18n
-import kotlinx.coroutines.delay
 
 @Composable
 fun ArticleList(
@@ -51,6 +45,11 @@ fun ArticleList(
         viewModel.scrollToTopEvent.collect {
             lazyListState.animateScrollToItem(0)
         }
+    }
+
+    // 列表页进入组合树时，消费详情页传来的待删除 ID 并触发动画
+    LaunchedEffect(Unit) {
+        viewModel.activatePendingDelete()
     }
 
     if (bookmarks.isEmpty()) {
@@ -76,58 +75,19 @@ fun ArticleList(
                 items = bookmarks,
                 key = { _, bookmark -> bookmark.id },
                 contentType = { _, _ -> "bookmark" }
-            ) { index, bookmark ->
-                var itemVisible by remember { mutableStateOf(true) }
-                val overlayAlpha = remember { Animatable(0f) }
-
-                val baseDuration = 600
-
-                LaunchedEffect(pendingDeleteId) {
-                    if (bookmark.id == pendingDeleteId && itemVisible) {
-                        delay(50)
-                        // 先播放背景变暗动画
-                        overlayAlpha.animateTo(
-                            targetValue = 0.08f,
-                            animationSpec = tween(baseDuration / 2)
-                        )
-                        delay(100)
-                        // 再触发收缩消失
-                        itemVisible = false
-                    }
-                }
-
-
-                AnimatedVisibility(
-                    visible = itemVisible,
-                    exit = shrinkVertically(
-                        animationSpec = tween(baseDuration + 100, easing = FastOutSlowInEasing)
-                    ) + fadeOut(animationSpec = tween(baseDuration)),
+            ) { _, bookmark ->
+                DismissableItem(
+                    isDismissed = bookmark.id == pendingDeleteId,
+                    onDismissed = { viewModel.onDeleteAnimationFinished() },
                 ) {
-                    Box {
-                        Column {
-                            BookmarkItemRow(
-                                navCtrl = navCtrl,
-                                viewModel = viewModel,
-                                bookmark = bookmark,
-                                onEditTitle = onEditTitle
-                            )
-                            dividerLine()
-                        }
-                        // 变暗遮罩层
-                        if (overlayAlpha.value > 0f) {
-                            Box(
-                                modifier = Modifier
-                                    .matchParentSize()
-                                    .background(Color.Black.copy(alpha = overlayAlpha.value))
-                            )
-                        }
-                    }
-                }
-
-                if (!itemVisible) {
-                    LaunchedEffect(Unit) {
-                        delay(baseDuration + 150L)
-                        viewModel.commitDelete()
+                    Column {
+                        BookmarkItemRow(
+                            navCtrl = navCtrl,
+                            viewModel = viewModel,
+                            bookmark = bookmark,
+                            onEditTitle = onEditTitle
+                        )
+                        dividerLine()
                     }
                 }
             }

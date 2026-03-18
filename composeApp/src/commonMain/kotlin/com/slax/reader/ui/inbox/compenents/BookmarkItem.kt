@@ -429,7 +429,7 @@ fun BookmarkItemRow(
                         scope.launch {
                             menuTriggerSource = MenuTriggerSource.NONE
                             isLongPressed = false
-                            viewModel.deleteBookmark(bookmark.id)
+                            viewModel.requestDeleteBookmark(bookmark.id)
                         }
                     }
                 )

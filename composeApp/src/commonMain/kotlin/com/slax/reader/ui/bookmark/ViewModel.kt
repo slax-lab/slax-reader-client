@@ -14,6 +14,7 @@ import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.data.preferences.ContinueReadingBookmark
 import com.slax.reader.domain.sync.BackgroundDomain
+import com.slax.reader.domain.bookmark.BookmarkActionBus
 import com.slax.reader.ui.bookmark.states.BookmarkDelegate
 import com.slax.reader.ui.bookmark.states.BookmarkOverlay
 import com.slax.reader.ui.bookmark.states.CommentDelegate
@@ -51,7 +52,6 @@ sealed interface BookmarkDetailEffect {
     data object NavigateBack : BookmarkDetailEffect
     data object NavigateToSubscription : BookmarkDetailEffect
     data class NavigateToFeedback(val params: FeedbackPageParams) : BookmarkDetailEffect
-    data class DeleteAndNavigateBack(val bookmarkId: String) : BookmarkDetailEffect
     data class ScrollToAnchor(val anchor: String) : BookmarkDetailEffect
 }
 
@@ -70,6 +70,7 @@ class BookmarkDetailViewModel(
     private val apiService: ApiService,
     private val appPreferences: AppPreferences,
     private val database: PowerSyncDatabase,
+    private val bookmarkActionBus: BookmarkActionBus,
 ) : ViewModel() {
 
     companion object {
@@ -196,12 +197,14 @@ class BookmarkDetailViewModel(
     }
 
     fun confirmDeleteBookmark() {
-        val id = _bookmarkId.value ?: return
-        _deleteConfirmVisible.value = false
-        overlayDelegate.dismissOverlay(BookmarkOverlay.Toolbar)
-        bookmarkEvent.action("delete").send()
         viewModelScope.launch {
-            _effects.emit(BookmarkDetailEffect.DeleteAndNavigateBack(id))
+            val id = _bookmarkId.value ?: return@launch
+            _deleteConfirmVisible.value = false
+            overlayDelegate.dismissOverlay(BookmarkOverlay.Toolbar)
+            // 只通知列表页播放删除动画，实际删除由列表页的 ViewModel 在动画结束后执行
+            bookmarkActionBus.emitDelete(id)
+            bookmarkEvent.action("delete").send()
+            requestNavigateBack()
         }
     }
 
