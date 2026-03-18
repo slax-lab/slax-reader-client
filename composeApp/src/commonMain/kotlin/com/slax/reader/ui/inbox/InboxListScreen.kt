@@ -149,28 +149,24 @@ private fun NavigationBar(
     ) {
         Row(
             modifier = Modifier
-                .align(Alignment.CenterStart),
+                .align(Alignment.CenterStart)
+                .alpha(if (isTabPressed) 0.5f else 1f)
+                .clickable(
+                    interactionSource = tabInteractionSource,
+                    indication = null
+                ) {
+                    onAvatarClick()
+                },
             horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
 
-            Box(
-                modifier = Modifier
-                    .alpha(if (isTabPressed) 0.5f else 1f)
-                    .clickable(
-                        interactionSource = tabInteractionSource,
-                        indication = null
-                    ) {
-                        onAvatarClick()
-                    },
-            ) {
-                Image(
-                    painter = painterResource(Res.drawable.ic_inbox_tab),
-                    contentDescription = "Menu",
-                    modifier = Modifier.padding(start = 24.dp).padding(vertical = 10.dp).size(24.dp, 24.dp),
-                    contentScale = ContentScale.Fit
-                )
-            }
+            Image(
+                painter = painterResource(Res.drawable.ic_inbox_tab),
+                contentDescription = "Menu",
+                modifier = Modifier.padding(start = 24.dp).padding(vertical = 10.dp).size(24.dp, 24.dp),
+                contentScale = ContentScale.Fit
+            )
 
             UserAvatar()
         }

@@ -1,6 +1,7 @@
 package com.slax.reader.ui.bookmark.components
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -23,7 +24,10 @@ import androidx.compose.ui.unit.dp
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.LocalToolbarVisible
 import com.slax.reader.ui.bookmark.states.BookmarkOverlay
+import com.slax.reader.ui.bookmark.states.OutlineDialogStatus
 import com.slax.reader.utils.bookmarkEvent
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
 import slax_reader_client.composeapp.generated.resources.*
@@ -32,7 +36,6 @@ import slax_reader_client.composeapp.generated.resources.*
 fun FloatingActionBar(
     modifier: Modifier = Modifier,
 ) {
-    println("[watch][UI] recomposition FloatingActionBar")
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val visible by LocalToolbarVisible.current
 
@@ -40,9 +43,18 @@ fun FloatingActionBar(
     val isStarred by remember { derivedStateOf { detailState.isStarred } }
     val isArchived by remember { derivedStateOf { detailState.isArchived } }
 
+    // Outline收缩状态，使用 map + distinctUntilChanged 避免每次 outlineStatus 变化都触发重组
+    val isOutlineCollapsed by viewModel.outlineDelegate.dialogStatus
+        .map { it == OutlineDialogStatus.COLLAPSED }
+        .distinctUntilChanged()
+        .collectAsState(initial = false)
+
     val density = LocalDensity.current
     val hiddenOffsetPx = remember(density) { with(density) { 150.dp.toPx() } }
     val translationY = remember { Animatable(if (visible) 0f else hiddenOffsetPx) }
+
+    val collapsedOffsetPx = remember(density) { with(density) { 31.dp.toPx() } }
+    val translationX = remember { Animatable(0f) }
 
     LaunchedEffect(visible) {
         translationY.animateTo(
@@ -51,9 +63,17 @@ fun FloatingActionBar(
         )
     }
 
+    LaunchedEffect(isOutlineCollapsed) {
+        translationX.animateTo(
+            targetValue = if (isOutlineCollapsed) collapsedOffsetPx else 0f,
+            animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing)
+        )
+    }
+
     Box(
         modifier = modifier.graphicsLayer {
             this.translationY = translationY.value
+            this.translationX = translationX.value
         }
     ) {
         Row(

@@ -3,6 +3,7 @@ package com.slax.reader.utils
 import app.slax.reader.SlaxConfig
 import com.slax.reader.data.preferences.AppPreferences
 import io.ktor.client.*
+import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
@@ -15,7 +16,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
-expect fun HttpClientConfig<*>.configureSslPinning(pins: List<String>)
+expect fun platformEngine(): HttpClientEngine
+
 fun getHttpClient(appPreferences: AppPreferences): HttpClient {
     val token = MutableStateFlow<String?>(null)
 
@@ -27,9 +29,15 @@ fun getHttpClient(appPreferences: AppPreferences): HttpClient {
             }
     }
 
-    return HttpClient {
-        engine {
-
+    return HttpClient(platformEngine()) {
+        install(HttpTimeout) {
+            connectTimeoutMillis = 15_000
+            socketTimeoutMillis = 15_000
+            requestTimeoutMillis = 30_000
+        }
+        install(HttpRequestRetry) {
+            maxRetries = 2
+            exponentialDelay()
         }
         install(ContentNegotiation) {
             json(Json {

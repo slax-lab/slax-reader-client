@@ -8,12 +8,15 @@ import com.slax.reader.utils.outlineEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.yield
+
 
 data class OutlineState(
     val outline: String = "",
@@ -34,18 +37,64 @@ class OutlineDelegate(
     private val apiService: ApiService,
     private val scope: CoroutineScope
 ) {
+    companion object {
+        private const val SAVE_DEBOUNCE_MS = 2000L
+    }
+
     private val _outlineState = MutableStateFlow(OutlineState())
     val outlineState = _outlineState.asStateFlow()
 
     private val _dialogStatus = MutableStateFlow(OutlineDialogStatus.NONE)
     val dialogStatus = _dialogStatus.asStateFlow()
 
+    var savedScrollPosition: Int = 0
+        private set
+
+    private var currentBookmarkId: String? = null
+    private var currentScrollPosition: Int = -1
+    private var saveScrollJob: Job? = null
+
+    fun saveScrollPosition(position: Int) {
+        savedScrollPosition = position
+        currentScrollPosition = position
+        saveScrollJob?.cancel()
+        saveScrollJob = scope.launch {
+            delay(SAVE_DEBOUNCE_MS)
+            val id = currentBookmarkId ?: return@launch
+            withContext(Dispatchers.IO) {
+                localBookmarkDao.updateLocalBookmarkOutlineScrollPosition(id, position)
+            }
+        }
+    }
+
+    fun flushScrollPosition() {
+        saveScrollJob?.cancel()
+        val id = currentBookmarkId ?: return
+        val position = currentScrollPosition
+        if (position < 0) return
+        scope.launch {
+            withContext(NonCancellable + Dispatchers.IO) {
+                localBookmarkDao.updateLocalBookmarkOutlineScrollPosition(id, position)
+            }
+        }
+    }
+
     fun loadOutline(bookmarkId: String) {
         if (_outlineState.value.isLoading) {
             return
         }
 
+        currentBookmarkId = bookmarkId
+
         scope.launch {
+            val savedPos = withContext(Dispatchers.IO) {
+                localBookmarkDao.getLocalBookmarkOutlineScrollPosition(bookmarkId)
+            }
+
+            if (savedPos != null && savedPos > 0) {
+                savedScrollPosition = savedPos
+            }
+
             val cacheOutline = withContext(Dispatchers.IO) {
                 localBookmarkDao.getLocalBookmarkOutline(bookmarkId)
             }
@@ -112,6 +161,12 @@ class OutlineDelegate(
         }
     }
 
+    fun showCollapsed() {
+        if (_dialogStatus.value == OutlineDialogStatus.NONE) {
+            _dialogStatus.value = OutlineDialogStatus.COLLAPSED
+        }
+    }
+
     fun showDialog() {
         transitionTo(OutlineDialogStatus.EXPANDED)
     }
@@ -142,19 +197,15 @@ class OutlineDelegate(
     }
 
     fun reset() {
+        flushScrollPosition()
         _outlineState.value = OutlineState()
         _dialogStatus.value = OutlineDialogStatus.NONE
+        savedScrollPosition = 0
+        currentScrollPosition = -1
+        currentBookmarkId = null
     }
 
     private fun transitionTo(target: OutlineDialogStatus) {
-        if (_dialogStatus.value == OutlineDialogStatus.NONE) {
-            _dialogStatus.value = OutlineDialogStatus.HIDDEN
-            scope.launch {
-                yield()
-                _dialogStatus.value = target
-            }
-        } else {
-            _dialogStatus.value = target
-        }
+        _dialogStatus.value = target
     }
 }

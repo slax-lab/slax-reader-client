@@ -98,6 +98,12 @@ class BookmarkDelegate(
         }
     }
 
+    suspend fun deleteBookmark(): Unit = withContext(Dispatchers.IO) {
+        bookmarkIdFlow.value?.let { id ->
+            bookmarkDao.deleteBookmark(id)
+        }
+    }
+
     suspend fun getTagNames(uuids: List<String>): List<UserTag> = withContext(Dispatchers.IO) {
         return@withContext bookmarkDao.getTagsByIds(uuids)
     }

@@ -10,7 +10,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,9 +41,9 @@ data class ToolbarIcon(
  */
 @Composable
 fun BottomToolbarSheet() {
-    println("[watch][UI] recomposition BottomToolbarSheet")
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val detailState by viewModel.bookmarkDelegate.bookmarkDetailState.collectAsState()
+    val showDeleteConfirm by viewModel.deleteConfirmVisible.collectAsState()
 
     val toolbarPages = remember(detailState.isStarred, detailState.isArchived) {
         listOf(
@@ -60,6 +63,7 @@ fun BottomToolbarSheet() {
 //                ToolbarIcon("comment", "评论", Res.drawable.ic_bottom_panel_comment),
                 ToolbarIcon("edit_title", "detail_toolbar_edit_title".i18n(), Res.drawable.ic_bottom_panel_edittitle),
                 ToolbarIcon("feedback", "detail_toolbar_feedback".i18n(), Res.drawable.ic_bottom_panel_feedback),
+                ToolbarIcon("delete", "删除", Res.drawable.ic_bottom_panel_delete),
 //                ToolbarIcon("share", "分享", Res.drawable.ic_bottom_panel_share)
             )
 //            listOf(
@@ -120,12 +124,35 @@ fun BottomToolbarSheet() {
                 PagerToolbar(
                     pages = toolbarPages,
                     onIconClick = { pageId, iconIndex ->
-                        viewModel.onToolbarIconClick(pageId)
-                        dismiss()
+                        if (pageId == "delete") {
+                            viewModel.requestDeleteBookmark()
+                        } else {
+                            viewModel.onToolbarIconClick(pageId)
+                            dismiss()
+                        }
                     },
                     modifier = Modifier.padding(top = 30.dp, bottom = 50.dp)
                 )
             }
         }
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissDeleteConfirmation() },
+            containerColor = Color.White,
+            title = { Text(text = "bookmark_delete_confirm_title".i18n()) },
+            text = { Text(text = "bookmark_delete_confirm_message".i18n()) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.confirmDeleteBookmark() }) {
+                    Text(text = "btn_confirm".i18n(), color = Color(0xFFF45454))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissDeleteConfirmation() }) {
+                    Text(text = "btn_cancel".i18n())
+                }
+            }
+        )
     }
 }

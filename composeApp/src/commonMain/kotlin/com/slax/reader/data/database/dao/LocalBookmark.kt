@@ -36,27 +36,51 @@ class LocalBookmarkDao(
 
     fun watchUserLocalBookmarkMap(): StateFlow<Map<String, LocalBookmarkInfo>> = _userLocalBookmarkListFlow
 
-    suspend fun updateLocalBookmarkDownloadStatus(
+    private suspend fun upsertFields(
         bookmarkId: String,
-        downloadStatus: Int,
-        isAutoCached: Boolean
+        fields: Map<String, Any?>
     ) = withContext(Dispatchers.IO) {
+        val d = "$"
+        val jsonKeys = fields.keys.joinToString(", ") { "'$it', ?" }
+        val jsonSetParts = fields.keys.joinToString(", ") {
+            "'${d}.$it', json_extract(excluded.data, '${d}.$it')"
+        }
         database.writeTransaction { tx ->
             tx.execute(
                 """
                 INSERT INTO ps_data_local__local_bookmark_info (id, data)
-                VALUES (?, json_object('is_downloaded', ?, 'is_auto_cached', ?))
+                VALUES (?, json_object($jsonKeys))
                 ON CONFLICT(id) DO UPDATE SET
-                data = json_set(
-                    data,
-                    '$.is_downloaded', json_extract(excluded.data, '$.is_downloaded'),
-                    '$.is_auto_cached', json_extract(excluded.data, '$.is_auto_cached')
-                );
+                data = json_set(data, $jsonSetParts);
             """.trimIndent(),
-                parameters = listOf(bookmarkId, downloadStatus, if (isAutoCached) 1 else 0)
+                parameters = listOf(bookmarkId) + fields.values.toList()
             )
         }
     }
+
+    private suspend fun getField(
+        bookmarkId: String,
+        field: String
+    ): String? {
+        val d = "$"
+        return database.getOptional(
+            """
+            SELECT json_extract(data, '${d}.$field') AS value
+            FROM ps_data_local__local_bookmark_info
+            WHERE id = ?
+            """.trimIndent(),
+            parameters = listOf(bookmarkId),
+            mapper = { cursor ->
+                cursor.getStringOptional("value")?.takeIf { it.isNotEmpty() } ?: ""
+            }
+        )?.takeIf { it.isNotEmpty() }
+    }
+
+    suspend fun updateLocalBookmarkDownloadStatus(
+        bookmarkId: String,
+        downloadStatus: Int,
+        isAutoCached: Boolean
+    ) = upsertFields(bookmarkId, mapOf("is_downloaded" to downloadStatus, "is_auto_cached" to if (isAutoCached) 1 else 0))
 
     suspend fun batchResetDownloadStatus(
         bookmarkIds: List<String>,
@@ -64,17 +88,16 @@ class LocalBookmarkDao(
         isAutoCached: Boolean = false
     ) = withContext(Dispatchers.IO) {
         database.writeTransaction { tx ->
+            val d = "$"
+            val jsonKeys = "'is_downloaded', ?, 'is_auto_cached', ?"
+            val jsonSetParts = "'${d}.is_downloaded', json_extract(excluded.data, '${d}.is_downloaded'), '${d}.is_auto_cached', json_extract(excluded.data, '${d}.is_auto_cached')"
             bookmarkIds.forEach { bookmarkId ->
                 tx.execute(
                     """
                     INSERT INTO ps_data_local__local_bookmark_info (id, data)
-                    VALUES (?, json_object('is_downloaded', ?, 'is_auto_cached', ?))
+                    VALUES (?, json_object($jsonKeys))
                     ON CONFLICT(id) DO UPDATE SET
-                    data = json_set(
-                        data,
-                        '$.is_downloaded', json_extract(excluded.data, '$.is_downloaded'),
-                        '$.is_auto_cached', json_extract(excluded.data, '$.is_auto_cached')
-                    );
+                    data = json_set(data, $jsonSetParts);
                 """.trimIndent(),
                     parameters = listOf(bookmarkId, downloadStatus, if (isAutoCached) 1 else 0)
                 )
@@ -86,30 +109,15 @@ class LocalBookmarkDao(
         bookmarkId: String,
         overview: String,
         keyTakeaways: String?
-    ) = withContext(Dispatchers.IO) {
-        database.writeTransaction { tx ->
-            tx.execute(
-                """
-                INSERT INTO ps_data_local__local_bookmark_info (id, data)
-                VALUES (?, json_object('overview', ?, 'key_takeaways', ?))
-                ON CONFLICT(id) DO UPDATE SET
-                data = json_set(
-                    ps_data_local__local_bookmark_info.data,
-                    '$.overview', json_extract(excluded.data, '$.overview'),
-                    '$.key_takeaways', json_extract(excluded.data, '$.key_takeaways')
-                );
-            """.trimIndent(),
-                parameters = listOf(bookmarkId, overview, keyTakeaways)
-            )
-        }
-    }
+    ) = upsertFields(bookmarkId, mapOf("overview" to overview, "key_takeaways" to keyTakeaways))
 
     suspend fun getLocalBookmarkOverview(bookmarkId: String): Pair<String?, List<String>?> {
+        val d = "$"
         val result = database.getOptional(
             """
             SELECT
-                json_extract(data, '$.overview') AS overview,
-                json_extract(data, '$.key_takeaways') AS key_takeaways
+                json_extract(data, '${d}.overview') AS overview,
+                json_extract(data, '${d}.key_takeaways') AS key_takeaways
             FROM ps_data_local__local_bookmark_info
             WHERE id = ?
             """.trimIndent(),
@@ -137,71 +145,24 @@ class LocalBookmarkDao(
     suspend fun updateLocalBookmarkReadPosition(
         bookmarkId: String,
         readPosition: Float
-    ) = withContext(Dispatchers.IO) {
-        database.writeTransaction { tx ->
-            tx.execute(
-                """
-                INSERT INTO ps_data_local__local_bookmark_info (id, data)
-                VALUES (?, json_object('read_position', ?))
-                ON CONFLICT(id) DO UPDATE SET
-                data = json_set(
-                    ps_data_local__local_bookmark_info.data,
-                    '$.read_position', json_extract(excluded.data, '$.read_position')
-                );
-            """.trimIndent(),
-                parameters = listOf(bookmarkId, readPosition.toString())
-            )
-        }
-    }
+    ) = upsertFields(bookmarkId, mapOf("read_position" to readPosition.toString()))
 
-    suspend fun getLocalBookmarkReadPosition(bookmarkId: String): Float? {
-        val raw = database.getOptional(
-            """
-            SELECT
-                json_extract(data, '$.read_position') AS read_position
-            FROM ps_data_local__local_bookmark_info
-            WHERE id = ?
-            """.trimIndent(),
-            parameters = listOf(bookmarkId),
-            mapper = { cursor ->
-                cursor.getStringOptional("read_position") ?: ""
-            }
-        )
-        return raw?.takeIf { it.isNotEmpty() }?.toFloatOrNull()
-    }
+    suspend fun getLocalBookmarkReadPosition(bookmarkId: String): Float? =
+        getField(bookmarkId, "read_position")?.toFloatOrNull()
 
     suspend fun updateLocalBookmarkOutline(
         bookmarkId: String,
         outline: String,
-    ) = withContext(Dispatchers.IO) {
-        database.writeTransaction { tx ->
-            tx.execute(
-                """
-                INSERT INTO ps_data_local__local_bookmark_info (id, data)
-                VALUES (?, json_object('outline', ?))
-                ON CONFLICT(id) DO UPDATE SET
-                data = json_set(
-                    ps_data_local__local_bookmark_info.data,
-                    '$.outline', json_extract(excluded.data, '$.outline')
-                );
-            """.trimIndent(),
-                parameters = listOf(bookmarkId, outline)
-            )
-        }
-    }
+    ) = upsertFields(bookmarkId, mapOf("outline" to outline))
 
-    suspend fun getLocalBookmarkOutline(bookmarkId: String): String? {
-        return database.getOptional(
-            """
-            SELECT
-                json_extract(data, '$.outline') AS outline
-            FROM ps_data_local__local_bookmark_info
-            WHERE id = ?
-            """.trimIndent(),
-            parameters = listOf(bookmarkId),
-            mapper = { cursor ->
-                cursor.getStringOptional("outline")?.takeIf { it.isNotEmpty() } ?: ""
-            }
-        )?.takeIf { it.isNotEmpty() }
-    }
+    suspend fun getLocalBookmarkOutline(bookmarkId: String): String? =
+        getField(bookmarkId, "outline")
+
+    suspend fun updateLocalBookmarkOutlineScrollPosition(
+        bookmarkId: String,
+        scrollPosition: Int
+    ) = upsertFields(bookmarkId, mapOf("outline_read_position" to scrollPosition.toString()))
+
+    suspend fun getLocalBookmarkOutlineScrollPosition(bookmarkId: String): Int? =
+        getField(bookmarkId, "outline_read_position")?.toIntOrNull()
 }

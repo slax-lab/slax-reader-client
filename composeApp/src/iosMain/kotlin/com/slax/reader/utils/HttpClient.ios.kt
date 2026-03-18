@@ -1,16 +1,10 @@
 package com.slax.reader.utils
 
-import io.ktor.client.*
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.engine.darwin.Darwin
 
-actual fun HttpClientConfig<*>.configureSslPinning(pins: List<String>) {
-    engine {
-//        if (this is DarwinClientEngineConfig) {
-//            handleChallenge { session, task, challenge, completionHandler ->
-//                completionHandler(
-////                    NSURLSessionAuthChallengePerformDefaultHandling,
-//                    null
-//                )
-//            }
-//        }
+actual fun platformEngine(): HttpClientEngine = Darwin.create {
+    configureSession {
+        setWaitsForConnectivity(true)
     }
 }

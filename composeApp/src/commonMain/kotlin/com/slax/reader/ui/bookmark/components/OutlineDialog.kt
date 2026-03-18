@@ -1,7 +1,7 @@
 package com.slax.reader.ui.bookmark.components
 
-import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -15,57 +15,73 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp as lerpDp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
+import com.slax.reader.ui.bookmark.LocalToolbarVisible
 import com.slax.reader.ui.bookmark.states.OutlineDialogStatus
+import com.slax.reader.ui.bookmark.states.OutlineDialogStatus.*
 import com.slax.reader.utils.i18n
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
 import slax_reader_client.composeapp.generated.resources.Res
-import slax_reader_client.composeapp.generated.resources.ic_outline_banner_analyzed
-import slax_reader_client.composeapp.generated.resources.ic_outline_banner_analyzing
-import slax_reader_client.composeapp.generated.resources.ic_outline_banner_close
-import slax_reader_client.composeapp.generated.resources.ic_outline_banner_expand
+import slax_reader_client.composeapp.generated.resources.ic_outline_collapsed
 import slax_reader_client.composeapp.generated.resources.ic_outline_dialog_close
 import slax_reader_client.composeapp.generated.resources.ic_outline_dialog_shrink
+import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.graphics.shadow.Shadow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 
 @Composable
 fun OutlineDialog() {
     println("[watch][UI] recomposition OutlineDialog")
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
 
-    val bookmarkId by viewModel.bookmarkId.collectAsState()
     val status by viewModel.outlineDelegate.dialogStatus.collectAsState()
 
-    LaunchedEffect(bookmarkId) {
-        if (bookmarkId != null) {
-            viewModel.loadOutline()
-        }
+    if (status == NONE) return
+
+    val transitionState = remember { MutableTransitionState(HIDDEN) }
+    transitionState.targetState = status
+    val transition = rememberTransition(transitionState, label = "outlineTransition")
+
+    val anim = transition.outlineAnimations()
+    val collapsedVisible = status == COLLAPSED || anim.collapsedAlpha > 0f
+
+    // 跟随 FloatingActionBar 的动画
+    val visible by LocalToolbarVisible.current
+    val density = LocalDensity.current
+    val hiddenOffsetPx = remember(density) { with(density) { 150.dp.toPx() } }
+    val collapsedTranslationY = remember { Animatable(if (visible) 0f else hiddenOffsetPx) }
+
+    LaunchedEffect(visible) {
+        collapsedTranslationY.animateTo(
+            targetValue = if (visible) 0f else hiddenOffsetPx,
+            animationSpec = tween(durationMillis = 300)
+        )
     }
 
-    if (status == OutlineDialogStatus.NONE) return
-    val isExpanded = status == OutlineDialogStatus.EXPANDED
-    val isCollapsed = status == OutlineDialogStatus.COLLAPSED
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val screenWidth = maxWidth
+        val screenHeight = maxHeight
+        val density = LocalDensity.current
+        val screenHeightPx = with(density) { screenHeight.toPx() }
+        val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+        val dialogHeight = screenHeight - statusBarHeight - 36.dp
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        AnimatedVisibility(
-            visible = isExpanded,
-            enter = fadeIn(animationSpec = tween(300)),
-            exit = fadeOut(animationSpec = tween(300))
-        ) {
+        if (anim.bgAlpha > 0f) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f))
+                    .background(Color.Black.copy(alpha = anim.bgAlpha))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -74,59 +90,104 @@ fun OutlineDialog() {
             )
         }
 
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.BottomCenter
-        ) {
-            AnimatedVisibility(
-                visible = isExpanded,
-                enter = slideInVertically(
-                    initialOffsetY = { it },
-                    animationSpec = tween(300)
-                ),
-                exit = slideOutVertically(
-                    targetOffsetY = { it },
-                    animationSpec = tween(300)
-                )
-            ) {
-                ExpandedOutlineDialog()
-            }
+        if (anim.morphAlpha > 0f) {
+            MorphOverlay(
+                morphAlpha = anim.morphAlpha,
+                morphProgress = anim.morphProgress,
+                screenWidth = screenWidth,
+                dialogHeight = dialogHeight
+            )
         }
 
         Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.TopCenter
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    alpha = anim.expandedAlpha
+                    translationY = if (anim.expandedAlpha > 0f) {
+                        anim.expandedSlideOffset * screenHeightPx
+                    } else {
+                        screenHeightPx
+                    }
+                },
+            contentAlignment = Alignment.BottomCenter
         ) {
-            AnimatedVisibility(
-                visible = isCollapsed,
-                enter = scaleIn(
-                    initialScale = 0.3f,
-                    animationSpec = tween(350, delayMillis = 100)
-                ) + fadeIn(
-                    animationSpec = tween(300, delayMillis = 100)
-                ),
-                exit = if (isExpanded) {
-                    slideOutVertically(
-                        targetOffsetY = { it },
-                        animationSpec = tween(350)
-                    ) + scaleOut(
-                        targetScale = 3.0f,
-                        animationSpec = tween(350)
-                    ) + fadeOut(
-                        animationSpec = tween(250)
-                    )
-                } else {
-                    scaleOut(
-                        targetScale = 0.3f,
-                        animationSpec = tween(300)
-                    ) + fadeOut(
-                        animationSpec = tween(250)
-                    )
-                }
+            ExpandedOutlineDialog(animationSettled = transitionState.isIdle)
+        }
+
+        if (collapsedVisible) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 58.dp)
+                    .offset(x = (-87).dp)
+                    .graphicsLayer { translationY = collapsedTranslationY.value },
+                contentAlignment = Alignment.BottomCenter
             ) {
-                CollapsedOutlineBanner()
+                Box(contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier
+                            .size(50.dp)
+                            .offset(y = 10.dp)
+                            .dropShadow(
+                                shape = RoundedCornerShape(25.dp),
+                                shadow = Shadow(
+                                    radius = 40.dp,
+                                    spread = 0.dp,
+                                    color = Color.Black.copy(alpha = 0.16f),
+                                    offset = DpOffset(x = 0.dp, y = 10.dp)
+                                )
+                            )
+                    )
+
+                    // 隔离阴影动画
+                    Box(modifier = Modifier.graphicsLayer { alpha = anim.collapsedAlpha },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CollapsedOutlineButton()
+                    }
+                }
             }
         }
+    }
+}
+
+/**
+ * 变形遮罩层：在 EXPANDED ↔ COLLAPSED 过渡期间，以白色形状模拟容器从矩形变形为圆形的效果。
+ */
+@Composable
+private fun MorphOverlay(
+    morphAlpha: Float,
+    morphProgress: Float,
+    screenWidth: androidx.compose.ui.unit.Dp,
+    dialogHeight: androidx.compose.ui.unit.Dp
+) {
+    val width = lerpDp(50.dp, screenWidth, morphProgress)
+    val height = lerpDp(50.dp, dialogHeight, morphProgress)
+    val topCorner = lerpDp(25.dp, 20.dp, morphProgress)
+    val bottomCorner = lerpDp(25.dp, 0.dp, morphProgress)
+    val offsetX = lerpDp((-87).dp, 0.dp, morphProgress)
+    val bottomPadding = lerpDp(58.dp, 0.dp, morphProgress)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(bottom = bottomPadding),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Surface(
+            modifier = Modifier
+                .offset(x = offsetX)
+                .size(width, height)
+                .graphicsLayer { alpha = morphAlpha },
+            shape = RoundedCornerShape(
+                topStart = topCorner,
+                topEnd = topCorner,
+                bottomStart = bottomCorner,
+                bottomEnd = bottomCorner
+            ),
+            color = Color.White
+        ) {}
     }
 }
 
@@ -134,8 +195,8 @@ fun OutlineDialog() {
  * 全屏展开状态的弹窗
  */
 @Composable
-private fun ExpandedOutlineDialog() {
-    val viewModel =  koinViewModel<BookmarkDetailViewModel>()
+private fun ExpandedOutlineDialog(animationSettled: Boolean = false) {
+    val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val outlineState by viewModel.outlineDelegate.outlineState.collectAsState()
 
     Surface(
@@ -156,68 +217,18 @@ private fun ExpandedOutlineDialog() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 0.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 0.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                .navigationBarsPadding(),
             ) {
-                val collapseInteractionSource = remember { MutableInteractionSource() }
-                val isCollapsePressed by collapseInteractionSource.collectIsPressedAsState()
-
-                Box(
-                    modifier = Modifier
-                        .alpha(if (isCollapsePressed) 0.5f else 1f)
-                        .clickable(
-                            interactionSource = collapseInteractionSource,
-                            indication = null,
-                            onClick = { viewModel.outlineDelegate.collapseDialog() }
-                        )
-                        .padding(vertical = 18.dp, horizontal = 20.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_outline_dialog_shrink),
-                        contentDescription = "outline_collapse".i18n(),
-                        tint = Color(0xFF666666),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-
-                val closeInteractionSource = remember { MutableInteractionSource() }
-                val isClosePressed by closeInteractionSource.collectIsPressedAsState()
-
-                Box(
-                    modifier = Modifier
-                        .alpha(if (isClosePressed) 0.5f else 1f)
-                        .clickable(
-                            interactionSource = closeInteractionSource,
-                            indication = null,
-                            onClick = { viewModel.outlineDelegate.hideDialog() }
-                        )
-                        .padding(vertical = 18.dp, horizontal = 20.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_outline_dialog_close),
-                        contentDescription = "btn_close".i18n(),
-                        tint = Color(0xFF666666),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-
             Box(
                 modifier = Modifier
+                    .padding(top = 32.dp)
                     .padding(horizontal = 20.dp)
                     .weight(1f)
                     .fillMaxWidth()
             ) {
                 when {
                     outlineState.isLoading && outlineState.isPending -> {
-                        LoadingAnimation()
+                        SkeletonLoadingAnimation()
                     }
 
                     outlineState.error != null -> {
@@ -225,21 +236,49 @@ private fun ExpandedOutlineDialog() {
                     }
 
                     else -> {
+                        val scrollState = rememberScrollState()
+
+                        // 只有在动画完全结束后才显示 Markdown 内容，避免在动画过程与 Markdown 内容渲染重合导致卡顿
+                        var contentReady by remember { mutableStateOf(false) }
+                        LaunchedEffect(animationSettled) {
+                            if (animationSettled) contentReady = true
+                        }
+
+                        LaunchedEffect(Unit) {
+                            // 恢复滚动位置
+                            val savedPos = viewModel.outlineDelegate.savedScrollPosition
+                            if (savedPos > 0) {
+                                snapshotFlow { scrollState.maxValue }
+                                    .first { it > 0 }
+                                scrollState.scrollTo(savedPos.coerceAtMost(scrollState.maxValue))
+                            }
+
+                            @OptIn(kotlinx.coroutines.FlowPreview::class)
+                            snapshotFlow { scrollState.value }
+                                .distinctUntilChanged()
+                                .debounce(500)
+                                .collect { position ->
+                                    viewModel.outlineDelegate.saveScrollPosition(position)
+                                }
+                        }
+
                         Box(modifier = Modifier.fillMaxSize()) {
                             Column(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .verticalScroll(rememberScrollState())
+                                    .verticalScroll(scrollState)
                                     .padding(top = 4.dp)
                             ) {
-                                MarkdownRenderer(
-                                    onLinkClick = { url ->
-                                        if (url.startsWith("#")) {
-                                            val anchorText = url.removePrefix("#")
-                                            viewModel.requestScrollToAnchor(anchorText)
+                                if (contentReady) {
+                                    MarkdownRenderer(
+                                        onLinkClick = { url ->
+                                            if (url.startsWith("#")) {
+                                                val anchorText = url.removePrefix("#")
+                                                viewModel.requestScrollToAnchor(anchorText)
+                                            }
                                         }
-                                    }
-                                )
+                                    )
+                                }
 
                                 if (outlineState.isLoading) {
                                     Row(
@@ -247,7 +286,7 @@ private fun ExpandedOutlineDialog() {
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.Center
                                     ) {
-                                        DotLoadingAnimation()
+                                        DotsLineLoadingAnimation()
                                     }
                                 }
 
@@ -257,209 +296,112 @@ private fun ExpandedOutlineDialog() {
                     }
                 }
             }
-        }
-    }
-}
 
-/**
- * 收缩状态的小banner
- * 根据 outline 加载状态显示不同的文本和图标
- */
-@Composable
-private fun CollapsedOutlineBanner() {
-    val viewModel =  koinViewModel<BookmarkDetailViewModel>()
-
-    // 订阅状态
-    val outlineState by viewModel.outlineDelegate.outlineState.collectAsState()
-    val uiState by viewModel.bookmarkDelegate.bookmarkDetailState.collectAsState()
-    val displayTitle by remember { derivedStateOf { uiState.displayTitle } }
-
-    // 根据状态确定显示内容
-    val isLoading = outlineState.isLoading
-    val isCompleted = !isLoading && outlineState.outline.isNotEmpty() && outlineState.error == null
-
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        shadowElevation = 4.dp,
-        modifier = Modifier
-            .fillMaxWidth()
-            .statusBarsPadding() // 添加状态栏间距
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) {
-                viewModel.outlineDelegate.expandDialog()
-            }
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 17.dp, horizontal = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // 左边：图标 + 文本
             Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // 状态图标
-                Icon(
-                    painter = painterResource(
-                        if (isCompleted) {
-                            Res.drawable.ic_outline_banner_analyzed
-                        } else {
-                            Res.drawable.ic_outline_banner_analyzing
-                        }
-                    ),
-                    contentDescription = if (isCompleted) "outline_completed".i18n() else "outline_summarizing".i18n(),
-                    tint = Color.Unspecified, // 使用原始颜色
-                    modifier = Modifier.size(20.dp)
-                )
-
-                // 状态文本（使用 AnnotatedString 实现不同颜色）
-                Text(
-                    modifier = Modifier.padding(start = 8.dp),
-                    text = buildAnnotatedString {
-                        withStyle(
-                            style = SpanStyle(
-                                color = if (isCompleted) Color(0xFF16B998) else Color(0xFFA28D64),
-                                fontSize = 15.sp
-                            )
-                        ) {
-                            append(if (isCompleted) "outline_completed_prefix".i18n() else "outline_summarizing_prefix".i18n())
-                        }
-                        withStyle(
-                            style = SpanStyle(
-                                color = Color(0xFF333333),
-                                fontSize = 15.sp
-                            )
-                        ) {
-                            append(displayTitle)
-                        }
-                    },
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            // 分割线
-            Box(
-                modifier = Modifier
-                    .padding(start = 16.dp, end = 12.dp)
-                    .width(1.dp)
-                    .height(16.dp)
-                    .background(Color(0x3DCAA68E))
-            )
-
-            if (isCompleted) {
-                // 展开按钮
-                val expandInteractionSource = remember { MutableInteractionSource() }
-                val isExpandPressed by expandInteractionSource.collectIsPressedAsState()
-
-                Box(
-                    modifier = Modifier
-                        .alpha(if (isExpandPressed) 0.5f else 1f)
-                        .clickable(
-                            interactionSource = expandInteractionSource,
-                            indication = null,
-                            onClick = { viewModel.outlineDelegate.expandDialog() }
-                        )
-                        .padding(4.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_outline_banner_expand),
-                        contentDescription = "outline_expand".i18n(),
-                        modifier = Modifier.size(12.dp)
-                    )
-                }
-            } else {
-                // 关闭按钮
-                val closeBannerInteractionSource = remember { MutableInteractionSource() }
-                val isCloseBannerPressed by closeBannerInteractionSource.collectIsPressedAsState()
-
-                Box(
-                    modifier = Modifier
-                        .alpha(if (isCloseBannerPressed) 0.5f else 1f)
-                        .clickable(
-                            interactionSource = closeBannerInteractionSource,
-                            indication = null,
-                            onClick = { viewModel.outlineDelegate.hideDialog() }
-                        )
-                        .padding(4.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_outline_banner_close),
-                        contentDescription = "btn_close".i18n(),
-                        modifier = Modifier.size(12.dp)
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
- * 加载动画组件
- * 显示三个渐变色横条闪动效果
- */
-@Composable
-private fun LoadingAnimation() {
-    val infiniteTransition = rememberInfiniteTransition(label = "loadingAnimation")
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "alphaAnimation"
-    )
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        repeat(3) {
-            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(18.dp)
-                    .alpha(alpha)
-                    .background(
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(
-                                Color(0xFFF5F5F3),
-                                Color(0x99F5F5F3),
-                            )
+                    .height(55.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val collapseInteractionSource = remember { MutableInteractionSource() }
+                val isCollapsePressed by collapseInteractionSource.collectIsPressedAsState()
+
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .alpha(if (isCollapsePressed) 0.5f else 1f)
+                        .clickable(
+                            interactionSource = collapseInteractionSource,
+                            indication = null,
+                            onClick = { viewModel.outlineDelegate.collapseDialog() }
                         ),
-                        shape = RoundedCornerShape(4.dp)
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_outline_dialog_shrink),
+                        contentDescription = "outline_collapse".i18n(),
+                        tint = Color(0xFF666666),
+                        modifier = Modifier.size(24.dp)
                     )
-            )
+                    Text(
+                        text = "outline_minimize".i18n(),
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        color = Color(0xCC333333)
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(16.dp)
+                        .background(Color(0x14333333))
+                )
+
+                val closeInteractionSource = remember { MutableInteractionSource() }
+                val isClosePressed by closeInteractionSource.collectIsPressedAsState()
+
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .alpha(if (isClosePressed) 0.5f else 1f)
+                        .clickable(
+                            interactionSource = closeInteractionSource,
+                            indication = null,
+                            onClick = { viewModel.outlineDelegate.hideDialog() }
+                        ),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_outline_dialog_close),
+                        contentDescription = "btn_close".i18n(),
+                        tint = Color(0xFF666666),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        text = "btn_close".i18n(),
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        color = Color(0xCC333333)
+                    )
+                }
+            }
         }
     }
 }
 
 /**
- * 空状态视图
+ * 收缩态圆形按钮
  */
 @Composable
-private fun EmptyView() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+private fun CollapsedOutlineButton() {
+    val viewModel = koinViewModel<BookmarkDetailViewModel>()
+    val outlineState by viewModel.outlineDelegate.outlineState.collectAsState()
+    val isLoading = outlineState.isLoading
+
+    Surface(
+        onClick = { viewModel.outlineDelegate.expandDialog() },
+        modifier = Modifier.size(50.dp),
+        color = Color(0xFFFFFFFF),
+        shape = RoundedCornerShape(25.dp),
+        border = BorderStroke(1.dp, Color.White)
     ) {
-        Text(
-            text = "outline_empty".i18n(),
-            fontSize = 14.sp,
-            color = Color(0xFF999999)
-        )
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                painter = painterResource(Res.drawable.ic_outline_collapsed),
+                contentDescription = "outline_expand".i18n(),
+                tint = Color.Unspecified,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+
+    if (isLoading) {
+        DotsRingLoadingAnimation(modifier = Modifier.size(27.dp))
     }
 }
 
@@ -491,60 +433,108 @@ private fun ErrorView(error: String) {
     }
 }
 
+// Outline 展开收起最小化 过渡动画定义
+
+private data class OutlineAnimations(
+    val bgAlpha: Float,
+    val expandedAlpha: Float,
+    val expandedSlideOffset: Float,
+    val collapsedAlpha: Float,
+    val morphProgress: Float,
+    val morphAlpha: Float,
+)
+
 /**
- * 圆点加载组件
+ * 根据过渡方向匹配动画规格，未匹配时回退 snap()
  */
+private fun Transition.Segment<OutlineDialogStatus>.specFor(
+    vararg pairs: Pair<Pair<OutlineDialogStatus, OutlineDialogStatus>, FiniteAnimationSpec<Float>>
+): FiniteAnimationSpec<Float> {
+    for ((transition, spec) in pairs) {
+        if (transition.first isTransitioningTo transition.second) return spec
+    }
+    return snap()
+}
+
 @Composable
-private fun DotLoadingAnimation() {
-    val infiniteTransition = rememberInfiniteTransition(label = "dotLoadingAnimation")
+private fun Transition<OutlineDialogStatus>.outlineAnimations(): OutlineAnimations {
+    val bgAlpha by animateFloat(
+        label = "bgAlpha",
+        transitionSpec = { tween(300) }
+    ) { if (it == EXPANDED) 0.5f else 0f }
 
-    val dotColors = listOf(
-        Color(0xFF16B998),
-        Color(0xFFFFC255),
-        Color(0xFF56CAF2),
-        Color(0xFFFB8F6C)
-    )
-
-    val delays = listOf(0, 250, 500, 750)
-
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.height(8.dp) // 留出上下移动的空间
-    ) {
-        dotColors.forEachIndexed { index, color ->
-            val offsetY by infiniteTransition.animateFloat(
-                initialValue = 0f,
-                targetValue = 0f,
-                animationSpec = infiniteRepeatable(
-                    animation = keyframes {
-                        durationMillis = 1400
-                        // 0%, 100%
-                        0f at 0
-                        // 25%
-                        -2.4f at 350  // 1400 * 0.25
-                        // 75%
-                        2.4f at 1050  // 1400 * 0.75
-                        // 100%
-                        0f at 1400
-                    },
-                    repeatMode = RepeatMode.Restart,
-                    initialStartOffset = StartOffset(delays[index])
-                ),
-                label = "offsetY$index"
-            )
-
-            Box(
-                modifier = Modifier
-                    .size(4.dp)
-                    .graphicsLayer {
-                        translationY = offsetY
-                    }
-                    .background(
-                        color = color,
-                        shape = RoundedCornerShape(50)
-                    )
+    val expandedAlpha by animateFloat(
+        label = "expandedAlpha",
+        transitionSpec = {
+            specFor(
+                (HIDDEN to EXPANDED) to tween(250),
+                (COLLAPSED to EXPANDED) to tween(180, delayMillis = 380),
+                (EXPANDED to COLLAPSED) to tween(120),
+                (EXPANDED to HIDDEN) to tween(200),
             )
         }
-    }
+    ) { if (it == EXPANDED) 1f else 0f }
+
+    val expandedSlideOffset by animateFloat(
+        label = "expandedSlideOffset",
+        transitionSpec = {
+            specFor(
+                (HIDDEN to EXPANDED) to tween(300, easing = FastOutSlowInEasing),
+                (EXPANDED to HIDDEN) to tween(250, easing = FastOutSlowInEasing),
+            )
+        }
+    ) { if (it == EXPANDED) 0f else if (it == HIDDEN) 1f else 0f }
+
+    val collapsedAlpha by animateFloat(
+        label = "collapsedAlpha",
+        transitionSpec = {
+            specFor(
+                (EXPANDED to COLLAPSED) to tween(150, delayMillis = 430),
+                (COLLAPSED to EXPANDED) to tween(100),
+                (HIDDEN to COLLAPSED) to tween(200),
+                (COLLAPSED to HIDDEN) to tween(200),
+            )
+        }
+    ) { if (it == COLLAPSED) 1f else 0f }
+
+    val morphProgress by animateFloat(
+        label = "morphProgress",
+        transitionSpec = {
+            specFor(
+                (EXPANDED to COLLAPSED) to tween(380, delayMillis = 100, easing = FastOutSlowInEasing),
+                (COLLAPSED to EXPANDED) to tween(380, delayMillis = 80, easing = FastOutSlowInEasing),
+            )
+        }
+    ) { if (it == EXPANDED) 1f else 0f }
+
+    val morphAlpha by animateFloat(
+        label = "morphAlpha",
+        transitionSpec = {
+            specFor(
+                (EXPANDED to COLLAPSED) to keyframes {
+                    durationMillis = 580
+                    0f at 0 using LinearEasing
+                    1f at 0 using LinearEasing
+                    1f at 480 using LinearEasing
+                    0f at 580
+                },
+                (COLLAPSED to EXPANDED) to keyframes {
+                    durationMillis = 560
+                    0f at 0 using LinearEasing
+                    1f at 60 using LinearEasing
+                    1f at 460 using LinearEasing
+                    0f at 560
+                },
+            )
+        }
+    ) { 0f }
+
+    return OutlineAnimations(
+        bgAlpha = bgAlpha,
+        expandedAlpha = expandedAlpha,
+        expandedSlideOffset = expandedSlideOffset,
+        collapsedAlpha = collapsedAlpha,
+        morphProgress = morphProgress,
+        morphAlpha = morphAlpha,
+    )
 }

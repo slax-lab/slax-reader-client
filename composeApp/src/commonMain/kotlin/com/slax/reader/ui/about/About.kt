@@ -1,5 +1,6 @@
 package com.slax.reader.ui.about
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -14,7 +15,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,7 +31,8 @@ import slax_reader_client.composeapp.generated.resources.ic_sm_back
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AboutScreen(onBackClick: () -> Unit) {
+fun AboutScreen(onBackClick: () -> Unit, onDebugClick: () -> Unit = {}) {
+    var versionClickCount by remember { mutableIntStateOf(0) }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -84,7 +86,14 @@ fun AboutScreen(onBackClick: () -> Unit) {
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Normal,
                 lineHeight = 21.sp,
-                color = Color(0xFF999999)
+                color = Color(0xFF999999),
+                modifier = Modifier.clickable {
+                    versionClickCount++
+                    if (versionClickCount >= 5) {
+                        versionClickCount = 0
+                        onDebugClick()
+                    }
+                }
             )
         }
     }

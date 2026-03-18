@@ -82,6 +82,9 @@ class BookmarkDetailViewModel(
     private val _effects = MutableSharedFlow<BookmarkDetailEffect>(extraBufferCapacity = 8)
     val effects: SharedFlow<BookmarkDetailEffect> = _effects.asSharedFlow()
 
+    private val _deleteConfirmVisible = MutableStateFlow(false)
+    val deleteConfirmVisible: StateFlow<Boolean> = _deleteConfirmVisible.asStateFlow()
+
     private val _contentState = MutableStateFlow(BookmarkContentState(isLoading = false))
     val contentState = _contentState.asStateFlow()
 
@@ -121,6 +124,16 @@ class BookmarkDetailViewModel(
         // 异步加载保存的阅读位置，不阻塞主流程
         viewModelScope.launch(Dispatchers.IO) {
             loadSavedPosition(bookmarkId)
+        }
+
+        loadOutline()
+
+        // 如果订阅了，Outline 按钮默认展示
+        viewModelScope.launch {
+            val isSubscribed = subscriptionInfo.value?.checkIsSubscribed() == true
+            if (isSubscribed) {
+                outlineDelegate.showCollapsed()
+            }
         }
 
         refreshContent()
@@ -174,6 +187,30 @@ class BookmarkDetailViewModel(
         }
     }
 
+    fun requestDeleteBookmark() {
+        _deleteConfirmVisible.value = true
+    }
+
+    fun dismissDeleteConfirmation() {
+        _deleteConfirmVisible.value = false
+    }
+
+    fun confirmDeleteBookmark() {
+        viewModelScope.launch {
+            runCatching { bookmarkDelegate.deleteBookmark() }
+                .onSuccess {
+                    bookmarkEvent.action("delete").send()
+                    _deleteConfirmVisible.value = false
+                    overlayDelegate.dismissOverlay(BookmarkOverlay.Toolbar)
+                    requestNavigateBack()
+                }
+                .onFailure {
+                    bookmarkEvent.action("delete_failed").send()
+                    _deleteConfirmVisible.value = false
+                }
+        }
+    }
+
     fun onToolbarIconClick(pageId: String) {
         val current = bookmarkDelegate.bookmarkDetailState.value
 
@@ -194,7 +231,6 @@ class BookmarkDetailViewModel(
                     outlineDelegate.showDialog()
                 }
             }
-
             "feedback" -> overlayDelegate.showOverlay(BookmarkOverlay.FeedbackRequired)
         }
 
@@ -269,6 +305,10 @@ class BookmarkDetailViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             localBookmarkDao.updateLocalBookmarkReadPosition(id, position)
         }
+    }
+
+    fun flushOutlineScrollPosition() {
+        outlineDelegate.flushScrollPosition()
     }
 
     override fun onCleared() {
