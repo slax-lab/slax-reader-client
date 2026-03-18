@@ -238,6 +238,7 @@ class BackgroundDomain(
     private fun processContent(html: String): ProcessedContent {
         return try {
             val doc = Ksoup.parse(html)
+            doc.outputSettings().prettyPrint(false)
             val urls = mutableListOf<String>()
             doc.select("img").forEach { img ->
                 val src = img.attr("src")
