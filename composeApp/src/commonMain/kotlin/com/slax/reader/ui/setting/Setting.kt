@@ -1,5 +1,7 @@
 package com.slax.reader.ui.setting
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -22,6 +24,7 @@ import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_sm_back
+import slax_reader_client.composeapp.generated.resources.ic_xs_tick_gray_outline_icon
 
 private const val UNLIMIT = -1
 private val CacheCountSteps = listOf(10, 30, 50, 100, 200, UNLIMIT)
@@ -216,7 +219,7 @@ private fun OfflineCacheCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             // 图片下载开关
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(
@@ -224,39 +227,51 @@ private fun OfflineCacheCard(
                         indication = null
                     ) {
                         onDownloadImagesChange(!downloadImages)
-                    },
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    }
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .border(
+                                width = 0.5.dp,
+                                color = Color(0x291a1a1a),
+                                shape = RoundedCornerShape(2.dp)
+                            )
+                            .background(
+                                color = Color.White,
+                                shape = RoundedCornerShape(2.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (downloadImages) {
+                            Icon(
+                                painter = painterResource(Res.drawable.ic_xs_tick_gray_outline_icon),
+                                contentDescription = null,
+                                modifier = Modifier.size(8.dp),
+                                tint = Color.Unspecified
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "setting_download_images".i18n(),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Medium,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Normal,
                         color = Color(0xFF0F1419),
-                        lineHeight = 21.sp
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "setting_download_images_desc".i18n(),
-                        fontSize = 13.sp,
-                        color = Color(0xCC333333),
-                        lineHeight = 18.sp
+                        lineHeight = 20.sp
                     )
                 }
 
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                Switch(
-                    checked = downloadImages,
-                    onCheckedChange = { onDownloadImagesChange(it) },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = Color(0xFF16b998),
-                        uncheckedThumbColor = Color.White,
-                        uncheckedTrackColor = Color(0xFFE0E0E0),
-                        uncheckedBorderColor = Color.Transparent
-                    )
+                Text(
+                    text = "setting_download_images_desc".i18n(),
+                    fontSize = 14.sp,
+                    color = Color(0xCC333333),
+                    lineHeight = 20.sp
                 )
             }
         }
