@@ -198,13 +198,13 @@ class BookmarkDetailViewModel(
 
     fun confirmDeleteBookmark() {
         viewModelScope.launch {
-        val id = _bookmarkId.value ?: return@launch
-        _deleteConfirmVisible.value = false
-        overlayDelegate.dismissOverlay(BookmarkOverlay.Toolbar)
-        // 只通知列表页播放删除动画，实际删除由列表页的 ViewModel 在动画结束后执行
-        bookmarkActionBus.emitDelete(id)
-        bookmarkEvent.action("delete").send()
-        requestNavigateBack()
+            val id = _bookmarkId.value ?: return@launch
+            _deleteConfirmVisible.value = false
+            overlayDelegate.dismissOverlay(BookmarkOverlay.Toolbar)
+            // 只通知列表页播放删除动画，实际删除由列表页的 ViewModel 在动画结束后执行
+            bookmarkActionBus.emitDelete(id)
+            bookmarkEvent.action("delete").send()
+            requestNavigateBack()
         }
     }
 
