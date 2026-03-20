@@ -6,7 +6,6 @@ package com.slax.reader.domain.bookmark
  */
 class BookmarkActionBus {
     // 待消费的删除 ID，保证即使列表页 composable 不在组合树中也不会丢失事件
-    @Volatile
     var pendingDeleteId: String? = null
         private set
 
