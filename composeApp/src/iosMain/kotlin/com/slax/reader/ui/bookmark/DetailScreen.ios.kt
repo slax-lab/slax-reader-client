@@ -111,7 +111,10 @@ actual fun DetailScreen(
                     visibleHeightPx = event.visibleHeight
                 }
                 is WebViewEvent.ScrollToPosition -> {
-                    webViewState.evaluateJs("window.scrollTo(0, document.body.scrollHeight * ${event.percentage})")
+                    val totalInsetPx = webViewState.topContentInsetPx + statusBarHeightPx +
+                            16f * density.density
+                    println(totalInsetPx / densityScale)
+                    webViewState.evaluateJs("window.scrollTo(0, Math.max(0,document.body.scrollHeight * ${event.percentage} - ${totalInsetPx / densityScale}))")
                 }
                 else -> {}
             }
