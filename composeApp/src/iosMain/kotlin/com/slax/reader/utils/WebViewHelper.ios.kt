@@ -252,7 +252,6 @@ actual fun AppWebView(
             }
 
             val view = WKWebView(frame = CGRectMake(0.0, 0.0, 0.0, 0.0), configuration = config)
-
             webState.webView = view
 
             if (available("16.4")) {
@@ -301,6 +300,7 @@ actual fun AppWebView(
 
             val color = Color(0xFFFCFCFC).toUIColor()
             view.backgroundColor = color
+            view.tintColor = Color(0x33ffd999).toUIColor()
             view.opaque = false
             view.loadHTMLString(htmlContent, baseURL = null)
 
