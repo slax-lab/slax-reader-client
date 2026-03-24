@@ -2,7 +2,6 @@ import SwiftUI
 import FirebaseCore
 import FirebaseMessaging
 import GoogleSignIn
-import BackgroundTasks
 import ComposeApp
 
 class AppDelegate: NSObject, UIApplicationDelegate, MessagingDelegate {
@@ -19,18 +18,6 @@ class AppDelegate: NSObject, UIApplicationDelegate, MessagingDelegate {
       FirebaseApp.configure()
       Messaging.messaging().delegate = self
       application.registerForRemoteNotifications()
-
-      BGTaskScheduler.shared.register(
-        forTaskWithIdentifier: "silent_push_print_task",
-        using: nil
-      ) { task in
-          task.expirationHandler = { task.setTaskCompleted(success: false) }
-          let helper = KmpWorkerHelper()
-          let scheduler = helper.getScheduler()
-          scheduler.flushPendingProgress()
-          task.setTaskCompleted(success: true)
-      }
-
       return true
     }
 
@@ -51,25 +38,15 @@ class AppDelegate: NSObject, UIApplicationDelegate, MessagingDelegate {
     ) {
         print("[SilentPush] Received remote notification: \(userInfo)")
 
-        let helper = KmpWorkerHelper()
-        let scheduler = helper.getScheduler()
-        let trigger = TaskTriggerHelperKt.createTaskTriggerOneTime(initialDelayMs: 0)
-        let constraints = TaskTriggerHelperKt.createDefaultConstraints()
+        let data = (userInfo as? [String: Any])?.compactMapValues { "\($0)" } ?? [:]
 
         Task {
             do {
-                let _ = try await scheduler.enqueue(
-                    id: "silent_push_print_task",
-                    trigger: trigger,
-                    workerClassName: "PrintWorker",
-                    constraints: constraints,
-                    inputJson: nil,
-                    policy: .replace
-                )
-                print("[SilentPush] Successfully enqueued PrintWorker")
+                try await BackgroundTaskRunner.shared.onSilentPush(data: data)
+                print("[SilentPush] Background task completed")
                 completionHandler(.newData)
             } catch {
-                print("[SilentPush] Failed to enqueue PrintWorker: \(error)")
+                print("[SilentPush] Background task failed: \(error)")
                 completionHandler(.failed)
             }
         }

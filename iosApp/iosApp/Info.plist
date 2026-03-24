@@ -45,13 +45,8 @@
 	<true/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
-	<array>
-		<string>silent_push_print_task</string>
-	</array>
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>processing</string>
 		<string>fetch</string>
 		<string>remote-notification</string>
 	</array>

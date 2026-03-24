@@ -183,9 +183,6 @@ kotlin {
             // ksoup
             implementation(libs.ksoup)
 
-            // KMPWorkManager
-            implementation(libs.kmpworkmanager)
-
             // reakt-native-toolkit
             implementation(libs.reakt.native.toolkit)
         }

@@ -40,7 +40,6 @@ ttypic = "0.6.4"
 ui = "1.10.2"
 ksoup = "0.2.6"
 firebaseMessaingKtx = "24.1.2"
-kmpworkmanager = "2.3.6"
 
 [libraries]
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
@@ -90,7 +89,6 @@ sketch-http = { module = "io.github.panpf.sketch4:sketch-http", version.ref = "s
 sketch-svg = { module = "io.github.panpf.sketch4:sketch-svg", version.ref = "sketchHttp" }
 markdown-renderer-m3 = { module = "com.mikepenz:multiplatform-markdown-renderer-m3", version.ref = "markdownRenderer" }
 ksoup = { module = "com.fleeksoft.ksoup:ksoup", version.ref = "ksoup" }
-kmpworkmanager = { module = "dev.brewkits:kmpworkmanager", version.ref = "kmpworkmanager" }
 
 ## plugin
 soloader = { module = "com.facebook.soloader:soloader", version.ref = "soloader" }

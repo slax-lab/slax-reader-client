@@ -10,9 +10,6 @@ import com.facebook.react.soloader.OpenSourceMergedSoMapping
 import com.facebook.soloader.SoLoader
 import com.slax.reader.di.configureKoin
 import com.slax.reader.reactnative.SlaxReaderReactPackage
-import com.slax.reader.worker.SlaxCommonWorkerFactory
-import dev.brewkits.kmpworkmanager.KmpWorkManager
-import dev.brewkits.kmpworkmanager.KmpWorkManagerConfig
 import org.linusu.RNGetRandomValuesPackage
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -44,12 +41,6 @@ class SlaxReaderApplication : Application() {
                 configureKoin()
             }
         }
-
-        KmpWorkManager.initialize(
-            context = this,
-            workerFactory = SlaxCommonWorkerFactory(),
-            config = KmpWorkManagerConfig()
-        )
     }
 
     @Synchronized

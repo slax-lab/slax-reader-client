@@ -3,10 +3,7 @@ package com.slax.reader
 import android.util.Log
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
-import dev.brewkits.kmpworkmanager.KmpWorkManager
-import dev.brewkits.kmpworkmanager.background.domain.Constraints
-import dev.brewkits.kmpworkmanager.background.domain.ExistingPolicy
-import dev.brewkits.kmpworkmanager.background.domain.TaskTrigger
+import com.slax.reader.domain.silent.BackgroundTaskRunner
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,20 +22,12 @@ class SlaxFirebaseMessagingService : FirebaseMessagingService() {
         super.onMessageReceived(message)
         Log.d(TAG, "Received remote message: ${message.data}")
 
-        val scheduler = KmpWorkManager.getInstance().backgroundTaskScheduler
         serviceScope.launch {
             try {
-                val result = scheduler.enqueue(
-                    id = "silent_push_print_task",
-                    trigger = TaskTrigger.OneTime(initialDelayMs = 0),
-                    workerClassName = "PrintWorker",
-                    constraints = Constraints(),
-                    inputJson = null,
-                    policy = ExistingPolicy.REPLACE
-                )
-                Log.d(TAG, "Successfully enqueued PrintWorker: $result")
+                BackgroundTaskRunner.onSilentPush(message.data)
+                Log.d(TAG, "Background task completed")
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to enqueue PrintWorker", e)
+                Log.e(TAG, "Background task failed", e)
             }
         }
     }
