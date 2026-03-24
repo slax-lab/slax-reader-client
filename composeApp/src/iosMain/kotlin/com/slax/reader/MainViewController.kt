@@ -8,6 +8,8 @@ import androidx.navigation.compose.rememberNavController
 import com.slax.reader.di.configureKoin
 import com.slax.reader.ui.SlaxNavigation
 import com.slax.reader.utils.NavigationHelper
+import com.slax.reader.worker.SlaxWorkerFactory
+import dev.brewkits.kmpworkmanager.kmpWorkerModule
 import kotlinx.cinterop.ExperimentalForeignApi
 import org.koin.core.context.startKoin
 import platform.UIKit.UIColor
@@ -20,6 +22,12 @@ fun MainViewController(): UIViewController {
 
     startKoin {
         configureKoin()
+        modules(
+            kmpWorkerModule(
+                workerFactory = SlaxWorkerFactory(),
+                iosTaskIds = setOf("silent_push_print_task")
+            )
+        )
     }
 
     val composeVC = ComposeUIViewController {
