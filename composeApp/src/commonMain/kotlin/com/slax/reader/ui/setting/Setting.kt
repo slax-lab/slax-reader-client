@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -91,7 +92,6 @@ fun SettingScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 color = Color.White,
-                shadowElevation = 1.dp
             ) {
                 SettingItem(
                     title = "setting_language".i18n(),
@@ -105,6 +105,8 @@ fun SettingScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             // 注销账号按钮
+            val deleteButtonInteractionSource = remember { MutableInteractionSource() }
+            val isDeleteButtonPressed by deleteButtonInteractionSource.collectIsPressedAsState()
             Button(
                 onClick = {
                     navController.navigate(DeleteAccountRoutes)
@@ -114,8 +116,10 @@ fun SettingScreen(
                     .height(55.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0x141A1A1A)
-                )
+                    containerColor = if (isDeleteButtonPressed) Color(0x141A1A1A) else Color.White
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                interactionSource = deleteButtonInteractionSource,
             ) {
                 Text(
                     text = "setting_delete_account".i18n(),
@@ -174,8 +178,7 @@ private fun OfflineCacheCard(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        color = Color.White,
-        shadowElevation = 1.dp
+        color = Color.White
     ) {
         Column(
             modifier = Modifier
