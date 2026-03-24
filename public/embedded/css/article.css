@@ -12,6 +12,7 @@ figure,
 :not(li) > ul,
 :not(li) > ol {
     margin-top: 24px !important;
+    white-space: pre-line;
 }
 
 /* 引用类 */

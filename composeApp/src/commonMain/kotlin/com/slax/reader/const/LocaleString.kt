@@ -307,6 +307,22 @@ val localeString: Map<String, Map<String, String>> = mapOf(
         "zh" to "反馈",
         "en" to "Feedback"
     ),
+    "detail_toolbar_delete" to mapOf(
+        "zh" to "删除",
+        "en" to "Delete"
+    ),
+    "detail_toolbar_share" to mapOf(
+        "zh" to "分享",
+        "en" to "Share"
+    ),
+    "detail_toolbar_underline" to mapOf(
+        "zh" to "划线",
+        "en" to "Underline"
+    ),
+    "detail_toolbar_comment" to mapOf(
+        "zh" to "评论",
+        "en" to "Comment"
+    ),
 
     // 标签管理
     "tags_title" to mapOf(
