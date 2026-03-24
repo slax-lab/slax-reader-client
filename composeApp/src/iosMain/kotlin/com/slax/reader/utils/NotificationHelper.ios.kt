@@ -4,35 +4,28 @@ import com.slax.reader.firebase.FirebaseBridge
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
-actual object NotificationHelper {
-    actual suspend fun requestTokenAndLog() {
-        val bridge = FirebaseBridge.shared
+actual suspend fun requestToken(): String {
+    val bridge = FirebaseBridge.shared
 
-        val granted = suspendCancellableCoroutine<Boolean> { cont ->
-            bridge.requestNotificationPermission { granted ->
-                if (cont.isActive) {
-                    cont.resume(granted)
-                }
+    val granted = suspendCancellableCoroutine<Boolean> { cont ->
+        bridge.requestNotificationPermission { granted ->
+            if (cont.isActive) {
+                cont.resume(granted)
             }
-        }
-
-        if (!granted) {
-            println("[NotificationHelper] Notification permission denied")
-            return
-        }
-
-        val token = suspendCancellableCoroutine<String?> { cont ->
-            bridge.getFCMToken { token ->
-                if (cont.isActive) {
-                    cont.resume(token)
-                }
-            }
-        }
-
-        if (token != null) {
-            println("[NotificationHelper] FCM Token: $token")
-        } else {
-            println("[NotificationHelper] Failed to get FCM token")
         }
     }
+
+    if (!granted) {
+        throw Exception("Notification permission denied")
+    }
+
+    val token = suspendCancellableCoroutine<String?> { cont ->
+        bridge.getFCMToken { token ->
+            if (cont.isActive) {
+                cont.resume(token)
+            }
+        }
+    }
+
+    return token ?: throw Exception("Failed to get FCM token")
 }

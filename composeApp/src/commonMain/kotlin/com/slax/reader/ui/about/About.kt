@@ -23,8 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.slax.reader.SlaxConfig
-import com.slax.reader.utils.NotificationHelper
 import com.slax.reader.utils.i18n
+import com.slax.reader.utils.requestToken
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
@@ -86,7 +86,7 @@ fun AboutScreen(onBackClick: () -> Unit, onDebugClick: () -> Unit = {}) {
                     if (titleClickCount >= 5) {
                         titleClickCount = 0
                         scope.launch {
-                            NotificationHelper.requestTokenAndLog()
+                            requestToken()
                         }
                     }
                 }

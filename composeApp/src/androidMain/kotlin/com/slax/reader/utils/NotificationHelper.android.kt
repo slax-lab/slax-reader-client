@@ -4,24 +4,17 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.ktx.messaging
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
-actual object NotificationHelper {
-    actual suspend fun requestTokenAndLog() {
-        try {
-            val token = suspendCancellableCoroutine<String?> { cont ->
-                Firebase.messaging.token.addOnCompleteListener { task ->
-                    if (cont.isActive) {
-                        cont.resume(if (task.isSuccessful) task.result else null)
-                    }
-                }
-            }
-            if (token != null) {
-                println("[NotificationHelper] FCM Token: $token")
+actual suspend fun requestToken(): String {
+    return suspendCancellableCoroutine { cont ->
+        Firebase.messaging.token.addOnCompleteListener { task ->
+            if (!cont.isActive) return@addOnCompleteListener
+            if (task.isSuccessful && task.result != null) {
+                cont.resume(task.result!!)
             } else {
-                println("[NotificationHelper] Failed to get FCM token")
+                cont.resumeWithException(Exception("Failed to get FCM token: ${task.exception?.message}"))
             }
-        } catch (e: Exception) {
-            println("[NotificationHelper] Failed to get FCM token: ${e.message}")
         }
     }
 }
