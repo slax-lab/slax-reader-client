@@ -51,12 +51,12 @@ fun BottomToolbarSheet() {
                 ToolbarIcon("summary", "detail_toolbar_summary".i18n(), Res.drawable.ic_bottom_panel_summary, proFeature = true),
                 ToolbarIcon(
                     "star",
-                    "detail_toolbar_star".i18n(),
+                    (if (detailState.isStarred) "detail_toolbar_unstar" else "detail_toolbar_star").i18n(),
                     if (detailState.isStarred) Res.drawable.ic_bottom_panel_starred else Res.drawable.ic_bottom_panel_star
                 ),
                 ToolbarIcon(
                     "archive",
-                    "detail_toolbar_archive".i18n(),
+                    (if (detailState.isArchived) "detail_toolbar_unarchive" else "detail_toolbar_archive").i18n(),
                     if (detailState.isArchived) Res.drawable.ic_bottom_panel_archieved else Res.drawable.ic_bottom_panel_archieve
                 ),
                 ToolbarIcon("edit_title", "detail_toolbar_edit_title".i18n(), Res.drawable.ic_bottom_panel_edittitle),

@@ -386,7 +386,7 @@ fun BookmarkItemRow(
                 // 加星
                 MenuItem(
                     icon = painterResource(if (bookmark.isStarred == 1) Res.drawable.ic_floating_panel_starred else Res.drawable.ic_cell_more_star),
-                    text = "bookmark_star".i18n(),
+                    text = (if (bookmark.isStarred == 1) "bookmark_unstar" else "bookmark_star").i18n(),
                     onClick = {
                         scope.launch {
                             menuTriggerSource = MenuTriggerSource.NONE
@@ -399,7 +399,7 @@ fun BookmarkItemRow(
                 // 归档
                 MenuItem(
                     icon = painterResource(if (bookmark.archiveStatus == 1) Res.drawable.ic_floating_panel_archieved else Res.drawable.ic_cell_more_archieve),
-                    text = "bookmark_archive".i18n(),
+                    text = (if (bookmark.archiveStatus == 1) "bookmark_unarchive" else "bookmark_archive").i18n(),
                     onClick = {
                         scope.launch {
                             menuTriggerSource = MenuTriggerSource.NONE
