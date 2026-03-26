@@ -33,7 +33,8 @@ data class WebViewMessage(
     val allImages: List<String>? = null,
     val position: Int? = null,
     val index: Int? = null,
-    val percentage: Double? = null
+    val percentage: Double? = null,
+    val text: String? = null
 )
 
 @SuppressLint("UseKtx", "ConfigurationScreenWidthHeight")
@@ -131,6 +132,19 @@ actual fun DetailScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 58.dp),
+        )
+
+        // 文本选中操作菜单
+        val selectionMenuVisible by LocalSelectionMenuVisible.current
+        SelectionActionBar(
+            visible = selectionMenuVisible,
+            actions = rememberSelectionActions(),
+            onActionClick = { actionId ->
+                handleSelectionAction(actionId, webViewState)
+            },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 20.dp, bottom = 120.dp)
         )
 
         OutlineDialog()

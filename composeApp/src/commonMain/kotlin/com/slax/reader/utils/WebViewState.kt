@@ -57,6 +57,12 @@ sealed interface WebViewEvent {
     data object RefreshContent: WebViewEvent
 
     data object Feedback: WebViewEvent
+
+    /** 用户在 WebView 中选中了文本 */
+    data class TextSelected(val text: String) : WebViewEvent
+
+    /** 用户取消了文本选中 */
+    data object TextDeselected : WebViewEvent
 }
 
 @Composable

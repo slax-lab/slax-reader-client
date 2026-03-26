@@ -34,7 +34,9 @@ data class WebViewMessage(
     val keyID: String? = null,
     val nonce: String? = null,
     val signature: String? = null,
-    val timestamp: Long? = null
+    val timestamp: Long? = null,
+
+    val text: String? = null
 )
 
 @Composable
@@ -155,6 +157,19 @@ actual fun DetailScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 58.dp),
+        )
+
+        // 文本选中操作菜单
+        val selectionMenuVisible by LocalSelectionMenuVisible.current
+        SelectionActionBar(
+            visible = selectionMenuVisible,
+            actions = rememberSelectionActions(),
+            onActionClick = { actionId ->
+                handleSelectionAction(actionId, webViewState)
+            },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 20.dp, bottom = 120.dp)
         )
 
         OutlineDialog()

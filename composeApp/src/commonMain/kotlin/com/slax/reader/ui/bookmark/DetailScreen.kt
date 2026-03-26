@@ -10,6 +10,16 @@ val LocalToolbarVisible = compositionLocalOf<MutableState<Boolean>> {
     error("LocalToolbarVisible not provided")
 }
 
+/** 文本选中菜单是否可见 */
+val LocalSelectionMenuVisible = compositionLocalOf<MutableState<Boolean>> {
+    error("LocalSelectionMenuVisible not provided")
+}
+
+/** 当前选中的文本内容 */
+val LocalSelectedText = compositionLocalOf<MutableState<String>> {
+    error("LocalSelectedText not provided")
+}
+
 sealed interface DetailScreenEvent {
     data object BackClick : DetailScreenEvent
     data object NavigateToSubscription : DetailScreenEvent
@@ -23,6 +33,8 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
 
     val toolbarVisible = remember { mutableStateOf(true) }
     val scrollInfo = remember { mutableStateOf(ScrollInfo(0f, false)) }
+    val selectionMenuVisible = remember { mutableStateOf(false) }
+    val selectedText = remember { mutableStateOf("") }
 
     val webViewState = rememberAppWebViewState(coroutineScope)
 
@@ -77,6 +89,14 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
                 is WebViewEvent.Feedback -> {
                     println("feedback")
                 }
+                is WebViewEvent.TextSelected -> {
+                    selectedText.value = event.text
+                    selectionMenuVisible.value = true
+                }
+                is WebViewEvent.TextDeselected -> {
+                    selectionMenuVisible.value = false
+                    selectedText.value = ""
+                }
                 else -> {}
             }
         }
@@ -101,7 +121,11 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
         return
     }
 
-    CompositionLocalProvider(LocalToolbarVisible provides toolbarVisible) {
+    CompositionLocalProvider(
+        LocalToolbarVisible provides toolbarVisible,
+        LocalSelectionMenuVisible provides selectionMenuVisible,
+        LocalSelectedText provides selectedText
+    ) {
         DetailScreen(
             bookmarkId = bookmarkId,
             htmlContent = contentState.htmlContent!!,
