@@ -46,6 +46,22 @@ private class TapHandler(
     }
 }
 
+/**
+ * 禁用系统文本选中菜单的 WKWebView 子类。
+ *
+ * 覆写 canPerformAction 拒绝所有系统菜单操作（复制/查找/分享等），
+ * 文本选中功能本身不受影响，由自定义 Compose SelectionActionBar 提供操作菜单。
+ */
+@OptIn(ExperimentalForeignApi::class)
+private class NoMenuWKWebView(
+    frame: CValue<platform.CoreGraphics.CGRect>,
+    configuration: WKWebViewConfiguration
+) : WKWebView(frame = frame, configuration = configuration) {
+    override fun canPerformAction(action: COpaquePointer?, withSender: Any?): Boolean {
+        return false
+    }
+}
+
 private class SingleTapGestureDelegate : NSObject(), UIGestureRecognizerDelegateProtocol {
     override fun gestureRecognizer(
         gestureRecognizer: UIGestureRecognizer,
@@ -129,6 +145,17 @@ actual fun AppWebView(
                             webState.dispatchEvent(
                                 WebViewEvent.Feedback
                             )
+                        }
+
+                        "textSelected" -> {
+                            val text = msg.text
+                            if (!text.isNullOrBlank()) {
+                                webState.dispatchEvent(WebViewEvent.TextSelected(text))
+                            }
+                        }
+
+                        "textDeselected" -> {
+                            webState.dispatchEvent(WebViewEvent.TextDeselected)
                         }
                     }
                 }
@@ -251,7 +278,7 @@ actual fun AppWebView(
                 this.userContentController = userContentController
             }
 
-            val view = WKWebView(frame = CGRectMake(0.0, 0.0, 0.0, 0.0), configuration = config)
+            val view = NoMenuWKWebView(frame = CGRectMake(0.0, 0.0, 0.0, 0.0), configuration = config)
             webState.webView = view
 
             if (available("16.4")) {

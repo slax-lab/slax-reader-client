@@ -17,6 +17,8 @@
             padding-left: 20px !important;
             padding-right: 20px !important;
             padding-bottom: 150px !important;
+            /* 禁用系统长按弹出菜单，保留文本可选 */
+            -webkit-touch-callout: none;
         }
     </style>
 </head>
@@ -30,6 +32,41 @@
 
     <script>
         {{WEBVIEW-BRIGDE-JS}}
+    </script>
+    <script>
+        (function() {
+            var debounceTimer = null;
+            var lastSelectedText = '';
+
+            document.addEventListener('selectionchange', function() {
+                if (debounceTimer) {
+                    clearTimeout(debounceTimer);
+                }
+                debounceTimer = setTimeout(function() {
+                    var selection = window.getSelection();
+                    var text = selection ? selection.toString().trim() : '';
+
+                    if (text.length > 0 && text !== lastSelectedText) {
+                        lastSelectedText = text;
+                        window.SlaxWebViewBridge.postMessage({
+                            type: 'textSelected',
+                            text: text
+                        });
+                    } else if (text.length === 0 && lastSelectedText.length > 0) {
+                        lastSelectedText = '';
+                        window.SlaxWebViewBridge.postMessage({
+                            type: 'textDeselected'
+                        });
+                    }
+                }, 200);
+            });
+
+            // 阻止系统右键/长按上下文菜单弹出
+            document.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                return false;
+            });
+        })();
     </script>
 </body>
 </html>

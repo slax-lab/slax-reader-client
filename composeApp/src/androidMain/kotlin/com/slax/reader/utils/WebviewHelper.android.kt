@@ -2,6 +2,9 @@ package com.slax.reader.utils
 
 import android.annotation.SuppressLint
 import android.graphics.Color
+import android.view.ActionMode
+import android.view.Menu
+import android.view.MenuItem
 import android.view.MotionEvent
 import android.webkit.*
 import androidx.browser.customtabs.CustomTabsIntent
@@ -57,6 +60,23 @@ actual fun AppWebView(
                 override fun onScrollChanged(l: Int, t: Int, oldl: Int, oldt: Int) {
                     scrollTo(0, 0)
                 }
+
+                /**
+                 * 拦截 ActionMode 启动，保留文本选中能力但清空系统菜单项。
+                 *
+                 * 不能返回 null，否则 WebView 会认为选中操作失败并取消选中。
+                 * 通过传入自定义 Callback 包装器，在 onPrepareActionMode 中清空菜单，
+                 * 实现"选中有效、菜单为空"的效果。
+                 */
+                override fun startActionMode(callback: ActionMode.Callback?): ActionMode? {
+                    val wrappedCallback = callback?.let { EmptyMenuActionModeCallback(it) }
+                    return super.startActionMode(wrappedCallback)
+                }
+
+                override fun startActionMode(callback: ActionMode.Callback?, type: Int): ActionMode? {
+                    val wrappedCallback = callback?.let { EmptyMenuActionModeCallback(it) }
+                    return super.startActionMode(wrappedCallback, type)
+                }
             }.apply {
                 webState.webView = this
                 setBackgroundColor(Color.TRANSPARENT)
@@ -106,6 +126,17 @@ actual fun AppWebView(
 
                                     "feedback" -> {
                                         webState.dispatchEvent(WebViewEvent.Feedback)
+                                    }
+
+                                    "textSelected" -> {
+                                        val text = msg.text
+                                        if (!text.isNullOrBlank()) {
+                                            webState.dispatchEvent(WebViewEvent.TextSelected(text))
+                                        }
+                                    }
+
+                                    "textDeselected" -> {
+                                        webState.dispatchEvent(WebViewEvent.TextDeselected)
                                     }
                                 }
                             }
@@ -374,6 +405,36 @@ actual fun OpenInBrowser(url: String) {
     val builder = CustomTabsIntent.Builder()
     val customTabsIntent = builder.build()
     customTabsIntent.launchUrl(ctx, url.toUri())
+}
+
+/**
+ * ActionMode.Callback 包装器，保留选中行为但清空菜单项。
+ *
+ * Android WebView 的文本选中流程依赖 ActionMode 正常启动，
+ * 如果 startActionMode 返回 null 会导致选中被取消。
+ * 此包装器在 onPrepareActionMode 中清空 Menu，
+ * 让 ActionMode 生命周期正常运行，但不显示任何系统菜单项。
+ */
+private class EmptyMenuActionModeCallback(
+    private val delegate: ActionMode.Callback
+) : ActionMode.Callback {
+    override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
+        return delegate.onCreateActionMode(mode, menu)
+    }
+
+    override fun onPrepareActionMode(mode: ActionMode?, menu: Menu?): Boolean {
+        // 清空所有系统菜单项
+        menu?.clear()
+        return true
+    }
+
+    override fun onActionItemClicked(mode: ActionMode?, item: MenuItem?): Boolean {
+        return delegate.onActionItemClicked(mode, item)
+    }
+
+    override fun onDestroyActionMode(mode: ActionMode?) {
+        delegate.onDestroyActionMode(mode)
+    }
 }
 
 private class CachingInputStream(
