@@ -2,7 +2,6 @@ package com.slax.reader.ui.inbox.compenents
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -14,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -33,7 +33,6 @@ import androidx.navigation.NavController
 import com.slax.reader.const.BookmarkRoutes
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.InboxListViewModel
-import com.slax.reader.utils.bookmarkEvent
 import com.slax.reader.utils.bookmarkListEvent
 import com.slax.reader.utils.i18n
 import kotlinx.coroutines.delay
@@ -61,8 +60,9 @@ fun BookmarkItemRow(
     val density = LocalDensity.current
 
     var menuTriggerSource by remember { mutableStateOf(MenuTriggerSource.NONE) }
-    var lastMenuTriggerSource by remember { mutableStateOf(MenuTriggerSource.NONE) }
-    val showMenu = menuTriggerSource != MenuTriggerSource.NONE
+    val showMenu by remember {
+        derivedStateOf { menuTriggerSource != MenuTriggerSource.NONE }
+    }
 
     // 闪烁动画
     val flashAlpha = remember { Animatable(0f) }
@@ -126,6 +126,10 @@ fun BookmarkItemRow(
         }
     }
 
+    val showSwipeActions by remember {
+        derivedStateOf { offsetXAnimatable.value < 0f }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -135,7 +139,7 @@ fun BookmarkItemRow(
                 boxSize = size
             }
     ) {
-        if (offsetXAnimatable.value < 0f) {
+        if (showSwipeActions) {
             Row(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
@@ -333,45 +337,33 @@ fun BookmarkItemRow(
                     }
                 }
 
-                val overlayAlpha = if (isPressed) {
-                    0.05f
-                } else {
-                    menuAlpha * 0.05f
-                }
-
-                if (overlayAlpha > 0f) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = overlayAlpha))
-                    )
-                }
-
-                // 闪烁效果覆盖层（使用长按时的高亮效果）
-                if (flashAlpha.value > 0f) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = flashAlpha.value))
-                    )
-                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .drawBehind {
+                            val overlay = if (isPressed) 0.05f else menuAlpha * 0.05f
+                            if (overlay > 0f) {
+                                drawRect(Color.Black.copy(alpha = overlay))
+                            }
+                            val flash = flashAlpha.value
+                            if (flash > 0f) {
+                                drawRect(Color.Black.copy(alpha = flash))
+                            }
+                        }
+                )
             }
-        }
-
-        // 当菜单打开时，记录触发源
-        if (menuTriggerSource != MenuTriggerSource.NONE && menuTriggerSource != lastMenuTriggerSource) {
-            lastMenuTriggerSource = menuTriggerSource
         }
 
         val cellHeight = 48.dp
 
-        // 计算菜单位置偏移 - 使用 lastMenuTriggerSource 保持菜单关闭时位置不变
-        val boxWidthDp = with(density) { boxSize.width.toDp() }
-        val menuWidth = 180.dp
-        val menuOffset = DpOffset(
-            x = boxWidthDp - menuWidth - 8.dp,
-            y = cellHeight - 10.dp
-        )
+        // 计算菜单位置偏移
+        val menuOffset = remember(boxSize) {
+            val boxWidthDp = with(density) { boxSize.width.toDp() }
+            DpOffset(
+                x = boxWidthDp - 180.dp - 8.dp,
+                y = cellHeight - 10.dp
+            )
+        }
 
         if (showMenu) {
             Menu(
@@ -386,7 +378,7 @@ fun BookmarkItemRow(
                 // 加星
                 MenuItem(
                     icon = painterResource(if (bookmark.isStarred == 1) Res.drawable.ic_floating_panel_starred else Res.drawable.ic_cell_more_star),
-                    text = "bookmark_star".i18n(),
+                    text = (if (bookmark.isStarred == 1) "bookmark_unstar" else "bookmark_star").i18n(),
                     onClick = {
                         scope.launch {
                             menuTriggerSource = MenuTriggerSource.NONE
@@ -399,7 +391,7 @@ fun BookmarkItemRow(
                 // 归档
                 MenuItem(
                     icon = painterResource(if (bookmark.archiveStatus == 1) Res.drawable.ic_floating_panel_archieved else Res.drawable.ic_cell_more_archieve),
-                    text = "bookmark_archive".i18n(),
+                    text = (if (bookmark.archiveStatus == 1) "bookmark_unarchive" else "bookmark_archive").i18n(),
                     onClick = {
                         scope.launch {
                             menuTriggerSource = MenuTriggerSource.NONE

@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -12,7 +13,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
@@ -27,7 +27,7 @@ import slax_reader_client.composeapp.generated.resources.ic_sm_back
 import slax_reader_client.composeapp.generated.resources.ic_xs_tick_gray_outline_icon
 
 private const val UNLIMIT = -1
-private val CacheCountSteps = listOf(10, 30, 50, 100, 200, UNLIMIT)
+private val CacheCountSteps = listOf(30, 50, 100, 200, UNLIMIT)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,7 +92,6 @@ fun SettingScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 color = Color.White,
-                shadowElevation = 1.dp
             ) {
                 SettingItem(
                     title = "setting_language".i18n(),
@@ -106,6 +105,8 @@ fun SettingScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             // 注销账号按钮
+            val deleteButtonInteractionSource = remember { MutableInteractionSource() }
+            val isDeleteButtonPressed by deleteButtonInteractionSource.collectIsPressedAsState()
             Button(
                 onClick = {
                     navController.navigate(DeleteAccountRoutes)
@@ -115,8 +116,10 @@ fun SettingScreen(
                     .height(55.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0x141A1A1A)
-                )
+                    containerColor = if (isDeleteButtonPressed) Color(0x141A1A1A) else Color.White
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                interactionSource = deleteButtonInteractionSource,
             ) {
                 Text(
                     text = "setting_delete_account".i18n(),
@@ -175,8 +178,7 @@ private fun OfflineCacheCard(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        color = Color.White,
-        shadowElevation = 1.dp
+        color = Color.White
     ) {
         Column(
             modifier = Modifier
@@ -184,13 +186,28 @@ private fun OfflineCacheCard(
                 .padding(16.dp)
         ) {
             // 标题
-            Text(
-                text = "setting_offline_cache_title".i18n(),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color(0xFF0F1419),
-                lineHeight = 22.5.sp
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "setting_offline_cache_title".i18n(),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF0F1419),
+                    lineHeight = 22.5.sp
+                )
+
+                Text(
+                    text = "${if (selectedCacheCount == UNLIMIT) '∞' else selectedCacheCount}",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = Color(0xFF999999),
+                    lineHeight = 20.sp
+                )
+            }
+
 
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -283,79 +300,29 @@ private fun CacheCountStepper(
     value: Int,
     onValueChange: (Int) -> Unit
 ) {
-    val currentIndex = CacheCountSteps.indexOf(value).coerceAtLeast(0)
-    val canDecrease = currentIndex > 0
-    val canIncrease = currentIndex < CacheCountSteps.lastIndex
-
-    Row(
+    FlowRow(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // 减号按钮
-        Surface(
-            modifier = Modifier.size(44.dp),
-            shape = RoundedCornerShape(8.dp),
-            color = if (canDecrease) Color(0xFFF5F5F3) else Color(0xFFFAFAF9),
-            onClick = {
-                if (canDecrease) {
-                    onValueChange(CacheCountSteps[currentIndex - 1])
-                }
-            }
-        ) {
-            Box(contentAlignment = Alignment.Center) {
+        CacheCountSteps.forEach { step ->
+            Button(
+                onClick = { onValueChange(step) },
+                modifier = Modifier
+                    .width(50.dp)
+                    .height(44.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (value == step) Color(0xFF333333) else Color(0xFFF5F5F3),
+                    contentColor = if (value == step) Color.White else Color(0xFF333333)
+                ),
+                contentPadding = PaddingValues(0.dp)
+            ) {
                 Text(
-                    text = "−",
-                    fontSize = 20.sp,
+                    text = if (step == UNLIMIT) "∞" else "$step",
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Medium,
-                    color = if (canDecrease) Color(0xFF333333) else Color(0xFFCCCCCC)
-                )
-            }
-        }
-
-        // 中间数字 / 无限符号（加大间隔）
-        Box(
-            modifier = Modifier
-                .widthIn(min = 120.dp)
-                .padding(horizontal = 32.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            if (value == UNLIMIT) {
-                Text(
-                    text = "∞",
-                    fontSize = 30.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF0F1419),
-                    textAlign = TextAlign.Center
-                )
-            } else {
-                Text(
-                    text = "$value",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF0F1419),
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-
-        // 加号按钮
-        Surface(
-            modifier = Modifier.size(44.dp),
-            shape = RoundedCornerShape(8.dp),
-            color = if (canIncrease) Color(0xFFF5F5F3) else Color(0xFFFAFAF9),
-            onClick = {
-                if (canIncrease) {
-                    onValueChange(CacheCountSteps[currentIndex + 1])
-                }
-            }
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(
-                    text = "+",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = if (canIncrease) Color(0xFF333333) else Color(0xFFCCCCCC)
+                    lineHeight = 21.sp
                 )
             }
         }

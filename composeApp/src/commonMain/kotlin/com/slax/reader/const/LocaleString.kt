@@ -254,9 +254,17 @@ val localeString: Map<String, Map<String, String>> = mapOf(
         "zh" to "加星",
         "en" to "Star"
     ),
+    "bookmark_unstar" to mapOf(
+        "zh" to "取消加星",
+        "en" to "Unstar"
+    ),
     "bookmark_archive" to mapOf(
         "zh" to "归档",
         "en" to "Archive"
+    ),
+    "bookmark_unarchive" to mapOf(
+        "zh" to "取消归档",
+        "en" to "Unarchive"
     ),
     "bookmark_edit_title" to mapOf(
         "zh" to "修改标题",
@@ -295,9 +303,17 @@ val localeString: Map<String, Map<String, String>> = mapOf(
         "zh" to "加星",
         "en" to "Star"
     ),
+    "detail_toolbar_unstar" to mapOf(
+        "zh" to "取消加星",
+        "en" to "Unstar"
+    ),
     "detail_toolbar_archive" to mapOf(
         "zh" to "归档",
         "en" to "Archive"
+    ),
+    "detail_toolbar_unarchive" to mapOf(
+        "zh" to "取消归档",
+        "en" to "Unarchive"
     ),
     "detail_toolbar_edit_title" to mapOf(
         "zh" to "改标题",
