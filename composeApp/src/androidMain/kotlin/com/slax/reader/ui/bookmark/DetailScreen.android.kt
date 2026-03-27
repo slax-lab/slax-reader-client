@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.IntOffset
 import com.slax.reader.ui.bookmark.components.*
 import com.slax.reader.ui.bookmark.states.ScrollInfo
 import com.slax.reader.utils.AppWebView
@@ -34,7 +35,8 @@ data class WebViewMessage(
     val position: Int? = null,
     val index: Int? = null,
     val percentage: Double? = null,
-    val text: String? = null
+    val text: String? = null,
+    val selectionY: Float? = null
 )
 
 @SuppressLint("UseKtx", "ConfigurationScreenWidthHeight")
@@ -134,8 +136,45 @@ actual fun DetailScreen(
                 .padding(bottom = 58.dp),
         )
 
-        // 文本选中操作菜单
+        // 文本选中操作菜单 - 水平居中，垂直方向跟随选中位置
         val selectionMenuVisible by LocalSelectionMenuVisible.current
+        val selectionYPx by LocalSelectionYPx.current
+        val density = LocalDensity.current
+
+        /**
+         * 菜单垂直定位计算逻辑：
+         *
+         * Android 的 WebView 禁用了内部滚动（onScrollChanged 中 scrollTo(0,0)），
+         * WebView 高度与内容同步，嵌入在可滚动的 Column 中。
+         *
+         * JS 返回的 selectionY 是相对于 WebView 视口的坐标（CSS px），
+         * 由于 WebView 无内部滚动，此坐标等于 WebView 内的绝对位置。
+         *
+         * 转换到屏幕坐标：
+         *   屏幕Y = headerHeight + selectionY * density - scrollState.value
+         *
+         * 菜单默认显示在选中位置上方，留出间距；
+         * 若上方空间不足则显示在下方。
+         */
+        val menuOffsetY by remember {
+            derivedStateOf {
+                if (selectionYPx <= 0f) return@derivedStateOf 0
+
+                val selectionScreenY = headerHeightState.floatValue +
+                        selectionYPx * density.density -
+                        scrollState.value
+
+                // 菜单显示在选中位置上方，留出 48dp 间距
+                val menuGapPx = 48.dp.value * density.density
+                val minTopPx = 60.dp.value * density.density
+
+                val targetY = selectionScreenY - menuGapPx
+
+                // 确保菜单不超出屏幕顶部
+                targetY.toInt().coerceAtLeast(minTopPx.toInt())
+            }
+        }
+
         SelectionActionBar(
             visible = selectionMenuVisible,
             actions = rememberSelectionActions(),
@@ -143,8 +182,8 @@ actual fun DetailScreen(
                 handleSelectionAction(actionId, webViewState)
             },
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 20.dp, bottom = 120.dp)
+                .align(Alignment.TopCenter)
+                .offset { IntOffset(0, menuOffsetY) }
         )
 
         OutlineDialog()

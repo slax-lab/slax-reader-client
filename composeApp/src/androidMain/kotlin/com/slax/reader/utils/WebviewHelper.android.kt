@@ -131,7 +131,7 @@ actual fun AppWebView(
                                     "textSelected" -> {
                                         val text = msg.text
                                         if (!text.isNullOrBlank()) {
-                                            webState.dispatchEvent(WebViewEvent.TextSelected(text))
+                                            webState.dispatchEvent(WebViewEvent.TextSelected(text, msg.selectionY ?: 0f))
                                         }
                                     }
 

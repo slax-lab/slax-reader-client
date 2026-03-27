@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.IntOffset
 import com.slax.reader.ui.bookmark.components.*
 import com.slax.reader.ui.bookmark.states.ScrollInfo
 import com.slax.reader.utils.*
@@ -36,7 +37,8 @@ data class WebViewMessage(
     val signature: String? = null,
     val timestamp: Long? = null,
 
-    val text: String? = null
+    val text: String? = null,
+    val selectionY: Float? = null
 )
 
 @Composable
@@ -159,8 +161,41 @@ actual fun DetailScreen(
                 .padding(bottom = 58.dp),
         )
 
-        // 文本选中操作菜单
+        // 文本选中操作菜单 - 水平居中，垂直方向跟随选中位置
         val selectionMenuVisible by LocalSelectionMenuVisible.current
+        val selectionYPx by LocalSelectionYPx.current
+
+        /**
+         * 菜单垂直定位计算逻辑：
+         *
+         * iOS 中 WebView 占满屏幕，内部滚动。
+         * JS 返回的 selectionY 是相对于 WebView 视口（可见区域）的坐标（CSS points）。
+         * 由于 WebView 占满屏幕，视口顶部即屏幕顶部，
+         * 所以 selectionY（points）直接对应屏幕上的位置。
+         *
+         * 转换到 Compose 像素：selectionY * densityScale
+         *
+         * 菜单默认显示在选中位置上方，留出间距；
+         * 若上方空间不足则显示在下方。
+         */
+        val menuOffsetY by remember {
+            derivedStateOf {
+                if (selectionYPx <= 0f) return@derivedStateOf 0
+
+                // selectionYPx 是 CSS points，转换为 Compose px
+                val selectionScreenY = selectionYPx * densityScale
+
+                // 菜单显示在选中位置上方，留出 48dp 间距
+                val menuGapPx = 48.dp.value * densityScale
+                val minTopPx = (statusBarHeightPx + 20.dp.value * densityScale)
+
+                val targetY = selectionScreenY - menuGapPx
+
+                // 确保菜单不超出屏幕顶部（考虑状态栏）
+                targetY.toInt().coerceAtLeast(minTopPx.toInt())
+            }
+        }
+
         SelectionActionBar(
             visible = selectionMenuVisible,
             actions = rememberSelectionActions(),
@@ -168,8 +203,8 @@ actual fun DetailScreen(
                 handleSelectionAction(actionId, webViewState)
             },
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 20.dp, bottom = 120.dp)
+                .align(Alignment.TopCenter)
+                .offset { IntOffset(0, menuOffsetY) }
         )
 
         OutlineDialog()

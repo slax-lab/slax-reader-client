@@ -20,6 +20,11 @@ val LocalSelectedText = compositionLocalOf<MutableState<String>> {
     error("LocalSelectedText not provided")
 }
 
+/** 选中文本在 WebView 视口中的 Y 坐标（px） */
+val LocalSelectionYPx = compositionLocalOf<MutableFloatState> {
+    error("LocalSelectionYPx not provided")
+}
+
 sealed interface DetailScreenEvent {
     data object BackClick : DetailScreenEvent
     data object NavigateToSubscription : DetailScreenEvent
@@ -35,6 +40,7 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
     val scrollInfo = remember { mutableStateOf(ScrollInfo(0f, false)) }
     val selectionMenuVisible = remember { mutableStateOf(false) }
     val selectedText = remember { mutableStateOf("") }
+    val selectionYPx = remember { mutableFloatStateOf(0f) }
 
     val webViewState = rememberAppWebViewState(coroutineScope)
 
@@ -91,11 +97,13 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
                 }
                 is WebViewEvent.TextSelected -> {
                     selectedText.value = event.text
+                    selectionYPx.floatValue = event.selectionY
                     selectionMenuVisible.value = true
                 }
                 is WebViewEvent.TextDeselected -> {
                     selectionMenuVisible.value = false
                     selectedText.value = ""
+                    selectionYPx.floatValue = 0f
                 }
                 else -> {}
             }
@@ -124,7 +132,8 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
     CompositionLocalProvider(
         LocalToolbarVisible provides toolbarVisible,
         LocalSelectionMenuVisible provides selectionMenuVisible,
-        LocalSelectedText provides selectedText
+        LocalSelectedText provides selectedText,
+        LocalSelectionYPx provides selectionYPx
     ) {
         DetailScreen(
             bookmarkId = bookmarkId,
