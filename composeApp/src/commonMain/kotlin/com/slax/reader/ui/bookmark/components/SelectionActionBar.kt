@@ -4,17 +4,16 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -27,7 +26,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.slax.reader.ui.bookmark.LocalSelectionMenuVisible
 import com.slax.reader.utils.AppWebViewState
 
 /** 文本选中时显示的操作菜单项定义 */
@@ -77,10 +75,11 @@ fun handleSelectionAction(actionId: String, webViewState: AppWebViewState) {
 }
 
 /**
- * 文本选中时在右下角显示的竖条操作菜单
+ * 文本选中时在选中区域附近显示的横向操作菜单
  *
- * 从右侧滑入，包含"复制"、"划线"、"评论"、"Chat"四个操作项，
- * 各项之间用分割线分隔，整体为圆角卡片样式。
+ * 水平居中于界面，垂直方向根据选中位置动态定位。
+ * 包含"复制"、"划线"、"评论"、"Chat"四个操作项，
+ * 各项之间用竖分割线分隔，整体为圆角卡片样式。
  */
 @Composable
 fun SelectionActionBar(
@@ -91,20 +90,19 @@ fun SelectionActionBar(
 ) {
     AnimatedVisibility(
         visible = visible,
-        enter = slideInHorizontally(
-            initialOffsetX = { it },
-            animationSpec = tween(250)
-        ) + fadeIn(animationSpec = tween(250)),
-        exit = slideOutHorizontally(
-            targetOffsetX = { it },
+        enter = slideInVertically(
+            initialOffsetY = { it / 2 },
             animationSpec = tween(200)
-        ) + fadeOut(animationSpec = tween(200)),
+        ) + fadeIn(animationSpec = tween(200)),
+        exit = slideOutVertically(
+            targetOffsetY = { it / 2 },
+            animationSpec = tween(150)
+        ) + fadeOut(animationSpec = tween(150)),
         modifier = modifier
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .width(IntrinsicSize.Min)
                 .dropShadow(
                     shape = RoundedCornerShape(12.dp),
                     shadow = Shadow(
@@ -125,12 +123,13 @@ fun SelectionActionBar(
                     onClick = { onActionClick(action.id) }
                 )
 
-                // 除最后一项外，添加分割线
+                // 除最后一项外，添加竖分割线
                 if (index < actions.size - 1) {
-                    HorizontalDivider(
+                    VerticalDivider(
                         color = Color(0xFFE6E6E6),
                         thickness = 0.5.dp,
-                        modifier = Modifier.padding(horizontal = 6.dp)
+                        modifier = Modifier
+                            .height(16.dp)
                     )
                 }
             }
