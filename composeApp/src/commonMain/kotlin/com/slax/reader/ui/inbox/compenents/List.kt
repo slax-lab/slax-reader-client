@@ -20,8 +20,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.InboxListViewModel
+import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.utils.i18n
 
 @Composable
@@ -32,6 +32,7 @@ fun ArticleList(
 ) {
     println("[watch][UI] recomposition ArticleList")
 
+    val groupedItems by viewModel.groupedBookmarks.collectAsState()
     val bookmarks by viewModel.bookmarks.collectAsState()
 
     val lazyListState = rememberLazyListState()
@@ -65,18 +66,39 @@ fun ArticleList(
             state = lazyListState
         ) {
             itemsIndexed(
-                items = bookmarks,
-                key = { _, bookmark -> bookmark.id },
-                contentType = { _, _ -> "bookmark" }
-            ) { index, bookmark ->
-                BookmarkItemRow(
-                    navCtrl = navCtrl,
-                    viewModel = viewModel,
-                    bookmark = bookmark,
-                    onEditTitle = onEditTitle
-                )
+                items = groupedItems,
+                key = { _, item ->
+                    when (item) {
+                        is InboxListItem.BookmarkItem -> item.bookmark.id
+                        is InboxListItem.GroupSeparator -> "group_separator_${item.label}"
+                    }
+                },
+                contentType = { _, item ->
+                    when (item) {
+                        is InboxListItem.BookmarkItem -> "bookmark"
+                        is InboxListItem.GroupSeparator -> "separator"
+                    }
+                }
+            ) { index, item ->
+                when (item) {
+                    is InboxListItem.BookmarkItem -> {
+                        BookmarkItemRow(
+                            navCtrl = navCtrl,
+                            viewModel = viewModel,
+                            bookmark = item.bookmark,
+                            onEditTitle = onEditTitle
+                        )
+                        // 下一项是 GroupSeparator 时不加分割线，避免视觉重复
+                        val nextItem = groupedItems.getOrNull(index + 1)
+                        if (nextItem == null || nextItem is InboxListItem.BookmarkItem) {
+                            dividerLine()
+                        }
+                    }
 
-                dividerLine()
+                    is InboxListItem.GroupSeparator -> {
+                        GroupSeparatorRow(label = item.label)
+                    }
+                }
             }
 
             item {

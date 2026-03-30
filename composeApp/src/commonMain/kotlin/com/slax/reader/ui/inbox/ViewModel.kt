@@ -7,6 +7,8 @@ import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.database.dao.UserDao
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.domain.coordinator.CoordinatorDomain
+import com.slax.reader.ui.inbox.compenents.InboxListItem
+import com.slax.reader.utils.toTimeGroup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -15,6 +17,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
 
@@ -40,6 +43,24 @@ class InboxListViewModel(
             }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val groupedBookmarks: StateFlow<List<InboxListItem>> = bookmarks.map { list ->
+        if (list.isEmpty()) return@map emptyList()
+        buildList {
+            for (i in list.indices) {
+                add(InboxListItem.BookmarkItem(list[i]))
+
+                val currentGroup = list[i].createdAt.toTimeGroup()
+                val nextGroup = list.getOrNull(i + 1)?.createdAt?.toTimeGroup()
+
+                // 当前 item 与下一个 item 属于不同分组（或是最后一项）时，插入分隔符
+                if (currentGroup != nextGroup) {
+                    add(InboxListItem.GroupSeparator(currentGroup))
+                }
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val hasSynced = bookmarkDao.hasSynced
 
     private val _scrollToTopEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
