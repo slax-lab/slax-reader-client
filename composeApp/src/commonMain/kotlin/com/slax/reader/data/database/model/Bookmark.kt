@@ -3,6 +3,7 @@ package com.slax.reader.data.database.model
 import androidx.compose.runtime.Immutable
 import com.powersync.db.SqlCursor
 import com.powersync.db.getString
+import com.powersync.db.getStringOptional
 import com.slax.reader.utils.toDateTime
 import com.slax.reader.utils.toISODateFormat
 import kotlinx.serialization.Serializable
@@ -82,11 +83,22 @@ data class UserTag(
     val created_at: String
 )
 
+enum class BookmarkSortType(val column: String, val whereClause: String) {
+    UPDATED("updated_at", "archive_status = 0 AND deleted_at IS NULL"),
+    STARRED("starred_at", "is_starred = 1 AND deleted_at IS NULL"),
+    ARCHIVED("archived_at", "archive_status = 1 AND deleted_at IS NULL");
+
+    fun labelKey(): String = when (this) {
+        UPDATED -> "inbox_title"
+        STARRED -> "inbox_starred"
+        ARCHIVED -> "inbox_archive"
+    }
+}
+
 @Immutable
 data class InboxListBookmarkItem(
     val id: String,
     val aliasTitle: String,
-    val createdAt: String,
     val updatedAt: String,
 
     val archiveStatus: Int,
@@ -178,7 +190,6 @@ fun mapperToInboxListBookmarkItem(cursor: SqlCursor): InboxListBookmarkItem {
         aliasTitle = cursor.getString("alias_title"),
         archiveStatus = cursor.getString("archive_status").toIntOrNull() ?: 0,
         isStarred = cursor.getString("is_starred").toIntOrNull() ?: 0,
-        createdAt = cursor.getString("created_at"),
         updatedAt = cursor.getString("updated_at"),
         metadataTitle = cursor.getString("metadata_title"),
         metadataUrl = cursor.getString("metadata_url"),

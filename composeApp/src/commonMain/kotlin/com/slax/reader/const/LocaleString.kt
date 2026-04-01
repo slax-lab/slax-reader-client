@@ -94,6 +94,14 @@ val localeString: Map<String, Map<String, String>> = mapOf(
         "zh" to "Inbox",
         "en" to "Inbox"
     ),
+    "inbox_starred" to mapOf(
+        "zh" to "星标",
+        "en" to "Starred"
+    ),
+    "inbox_archive" to mapOf(
+        "zh" to "已读",
+        "en" to "Archive"
+    ),
 
     // 添加链接对话框
     "add_link_dialog_title" to mapOf(
