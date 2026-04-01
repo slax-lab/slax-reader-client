@@ -72,6 +72,7 @@ class OutlineDelegate(
         val id = currentBookmarkId ?: return
         val position = currentScrollPosition
         if (position < 0) return
+
         scope.launch {
             withContext(NonCancellable + Dispatchers.IO) {
                 localBookmarkDao.updateLocalBookmarkOutlineScrollPosition(id, position)

@@ -20,6 +20,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.slax.reader.const.component.DismissableItem
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.utils.i18n
@@ -33,6 +34,7 @@ fun ArticleList(
     println("[watch][UI] recomposition ArticleList")
 
     val bookmarks by viewModel.bookmarks.collectAsState()
+    val pendingDeleteId by viewModel.pendingDeleteId.collectAsState()
 
     val lazyListState = rememberLazyListState()
     val dividerLine: @Composable () -> Unit = remember {
@@ -43,6 +45,11 @@ fun ArticleList(
         viewModel.scrollToTopEvent.collect {
             lazyListState.animateScrollToItem(0)
         }
+    }
+
+    // 列表页进入组合树时，消费详情页传来的待删除 ID 并触发动画
+    LaunchedEffect(Unit) {
+        viewModel.activatePendingDelete()
     }
 
     if (bookmarks.isEmpty()) {
@@ -68,15 +75,21 @@ fun ArticleList(
                 items = bookmarks,
                 key = { _, bookmark -> bookmark.id },
                 contentType = { _, _ -> "bookmark" }
-            ) { index, bookmark ->
-                BookmarkItemRow(
-                    navCtrl = navCtrl,
-                    viewModel = viewModel,
-                    bookmark = bookmark,
-                    onEditTitle = onEditTitle
-                )
-
-                dividerLine()
+            ) { _, bookmark ->
+                DismissableItem(
+                    isDismissed = bookmark.id == pendingDeleteId,
+                    onDismissed = { viewModel.onDeleteAnimationFinished() },
+                ) {
+                    Column {
+                        BookmarkItemRow(
+                            navCtrl = navCtrl,
+                            viewModel = viewModel,
+                            bookmark = bookmark,
+                            onEditTitle = onEditTitle
+                        )
+                        dividerLine()
+                    }
+                }
             }
 
             item {

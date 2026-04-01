@@ -13,6 +13,7 @@ import com.slax.reader.data.file.FileManager
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.preferences.preferencesPlatformModule
 import com.slax.reader.domain.auth.AuthDomain
+import com.slax.reader.domain.bookmark.BookmarkActionBus
 import com.slax.reader.domain.coordinator.CoordinatorDomain
 import com.slax.reader.domain.image.ImageDownloadManager
 import com.slax.reader.domain.sync.BackgroundDomain
@@ -75,6 +76,7 @@ val domainModule = module {
     single { BackgroundDomain(get(), get(), get(), get(), get(), get()) }
     single { CoordinatorDomain(get(), get(), get()) }
     single { ImageDownloadManager(get(), get()) }
+    single { BookmarkActionBus() }
 }
 
 val appModule = module {
