@@ -8,6 +8,8 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.*
@@ -25,6 +27,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.slax.reader.const.BookmarkRoutes
 import com.slax.reader.const.component.EditNameDialog
+import com.slax.reader.data.database.model.BookmarkSortType
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.compenents.*
 import com.slax.reader.ui.sidebar.Sidebar
@@ -35,6 +38,7 @@ import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_inbox_tab
 import slax_reader_client.composeapp.generated.resources.ic_xs_inbox_add
+import slax_reader_client.composeapp.generated.resources.inbox_more
 
 @Composable
 fun InboxListScreen(navCtrl: NavController) {
@@ -44,6 +48,7 @@ fun InboxListScreen(navCtrl: NavController) {
 
     var showAddLinkDialog by remember { mutableStateOf(false) }
     var editingBookmark by remember { mutableStateOf<InboxListBookmarkItem?>(null) }
+    val currentSortType by inboxViewModel.sortType.collectAsState()
 
     println("[watch][UI] recomposition InboxListScreen")
 
@@ -74,6 +79,10 @@ fun InboxListScreen(navCtrl: NavController) {
                             },
                             onAddLinkClick = {
                                 showAddLinkDialog = true
+                            },
+                            currentSortType = currentSortType,
+                            onSortTypeChanged = { type ->
+                                inboxViewModel.setSortType(type)
                             }
                         )
                     }
@@ -134,7 +143,9 @@ fun InboxListScreen(navCtrl: NavController) {
 @Composable
 private fun NavigationBar(
     onAvatarClick: () -> Unit = {},
-    onAddLinkClick: () -> Unit = {}
+    onAddLinkClick: () -> Unit = {},
+    currentSortType: BookmarkSortType = BookmarkSortType.UPDATED,
+    onSortTypeChanged: (BookmarkSortType) -> Unit = {}
 ) {
     println("[watch][UI] recomposition NavigationBar")
     val tabInteractionSource = remember { MutableInteractionSource() }
@@ -142,6 +153,11 @@ private fun NavigationBar(
 
     val addInteractionSource = remember { MutableInteractionSource() }
     val isAddPressed by addInteractionSource.collectIsPressedAsState()
+
+    val titleInteractionSource = remember { MutableInteractionSource() }
+    val isTitlePressed by titleInteractionSource.collectIsPressedAsState()
+
+    var expanded by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -171,14 +187,61 @@ private fun NavigationBar(
             UserAvatar()
         }
 
-        Text(
-            text = "app_name".i18n(),
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color(0xFF0F1419),
-            textAlign = TextAlign.Center,
+        Box(
             modifier = Modifier.align(Alignment.Center)
-        )
+        ) {
+            Row(
+                modifier = Modifier
+                    .alpha(if (isTitlePressed) 0.5f else 1f)
+                    .clickable(
+                        interactionSource = titleInteractionSource,
+                        indication = null
+                    ) {
+                        expanded = true
+                    },
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = currentSortType.labelKey().i18n(),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF0F1419),
+                    textAlign = TextAlign.Center,
+                )
+
+                Image(
+                    painter = painterResource(Res.drawable.inbox_more),
+                    contentDescription = "Switch List",
+                    modifier = Modifier.size(10.dp),
+                    contentScale = ContentScale.Fit
+                )
+            }
+
+            DropdownMenu(
+                modifier = Modifier.background(Color.White),
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                BookmarkSortType.entries.forEach { type ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = type.labelKey().i18n(),
+                                color = if (type == currentSortType) Color(0xFF16b998) else Color(0xFF0F1419),
+                                fontSize = 16.sp,
+                                fontWeight = if (type == currentSortType) FontWeight.Medium else FontWeight.Normal
+                            )
+                        },
+                        modifier = Modifier.background(Color.White),
+                        onClick = {
+                            onSortTypeChanged(type)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
 
         Box(
             modifier = Modifier.align(Alignment.CenterEnd)
@@ -220,8 +283,6 @@ private fun ContentSection(
                     shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
                 )
         ) {
-            Spacer(modifier = Modifier.height(20.dp))
-            InboxTitleRow()
             Spacer(modifier = Modifier.height(4.dp))
 
             ArticleList(

@@ -72,6 +72,8 @@ val srUserBookmarkTable = Table(
         Column.text("alias_title"),
         Column.integer("type"),
         Column.text("deleted_at"),
+        Column.text("starred_at"),
+        Column.text("archived_at"),
         Column.text("metadata"),
     )
 )
