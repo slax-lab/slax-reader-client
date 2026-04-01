@@ -16,5 +16,7 @@ package = com.slax.reader.firebase
 - (void)recordError:(NSString * _Nonnull)message code:(NSInteger)code;
 - (void)log:(NSString * _Nonnull)message;
 - (void)setCrashlyticsUserId:(NSString * _Nullable)userId;
+- (void)requestNotificationPermission:(void (^ _Nonnull)(BOOL))completion;
+- (void)getFCMToken:(void (^ _Nonnull)(NSString * _Nullable))completion;
 
 @end

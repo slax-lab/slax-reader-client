@@ -35,6 +35,8 @@
 	</dict>
 	<key>FirebaseAutomaticScreenReportingEnabled</key>
 	<false/>
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<false/>
 	<key>NSNetworkUsageDescription</key>
 	<string>This app needs network access to sync data.</string>
 	<key>RCTNewArchEnabled</key>
@@ -43,5 +45,10 @@
 	<true/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

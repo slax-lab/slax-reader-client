@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.slax.reader.SlaxConfig
 import com.slax.reader.utils.i18n
+import com.slax.reader.utils.requestToken
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_app_logo
@@ -33,6 +35,8 @@ import slax_reader_client.composeapp.generated.resources.ic_sm_back
 @Composable
 fun AboutScreen(onBackClick: () -> Unit, onDebugClick: () -> Unit = {}) {
     var versionClickCount by remember { mutableIntStateOf(0) }
+    var titleClickCount by remember { mutableIntStateOf(0) }
+    val scope = rememberCoroutineScope()
     Scaffold(
         topBar = {
             TopAppBar(
@@ -76,7 +80,16 @@ fun AboutScreen(onBackClick: () -> Unit, onDebugClick: () -> Unit = {}) {
                 fontSize = 27.sp,
                 fontWeight = FontWeight.SemiBold,
                 lineHeight = 40.5.sp,
-                color = Color(0xFF0F1419)
+                color = Color(0xFF0F1419),
+                modifier = Modifier.clickable {
+                    titleClickCount++
+                    if (titleClickCount >= 5) {
+                        titleClickCount = 0
+                        scope.launch {
+                            requestToken()
+                        }
+                    }
+                }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
