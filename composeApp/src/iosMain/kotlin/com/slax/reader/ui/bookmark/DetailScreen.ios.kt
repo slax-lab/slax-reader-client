@@ -8,10 +8,12 @@ import androidx.compose.ui.FrameRateCategory
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.window.Popup
 import com.slax.reader.ui.bookmark.components.*
 import com.slax.reader.ui.bookmark.states.ScrollInfo
 import com.slax.reader.utils.*
@@ -102,8 +104,7 @@ actual fun DetailScreen(
             when (event) {
                 is WebViewEvent.PageLoaded -> {
                     viewModel.consumeInitialReadPosition()?.let { position ->
-                        val totalInsetPx = webViewState.topContentInsetPx + statusBarHeightPx +
-                                16f * density.density
+                        val totalInsetPx = webViewState.topContentInsetPx + 16f * density.density
 
                         val positionPoints = (position - totalInsetPx) / densityScale
                         webViewState.evaluateJs("window.scrollTo(0, $positionPoints)")
@@ -115,8 +116,7 @@ actual fun DetailScreen(
                     visibleHeightPx = event.visibleHeight
                 }
                 is WebViewEvent.ScrollToPosition -> {
-                    val totalInsetPx = webViewState.topContentInsetPx + statusBarHeightPx +
-                            16f * density.density
+                    val totalInsetPx = webViewState.topContentInsetPx + 16f * density.density
                     println(totalInsetPx / densityScale)
                     webViewState.evaluateJs("window.scrollTo(0, Math.max(0,document.body.scrollHeight * ${event.percentage} - ${totalInsetPx / densityScale}))")
                 }
@@ -129,10 +129,13 @@ actual fun DetailScreen(
         { height: Float -> headerMeasuredHeightState.floatValue = height }
     }
 
+    var containerHeightPx by remember { mutableFloatStateOf(0f) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFFCFCFC))
+            .onSizeChanged { containerHeightPx = it.height.toFloat() }
     ) {
         key(bookmarkId) {
             AppWebView(
@@ -161,51 +164,40 @@ actual fun DetailScreen(
                 .padding(bottom = 58.dp),
         )
 
-        // 文本选中操作菜单 - 水平居中，垂直方向跟随选中位置
+        // 文本选中操作菜单
         val selectionMenuVisible by LocalSelectionMenuVisible.current
+        // selectionYPx 是 hitTest 实时获取的屏幕坐标（UIKit points），转为 Compose px
         val selectionYPx by LocalSelectionYPx.current
+        val selectionScreenPx = selectionYPx * densityScale
 
-        /**
-         * 菜单垂直定位计算逻辑：
-         *
-         * iOS 中 WebView 占满屏幕，内部滚动。
-         * JS 返回的 selectionY 是相对于 WebView 视口（可见区域）的坐标（CSS points）。
-         * 由于 WebView 占满屏幕，视口顶部即屏幕顶部，
-         * 所以 selectionY（points）直接对应屏幕上的位置。
-         *
-         * 转换到 Compose 像素：selectionY * densityScale
-         *
-         * 菜单默认显示在选中位置上方，留出间距；
-         * 若上方空间不足则显示在下方。
-         */
-        val menuOffsetY by remember {
-            derivedStateOf {
-                if (selectionYPx <= 0f) return@derivedStateOf 0
+        val minTopPx = (statusBarHeightPx + 20.dp.value * densityScale).toInt()
+        val menuGapPx = with(density) { 8.dp.roundToPx() }
+        val menuHeightPx = with(density) { 38.dp.roundToPx() }
 
-                // selectionYPx 是 CSS points，转换为 Compose px
-                val selectionScreenY = selectionYPx * densityScale
+        val showMenu = selectionMenuVisible && selectionScreenPx > 0f && selectionScreenPx < containerHeightPx
 
-                // 菜单显示在选中位置上方，留出 48dp 间距
-                val menuGapPx = 48.dp.value * densityScale
-                val minTopPx = (statusBarHeightPx + 20.dp.value * densityScale)
+        if (showMenu) {
+            val touchY = selectionScreenPx.toInt()
+            val isTopArea = touchY < (containerHeightPx * 0.2f).toInt()
+            val offsetY = if (isTopArea) {
+                touchY + menuGapPx
+            } else {
+                touchY - menuHeightPx - menuGapPx
+            }.coerceIn(minTopPx, (containerHeightPx - menuHeightPx).toInt())
 
-                val targetY = selectionScreenY - menuGapPx
-
-                // 确保菜单不超出屏幕顶部（考虑状态栏）
-                targetY.toInt().coerceAtLeast(minTopPx.toInt())
+            Popup(
+                alignment = Alignment.TopCenter,
+                offset = IntOffset(0, offsetY)
+            ) {
+                SelectionActionBar(
+                    visible = true,
+                    actions = rememberSelectionActions(),
+                    onActionClick = { actionId ->
+                        handleSelectionAction(actionId, webViewState)
+                    }
+                )
             }
         }
-
-        SelectionActionBar(
-            visible = selectionMenuVisible,
-            actions = rememberSelectionActions(),
-            onActionClick = { actionId ->
-                handleSelectionAction(actionId, webViewState)
-            },
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .offset { IntOffset(0, menuOffsetY) }
-        )
 
         OutlineDialog()
     }

@@ -102,6 +102,15 @@ actual fun AppWebView(
                     setRenderPriority(WebSettings.RenderPriority.HIGH)
                 }
 
+                var longPressScreenY = 0f
+                val gestureDetector = android.view.GestureDetector(context,
+                    object : android.view.GestureDetector.SimpleOnGestureListener() {
+                        override fun onLongPress(e: MotionEvent) {
+                            longPressScreenY = e.rawY
+                        }
+                    }
+                )
+
                 addJavascriptInterface(object {
                     @JavascriptInterface
                     fun postMessage(message: String) {
@@ -131,7 +140,7 @@ actual fun AppWebView(
                                     "textSelected" -> {
                                         val text = msg.text
                                         if (!text.isNullOrBlank()) {
-                                            webState.dispatchEvent(WebViewEvent.TextSelected(text, msg.selectionY ?: 0f))
+                                            webState.dispatchEvent(WebViewEvent.TextSelected(text, longPressScreenY))
                                         }
                                     }
 
@@ -144,9 +153,9 @@ actual fun AppWebView(
                 }, JS_BRIDGE_NAME)
 
                 setOnTouchListener { _, event ->
+                    gestureDetector.onTouchEvent(event)
                     if (event.action == MotionEvent.ACTION_UP) {
                         webState.dispatchEvent(WebViewEvent.Tap)
-
                     }
                     false
                 }
