@@ -173,7 +173,7 @@ fun BookmarkItemRow(
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
-                            painter = painterResource(if (bookmark.isStarred == 1) Res.drawable.ic_floating_panel_starred else Res.drawable.ic_cell_action_star),
+                            painter = painterResource(if (bookmark.isStarred == 1) Res.drawable.ic_cell_action_starred else Res.drawable.ic_cell_action_star),
                             contentDescription = "bookmark_star".i18n(),
                             modifier = Modifier.size(20.dp),
                             contentScale = ContentScale.Fit
@@ -205,7 +205,7 @@ fun BookmarkItemRow(
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
-                            painter = painterResource(if (bookmark.archiveStatus == 1) Res.drawable.ic_floating_panel_archieved else Res.drawable.ic_cell_action_archieve),
+                            painter = painterResource(if (bookmark.archiveStatus == 1) Res.drawable.ic_cell_action_archieved else Res.drawable.ic_cell_action_archieve),
                             contentDescription = "bookmark_archive".i18n(),
                             modifier = Modifier.size(20.dp),
                             contentScale = ContentScale.Fit

@@ -210,6 +210,7 @@ fun OverviewDialog(
                                                             .align(Alignment.TopCenter)
                                                             .width(1.dp)
                                                             .fillMaxHeight(0.5f)
+                                                            .padding(bottom = 7.dp)
                                                             .background(lineColor)
                                                     )
                                                 }
@@ -220,6 +221,7 @@ fun OverviewDialog(
                                                             .align(Alignment.BottomCenter)
                                                             .width(1.dp)
                                                             .fillMaxHeight(0.5f)
+                                                            .padding(top = 7.dp)
                                                             .background(lineColor)
                                                     )
                                                 }
