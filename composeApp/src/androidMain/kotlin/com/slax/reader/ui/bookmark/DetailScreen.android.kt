@@ -17,6 +17,7 @@ import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.window.Popup
 import com.slax.reader.ui.bookmark.components.*
 import com.slax.reader.ui.bookmark.states.ScrollInfo
 import com.slax.reader.utils.AppWebView
@@ -136,55 +137,38 @@ actual fun DetailScreen(
                 .padding(bottom = 58.dp),
         )
 
-        // 文本选中操作菜单 - 水平居中，垂直方向跟随选中位置
+        // 文本选中操作菜单
         val selectionMenuVisible by LocalSelectionMenuVisible.current
         val selectionYPx by LocalSelectionYPx.current
         val density = LocalDensity.current
+        val minTopPx = with(density) { 60.dp.roundToPx() }
+        val menuGapPx = with(density) { 8.dp.roundToPx() }
+        val menuHeightPx = with(density) { 38.dp.roundToPx() }
 
-        /**
-         * 菜单垂直定位计算逻辑：
-         *
-         * Android 的 WebView 禁用了内部滚动（onScrollChanged 中 scrollTo(0,0)），
-         * WebView 高度与内容同步，嵌入在可滚动的 Column 中。
-         *
-         * JS 返回的 selectionY 是相对于 WebView 视口的坐标（CSS px），
-         * 由于 WebView 无内部滚动，此坐标等于 WebView 内的绝对位置。
-         *
-         * 转换到屏幕坐标：
-         *   屏幕Y = headerHeight + selectionY * density - scrollState.value
-         *
-         * 菜单默认显示在选中位置上方，留出间距；
-         * 若上方空间不足则显示在下方。
-         */
-        val menuOffsetY by remember {
-            derivedStateOf {
-                if (selectionYPx <= 0f) return@derivedStateOf 0
+        val showMenu = selectionMenuVisible && selectionYPx > 0f && selectionYPx < screenHeightPx
 
-                val selectionScreenY = headerHeightState.floatValue +
-                        selectionYPx * density.density -
-                        scrollState.value
+        if (showMenu) {
+            val touchY = selectionYPx.toInt()
+            val isTopArea = touchY < screenHeightPx * 0.2f
+            val offsetY = if (isTopArea) {
+                touchY + menuGapPx
+            } else {
+                touchY - menuHeightPx - menuGapPx
+            }.coerceIn(minTopPx, (screenHeightPx - menuHeightPx).toInt())
 
-                // 菜单显示在选中位置上方，留出 48dp 间距
-                val menuGapPx = 48.dp.value * density.density
-                val minTopPx = 60.dp.value * density.density
-
-                val targetY = selectionScreenY - menuGapPx
-
-                // 确保菜单不超出屏幕顶部
-                targetY.toInt().coerceAtLeast(minTopPx.toInt())
+            Popup(
+                alignment = Alignment.TopCenter,
+                offset = IntOffset(0, offsetY)
+            ) {
+                SelectionActionBar(
+                    visible = true,
+                    actions = rememberSelectionActions(),
+                    onActionClick = { actionId ->
+                        handleSelectionAction(actionId, webViewState)
+                    }
+                )
             }
         }
-
-        SelectionActionBar(
-            visible = selectionMenuVisible,
-            actions = rememberSelectionActions(),
-            onActionClick = { actionId ->
-                handleSelectionAction(actionId, webViewState)
-            },
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .offset { IntOffset(0, menuOffsetY) }
-        )
 
         OutlineDialog()
     }

@@ -48,17 +48,24 @@ private class TapHandler(
 
 /**
  * 禁用系统文本选中菜单的 WKWebView 子类。
- *
- * 覆写 canPerformAction 拒绝所有系统菜单操作（复制/查找/分享等），
- * 文本选中功能本身不受影响，由自定义 Compose SelectionActionBar 提供操作菜单。
  */
 @OptIn(ExperimentalForeignApi::class)
 private class NoMenuWKWebView(
     frame: CValue<platform.CoreGraphics.CGRect>,
     configuration: WKWebViewConfiguration
 ) : WKWebView(frame = frame, configuration = configuration) {
+
+    var latestTouchScreenY: Float = 0f
+
     override fun canPerformAction(action: COpaquePointer?, withSender: Any?): Boolean {
         return false
+    }
+
+    override fun hitTest(point: CValue<platform.CoreGraphics.CGPoint>, withEvent: UIEvent?): UIView? {
+        if (withEvent != null) {
+            latestTouchScreenY = convertPoint(point, toView = null).useContents { y }.toFloat()
+        }
+        return super.hitTest(point, withEvent)
     }
 }
 
@@ -150,7 +157,9 @@ actual fun AppWebView(
                         "textSelected" -> {
                             val text = msg.text
                             if (!text.isNullOrBlank()) {
-                                webState.dispatchEvent(WebViewEvent.TextSelected(text, msg.selectionY ?: 0f))
+                                // 直接从 WKWebView 的 hitTest 获取触摸屏幕坐标（UIKit points）
+                                val touchY = (webState.webView as? NoMenuWKWebView)?.latestTouchScreenY ?: 0f
+                                webState.dispatchEvent(WebViewEvent.TextSelected(text, touchY))
                             }
                         }
 
@@ -166,12 +175,8 @@ actual fun AppWebView(
     val densityScale = density.density
     val densityScaleState = rememberUpdatedState(densityScale)
 
-    // 获取 statusBarsPadding 高度
-    val windowInsets = WindowInsets.statusBars
-    val statusBarHeightPx = windowInsets.getTop(density).toFloat()
-
-    // iOS contentInset 需要完整高度：Column + statusBarsPadding + 视觉间距
-    val totalInsetPx = webState.topContentInsetPx + statusBarHeightPx + 16f * density.density
+    // iOS contentInset 需要完整高度（topContentInsetPx 已包含状态栏高度）+ 视觉间距
+    val totalInsetPx = webState.topContentInsetPx + 16f * density.density
 
     var externalUrl by remember { mutableStateOf<String?>(null) }
     val appPreference: AppPreferences = koinInject()
