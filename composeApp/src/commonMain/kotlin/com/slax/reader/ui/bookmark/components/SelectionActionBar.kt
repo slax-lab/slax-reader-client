@@ -55,8 +55,18 @@ fun rememberSelectionActions(): List<SelectionAction> {
     }
 }
 
-/** 处理选中菜单的操作点击 */
-fun handleSelectionAction(actionId: String, webViewState: AppWebViewState) {
+/**
+ * 处理选中菜单的操作点击
+ *
+ * @param actionId 操作标识，见 [SelectionActionId]
+ * @param webViewState WebView 状态，用于执行 JS 指令
+ * @param onCommentRequest 点击"评论"按钮时的回调，由调用方负责显示评论面板
+ */
+fun handleSelectionAction(
+    actionId: String,
+    webViewState: AppWebViewState,
+    onCommentRequest: (() -> Unit)? = null,
+) {
     when (actionId) {
         SelectionActionId.COPY -> {
             // 通过 JS 执行复制操作，浏览器的 Selection 仍然处于选中状态
@@ -66,7 +76,7 @@ fun handleSelectionAction(actionId: String, webViewState: AppWebViewState) {
             // TODO: 划线功能，后续实现
         }
         SelectionActionId.COMMENT -> {
-            // TODO: 评论功能，后续实现
+            onCommentRequest?.invoke()
         }
         SelectionActionId.CHAT -> {
             // TODO: Chat 功能，后续实现

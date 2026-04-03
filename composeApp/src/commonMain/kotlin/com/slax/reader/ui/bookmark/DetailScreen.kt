@@ -25,6 +25,11 @@ val LocalSelectionYPx = compositionLocalOf<MutableFloatState> {
     error("LocalSelectionYPx not provided")
 }
 
+/** 评论面板是否可见 */
+val LocalCommentPanelVisible = compositionLocalOf<MutableState<Boolean>> {
+    error("LocalCommentPanelVisible not provided")
+}
+
 sealed interface DetailScreenEvent {
     data object BackClick : DetailScreenEvent
     data object NavigateToSubscription : DetailScreenEvent
@@ -41,6 +46,7 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
     val selectionMenuVisible = remember { mutableStateOf(false) }
     val selectedText = remember { mutableStateOf("") }
     val selectionYPx = remember { mutableFloatStateOf(0f) }
+    val commentPanelVisible = remember { mutableStateOf(false) }
 
     val webViewState = rememberAppWebViewState(coroutineScope)
 
@@ -133,7 +139,8 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
         LocalToolbarVisible provides toolbarVisible,
         LocalSelectionMenuVisible provides selectionMenuVisible,
         LocalSelectedText provides selectedText,
-        LocalSelectionYPx provides selectionYPx
+        LocalSelectionYPx provides selectionYPx,
+        LocalCommentPanelVisible provides commentPanelVisible
     ) {
         DetailScreen(
             bookmarkId = bookmarkId,

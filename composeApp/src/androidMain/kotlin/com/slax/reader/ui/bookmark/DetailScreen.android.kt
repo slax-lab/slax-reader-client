@@ -140,6 +140,9 @@ actual fun DetailScreen(
         // 文本选中操作菜单
         val selectionMenuVisible by LocalSelectionMenuVisible.current
         val selectionYPx by LocalSelectionYPx.current
+        // 提前在 @Composable 上下文中捕获 MutableState 引用，供非 @Composable lambda 使用
+        val selectionMenuState = LocalSelectionMenuVisible.current
+        val commentPanelState = LocalCommentPanelVisible.current
         val density = LocalDensity.current
         val minTopPx = with(density) { 60.dp.roundToPx() }
         val menuGapPx = with(density) { 8.dp.roundToPx() }
@@ -164,13 +167,31 @@ actual fun DetailScreen(
                     visible = true,
                     actions = rememberSelectionActions(),
                     onActionClick = { actionId ->
-                        handleSelectionAction(actionId, webViewState)
+                        handleSelectionAction(
+                            actionId = actionId,
+                            webViewState = webViewState,
+                            onCommentRequest = {
+                                // 隐藏选中菜单，显示评论面板
+                                selectionMenuState.value = false
+                                commentPanelState.value = true
+                            }
+                        )
                     }
                 )
             }
         }
 
         OutlineDialog()
+
+        // 评论面板
+        val commentPanelVisible by commentPanelState
+        val selectedText by LocalSelectedText.current
+        CommentPanelSheet(
+            highlightedText = selectedText,
+            visible = commentPanelVisible,
+            onDismiss = { commentPanelState.value = false },
+            onActionClick = { /* 后续实现各操作逻辑 */ }
+        )
     }
 
     BookmarkDetailOverlays()
