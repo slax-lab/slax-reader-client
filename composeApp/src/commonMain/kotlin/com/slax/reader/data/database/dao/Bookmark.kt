@@ -47,6 +47,37 @@ class BookmarkDao(
 
     fun watchUserBookmarkList(): StateFlow<List<InboxListBookmarkItem>> = _userBookmarkListFlow
 
+    private val _userBookmarkPagedFlows = mutableMapOf<BookmarkSortType, StateFlow<List<InboxListBookmarkItem>>>()
+
+    fun watchUserBookmarkPaged(
+        sortType: BookmarkSortType = BookmarkSortType.UPDATED
+    ): StateFlow<List<InboxListBookmarkItem>> {
+        return _userBookmarkPagedFlows.getOrPut(sortType) {
+            println("[watch][database] _userBookmarkPagedFlow sortType=$sortType")
+            database.watch(
+                """
+                SELECT
+                    id,
+                    archive_status,
+                    is_starred,
+                    updated_at,
+                    alias_title,
+                    JSON_EXTRACT(metadata, '$.bookmark.title') as metadata_title,
+                    JSON_EXTRACT(metadata, '$.bookmark.target_url') as metadata_url,
+                    JSON_EXTRACT(metadata, '$.bookmark.status') as metadata_status
+                FROM sr_user_bookmark WHERE ${sortType.whereClause}
+                ORDER BY COALESCE(NULLIF(${sortType.column}, ''), updated_at) DESC
+                """.trimIndent()
+            ) { cursor ->
+                mapperToInboxListBookmarkItem(cursor)
+            }.catch { e ->
+                println("Error watching user bookmarks paged: ${e.message}")
+            }
+                .distinctUntilChanged()
+                .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
+        }
+    }
+
     fun watchBookmarkDetail(bookmarkId: String): Flow<List<UserBookmark>> {
         println("[watch][database] watchBookmarkDetail")
         return database.watch(
