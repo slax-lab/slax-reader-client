@@ -8,8 +8,6 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.*
@@ -19,6 +17,9 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -159,9 +160,14 @@ private fun NavigationBar(
 
     var expanded by remember { mutableStateOf(false) }
 
+    val density = LocalDensity.current
+    var navBarHeightPx by remember { mutableStateOf(0) }
+    val menuYOffset = with(density) { navBarHeightPx.toDp() } + 8.dp
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .onGloballyPositioned { navBarHeightPx = it.size.height }
     ) {
         Row(
             modifier = Modifier
@@ -192,6 +198,7 @@ private fun NavigationBar(
         ) {
             Row(
                 modifier = Modifier
+                    .padding(vertical = 5.dp, horizontal = 20.dp)
                     .alpha(if (isTitlePressed) 0.5f else 1f)
                     .clickable(
                         interactionSource = titleInteractionSource,
@@ -204,10 +211,13 @@ private fun NavigationBar(
             ) {
                 Text(
                     text = currentSortType.labelKey().i18n(),
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF0F1419),
-                    textAlign = TextAlign.Center,
+                    style = TextStyle(
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Medium,
+                        lineHeight = 24.sp,
+                        color = Color(0xFF0F1419),
+                        textAlign = TextAlign.Center,
+                    )
                 )
 
                 Image(
@@ -217,29 +227,22 @@ private fun NavigationBar(
                     contentScale = ContentScale.Fit
                 )
             }
+        }
 
-            DropdownMenu(
-                modifier = Modifier.background(Color.White),
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                BookmarkSortType.entries.forEach { type ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = type.labelKey().i18n(),
-                                color = if (type == currentSortType) Color(0xFF16b998) else Color(0xFF0F1419),
-                                fontSize = 16.sp,
-                                fontWeight = if (type == currentSortType) FontWeight.Medium else FontWeight.Normal
-                            )
-                        },
-                        modifier = Modifier.background(Color.White),
-                        onClick = {
-                            onSortTypeChanged(type)
-                            expanded = false
-                        }
-                    )
-                }
+        InboxDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            yOffset = menuYOffset
+        ) {
+            BookmarkSortType.entries.forEach { type ->
+                InboxMenuTextItem(
+                    text = type.labelKey().i18n(),
+                    selected = type == currentSortType,
+                    onClick = {
+                        onSortTypeChanged(type)
+                        expanded = false
+                    }
+                )
             }
         }
 
