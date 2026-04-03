@@ -13,14 +13,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import com.slax.reader.data.database.model.BookmarkSortType
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
+import slax_reader_client.composeapp.generated.resources.ic_cell_archived
 import slax_reader_client.composeapp.generated.resources.ic_cell_internet
+import slax_reader_client.composeapp.generated.resources.ic_cell_starred
 
 @Composable
-fun ItemStatus(downloadStatus: Int) {
-    val iconResource = painterResource(Res.drawable.ic_cell_internet)
-    val iconPainter = remember { iconResource }
+fun ItemStatus(downloadStatus: Int, sortType: BookmarkSortType = BookmarkSortType.UPDATED) {
+    val iconPainter = painterResource(
+        when (sortType) {
+            BookmarkSortType.STARRED -> Res.drawable.ic_cell_starred
+            BookmarkSortType.ARCHIVED -> Res.drawable.ic_cell_archived
+            else -> Res.drawable.ic_cell_internet
+        }
+    )
 
     Box(
         modifier = Modifier

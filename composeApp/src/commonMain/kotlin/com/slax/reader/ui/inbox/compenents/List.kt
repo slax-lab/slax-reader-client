@@ -73,7 +73,7 @@ fun ArticleList(
                     navCtrl = navCtrl,
                     viewModel = viewModel,
                     bookmark = bookmark,
-                    onEditTitle = onEditTitle
+                    onEditTitle = onEditTitle,
                 )
 
                 dividerLine()
