@@ -36,6 +36,7 @@ import com.slax.reader.utils.i18n
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_inbox_tab
 import slax_reader_client.composeapp.generated.resources.ic_xs_inbox_add
@@ -43,7 +44,7 @@ import slax_reader_client.composeapp.generated.resources.inbox_more
 
 @Composable
 fun InboxListScreen(navCtrl: NavController) {
-    val inboxViewModel = koinInject<InboxListViewModel>()
+    val inboxViewModel = koinViewModel<InboxListViewModel>()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
