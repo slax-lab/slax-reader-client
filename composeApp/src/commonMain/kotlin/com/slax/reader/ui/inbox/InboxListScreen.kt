@@ -91,7 +91,7 @@ fun InboxListScreen(navCtrl: NavController) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 20.dp)
+                            .height(WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 10.dp)
                             .clickable(
                                 indication = null,
                                 interactionSource = remember { MutableInteractionSource() }
