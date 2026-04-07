@@ -1,7 +1,14 @@
 package com.slax.reader.data.network.dto
 
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonClassDiscriminator
 
 @Serializable
 data class CredentialsData(
@@ -203,3 +210,78 @@ data class FeedbackParams(
     val allow_follow_up: Boolean,
     val target_url: String?
 )
+
+@Serializable
+data class MarkDetail(
+    val mark_list: List<MarkInfo> = emptyList(),
+    val user_list: Map<String, MarkUserInfo> = emptyMap()
+)
+
+@Serializable
+data class MarkInfo(
+    val id: Long = 0,
+    val user_id: Long = 0,
+    val type: MarkType = MarkType.LINE,
+    val source: List<MarkPathItem> = emptyList(),
+    val approx_source: MarkPathApprox? = null,
+    val parent_id: Long = 0,
+    val root_id: Long = 0,
+    val comment: String = "",
+    val created_at: String = "",
+    val is_deleted: Boolean = false,
+    val children: List<MarkInfo> = emptyList()
+)
+
+@Serializable
+data class MarkUserInfo(
+    val id: Long = 0,
+    val username: String = "",
+    val avatar: String = ""
+)
+
+@Serializable
+@OptIn(ExperimentalSerializationApi::class)
+@JsonClassDiscriminator("type")
+sealed class MarkPathItem {
+    @Serializable
+    @SerialName("text")
+    data class Text(
+        val path: String = "",
+        val start: Int = 0,
+        val end: Int = 0
+    ) : MarkPathItem()
+
+    @Serializable
+    @SerialName("image")
+    data class Image(
+        val path: String = ""
+    ) : MarkPathItem()
+}
+
+@Serializable
+data class MarkPathApprox(
+    val exact: String = "",
+    val prefix: String = "",
+    val suffix: String = "",
+    val position_start: Int = 0,
+    val position_end: Int = 0,
+    val raw_text: String? = null
+)
+
+@Serializable(with = MarkTypeSerializer::class)
+enum class MarkType(val value: Int) {
+    LINE(1),
+    COMMENT(2),
+    REPLY(3),
+    ORIGIN_LINE(4),
+    ORIGIN_COMMENT(5)
+}
+
+object MarkTypeSerializer : KSerializer<MarkType> {
+    override val descriptor = PrimitiveSerialDescriptor("MarkType", PrimitiveKind.INT)
+    override fun serialize(encoder: Encoder, value: MarkType) = encoder.encodeInt(value.value)
+    override fun deserialize(decoder: Decoder): MarkType {
+        val v = decoder.decodeInt()
+        return MarkType.entries.first { it.value == v }
+    }
+}
