@@ -126,6 +126,10 @@ class ApiService(
         )
     }
 
+    suspend fun getBookmarkMarkList(id: String): HttpData<MarkDetail> {
+        return get("/v1/bookmark/mark_list", query = mapOf("bookmark_uid" to id))
+    }
+
     suspend fun addBookmarkWithContent(
         url: String,
         content: String?,

@@ -1,0 +1,78 @@
+/* Slax Selection Bridge 默认样式 */
+
+slax-mark {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+/* 划线样式 */
+slax-mark.stroke {
+    background-color: rgba(255, 235, 59, 0.3);
+    border-bottom: 2px solid rgba(255, 193, 7, 0.6);
+}
+
+/* 有评论的标记 */
+slax-mark.comment {
+    background-color: rgba(33, 150, 243, 0.2);
+    border-bottom: 2px solid rgba(33, 150, 243, 0.6);
+}
+
+/* 自己的划线 */
+slax-mark.self-stroke {
+    background-color: rgba(76, 175, 80, 0.3);
+    border-bottom: 2px solid rgba(76, 175, 80, 0.6);
+}
+
+/* 高亮状态 */
+slax-mark.highlighted {
+    background-color: rgba(255, 152, 0, 0.5) !important;
+    border-bottom: 2px solid rgba(255, 152, 0, 0.8) !important;
+    animation: pulse 1s ease-in-out;
+}
+
+/* 划线 + 评论 */
+slax-mark.stroke.comment {
+    background: linear-gradient(
+            to bottom,
+            rgba(255, 235, 59, 0.3) 0%,
+            rgba(33, 150, 243, 0.2) 100%
+    );
+    border-bottom: 2px solid rgba(156, 39, 176, 0.6);
+}
+
+/* 悬停效果 */
+slax-mark:hover {
+    background-color: rgba(255, 152, 0, 0.4) !important;
+}
+
+/* 高亮动画 */
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.02);
+    }
+}
+
+/* 图片标记 */
+slax-mark img {
+    border: 2px solid transparent;
+    transition: border-color 0.2s ease;
+}
+
+slax-mark.stroke img {
+    border-color: rgba(255, 193, 7, 0.6);
+}
+
+slax-mark.comment img {
+    border-color: rgba(33, 150, 243, 0.6);
+}
+
+slax-mark.self-stroke img {
+    border-color: rgba(76, 175, 80, 0.6);
+}
+
+slax-mark.highlighted img {
+    border-color: rgba(255, 152, 0, 0.8);
+}

@@ -377,6 +377,7 @@ buildkonfig {
                     .readText()
                     .replace("{{RESET-CSS}}", file("../public/embedded/css/reset.css").readText())
                     .replace("{{ARTICLE-CSS}}", file("../public/embedded/css/article.css").readText())
+                    .replace("{{MARK-CSS}}", file("../public/embedded/css/mark.css").readText())
                     .replace("{{BOTTOM-LINE-CSS}}", file("../public/embedded/css/bottom-line.css").readText())
                     .replace("{{WEBVIEW-BRIGDE-JS}}", file("../public/embedded/js/webview-bridge.js").readText())
             )
