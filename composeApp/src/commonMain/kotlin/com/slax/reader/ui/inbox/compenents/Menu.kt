@@ -322,7 +322,7 @@ fun InboxMenuTextItem(
                 color = if (selected) Color(0xFF16B998) else Color(0xFF0F1419),
                 fontSize = 16.sp,
                 lineHeight = 22.5.sp,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center
             )
         )
