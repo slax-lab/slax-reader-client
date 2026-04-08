@@ -108,7 +108,7 @@ fun BookmarkItemRow(
         )
     )
 
-    val maxSwipeLeft = remember(density) { -with(density) { if( sortType == BookmarkSortType.UPDATED)  130.dp.toPx() else 70.dp.toPx() } }
+    val maxSwipeLeft = remember(density, sortType) { -with(density) { if( sortType == BookmarkSortType.UPDATED)  130.dp.toPx() else 70.dp.toPx() } }
     val maxSwipeRight = 0f
     val clickDragTolerancePx = remember(density) { with(density) { 8.dp.toPx() } }
 
@@ -142,6 +142,7 @@ fun BookmarkItemRow(
             }
     ) {
         if (showSwipeActions) {
+            println("current sortType: $sortType cell name: $currentTitle")
             Row(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
