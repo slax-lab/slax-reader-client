@@ -231,9 +231,7 @@ class BookmarkDao(
                                 published_at = now,
                                 content_cover = "",
                                 content_word_count = 0
-                            ),
-                            starred_at = null,
-                            archived_at = null,
+                            )
                         )
                     )
                 )
