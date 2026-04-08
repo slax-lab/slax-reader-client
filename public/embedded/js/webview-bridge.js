@@ -1,1 +1,2180 @@
-var SlaxReaderWebBridgeExports=function(e){"use strict";function t(){return window.NativeBridge?.postMessage?"android":window.webkit?.messageHandlers?.NativeBridge?"ios":"unknown"}function n(e){const n=JSON.stringify(e),r=t();return"android"===r?(window.NativeBridge.postMessage(n),!0):"ios"===r&&(window.webkit.messageHandlers.NativeBridge.postMessage(n),!0)}function r(){return Math.max(document.body.scrollHeight,document.body.offsetHeight,document.documentElement.clientHeight,document.documentElement.scrollHeight,document.documentElement.offsetHeight)}function o(e){const t=e.tagName.toLowerCase();if("img"===t){const t=e;return t.currentSrc||t.src||""}if("image"===t){const t=e;return t.href?.baseVal||e.getAttribute("href")||e.getAttribute("xlink:href")||""}return""}function i(){!function(){const e=document.body?.querySelector(":scope > div");e?.classList.contains("tweet")&&document.querySelectorAll("a img").forEach(e=>{const t=e.closest("a");if(!t)return;const n=t.parentNode;if(n){for(;t.firstChild;)n.insertBefore(t.firstChild,t);n.removeChild(t)}})}();const e=document.querySelectorAll("img, image");!function(e){const t="slax-image-loading";e.forEach(e=>{e.srcset="",e.onload=()=>{e.classList.remove(t),e.naturalWidth<5||e.naturalHeight<5?e.setAttribute("style","display: none;"):e.naturalWidth<200?e.setAttribute("style",`width: ${e.naturalWidth}px !important;`):["padding: 0 !important","height: auto !important;"].forEach(t=>{e.setAttribute("style",t)})},e.referrerPolicy="",e.onerror=()=>{e.classList.remove(t),e.style.display="none"},e.classList.add(t);const n=e.parentElement;(n?Array.from(n.childNodes):[]).every(e=>e.nodeType!==Node.ELEMENT_NODE||"img"===e.tagName.toLowerCase())&&(e.style.cssFloat="none")})}(Array.from(e).filter(e=>"img"===e.tagName.toLowerCase())),e.forEach(t=>{t.addEventListener("click",t=>{const r=["https://","http://","slaxstatics://","slaxstatic://"],i=Array.from(e).map(o).filter(e=>e&&r.some(t=>e.startsWith(t))),s=o(t.currentTarget);n({type:"imageClick",src:s,allImages:i,index:i.indexOf(s)})})})}function s(e){let t=null,n=null;if(e instanceof HTMLElement||null===e?t=e:(t=e.element||null,n=e.range||null),t||n)try{const e=window.getSelection();!n&&t&&(n=document.createRange(),n.selectNodeContents(t)),e&&n&&(e.removeAllRanges(),e.addRange(n))}catch(e){}}function a(e){return e.split("").reverse().join("")}function l(e){return(e|-e)>>31&1}function c(e,t,n,r){let o=e.P[n],i=e.M[n];const s=r>>>31,a=t[n]|s,c=a|i,d=(a&o)+o^o|a;let h=i|~(d|o),u=o&d;const f=l(h&e.lastRowMask[n])-l(u&e.lastRowMask[n]);return h<<=1,u<<=1,u|=s,h|=l(r)-s,o=u|~(c|h),i=h&c,e.P[n]=o,e.M[n]=i,f}function d(e,t,n){if(0===t.length)return[];n=Math.min(n,t.length);const r=[],o=32,i=Math.ceil(t.length/o)-1,s={P:new Uint32Array(i+1),M:new Uint32Array(i+1),lastRowMask:new Uint32Array(i+1)};s.lastRowMask.fill(1<<31),s.lastRowMask[i]=1<<(t.length-1)%o;const a=new Uint32Array(i+1),l=new Map,d=[];for(let e=0;e<256;e++)d.push(a);for(let e=0;e<t.length;e+=1){const n=t.charCodeAt(e);if(l.has(n))continue;const r=new Uint32Array(i+1);l.set(n,r),n<d.length&&(d[n]=r);for(let e=0;e<=i;e+=1){r[e]=0;for(let i=0;i<o;i+=1){const s=e*o+i;if(s>=t.length)continue;t.charCodeAt(s)===n&&(r[e]|=1<<i)}}}let h=Math.max(0,Math.ceil(n/o)-1);const u=new Uint32Array(i+1);for(let e=0;e<=h;e+=1)u[e]=(e+1)*o;u[i]=t.length;for(let e=0;e<=h;e+=1)s.P[e]=-1,s.M[e]=0;for(let f=0;f<e.length;f+=1){const m=e.charCodeAt(f);let g;m<d.length?g=d[m]:(g=l.get(m),void 0===g&&(g=a));let p=0;for(let e=0;e<=h;e+=1)p=c(s,g,e,p),u[e]+=p;if(u[h]-p<=n&&h<i&&(1&g[h+1]||p<0)){let e;if(h+=1,s.P[h]=-1,s.M[h]=0,h===i){const n=t.length%o;e=0===n?o:n}else e=o;u[h]=u[h-1]+e-p+c(s,g,h,p)}else for(;h>0&&u[h]>=n+o;)h-=1;h===i&&u[h]<=n&&(u[h]<n&&r.splice(0,r.length),r.push({start:-1,end:f+1,errors:u[h]}),n=u[h])}return r}function h(e,t,n){return function(e,t,n){const r=a(t);return n.map(n=>{const o=Math.max(0,n.end-t.length-n.errors);return{start:d(a(e.slice(o,n.end)),r,n.errors).reduce((e,t)=>n.end-t.end<e?n.end-t.end:e,n.end),end:n.end,errors:n.errors}})}(e,t,d(e,t,n))}var u,f,m,g={},p={};function k(){return u||(u=1,function(e){Object.defineProperty(e,"__esModule",{value:!0}),e.default=function(e,s){if(e.whatToShow!==i){var l;try{l=new DOMException(n,"InvalidStateError")}catch(e){(l=new Error(n)).code=11,l.name="InvalidStateError",l.toString=function(){return"InvalidStateError: ".concat(n)}}throw l}var c=0,d=e.referenceNode,h=null;if(u=s,"number"==typeof u&&isFinite(u)&&Math.floor(u)===u)h={forward:function(){return c<s},backward:function(){return c>s||!e.pointerBeforeReferenceNode}};else{if(!a(s))throw new TypeError(r);h={forward:function(e,t){return e.compareDocumentPosition(t)&o}(d,s)?function(){return!1}:function(){return d!==s},backward:function(){return d!==s||!e.pointerBeforeReferenceNode}}}var u;for(;h.forward();){if(null===(d=e.nextNode()))throw new RangeError(t);c+=d.nodeValue.length}e.nextNode()&&(d=e.previousNode());for(;h.backward();){if(null===(d=e.previousNode()))throw new RangeError(t);c-=d.nodeValue.length}if(!a(e.referenceNode))throw new RangeError(t);return c};var t="Iterator exhausted before seek ended.",n="Argument 1 of seek must use filter NodeFilter.SHOW_TEXT.",r="Argument 2 of seek must be an integer or a Text Node.",o=2,i=4,s=3;function a(e){return e.nodeType===s}}(p)),p}var y,M,x,w,C={};function S(){return y||(y=1,function(e){function t(e,t){if(!t&&e.firstChild)return e.firstChild;do{if(e.nextSibling)return e.nextSibling;e=e.parentNode}while(e);return e}Object.defineProperty(e,"__esModule",{value:!0}),e.default=function(e){var n="";return function(e,n){var r=function(e){if(e.startContainer.nodeType===Node.ELEMENT_NODE){return e.startContainer.childNodes[e.startOffset]||t(e.startContainer,!0)}return e.startContainer}(e),o=function(e){if(e.endContainer.nodeType===Node.ELEMENT_NODE){return e.endContainer.childNodes[e.endOffset]||t(e.endContainer,!0)}return t(e.endContainer)}(e);for(;r!==o;)n(r),r=t(r)}(e,function(t){if(t.nodeType===Node.TEXT_NODE){var r=t===e.startContainer?e.startOffset:0,o=t===e.endContainer?e.endOffset:t.textContent.length;n+=t.textContent.slice(r,o)}}),n}}(C)),C}function E(){if(M)return g;M=1,Object.defineProperty(g,"__esModule",{value:!0}),g.fromRange=function(e,n){if(void 0===e)throw new Error('missing required parameter "root"');if(void 0===n)throw new Error('missing required parameter "range"');var r=e.ownerDocument.createRange(),o=n.startContainer,i=n.startOffset;r.setStart(e,0),r.setEnd(o,i);var s=(0,t.default)(r).length,a=s+(0,t.default)(n).length;return{start:s,end:a}},g.toRange=function(t){var n=arguments.length>1&&void 0!==arguments[1]?arguments[1]:{};if(void 0===t)throw new Error('missing required parameter "root"');var o=t.ownerDocument,i=o.createRange(),s=o.createNodeIterator(t,r),a=n.start||0,l=n.end||a,c=a-(0,e.default)(s,a),d=s.referenceNode,h=l-a+c,u=h-(0,e.default)(s,h),f=s.referenceNode;return i.setStart(d,c),i.setEnd(f,u),i};var e=n(m?f:(m=1,f=k().default)),t=n(S());function n(e){return e&&e.__esModule?e:{default:e}}var r=4;return g}var v=w?x:(w=1,x=E());function N(e){const t=e.trim().replace(/\s+/g," ");try{const e=function(e,t,n=!0){const r=e.trim().replace(/\s+/g," "),o=n?Math.max(3,Math.floor(r.length/3)):0,i={candidate:null};return function e(t){if(t.nodeType===Node.ELEMENT_NODE){const s=t;if(("undefined"==typeof navigator||!navigator.userAgent.includes("jsdom"))&&0===s.offsetHeight&&0===s.offsetWidth)return;const a=s.textContent,{text:l,ranges:c}=function(e){const t=[];return{text:e.replace(/(\s+)|([^\s])/g,(e,n,r,o)=>(t.push({start:o,end:o+e.length}),n?" ":e)),ranges:t}}(a||"");if(a&&a.length>=r.length-o){const e=h(l,r,o);if(e.length>0){e.sort((e,t)=>e.errors-t.errors);const t=e[0];if(!i.candidate||t.errors<i.candidate.errors||t.errors===i.candidate.errors&&a.length<=i.candidate.length){const e=c[t.start].start,n=c[t.end-1].end;i.candidate={element:s,errors:t.errors,length:a.length,match:{start:e,end:n,errors:t.errors}}}}else if(n){const e=r.replace(/[.*+?^${}()|[\]\\]/g,"\\$&").replace(/\s+/g,"\\s+"),t=new RegExp(e,"i"),n=a.match(t);n&&void 0!==n.index&&(i.candidate={element:s,errors:0,length:a.length,match:{start:n.index,end:n.index+n[0].length,errors:0}})}}Array.from(s.children).forEach(t=>e(t))}}(document.body),i.candidate?{element:i.candidate.element,match:i.candidate.match}:null}(t);if(e){const{element:t,match:n}=e,r=v.toRange(t,{start:n.start,end:n.end});if(r){let e=r.commonAncestorContainer;return e.nodeType===Node.TEXT_NODE&&e.parentNode&&(e=e.parentNode),{element:e||t,range:r}}}}catch(e){}return null}function A(e){const r=e&&"element"in e?e.element:e,o=e&&"range"in e?e.range:null;if(!r)return;const i=t();if("android"===i){const e=o?o.getBoundingClientRect():r.getBoundingClientRect(),t=window.pageYOffset||document.documentElement.scrollTop;n({type:"scrollToPosition",percentage:(e.top+t)/Math.max(document.body.scrollHeight,document.documentElement.scrollHeight)})}else if("ios"===i)if(o){const e=o.getBoundingClientRect(),t=window.pageYOffset||document.documentElement.scrollTop;n({type:"scrollToPosition",percentage:(e.top+t)/Math.max(document.body.scrollHeight,document.documentElement.scrollHeight)})}else r.scrollIntoView({behavior:"smooth",block:"center",inline:"nearest"})}function R(e){const t=N(decodeURIComponent(e));return!!t&&(s(t),A(t),!0)}function I(){return"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,e=>{const t=16*Math.random()|0;return("x"===e?t:3&t|8).toString(16)})}function b(e){const t=e.parentNode;if(t){for(;e.firstChild;)t.insertBefore(e.firstChild,e);t.removeChild(e)}}function T(e,t){const n=[];let r=e;for(;r&&r!==t;){let e=r.tagName.toLowerCase();if(r.id&&(e+=`#${r.id}`),r.className&&"string"==typeof r.className){const t=r.className.trim().split(/\s+/).filter(e=>e);t.length>0&&(e+="."+t.join("."))}if(r.parentElement){const t=Array.from(r.parentElement.children),n=t.indexOf(r);t.length>1&&(e+=`:nth-child(${n+1})`)}n.unshift(e),r=r.parentElement}return n.join(" > ")}function O(e){const t=["UNSUPPORT-VIDEO","SCRIPT","STYLE","NOSCRIPT"],n=[],r=e=>{e.nodeType===Node.TEXT_NODE?n.push(e):e.nodeType===Node.ELEMENT_NODE&&-1===t.indexOf(e.tagName)&&e.childNodes.forEach(e=>r(e))};return r(e),n}function _(e){const t=window.getSelection();if(!t){const t=document.createElement("div");return t.appendChild(e.cloneContents()),t.innerText}const n=[];for(let e=0;e<t.rangeCount;e++)n.push(t.getRangeAt(e));try{t.removeAllRanges(),t.addRange(e);return t.toString()}finally{t.removeAllRanges();for(const e of n)t.addRange(e)}}function L(e,t){if(e===t)return!0;if("object"!=typeof e||"object"!=typeof t||null===e||null===t)return!1;const n=Object.keys(e),r=Object.keys(t);if(n.length!==r.length)return!1;for(const o of n)if(!r.includes(o)||!L(e[o],t[o]))return!1;return!0}class B{constructor(e){this.isMonitoring=!1,this.handleSelectionChange=()=>{this.selectionChangeTimeout&&clearTimeout(this.selectionChangeTimeout),this.selectionChangeTimeout=setTimeout(()=>{const e=window.getSelection();if(!e||0===e.rangeCount)return;const t=e.getRangeAt(0);if(t.collapsed)return;if(!this.container.contains(t.commonAncestorContainer))return;const n=this.parseSelectionFromRange(t);0!==n.selection.length&&(this.onSelectionCallback&&this.onSelectionCallback(n),this.selectionChangeTimeout=void 0)},300)},this.handleMouseUp=e=>{setTimeout(()=>{const t=window.getSelection();if(!t||0===t.rangeCount)return;const n=t.getRangeAt(0);if(n.collapsed)return;const r=this.parseSelection(n,e);0!==r.selection.length&&this.onSelectionCallback&&this.onSelectionCallback(r)},10)},this.container=e}start(e){this.isMonitoring||(this.onSelectionCallback=e,document.addEventListener("selectionchange",this.handleSelectionChange),this.container.addEventListener("mouseup",this.handleMouseUp),this.container.addEventListener("touchend",this.handleMouseUp),this.isMonitoring=!0)}stop(){this.isMonitoring&&(this.selectionChangeTimeout&&(clearTimeout(this.selectionChangeTimeout),this.selectionChangeTimeout=void 0),document.removeEventListener("selectionchange",this.handleSelectionChange),this.container.removeEventListener("mouseup",this.handleMouseUp),this.container.removeEventListener("touchend",this.handleMouseUp),this.isMonitoring=!1,this.onSelectionCallback=void 0)}parseSelectionFromRange(e){const t=this.getSelectionInfo(e);return{selection:t,paths:this.convertSelectionToPaths(t),approx:this.getApproxInfo(e),position:this.getPositionInfoFromRange(e)}}parseSelection(e,t){const n=this.getSelectionInfo(e);return{selection:n,paths:this.convertSelectionToPaths(n),approx:this.getApproxInfo(e),position:this.getPositionInfo(e,t)}}getPositionInfoFromRange(e){const t=e.getBoundingClientRect(),n=this.container.getBoundingClientRect(),r=t.left+t.width/2,o=t.bottom;return{x:r-n.left,y:o-n.top,width:t.width,height:t.height,top:t.top-n.top,left:t.left-n.left,right:t.right-n.left,bottom:t.bottom-n.top}}getPositionInfo(e,t){const n=e.getBoundingClientRect(),r=this.container.getBoundingClientRect();let o,i;return t instanceof MouseEvent?(o=t.clientX,i=t.clientY):(o=t.changedTouches[0].clientX,i=t.changedTouches[0].clientY),{x:o-r.left,y:i-r.top,width:n.width,height:n.height,top:n.top-r.top,left:n.left-r.left,right:n.right-r.left,bottom:n.bottom-r.top}}getSelectionInfo(e){if(!e)return[];const t=[],n=t=>e.intersectsNode(t),r=o=>{if(o.nodeType===Node.TEXT_NODE&&(o.textContent?.trim()||"").length>0)(r=>{if(!n(r))return;let o=r===e.startContainer?e.startOffset:0,i=r===e.endContainer?e.endOffset:r.length;o=Math.max(0,Math.min(o,r.length)),i=Math.max(o,Math.min(i,r.length)),i>o&&t.push({type:"text",node:r,startOffset:o,endOffset:i,text:r.textContent.slice(o,i)})})(o);else if(o.nodeType===Node.ELEMENT_NODE){const i=o;if("IMG"===i.tagName&&(t=>{const n=document.createRange();return n.selectNodeContents(t),e.compareBoundaryPoints(Range.START_TO_START,n)<=0&&e.compareBoundaryPoints(Range.END_TO_END,n)>=0})(i)&&t.push({type:"image",src:i.src,element:i}),n(i))for(const e of Array.from(i.childNodes))r(e)}};return r(e.commonAncestorContainer),t.length>0&&!t.every(e=>"text"===e.type&&0===e.text.trim().length)?t:[]}convertSelectionToPaths(e){const t=[];let n=null,r=0,o=0;for(const i of e)if("text"===i.type){let e=i.node.parentElement;for(;e&&"SLAX-MARK"===e.tagName;)e=e.parentElement;if(!e)continue;const s=T(e,this.container),a=O(e);let l=0;for(const e of a){if(e===i.node)break;l+=(e.textContent||"").length}const c=l+i.startOffset,d=l+i.endOffset;s===n||(null!==n&&t.push({type:"text",path:n,start:r,end:o}),n=s,r=c),o=d}else if("image"===i.type){null!==n&&(t.push({type:"text",path:n,start:r,end:o}),n=null);const e=T(i.element,this.container);t.push({type:"image",path:e})}return null!==n&&t.push({type:"text",path:n,start:r,end:o}),t}getApproxInfo(e){const t=_(e),n=document.createRange();n.setStart(this.container,0),n.setEnd(e.startContainer,e.startOffset);const r=_(n).slice(-50),o=document.createRange();o.setStart(e.endContainer,e.endOffset),o.setEndAfter(this.container.lastChild);return{exact:t,prefix:r,suffix:_(o).slice(0,50),raw_text:t}}clearSelection(){const e=window.getSelection();e&&e.removeAllRanges()}}class D{constructor(e,t){this.container=e,this.currentUserId=t}drawMark(e,t,n,r,o){try{const i={id:e,isStroke:n,hasComment:r,isSelfStroke:void 0!==o&&o===this.currentUserId,isHighlighted:!1};let s=!1;for(const e of t){if(!n&&!r)continue;const t=this.transferNodeInfos(e);for(const e of t)"image"!==e.type?this.addMark({...i,node:e.node,start:e.start,end:e.end}):this.addImageMark({...i,ele:e.ele});s=t.length>0}return s}catch(e){return!1}}transferNodeInfos(e){const t=[];if("text"===e.type){const n=this.container.querySelector(e.path);if(!n)return t;const r=O(n),o=r.map(e=>(e.textContent||"").length);let i=e.start||0;const s=e.end||0;let a=0;for(let e=0;e<o.length;e++)if(a+o[e]<=i)a+=o[e];else{if(s-a<=o[e]){t.push({type:"text",start:i-a,end:s-a,node:r[e]});break}t.push({type:"text",start:i-a,end:o[e],node:r[e]}),i+=o[e]-(i-a),a+=o[e]}}else if("image"===e.type){let n=this.container.querySelector(e.path);if(!n||!n.src){const t=e.path.split(">"),r=t.length-1,o=[...t.slice(0,r)," slax-mark ",t[r]];n=this.container.querySelector(o.join(">"))}n&&t.push({type:"image",ele:n})}return t}addMark(e){const{id:t,node:n,start:r,end:o,isStroke:i,hasComment:s,isSelfStroke:a,isHighlighted:l}=e,c=document.createRange();c.setStart(n,r),c.setEnd(n,o);const d=document.createElement("slax-mark");d.dataset.uuid=t,i&&d.classList.add("stroke"),s&&d.classList.add("comment"),a&&d.classList.add("self-stroke"),l&&d.classList.add("highlighted");try{c.surroundContents(d)}catch(e){}}addImageMark(e){const{id:t,ele:n,isStroke:r,hasComment:o,isSelfStroke:i,isHighlighted:s}=e,a=document.createElement("slax-mark");a.dataset.uuid=t,r&&a.classList.add("stroke"),o&&a.classList.add("comment"),i&&a.classList.add("self-stroke"),s&&a.classList.add("highlighted"),n.parentElement?.insertBefore(a,n),n.remove(),a.appendChild(n)}updateMark(e,t,n,r){const o=Array.from(this.container.querySelectorAll(`slax-mark[data-uuid="${e}"]`)),i=void 0!==r&&r===this.currentUserId;o.forEach(e=>{t?e.classList.add("stroke"):e.classList.remove("stroke"),n?e.classList.add("comment"):e.classList.remove("comment"),i?e.classList.add("self-stroke"):e.classList.remove("self-stroke"),t||n||b(e)})}removeMark(e){Array.from(this.container.querySelectorAll(`slax-mark[data-uuid="${e}"]`)).forEach(e=>b(e))}highlightMark(e){this.clearAllHighlights();const t=Array.from(this.container.querySelectorAll(`slax-mark[data-uuid="${e}"]`));t.forEach(e=>e.classList.add("highlighted")),t.length>0&&t[0].scrollIntoView({behavior:"smooth",block:"center"})}clearAllHighlights(){Array.from(this.container.querySelectorAll("slax-mark.highlighted")).forEach(e=>e.classList.remove("highlighted"))}clearAllMarks(){Array.from(this.container.querySelectorAll("slax-mark")).forEach(e=>b(e))}getAllMarkIds(){const e=Array.from(this.container.querySelectorAll("slax-mark[data-uuid]")),t=new Set;return e.forEach(e=>{const n=e.dataset.uuid;n&&t.add(n)}),Array.from(t)}}class P{constructor(e,t){this.markItemInfos=[],this.container=e,this.renderer=new D(e,t)}drawMarks(e){const t=this.createUserMap(e.user_list),n=this.buildCommentMap(e.mark_list,t);this.buildCommentRelationships(e.mark_list,n),this.markItemInfos=this.generateMarkItemInfos(e.mark_list,n);for(const e of this.markItemInfos)this.drawSingleMarkItem(e);return this.buildDrawMarksResult(e.mark_list)}removeMarkByUuid(e){this.renderer.removeMark(e),this.markItemInfos=this.markItemInfos.filter(t=>t.id!==e)}clearAllMarks(){this.renderer.clearAllMarks(),this.markItemInfos=[]}highlightMark(e){this.renderer.highlightMark(e)}clearAllHighlights(){this.renderer.clearAllHighlights()}getAllMarkIds(){return this.renderer.getAllMarkIds()}createUserMap(e){return new Map(Object.entries(e).map(([e,t])=>[Number(e),t]))}buildCommentMap(e,t){const n=new Map,r=[2,3,5];for(const o of e)if(r.includes(o.type)){const e=t.get(o.user_id),r={markId:o.id,comment:o.comment,userId:o.user_id,username:e?.username||"",avatar:e?.avatar||"",isDeleted:o.is_deleted,children:[],createdAt:"string"==typeof o.created_at?new Date(o.created_at):o.created_at,rootId:o.root_id,showInput:!1,loading:!1,operateLoading:!1};n.set(o.id,r)}return n}buildCommentRelationships(e,t){for(const n of e){if(3!==n.type)continue;if(!t.has(n.id)||!t.has(n.parent_id)||!t.has(n.root_id))continue;const e=t.get(n.id),r=t.get(n.parent_id);e.reply={id:r.markId,username:r.username,userId:r.userId,avatar:r.avatar};const o=t.get(n.root_id);o&&o.children.push(e)}}generateMarkItemInfos(e,t){const n=[],r=[1,4],o=[2,5],i=[4,5];for(const s of e){const e=s.source;if("number"==typeof e||3===s.type)continue;if(i.includes(s.type)&&(!s.approx_source||0===Object.keys(s.approx_source).length))continue;const a=e;let l=n.find(e=>this.checkMarkSourceIsSame(e.source,a));if(!l){if(s.approx_source)try{const e=this.getRangeFromApprox(s.approx_source),t=e?_(e):void 0;s.approx_source.raw_text=t}catch(e){}l={id:I(),source:a,comments:[],stroke:[],approx:s.approx_source},n.push(l)}if(r.includes(s.type))l.stroke.push({mark_id:s.id,userId:s.user_id});else if(o.includes(s.type)){const e=t.get(s.id);if(!e||e.isDeleted&&0===e.children.length)continue;l.comments.push(e)}}return n}checkMarkSourceIsSame(e,t){return L(e,t)}getRangeFromApprox(e){return null}drawSingleMarkItem(e){const t=e.stroke.length>0,n=e.comments.length>0,r=e.stroke.length>0?e.stroke[0].userId:e.comments[0]?.userId;this.renderer.drawMark(e.id,e.source,t,n,r)}buildDrawMarksResult(e){const t={};for(const n of this.markItemInfos){const r=[];for(const t of n.stroke)if(t.mark_id){const n=e.find(e=>e.id===t.mark_id);n&&r.push(n)}for(const t of n.comments){const n=e.find(e=>e.id===t.markId);n&&r.push(n);for(const n of t.children){const t=e.find(e=>e.id===n.markId);t&&r.push(t)}}t[n.id]=r}return t}}return e.SlaxWebViewBridge=class{constructor(){this.selectionMonitor=null,this.markRenderer=null,this.markManager=null,this.selectionContainer=null,this.markClickCleanup=null,this.postMessage=n,this.getContentHeight=r,this.scrollToAnchor=R,this.highlightElement=s,this.findMatchingElement=N,this.scrollToElement=A,this.init()}init(){window.CSS&&window.CSS.escape||(window.CSS=window.CSS||{},window.CSS.escape=function(e){if(0===arguments.length)throw new TypeError("`CSS.escape` requires an argument.");for(var t,n=String(e),r=n.length,o=-1,i="";++o<r;)0!==(t=n.charCodeAt(o))?i+=t>=48&&t<=57||t>=65&&t<=90||t>=97&&t<=122||95===t||45===t?n.charAt(o):"\\"+n.charAt(o):i+="�";return i}),"loading"===document.readyState?document.addEventListener("DOMContentLoaded",()=>{this.onDOMReady()}):this.onDOMReady()}onDOMReady(){i(),function(){const e=document.querySelector("body > .slax-reader-notfound-container > .slax-reader-notfound-btn-container");if(!e)return;const t=e.querySelector(".retry-btn"),r=e.querySelector(".feedback-btn");t&&t.addEventListener("click",()=>{n({type:"refreshContent"})}),r&&r.addEventListener("click",()=>{n({type:"feedback"})})}(),n({type:"domReady"})}startSelectionMonitoring(e,t){const r=document.querySelector(e);r&&(this.stopSelectionMonitoring(),this.selectionContainer=r,this.markRenderer=new D(r,t),this.markManager=new P(r,t),this.selectionMonitor=new B(r),this.setupMarkClickListener(r),this.selectionMonitor.start(e=>{n({type:"textSelected",data:JSON.stringify({paths:e.paths,approx:e.approx,selection:e.selection.map(e=>"text"===e.type?{type:"text",text:e.text,start_offset:e.startOffset,end_offset:e.endOffset}:{type:"image",src:e.src})}),position:JSON.stringify(e.position)})}))}stopSelectionMonitoring(){this.selectionMonitor&&(this.selectionMonitor.stop(),this.selectionMonitor=null),this.markClickCleanup&&(this.markClickCleanup(),this.markClickCleanup=null),this.selectionContainer=null,this.markRenderer=null,this.markManager=null}clearSelection(){this.selectionMonitor?.clearSelection()}drawMark(e,t,r,o,i){const s=e||I();if(!this.markRenderer)return s;try{const e=JSON.parse(t);return n({type:"markRendered",markId:s,success:this.markRenderer.drawMark(s,e,r,o,i)}),s}catch(e){return n({type:"selectionError",error:`Failed to draw mark: ${e}`}),s}}updateMark(e,t,r,o){if(this.markRenderer)try{this.markRenderer.updateMark(e,t,r,o)}catch(e){n({type:"selectionError",error:`Failed to update mark: ${e}`})}}removeMark(e){if(this.markRenderer)try{this.markRenderer.removeMark(e)}catch(e){n({type:"selectionError",error:`Failed to remove mark: ${e}`})}}highlightMark(e){if(this.markRenderer)try{this.markRenderer.highlightMark(e)}catch(e){n({type:"selectionError",error:`Failed to highlight mark: ${e}`})}}clearHighlights(){this.markRenderer?.clearAllHighlights()}clearAllMarks(){this.markRenderer?.clearAllMarks(),this.markManager?.clearAllMarks()}getAllMarkIds(){return this.markRenderer?.getAllMarkIds()??[]}drawMarks(e){if(!this.markManager)return JSON.stringify({});try{const t=JSON.parse(e),n=this.markManager.drawMarks(t);return JSON.stringify(n)}catch(e){return n({type:"selectionError",error:`Failed to draw marks: ${e}`}),JSON.stringify({})}}removeMarkByUuid(e){if(this.markManager)try{this.markManager.removeMarkByUuid(e)}catch(e){n({type:"selectionError",error:`Failed to remove mark by UUID: ${e}`})}}setCurrentUserId(e){this.selectionContainer&&(this.markRenderer=new D(this.selectionContainer,e),this.markManager=new P(this.selectionContainer,e))}setupMarkClickListener(e){const t=t=>{let r=t.target;for(;r&&r!==e;){if("SLAX-MARK"===r.tagName&&r.dataset.uuid){const o=r.dataset.uuid,i=JSON.stringify({id:o,text:r.textContent||"",classList:Array.from(r.classList)}),s=e.getBoundingClientRect(),a=r.getBoundingClientRect(),l={x:t.clientX-s.left,y:t.clientY-s.top,width:a.width,height:a.height,top:a.top-s.top,left:a.left-s.left,right:a.right-s.left,bottom:a.bottom-s.top};n({type:"markClicked",markId:o,data:i,position:JSON.stringify(l)}),t.stopPropagation();break}r=r.parentElement}};e.addEventListener("click",t),this.markClickCleanup=()=>e.removeEventListener("click",t)}},e}({});window.SlaxWebViewBridge=new SlaxReaderWebBridgeExports.SlaxWebViewBridge;
+var SlaxReaderWebBridgeExports = (function (exports) {
+    'use strict';
+
+    function detectPlatform() {
+        // Android 平台：检查 NativeBridge.postMessage 是否存在
+        if (window.NativeBridge?.postMessage) {
+            return 'android';
+        }
+        // iOS 平台：检查 webkit.messageHandlers.NativeBridge 是否存在
+        if (window.webkit?.messageHandlers?.NativeBridge) {
+            return 'ios';
+        }
+        return 'unknown';
+    }
+
+    /**
+     * 发送消息给 Native
+     */
+    function postToNativeBridge(payload) {
+        const message = JSON.stringify(payload);
+        const platform = detectPlatform();
+        // Android 平台
+        if (platform === 'android') {
+            window.NativeBridge.postMessage(message);
+            return true;
+        }
+        // iOS 平台
+        if (platform === 'ios') {
+            window.webkit.messageHandlers.NativeBridge.postMessage(message);
+            return true;
+        }
+        console.warn('Native bridge not available');
+        return false;
+    }
+
+    /**
+     * 获取页面内容高度
+     */
+    function getContentHeight() {
+        return Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight);
+    }
+
+    /**
+     * 获取图片元素的 URL
+     */
+    function getImageUrl(element) {
+        const tagName = element.tagName.toLowerCase();
+        if (tagName === 'img') {
+            const img = element;
+            return img.currentSrc || img.src || '';
+        }
+        if (tagName === 'image') {
+            const svgImage = element;
+            return svgImage.href?.baseVal ||
+                element.getAttribute('href') ||
+                element.getAttribute('xlink:href') ||
+                '';
+        }
+        return '';
+    }
+    /**
+     * 处理图片加载和样式
+     */
+    function handleImageLoading(imgs) {
+        const loadingKey = 'slax-image-loading';
+        imgs.forEach(img => {
+            img.srcset = '';
+            img.onload = () => {
+                img.classList.remove(loadingKey);
+                if (img.naturalWidth < 5 || img.naturalHeight < 5) {
+                    img.setAttribute('style', 'display: none;');
+                    return;
+                }
+                else if (img.naturalWidth < 200) {
+                    img.setAttribute('style', `width: ${img.naturalWidth}px !important;`);
+                    return;
+                }
+                ['padding: 0 !important', 'height: auto !important;'].forEach(style => {
+                    img.setAttribute('style', style);
+                });
+            };
+            img.referrerPolicy = '';
+            img.onerror = () => {
+                img.classList.remove(loadingKey);
+                img.style.display = 'none';
+            };
+            img.classList.add(loadingKey);
+            const parentElement = img.parentElement;
+            const parentChilds = parentElement ? Array.from(parentElement.childNodes) : [];
+            const isOnlyImages = parentChilds.every(child => {
+                if (child.nodeType === Node.ELEMENT_NODE) {
+                    const element = child;
+                    return element.tagName.toLowerCase() === 'img';
+                }
+                return true;
+            });
+            if (isOnlyImages) {
+                img.style.cssFloat = 'none';
+            }
+        });
+    }
+    /**
+     * 如果是 tweet 内容，移除包裹 img 的 a 标签（保留子内容）
+     */
+    function unwrapImgAnchorsInTweet() {
+        const firstDiv = document.body?.querySelector(':scope > div');
+        if (!firstDiv?.classList.contains('tweet'))
+            return;
+        document.querySelectorAll('a img').forEach(img => {
+            const anchor = img.closest('a');
+            if (!anchor)
+                return;
+            const parent = anchor.parentNode;
+            if (!parent)
+                return;
+            while (anchor.firstChild) {
+                parent.insertBefore(anchor.firstChild, anchor);
+            }
+            parent.removeChild(anchor);
+        });
+    }
+    /**
+     * 初始化图片点击处理程序
+     */
+    function initImageClickHandlers() {
+        unwrapImgAnchorsInTweet();
+        const images = document.querySelectorAll('img, image');
+        const htmlImages = Array.from(images).filter(img => img.tagName.toLowerCase() === 'img');
+        handleImageLoading(htmlImages);
+        images.forEach(img => {
+            img.addEventListener('click', (event) => {
+                const validSchemes = ['https://', 'http://', 'slaxstatics://', 'slaxstatic://'];
+                const allImageUrls = Array.from(images)
+                    .map(getImageUrl)
+                    .filter(url => url && validSchemes.some(scheme => url.startsWith(scheme)));
+                const currentTarget = event.currentTarget;
+                const clickedImageUrl = getImageUrl(currentTarget);
+                postToNativeBridge({
+                    type: 'imageClick',
+                    src: clickedImageUrl,
+                    allImages: allImageUrls,
+                    index: allImageUrls.indexOf(clickedImageUrl)
+                });
+            });
+        });
+        console.log(`[WebView Bridge] Initialized ${images.length} image click handlers`);
+    }
+
+    /**
+     * 高亮目标元素
+     */
+    function highlightElement(target) {
+        let element = null;
+        let range = null;
+        if (target instanceof HTMLElement || target === null) {
+            element = target;
+        }
+        else {
+            element = target.element || null;
+            range = target.range || null;
+        }
+        if (!element && !range) {
+            console.warn('[WebView Bridge] Target element/range does not exist, cannot highlight');
+            return;
+        }
+        try {
+            const selection = window.getSelection();
+            if (!range && element) {
+                range = document.createRange();
+                range.selectNodeContents(element);
+            }
+            if (selection && range) {
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+        }
+        catch (error) {
+            console.warn('[WebView Bridge] Failed to select element:', error);
+        }
+    }
+
+    /**
+     * Implementation of Myers' online approximate string matching algorithm [1],
+     * with additional optimizations suggested by [2].
+     *
+     * This has O((k/w) * n) expected-time where `n` is the length of the
+     * text, `k` is the maximum number of errors allowed (always <= the pattern
+     * length) and `w` is the word size. Because JS only supports bitwise operations
+     * on 32 bit integers, `w` is 32.
+     *
+     * As far as I am aware, there aren't any online algorithms which are
+     * significantly better for a wide range of input parameters. The problem can be
+     * solved faster using "filter then verify" approaches which first filter out
+     * regions of the text that cannot match using a "cheap" check and then verify
+     * the remaining potential matches. The verify step requires an algorithm such
+     * as this one however.
+     *
+     * The algorithm's approach is essentially to optimize the classic dynamic
+     * programming solution to the problem by computing columns of the matrix in
+     * word-sized chunks (ie. dealing with 32 chars of the pattern at a time) and
+     * avoiding calculating regions of the matrix where the minimum error count is
+     * guaranteed to exceed the input threshold.
+     *
+     * The paper consists of two parts, the first describes the core algorithm for
+     * matching patterns <= the size of a word (implemented by `advanceBlock` here).
+     * The second uses the core algorithm as part of a larger block-based algorithm
+     * to handle longer patterns.
+     *
+     * [1] G. Myers, “A Fast Bit-Vector Algorithm for Approximate String Matching
+     * Based on Dynamic Programming,” vol. 46, no. 3, pp. 395–415, 1999.
+     *
+     * [2] Šošić, M. (2014). An simd dynamic programming c/c++ library (Doctoral
+     * dissertation, Fakultet Elektrotehnike i računarstva, Sveučilište u Zagrebu).
+     */
+    function reverse(s) {
+        return s.split("").reverse().join("");
+    }
+    /**
+     * Given the ends of approximate matches for `pattern` in `text`, find
+     * the start of the matches.
+     *
+     * @param findEndFn - Function for finding the end of matches in
+     * text.
+     * @return Matches with the `start` property set.
+     */
+    function findMatchStarts(text, pattern, matches) {
+        const patRev = reverse(pattern);
+        return matches.map((m) => {
+            // Find start of each match by reversing the pattern and matching segment
+            // of text and searching for an approx match with the same number of
+            // errors.
+            const minStart = Math.max(0, m.end - pattern.length - m.errors);
+            const textRev = reverse(text.slice(minStart, m.end));
+            // If there are multiple possible start points, choose the one that
+            // maximizes the length of the match.
+            const start = findMatchEnds(textRev, patRev, m.errors).reduce((min, rm) => {
+                if (m.end - rm.end < min) {
+                    return m.end - rm.end;
+                }
+                return min;
+            }, m.end);
+            return {
+                start,
+                end: m.end,
+                errors: m.errors,
+            };
+        });
+    }
+    /**
+     * Return 1 if a number is non-zero or zero otherwise, without using
+     * conditional operators.
+     *
+     * This should get inlined into `advanceBlock` below by the JIT.
+     *
+     * Adapted from https://stackoverflow.com/a/3912218/434243
+     */
+    function oneIfNotZero(n) {
+        return ((n | -n) >> 31) & 1;
+    }
+    /**
+     * Block calculation step of the algorithm.
+     *
+     * From Fig 8. on p. 408 of [1], additionally optimized to replace conditional
+     * checks with bitwise operations as per Section 4.2.3 of [2].
+     *
+     * @param ctx - The pattern context object
+     * @param peq - The `peq` array for the current character (`ctx.peq.get(ch)`)
+     * @param b - The block level
+     * @param hIn - Horizontal input delta ∈ {1,0,-1}
+     * @return Horizontal output delta ∈ {1,0,-1}
+     */
+    function advanceBlock(ctx, peq, b, hIn) {
+        let pV = ctx.P[b];
+        let mV = ctx.M[b];
+        const hInIsNegative = hIn >>> 31; // 1 if hIn < 0 or 0 otherwise.
+        const eq = peq[b] | hInIsNegative;
+        // Step 1: Compute horizontal deltas.
+        const xV = eq | mV;
+        const xH = (((eq & pV) + pV) ^ pV) | eq;
+        let pH = mV | ~(xH | pV);
+        let mH = pV & xH;
+        // Step 2: Update score (value of last row of this block).
+        const hOut = oneIfNotZero(pH & ctx.lastRowMask[b]) -
+            oneIfNotZero(mH & ctx.lastRowMask[b]);
+        // Step 3: Update vertical deltas for use when processing next char.
+        pH <<= 1;
+        mH <<= 1;
+        mH |= hInIsNegative;
+        pH |= oneIfNotZero(hIn) - hInIsNegative; // set pH[0] if hIn > 0
+        pV = mH | ~(xV | pH);
+        mV = pH & xV;
+        ctx.P[b] = pV;
+        ctx.M[b] = mV;
+        return hOut;
+    }
+    /**
+     * Find the ends and error counts for matches of `pattern` in `text`.
+     *
+     * Only the matches with the lowest error count are reported. Other matches
+     * with error counts <= maxErrors are discarded.
+     *
+     * This is the block-based search algorithm from Fig. 9 on p.410 of [1].
+     */
+    function findMatchEnds(text, pattern, maxErrors) {
+        if (pattern.length === 0) {
+            return [];
+        }
+        // Clamp error count so we can rely on the `maxErrors` and `pattern.length`
+        // rows being in the same block below.
+        maxErrors = Math.min(maxErrors, pattern.length);
+        const matches = [];
+        // Word size.
+        const w = 32;
+        // Index of maximum block level.
+        const bMax = Math.ceil(pattern.length / w) - 1;
+        // Context used across block calculations.
+        const ctx = {
+            P: new Uint32Array(bMax + 1),
+            M: new Uint32Array(bMax + 1),
+            lastRowMask: new Uint32Array(bMax + 1),
+        };
+        ctx.lastRowMask.fill(1 << 31);
+        ctx.lastRowMask[bMax] = 1 << (pattern.length - 1) % w;
+        // Dummy "peq" array for chars in the text which do not occur in the pattern.
+        const emptyPeq = new Uint32Array(bMax + 1);
+        // Map of UTF-16 character code to bit vector indicating positions in the
+        // pattern that equal that character.
+        const peq = new Map();
+        // Version of `peq` that only stores mappings for small characters. This
+        // allows faster lookups when iterating through the text because a simple
+        // array lookup can be done instead of a hash table lookup.
+        const asciiPeq = [];
+        for (let i = 0; i < 256; i++) {
+            asciiPeq.push(emptyPeq);
+        }
+        // Calculate `ctx.peq` - a map of character values to bitmasks indicating
+        // positions of that character within the pattern, where each bit represents
+        // a position in the pattern.
+        for (let c = 0; c < pattern.length; c += 1) {
+            const val = pattern.charCodeAt(c);
+            if (peq.has(val)) {
+                // Duplicate char in pattern.
+                continue;
+            }
+            const charPeq = new Uint32Array(bMax + 1);
+            peq.set(val, charPeq);
+            if (val < asciiPeq.length) {
+                asciiPeq[val] = charPeq;
+            }
+            for (let b = 0; b <= bMax; b += 1) {
+                charPeq[b] = 0;
+                // Set all the bits where the pattern matches the current char (ch).
+                // For indexes beyond the end of the pattern, always set the bit as if the
+                // pattern contained a wildcard char in that position.
+                for (let r = 0; r < w; r += 1) {
+                    const idx = b * w + r;
+                    if (idx >= pattern.length) {
+                        continue;
+                    }
+                    const match = pattern.charCodeAt(idx) === val;
+                    if (match) {
+                        charPeq[b] |= 1 << r;
+                    }
+                }
+            }
+        }
+        // Index of last-active block level in the column.
+        let y = Math.max(0, Math.ceil(maxErrors / w) - 1);
+        // Initialize maximum error count at bottom of each block.
+        const score = new Uint32Array(bMax + 1);
+        for (let b = 0; b <= y; b += 1) {
+            score[b] = (b + 1) * w;
+        }
+        score[bMax] = pattern.length;
+        // Initialize vertical deltas for each block.
+        for (let b = 0; b <= y; b += 1) {
+            ctx.P[b] = -1;
+            ctx.M[b] = 0;
+        }
+        // Process each char of the text, computing the error count for `w` chars of
+        // the pattern at a time.
+        for (let j = 0; j < text.length; j += 1) {
+            // Lookup the bitmask representing the positions of the current char from
+            // the text within the pattern.
+            const charCode = text.charCodeAt(j);
+            let charPeq;
+            if (charCode < asciiPeq.length) {
+                // Fast array lookup.
+                charPeq = asciiPeq[charCode];
+            }
+            else {
+                // Slower hash table lookup.
+                charPeq = peq.get(charCode);
+                if (typeof charPeq === "undefined") {
+                    charPeq = emptyPeq;
+                }
+            }
+            // Calculate error count for blocks that we definitely have to process for
+            // this column.
+            let carry = 0;
+            for (let b = 0; b <= y; b += 1) {
+                carry = advanceBlock(ctx, charPeq, b, carry);
+                score[b] += carry;
+            }
+            // Check if we also need to compute an additional block, or if we can reduce
+            // the number of blocks processed for the next column.
+            if (score[y] - carry <= maxErrors &&
+                y < bMax &&
+                (charPeq[y + 1] & 1 || carry < 0)) {
+                // Error count for bottom block is under threshold, increase the number of
+                // blocks processed for this column & next by 1.
+                y += 1;
+                ctx.P[y] = -1;
+                ctx.M[y] = 0;
+                let maxBlockScore;
+                if (y === bMax) {
+                    const remainder = pattern.length % w;
+                    maxBlockScore = remainder === 0 ? w : remainder;
+                }
+                else {
+                    maxBlockScore = w;
+                }
+                score[y] =
+                    score[y - 1] +
+                    maxBlockScore -
+                    carry +
+                    advanceBlock(ctx, charPeq, y, carry);
+            }
+            else {
+                // Error count for bottom block exceeds threshold, reduce the number of
+                // blocks processed for the next column.
+                while (y > 0 && score[y] >= maxErrors + w) {
+                    y -= 1;
+                }
+            }
+            // If error count is under threshold, report a match.
+            if (y === bMax && score[y] <= maxErrors) {
+                if (score[y] < maxErrors) {
+                    // Discard any earlier, worse matches.
+                    matches.splice(0, matches.length);
+                }
+                matches.push({
+                    start: -1,
+                    end: j + 1,
+                    errors: score[y],
+                });
+                // Because `search` only reports the matches with the lowest error count,
+                // we can "ratchet down" the max error threshold whenever a match is
+                // encountered and thereby save a small amount of work for the remainder
+                // of the text.
+                maxErrors = score[y];
+            }
+        }
+        return matches;
+    }
+    /**
+     * Search for matches for `pattern` in `text` allowing up to `maxErrors` errors.
+     *
+     * Returns the start, and end positions and error counts for each lowest-cost
+     * match. Only the "best" matches are returned.
+     */
+    function search(text, pattern, maxErrors) {
+        const matches = findMatchEnds(text, pattern, maxErrors);
+        return findMatchStarts(text, pattern, matches);
+    }
+
+    var lib$1 = {};
+
+    var lib = {};
+
+    var hasRequiredLib$1;
+
+    function requireLib$1 () {
+        if (hasRequiredLib$1) return lib;
+        hasRequiredLib$1 = 1;
+        (function (exports$1) {
+
+            Object.defineProperty(exports$1, "__esModule", {
+                value: true
+            });
+            exports$1["default"] = seek;
+            var E_END = 'Iterator exhausted before seek ended.';
+            var E_SHOW = 'Argument 1 of seek must use filter NodeFilter.SHOW_TEXT.';
+            var E_WHERE = 'Argument 2 of seek must be an integer or a Text Node.';
+            var DOCUMENT_POSITION_PRECEDING = 2;
+            var SHOW_TEXT = 4;
+            var TEXT_NODE = 3;
+
+            function seek(iter, where) {
+                if (iter.whatToShow !== SHOW_TEXT) {
+                    var error; // istanbul ignore next
+
+                    try {
+                        error = new DOMException(E_SHOW, 'InvalidStateError');
+                    } catch (_unused) {
+                        error = new Error(E_SHOW);
+                        error.code = 11;
+                        error.name = 'InvalidStateError';
+
+                        error.toString = function () {
+                            return "InvalidStateError: ".concat(E_SHOW);
+                        };
+                    }
+
+                    throw error;
+                }
+
+                var count = 0;
+                var node = iter.referenceNode;
+                var predicates = null;
+
+                if (isInteger(where)) {
+                    predicates = {
+                        forward: function forward() {
+                            return count < where;
+                        },
+                        backward: function backward() {
+                            return count > where || !iter.pointerBeforeReferenceNode;
+                        }
+                    };
+                } else if (isText(where)) {
+                    var forward = before(node, where) ? function () {
+                        return false;
+                    } : function () {
+                        return node !== where;
+                    };
+
+                    var backward = function backward() {
+                        return node !== where || !iter.pointerBeforeReferenceNode;
+                    };
+
+                    predicates = {
+                        forward: forward,
+                        backward: backward
+                    };
+                } else {
+                    throw new TypeError(E_WHERE);
+                }
+
+                while (predicates.forward()) {
+                    node = iter.nextNode();
+
+                    if (node === null) {
+                        throw new RangeError(E_END);
+                    }
+
+                    count += node.nodeValue.length;
+                }
+
+                if (iter.nextNode()) {
+                    node = iter.previousNode();
+                }
+
+                while (predicates.backward()) {
+                    node = iter.previousNode();
+
+                    if (node === null) {
+                        throw new RangeError(E_END);
+                    }
+
+                    count -= node.nodeValue.length;
+                }
+
+                if (!isText(iter.referenceNode)) {
+                    throw new RangeError(E_END);
+                }
+
+                return count;
+            }
+
+            function isInteger(n) {
+                if (typeof n !== 'number') return false;
+                return isFinite(n) && Math.floor(n) === n;
+            }
+
+            function isText(node) {
+                return node.nodeType === TEXT_NODE;
+            }
+
+            function before(ref, node) {
+                return ref.compareDocumentPosition(node) & DOCUMENT_POSITION_PRECEDING;
+            }
+
+        } (lib));
+        return lib;
+    }
+
+    var domSeek;
+    var hasRequiredDomSeek;
+
+    function requireDomSeek () {
+        if (hasRequiredDomSeek) return domSeek;
+        hasRequiredDomSeek = 1;
+        domSeek = requireLib$1()['default'];
+        return domSeek;
+    }
+
+    var rangeToString = {};
+
+    var hasRequiredRangeToString;
+
+    function requireRangeToString () {
+        if (hasRequiredRangeToString) return rangeToString;
+        hasRequiredRangeToString = 1;
+        (function (exports$1) {
+
+            Object.defineProperty(exports$1, "__esModule", {
+                value: true
+            });
+            exports$1["default"] = rangeToString;
+
+            /**
+             * Return the next node after `node` in a tree order traversal of the document.
+             */
+            function nextNode(node, skipChildren) {
+                if (!skipChildren && node.firstChild) {
+                    return node.firstChild;
+                }
+
+                do {
+                    if (node.nextSibling) {
+                        return node.nextSibling;
+                    }
+
+                    node = node.parentNode;
+                } while (node);
+                /* istanbul ignore next */
+
+
+                return node;
+            }
+
+            function firstNode(range) {
+                if (range.startContainer.nodeType === Node.ELEMENT_NODE) {
+                    var node = range.startContainer.childNodes[range.startOffset];
+                    return node || nextNode(range.startContainer, true
+                        /* skip children */
+                    );
+                }
+
+                return range.startContainer;
+            }
+
+            function firstNodeAfter(range) {
+                if (range.endContainer.nodeType === Node.ELEMENT_NODE) {
+                    var node = range.endContainer.childNodes[range.endOffset];
+                    return node || nextNode(range.endContainer, true
+                        /* skip children */
+                    );
+                }
+
+                return nextNode(range.endContainer);
+            }
+
+            function forEachNodeInRange(range, cb) {
+                var node = firstNode(range);
+                var pastEnd = firstNodeAfter(range);
+
+                while (node !== pastEnd) {
+                    cb(node);
+                    node = nextNode(node);
+                }
+            }
+            /**
+             * A ponyfill for Range.toString().
+             * Spec: https://dom.spec.whatwg.org/#dom-range-stringifier
+             *
+             * Works around the buggy Range.toString() implementation in IE and Edge.
+             * See https://github.com/tilgovi/dom-anchor-text-position/issues/4
+             */
+
+
+            function rangeToString(range) {
+                // This is a fairly direct translation of the Range.toString() implementation
+                // in Blink.
+                var text = '';
+                forEachNodeInRange(range, function (node) {
+                    if (node.nodeType !== Node.TEXT_NODE) {
+                        return;
+                    }
+
+                    var start = node === range.startContainer ? range.startOffset : 0;
+                    var end = node === range.endContainer ? range.endOffset : node.textContent.length;
+                    text += node.textContent.slice(start, end);
+                });
+                return text;
+            }
+
+        } (rangeToString));
+        return rangeToString;
+    }
+
+    var hasRequiredLib;
+
+    function requireLib () {
+        if (hasRequiredLib) return lib$1;
+        hasRequiredLib = 1;
+
+        Object.defineProperty(lib$1, "__esModule", {
+            value: true
+        });
+        lib$1.fromRange = fromRange;
+        lib$1.toRange = toRange;
+
+        var _domSeek = _interopRequireDefault(requireDomSeek());
+
+        var _rangeToString = _interopRequireDefault(requireRangeToString());
+
+        function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+
+        var SHOW_TEXT = 4;
+
+        function fromRange(root, range) {
+            if (root === undefined) {
+                throw new Error('missing required parameter "root"');
+            }
+
+            if (range === undefined) {
+                throw new Error('missing required parameter "range"');
+            }
+
+            var document = root.ownerDocument;
+            var prefix = document.createRange();
+            var startNode = range.startContainer;
+            var startOffset = range.startOffset;
+            prefix.setStart(root, 0);
+            prefix.setEnd(startNode, startOffset);
+            var start = (0, _rangeToString["default"])(prefix).length;
+            var end = start + (0, _rangeToString["default"])(range).length;
+            return {
+                start: start,
+                end: end
+            };
+        }
+
+        function toRange(root) {
+            var selector = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+            if (root === undefined) {
+                throw new Error('missing required parameter "root"');
+            }
+
+            var document = root.ownerDocument;
+            var range = document.createRange();
+            var iter = document.createNodeIterator(root, SHOW_TEXT);
+            var start = selector.start || 0;
+            var end = selector.end || start;
+            var startOffset = start - (0, _domSeek["default"])(iter, start);
+            var startNode = iter.referenceNode;
+            var remainder = end - start + startOffset;
+            var endOffset = remainder - (0, _domSeek["default"])(iter, remainder);
+            var endNode = iter.referenceNode;
+            range.setStart(startNode, startOffset);
+            range.setEnd(endNode, endOffset);
+            return range;
+        }
+
+        return lib$1;
+    }
+
+    var domAnchorTextPosition;
+    var hasRequiredDomAnchorTextPosition;
+
+    function requireDomAnchorTextPosition () {
+        if (hasRequiredDomAnchorTextPosition) return domAnchorTextPosition;
+        hasRequiredDomAnchorTextPosition = 1;
+        domAnchorTextPosition = requireLib();
+        return domAnchorTextPosition;
+    }
+
+    var domAnchorTextPositionExports = requireDomAnchorTextPosition();
+
+    function normalizeWithRanges(raw) {
+        const ranges = [];
+        const text = raw.replace(/(\s+)|([^\s])/g, (match, space, _char, offset) => {
+            ranges.push({ start: offset, end: offset + match.length });
+            return space ? ' ' : match;
+        });
+        return { text, ranges };
+    }
+    function findBestMatch(text, dom, fuzzy = true) {
+        const normalizedText = text.trim().replace(/\s+/g, ' ');
+        // 长度允许一定的错误
+        const maxErrors = fuzzy ? Math.max(3, Math.floor(normalizedText.length / 3)) : 0;
+        const result = { candidate: null };
+        function traverse(node) {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+                const element = node;
+                const isJSDOM = typeof navigator !== 'undefined' && navigator.userAgent.includes('jsdom');
+                if (!isJSDOM && element.offsetHeight === 0 && element.offsetWidth === 0) {
+                    return;
+                }
+                const content = element.textContent;
+                const { text, ranges } = normalizeWithRanges(content || '');
+                if (content && content.length >= normalizedText.length - maxErrors) {
+                    const matches = search(text, normalizedText, maxErrors);
+                    if (matches.length > 0) {
+                        matches.sort((a, b) => a.errors - b.errors);
+                        const bestMatchInElement = matches[0];
+                        if (!result.candidate ||
+                            bestMatchInElement.errors < result.candidate.errors ||
+                            (bestMatchInElement.errors === result.candidate.errors && content.length <= result.candidate.length)) {
+                            const rawStart = ranges[bestMatchInElement.start].start;
+                            const rawEnd = ranges[bestMatchInElement.end - 1].end;
+                            result.candidate = {
+                                element,
+                                errors: bestMatchInElement.errors,
+                                length: content.length,
+                                match: {
+                                    start: rawStart,
+                                    end: rawEnd,
+                                    errors: bestMatchInElement.errors
+                                }
+                            };
+                        }
+                    }
+                    else if (fuzzy) {
+                        const regText = normalizedText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, "\\s+");
+                        const regex = new RegExp(regText, 'i');
+                        const exactMatch = content.match(regex);
+                        if (exactMatch && exactMatch.index !== undefined) {
+                            result.candidate = {
+                                element,
+                                errors: 0,
+                                length: content.length,
+                                match: {
+                                    start: exactMatch.index,
+                                    end: exactMatch.index + exactMatch[0].length,
+                                    errors: 0
+                                }
+                            };
+                        }
+                    }
+                }
+                Array.from(element.children).forEach(child => traverse(child));
+            }
+        }
+        traverse(document.body);
+        if (result.candidate) {
+            console.log(`[WebView Bridge] Fuzzy match found: ${result.candidate.element.tagName} (Lengths: ${normalizedText.length}, Errors: ${result.candidate.errors}, Error Rate: ${(result.candidate.errors / normalizedText.length * 100).toFixed(2)}%， Available Text Length: ${normalizedText.length - result.candidate.errors}）`);
+            return { element: result.candidate.element, match: result.candidate.match };
+        }
+        return null;
+    }
+    /**
+     * 查找单个匹配元素
+     */
+    function findMatchingElement(anchorText) {
+        const normalizedAnchor = anchorText.trim().replace(/\s+/g, ' ');
+        try {
+            const fuzzyResult = findBestMatch(normalizedAnchor);
+            if (fuzzyResult) {
+                const { element, match } = fuzzyResult;
+                const range = domAnchorTextPositionExports.toRange(element, { start: match.start, end: match.end });
+                if (range) {
+                    console.log(`[WebView Bridge] Found approximate text match in: ${element.tagName}`);
+                    let container = range.commonAncestorContainer;
+                    if (container.nodeType === Node.TEXT_NODE && container.parentNode) {
+                        container = container.parentNode;
+                    }
+                    return { element: container || element, range };
+                }
+            }
+        }
+        catch (error) {
+            console.warn('[WebView Bridge] Error searching for approximate text:', error);
+        }
+        console.warn(`[WebView Bridge] No matching element found: ${anchorText}`);
+        return null;
+    }
+
+    /**
+     * 滚动到指定元素
+     */
+    function scrollToElement(target) {
+        const element = target && 'element' in target ? target.element : target;
+        const range = target && 'range' in target ? target.range : null;
+        if (!element) {
+            console.warn('[WebView Bridge] Target element does not exist, cannot scroll');
+            return;
+        }
+        const platform = detectPlatform();
+        if (platform === 'android') {
+            const rect = range ? range.getBoundingClientRect() : element.getBoundingClientRect();
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const elementTop = rect.top + scrollTop;
+            const documentHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+            postToNativeBridge({
+                type: 'scrollToPosition',
+                percentage: elementTop / documentHeight
+            });
+        }
+        else if (platform === 'ios') {
+            if (range) {
+                const rect = range.getBoundingClientRect();
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const elementTop = rect.top + scrollTop;
+                const documentHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+                postToNativeBridge({
+                    type: 'scrollToPosition',
+                    percentage: elementTop / documentHeight
+                });
+            }
+            else {
+                element.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                    inline: 'nearest'
+                });
+            }
+        }
+    }
+    /**
+     * 滚动到锚点文本对应的内容
+     */
+    function scrollToAnchor(anchorText) {
+        console.log(`[WebView Bridge] Start finding anchor: ${anchorText}`);
+        const decodedAnchor = decodeURIComponent(anchorText);
+        const match = findMatchingElement(decodedAnchor);
+        if (match) {
+            highlightElement(match);
+            scrollToElement(match);
+            return true;
+        }
+        else {
+            console.warn(`[WebView Bridge] No matching element found: ${anchorText}`);
+            return false;
+        }
+    }
+
+    /**
+     * 初始化书签未找到页面的按钮点击处理程序
+     */
+    function initBookmarkNotFoundHandlers() {
+        const container = document.querySelector('body > .slax-reader-notfound-container > .slax-reader-notfound-btn-container');
+        if (!container) {
+            console.log('[WebView Bridge] Bookmark not found container not present');
+            return;
+        }
+        // 获取重试按钮和反馈按钮
+        const retryBtn = container.querySelector('.retry-btn');
+        const feedbackBtn = container.querySelector('.feedback-btn');
+        // 为重试按钮添加点击事件
+        if (retryBtn) {
+            retryBtn.addEventListener('click', () => {
+                postToNativeBridge({
+                    type: 'refreshContent'
+                });
+                console.log('[WebView Bridge] Bookmark retry button clicked');
+            });
+        }
+        // 为反馈按钮添加点击事件
+        if (feedbackBtn) {
+            feedbackBtn.addEventListener('click', () => {
+                postToNativeBridge({
+                    type: 'feedback'
+                });
+                console.log('[WebView Bridge] Bookmark feedback button clicked');
+            });
+        }
+        console.log('[WebView Bridge] Initialized bookmark not found handlers');
+    }
+
+    /**
+     * 应用必要的 Polyfills 确保兼容性
+     */
+    function applyPolyfills() {
+        if (!window.CSS || !window.CSS.escape) {
+            window.CSS = window.CSS || {};
+            window.CSS.escape = function (value) {
+                if (arguments.length === 0) {
+                    throw new TypeError('`CSS.escape` requires an argument.');
+                }
+                var string = String(value);
+                var length = string.length;
+                var index = -1;
+                var codeUnit;
+                var result = '';
+                while (++index < length) {
+                    codeUnit = string.charCodeAt(index);
+                    // 注意：处理代理对等
+                    if (codeUnit === 0x0000) {
+                        result += '\uFFFD';
+                        continue;
+                    }
+                    if (
+                        // 如果字符是 [0-9A-Za-z_-]
+                        (codeUnit >= 0x0030 && codeUnit <= 0x0039) ||
+                        (codeUnit >= 0x0041 && codeUnit <= 0x005A) ||
+                        (codeUnit >= 0x0061 && codeUnit <= 0x007A) ||
+                        codeUnit === 0x005F ||
+                        codeUnit === 0x002D) {
+                        result += string.charAt(index);
+                        continue;
+                    }
+                    // 转义其他字符
+                    result += '\\' + string.charAt(index);
+                }
+                return result;
+            };
+        }
+    }
+
+    /**
+     * 生成UUID
+     */
+    function generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            const r = (Math.random() * 16) | 0;
+            const v = c === 'x' ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+        });
+    }
+    /**
+     * 移除外层标签，保留内容
+     */
+    function removeOuterTag(element) {
+        const parent = element.parentNode;
+        if (!parent)
+            return;
+        while (element.firstChild) {
+            parent.insertBefore(element.firstChild, element);
+        }
+        parent.removeChild(element);
+    }
+    /**
+     * 获取元素的CSS选择器路径
+     */
+    function getElementPath(element, container) {
+        const path = [];
+        let current = element;
+        while (current && current !== container) {
+            let selector = current.tagName.toLowerCase();
+            // 添加ID
+            if (current.id) {
+                selector += `#${current.id}`;
+            }
+            // 添加类名
+            if (current.className && typeof current.className === 'string') {
+                const classes = current.className.trim().split(/\s+/).filter(c => c);
+                if (classes.length > 0) {
+                    selector += '.' + classes.join('.');
+                }
+            }
+            // 添加nth-child
+            if (current.parentElement) {
+                const siblings = Array.from(current.parentElement.children);
+                const index = siblings.indexOf(current);
+                if (siblings.length > 1) {
+                    selector += `:nth-child(${index + 1})`;
+                }
+            }
+            path.unshift(selector);
+            current = current.parentElement;
+        }
+        return path.join(' > ');
+    }
+    /**
+     * 获取元素下的所有文本节点
+     *
+     * ⚠️ 关键：必须与 mark-renderer 中的 getAllTextNodes 保持完全一致
+     */
+    function getAllTextNodes(element) {
+        const unsupportTags = ['UNSUPPORT-VIDEO', 'SCRIPT', 'STYLE', 'NOSCRIPT'];
+        const textNodes = [];
+        const traverse = (node) => {
+            if (node.nodeType === Node.TEXT_NODE) {
+                textNodes.push(node);
+            }
+            else if (node.nodeType === Node.ELEMENT_NODE &&
+                unsupportTags.indexOf(node.tagName) === -1) {
+                node.childNodes.forEach((child) => traverse(child));
+            }
+        };
+        traverse(element);
+        return textNodes;
+    }
+    /**
+     * 获取Range的文本（包含换行）
+     */
+    function getRangeTextWithNewlines(range) {
+        const selection = window.getSelection();
+        if (!selection) {
+            const temp = document.createElement('div');
+            temp.appendChild(range.cloneContents());
+            return temp.innerText;
+        }
+        const originalRanges = [];
+        for (let i = 0; i < selection.rangeCount; i++) {
+            originalRanges.push(selection.getRangeAt(i));
+        }
+        try {
+            selection.removeAllRanges();
+            selection.addRange(range);
+            const text = selection.toString();
+            return text;
+        }
+        finally {
+            selection.removeAllRanges();
+            for (const originalRange of originalRanges) {
+                selection.addRange(originalRange);
+            }
+        }
+    }
+    /**
+     * 深度比较两个对象是否相等
+     */
+    function deepEqual(obj1, obj2) {
+        if (obj1 === obj2)
+            return true;
+        if (typeof obj1 !== 'object' || typeof obj2 !== 'object' || obj1 === null || obj2 === null) {
+            return false;
+        }
+        const keys1 = Object.keys(obj1);
+        const keys2 = Object.keys(obj2);
+        if (keys1.length !== keys2.length)
+            return false;
+        for (const key of keys1) {
+            if (!keys2.includes(key) || !deepEqual(obj1[key], obj2[key])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 选择监听器
+     *
+     * 负责监听用户的文本选择操作
+     */
+    class SelectionMonitor {
+        constructor(container) {
+            this.isMonitoring = false;
+            /**
+             * 处理选择变化事件（带防抖）
+             */
+            this.handleSelectionChange = () => {
+                if (this.selectionChangeTimeout) {
+                    clearTimeout(this.selectionChangeTimeout);
+                }
+                this.selectionChangeTimeout = setTimeout(() => {
+                    const selection = window.getSelection();
+                    if (!selection || selection.rangeCount === 0) {
+                        return;
+                    }
+                    const range = selection.getRangeAt(0);
+                    if (range.collapsed) {
+                        return;
+                    }
+                    if (!this.container.contains(range.commonAncestorContainer)) {
+                        return;
+                    }
+                    const selectionInfo = this.parseSelectionFromRange(range);
+                    if (selectionInfo.selection.length === 0) {
+                        return;
+                    }
+                    if (this.onSelectionCallback) {
+                        this.onSelectionCallback(selectionInfo);
+                    }
+                    this.selectionChangeTimeout = undefined;
+                }, 300);
+            };
+            /**
+             * 处理鼠标抬起事件（备用方案）
+             */
+            this.handleMouseUp = (event) => {
+                setTimeout(() => {
+                    const selection = window.getSelection();
+                    if (!selection || selection.rangeCount === 0) {
+                        return;
+                    }
+                    const range = selection.getRangeAt(0);
+                    if (range.collapsed) {
+                        return;
+                    }
+                    const selectionInfo = this.parseSelection(range, event);
+                    if (selectionInfo.selection.length === 0) {
+                        return;
+                    }
+                    if (this.onSelectionCallback) {
+                        this.onSelectionCallback(selectionInfo);
+                    }
+                }, 10);
+            };
+            this.container = container;
+        }
+        /**
+         * 开始监听选择
+         */
+        start(callback) {
+            if (this.isMonitoring) {
+                return;
+            }
+            this.onSelectionCallback = callback;
+            // 使用 selectionchange 事件（更适合 Android WebView）
+            document.addEventListener('selectionchange', this.handleSelectionChange);
+            // 保留 mouseup 和 touchend 作为备用（兼容性）
+            this.container.addEventListener('mouseup', this.handleMouseUp);
+            this.container.addEventListener('touchend', this.handleMouseUp);
+            this.isMonitoring = true;
+        }
+        /**
+         * 停止监听选择
+         */
+        stop() {
+            if (!this.isMonitoring) {
+                return;
+            }
+            if (this.selectionChangeTimeout) {
+                clearTimeout(this.selectionChangeTimeout);
+                this.selectionChangeTimeout = undefined;
+            }
+            document.removeEventListener('selectionchange', this.handleSelectionChange);
+            this.container.removeEventListener('mouseup', this.handleMouseUp);
+            this.container.removeEventListener('touchend', this.handleMouseUp);
+            this.isMonitoring = false;
+            this.onSelectionCallback = undefined;
+        }
+        /**
+         * 从 range 解析选择（不需要事件对象）
+         */
+        parseSelectionFromRange(range) {
+            const selection = this.getSelectionInfo(range);
+            const paths = this.convertSelectionToPaths(selection);
+            const approx = this.getApproxInfo(range);
+            const position = this.getPositionInfoFromRange(range);
+            return { selection, paths, approx, position };
+        }
+        /**
+         * 解析选择的内容（带事件对象）
+         */
+        parseSelection(range, event) {
+            const selection = this.getSelectionInfo(range);
+            const paths = this.convertSelectionToPaths(selection);
+            const approx = this.getApproxInfo(range);
+            const position = this.getPositionInfo(range, event);
+            return { selection, paths, approx, position };
+        }
+        /**
+         * 从 range 获取位置信息（不需要事件对象）
+         */
+        getPositionInfoFromRange(range) {
+            const rangeRect = range.getBoundingClientRect();
+            const containerRect = this.container.getBoundingClientRect();
+            const clientX = rangeRect.left + rangeRect.width / 2;
+            const clientY = rangeRect.bottom;
+            return {
+                x: clientX - containerRect.left,
+                y: clientY - containerRect.top,
+                width: rangeRect.width,
+                height: rangeRect.height,
+                top: rangeRect.top - containerRect.top,
+                left: rangeRect.left - containerRect.left,
+                right: rangeRect.right - containerRect.left,
+                bottom: rangeRect.bottom - containerRect.top
+            };
+        }
+        /**
+         * 获取位置信息（用于显示菜单）
+         */
+        getPositionInfo(range, event) {
+            const rangeRect = range.getBoundingClientRect();
+            const containerRect = this.container.getBoundingClientRect();
+            let clientX;
+            let clientY;
+            if (event instanceof MouseEvent) {
+                clientX = event.clientX;
+                clientY = event.clientY;
+            }
+            else {
+                clientX = event.changedTouches[0].clientX;
+                clientY = event.changedTouches[0].clientY;
+            }
+            return {
+                x: clientX - containerRect.left,
+                y: clientY - containerRect.top,
+                width: rangeRect.width,
+                height: rangeRect.height,
+                top: rangeRect.top - containerRect.top,
+                left: rangeRect.left - containerRect.left,
+                right: rangeRect.right - containerRect.left,
+                bottom: rangeRect.bottom - containerRect.top
+            };
+        }
+        /**
+         * 获取选择信息
+         */
+        getSelectionInfo(range) {
+            if (!range) {
+                return [];
+            }
+            const selectedInfo = [];
+            const isNodeFullyInRange = (node) => {
+                const nodeRange = document.createRange();
+                nodeRange.selectNodeContents(node);
+                return (range.compareBoundaryPoints(Range.START_TO_START, nodeRange) <= 0 &&
+                    range.compareBoundaryPoints(Range.END_TO_END, nodeRange) >= 0);
+            };
+            const isNodePartiallyInRange = (node) => range.intersectsNode(node);
+            const processTextNode = (textNode) => {
+                if (!isNodePartiallyInRange(textNode))
+                    return;
+                let startOffset = textNode === range.startContainer ? range.startOffset : 0;
+                let endOffset = textNode === range.endContainer ? range.endOffset : textNode.length;
+                startOffset = Math.max(0, Math.min(startOffset, textNode.length));
+                endOffset = Math.max(startOffset, Math.min(endOffset, textNode.length));
+                if (endOffset > startOffset) {
+                    selectedInfo.push({
+                        type: 'text',
+                        node: textNode,
+                        startOffset,
+                        endOffset,
+                        text: textNode.textContent.slice(startOffset, endOffset)
+                    });
+                }
+            };
+            const processNode = (node) => {
+                if (node.nodeType === Node.TEXT_NODE && (node.textContent?.trim() || '').length > 0) {
+                    processTextNode(node);
+                }
+                else if (node.nodeType === Node.ELEMENT_NODE) {
+                    const element = node;
+                    if (element.tagName === 'IMG' && isNodeFullyInRange(element)) {
+                        selectedInfo.push({
+                            type: 'image',
+                            src: element.src,
+                            element: element
+                        });
+                    }
+                    if (isNodePartiallyInRange(element)) {
+                        for (const child of Array.from(element.childNodes))
+                            processNode(child);
+                    }
+                }
+            };
+            processNode(range.commonAncestorContainer);
+            return selectedInfo.length > 0 &&
+            !selectedInfo.every((item) => item.type === 'text' && item.text.trim().length === 0)
+                ? selectedInfo
+                : [];
+        }
+        /**
+         * 将选择信息转换为路径
+         */
+        convertSelectionToPaths(selection) {
+            const paths = [];
+            let currentPath = null;
+            let currentStart = 0;
+            let currentEnd = 0;
+            for (const item of selection) {
+                if (item.type === 'text') {
+                    let parent = item.node.parentElement;
+                    while (parent && parent.tagName === 'SLAX-MARK') {
+                        parent = parent.parentElement;
+                    }
+                    if (!parent)
+                        continue;
+                    const path = getElementPath(parent, this.container);
+                    // 使用与 mark-renderer 相同的逻辑计算文本节点偏移
+                    const allTextNodes = getAllTextNodes(parent);
+                    let offset = 0;
+                    for (const textNode of allTextNodes) {
+                        if (textNode === item.node) {
+                            break;
+                        }
+                        offset += (textNode.textContent || '').length;
+                    }
+                    const start = offset + item.startOffset;
+                    const end = offset + item.endOffset;
+                    if (path === currentPath) {
+                        currentEnd = end;
+                    }
+                    else {
+                        if (currentPath !== null) {
+                            paths.push({ type: 'text', path: currentPath, start: currentStart, end: currentEnd });
+                        }
+                        currentPath = path;
+                        currentStart = start;
+                        currentEnd = end;
+                    }
+                }
+                else if (item.type === 'image') {
+                    if (currentPath !== null) {
+                        paths.push({ type: 'text', path: currentPath, start: currentStart, end: currentEnd });
+                        currentPath = null;
+                    }
+                    const path = getElementPath(item.element, this.container);
+                    paths.push({ type: 'image', path });
+                }
+            }
+            if (currentPath !== null) {
+                paths.push({ type: 'text', path: currentPath, start: currentStart, end: currentEnd });
+            }
+            return paths;
+        }
+        /**
+         * 获取近似匹配信息
+         */
+        getApproxInfo(range) {
+            const exact = getRangeTextWithNewlines(range);
+            const prefixRange = document.createRange();
+            prefixRange.setStart(this.container, 0);
+            prefixRange.setEnd(range.startContainer, range.startOffset);
+            const fullPrefix = getRangeTextWithNewlines(prefixRange);
+            const prefix = fullPrefix.slice(-50);
+            const suffixRange = document.createRange();
+            suffixRange.setStart(range.endContainer, range.endOffset);
+            suffixRange.setEndAfter(this.container.lastChild);
+            const fullSuffix = getRangeTextWithNewlines(suffixRange);
+            const suffix = fullSuffix.slice(0, 50);
+            return { exact, prefix, suffix, raw_text: exact };
+        }
+        /**
+         * 清除选择
+         */
+        clearSelection() {
+            const selection = window.getSelection();
+            if (selection) {
+                selection.removeAllRanges();
+            }
+        }
+    }
+
+    /**
+     * 标记渲染器
+     *
+     * 负责在页面上绘制、更新和删除标记（划线和评论）
+     */
+    class MarkRenderer {
+        constructor(container, currentUserId) {
+            this.container = container;
+            this.currentUserId = currentUserId;
+        }
+        /**
+         * 根据 MarkPathItem 绘制标记
+         */
+        drawMark(id, paths, isStroke, hasComment, userId) {
+            try {
+                const isSelfStroke = userId !== undefined && userId === this.currentUserId;
+                console.log(`[MarkRenderer] drawMark: id=${id}, paths=${paths.length}, isStroke=${isStroke}, hasComment=${hasComment}, isSelfStroke=${isSelfStroke}`);
+                const baseInfo = {
+                    id,
+                    isStroke,
+                    hasComment,
+                    isSelfStroke,
+                    isHighlighted: false
+                };
+                let drawMarkSuccess = false;
+                const failedSelectors = [];
+                console.log(paths)
+                for (const markItem of paths) {
+                    if (!isStroke && !hasComment)
+                        continue;
+                    const infos = this.transferNodeInfos(markItem);
+                    console.log(`[MarkRenderer] drawMark: path type=${markItem.type}, selector="${markItem.path}", transferNodeInfos result count=${infos.length}`);
+                    if (infos.length === 0) {
+                        failedSelectors.push(markItem.path);
+                    }
+                    for (const infoItem of infos) {
+                        if (infoItem.type === 'image') {
+                            this.addImageMark({ ...baseInfo, ele: infoItem.ele });
+                            continue;
+                        }
+                        this.addMark({ ...baseInfo, node: infoItem.node, start: infoItem.start, end: infoItem.end });
+                    }
+                    drawMarkSuccess = infos.length > 0;
+                }
+                if (!drawMarkSuccess) {
+                    console.warn(`[MarkRenderer] drawMark: id=${id} — no nodes rendered, failed selectors: [${failedSelectors.map(s => `"${s}"`).join(', ')}]`);
+                }
+                return drawMarkSuccess;
+            }
+            catch (error) {
+                console.error('[MarkRenderer] drawMark: failed', error);
+                return false;
+            }
+        }
+        /**
+         * 将标记路径项转换为节点信息
+         */
+        transferNodeInfos(markItem) {
+            const infos = [];
+            if (markItem.type === 'text') {
+                const baseElement = this.container.querySelector(markItem.path);
+                if (!baseElement) {
+                    console.warn(`[MarkRenderer] transferNodeInfos: element not found for path="${markItem.path}"`);
+                    return infos;
+                }
+                const nodes = getAllTextNodes(baseElement);
+                const nodeLengths = nodes.map((node) => (node.textContent || '').length);
+                console.log(`[MarkRenderer] transferNodeInfos: path="${markItem.path}", textNodes=${nodes.length}, start=${markItem.start}, end=${markItem.end}`);
+                let startOffset = markItem.start || 0;
+                const endOffset = markItem.end || 0;
+                let base = 0;
+                for (let i = 0; i < nodeLengths.length; i++) {
+                    if (base + nodeLengths[i] <= startOffset) {
+                        base += nodeLengths[i];
+                        continue;
+                    }
+                    if (endOffset - base <= nodeLengths[i]) {
+                        infos.push({ type: 'text', start: startOffset - base, end: endOffset - base, node: nodes[i] });
+                        break;
+                    }
+                    else {
+                        infos.push({ type: 'text', start: startOffset - base, end: nodeLengths[i], node: nodes[i] });
+                        startOffset += nodeLengths[i] - (startOffset - base);
+                        base += nodeLengths[i];
+                    }
+                }
+            }
+            else if (markItem.type === 'image') {
+                let element = this.container.querySelector(markItem.path);
+                if (!element || !element.src) {
+                    console.log(`[MarkRenderer] transferNodeInfos: image not found at path="${markItem.path}", trying inside slax-mark`);
+                    // 尝试在slax-mark标签内查找
+                    const paths = markItem.path.split('>');
+                    const tailIdx = paths.length - 1;
+                    const newPath = [...paths.slice(0, tailIdx), ' slax-mark ', paths[tailIdx]];
+                    element = this.container.querySelector(newPath.join('>'));
+                    if (!element) {
+                        console.warn(`[MarkRenderer] transferNodeInfos: image not found inside slax-mark either, path="${newPath.join('>')}"`);
+                    }
+                }
+                if (element) {
+                    console.log(`[MarkRenderer] transferNodeInfos: image found, src="${element.src}"`);
+                    infos.push({ type: 'image', ele: element });
+                }
+            }
+            return infos;
+        }
+        /**
+         * 在文本节点上添加标记
+         */
+        addMark(info) {
+            const { id, node, start, end, isStroke, hasComment, isSelfStroke, isHighlighted } = info;
+            const range = document.createRange();
+            range.setStart(node, start);
+            range.setEnd(node, end);
+            const mark = document.createElement('slax-mark');
+            mark.dataset.uuid = id;
+            if (isStroke)
+                mark.classList.add('stroke');
+            if (hasComment)
+                mark.classList.add('comment');
+            if (isSelfStroke)
+                mark.classList.add('self-stroke');
+            if (isHighlighted)
+                mark.classList.add('highlighted');
+            try {
+                console.log('surroundContents with mark:', { id, text: node.textContent?.slice(0, 30), start, end });
+                range.surroundContents(mark);
+                console.log('surroundContents success')
+            }
+            catch (error) {
+                console.error(`[MarkRenderer] addMark: surroundContents failed, id=${id}, node="${node.textContent?.slice(0, 30)}", start=${start}, end=${end}`, error);
+            }
+        }
+        /**
+         * 添加图片标记
+         */
+        addImageMark(info) {
+            const { id, ele, isStroke, hasComment, isSelfStroke, isHighlighted } = info;
+            const mark = document.createElement('slax-mark');
+            mark.dataset.uuid = id;
+            if (isStroke)
+                mark.classList.add('stroke');
+            if (hasComment)
+                mark.classList.add('comment');
+            if (isSelfStroke)
+                mark.classList.add('self-stroke');
+            if (isHighlighted)
+                mark.classList.add('highlighted');
+            ele.parentElement?.insertBefore(mark, ele);
+            ele.remove();
+            mark.appendChild(ele);
+        }
+        /**
+         * 更新标记
+         */
+        updateMark(id, isStroke, hasComment, userId) {
+            const marks = Array.from(this.container.querySelectorAll(`slax-mark[data-uuid="${id}"]`));
+            const isSelfStroke = userId !== undefined && userId === this.currentUserId;
+            marks.forEach((mark) => {
+                if (isStroke) {
+                    mark.classList.add('stroke');
+                }
+                else {
+                    mark.classList.remove('stroke');
+                }
+                if (hasComment) {
+                    mark.classList.add('comment');
+                }
+                else {
+                    mark.classList.remove('comment');
+                }
+                if (isSelfStroke) {
+                    mark.classList.add('self-stroke');
+                }
+                else {
+                    mark.classList.remove('self-stroke');
+                }
+                // 如果既没有划线也没有评论，删除标记
+                if (!isStroke && !hasComment) {
+                    removeOuterTag(mark);
+                }
+            });
+        }
+        /**
+         * 删除标记
+         */
+        removeMark(id) {
+            const marks = Array.from(this.container.querySelectorAll(`slax-mark[data-uuid="${id}"]`));
+            marks.forEach((mark) => removeOuterTag(mark));
+        }
+        /**
+         * 高亮标记
+         */
+        highlightMark(id) {
+            this.clearAllHighlights();
+            const marks = Array.from(this.container.querySelectorAll(`slax-mark[data-uuid="${id}"]`));
+            marks.forEach((mark) => mark.classList.add('highlighted'));
+            if (marks.length > 0) {
+                marks[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+        /**
+         * 清除所有高亮
+         */
+        clearAllHighlights() {
+            const marks = Array.from(this.container.querySelectorAll('slax-mark.highlighted'));
+            marks.forEach((mark) => mark.classList.remove('highlighted'));
+        }
+        /**
+         * 清除所有标记
+         */
+        clearAllMarks() {
+            const marks = Array.from(this.container.querySelectorAll('slax-mark'));
+            marks.forEach((mark) => removeOuterTag(mark));
+        }
+        /**
+         * 获取所有标记ID
+         */
+        getAllMarkIds() {
+            const marks = Array.from(this.container.querySelectorAll('slax-mark[data-uuid]'));
+            const ids = new Set();
+            marks.forEach((mark) => {
+                const id = mark.dataset.uuid;
+                if (id)
+                    ids.add(id);
+            });
+            return Array.from(ids);
+        }
+    }
+
+    /**
+     * 标记管理器
+     *
+     * 负责处理后端 MarkDetail 数据的预处理、分组和渲染
+     */
+    class MarkManager {
+        constructor(container, currentUserId) {
+            this.markItemInfos = [];
+            this.container = container;
+            this.renderer = new MarkRenderer(container, currentUserId);
+        }
+        /**
+         * 绘制多个标记
+         *
+         * @param marks 后端返回的 MarkDetail 数据
+         * @returns 键值对：uuid -> 该uuid对应的后端mark列表
+         */
+        drawMarks(marks) {
+            console.log(`[MarkManager] drawMarks: start, mark_list.length=${marks.mark_list?.length ?? 0}`);
+            const userMap = this.createUserMap(marks.user_list);
+            console.log(`[MarkManager] drawMarks: userMap size=${userMap.size}`);
+            const commentMap = this.buildCommentMap(marks.mark_list, userMap);
+            console.log(`[MarkManager] drawMarks: commentMap size=${commentMap.size}`);
+            this.buildCommentRelationships(marks.mark_list, commentMap);
+            this.markItemInfos = this.generateMarkItemInfos(marks.mark_list, commentMap);
+            console.log(`[MarkManager] drawMarks: generated ${this.markItemInfos.length} MarkItemInfo(s)`);
+            let successCount = 0;
+            for (const info of this.markItemInfos) {
+                console.log(`[MarkManager] drawMarks: drawing item id=${info.id}, stroke=${info.stroke.length}, comments=${info.comments.length}, source.length=${info.source?.length ?? 0}`);
+                this.drawSingleMarkItem(info);
+                successCount++;
+            }
+            console.log(`[MarkManager] drawMarks: done, drew ${successCount} item(s)`);
+            return this.buildDrawMarksResult(marks.mark_list);
+        }
+        /**
+         * 根据 UUID 删除标记
+         */
+        removeMarkByUuid(uuid) {
+            this.renderer.removeMark(uuid);
+            this.markItemInfos = this.markItemInfos.filter((info) => info.id !== uuid);
+        }
+        /**
+         * 清除所有标记
+         */
+        clearAllMarks() {
+            this.renderer.clearAllMarks();
+            this.markItemInfos = [];
+        }
+        /**
+         * 高亮指定UUID的标记
+         */
+        highlightMark(uuid) {
+            this.renderer.highlightMark(uuid);
+        }
+        /**
+         * 清除所有高亮
+         */
+        clearAllHighlights() {
+            this.renderer.clearAllHighlights();
+        }
+        /**
+         * 获取所有标记ID
+         */
+        getAllMarkIds() {
+            return this.renderer.getAllMarkIds();
+        }
+        /**
+         * 步骤1：创建用户映射
+         */
+        createUserMap(userList) {
+            return new Map(Object.entries(userList).map(([key, value]) => [Number(key), value]));
+        }
+        /**
+         * 步骤2：构建评论映射
+         */
+        buildCommentMap(markList, userMap) {
+            const commentMap = new Map();
+            const COMMENT_TYPES = [2, 3, 5]; // COMMENT, REPLY, ORIGIN_COMMENT
+            for (const mark of markList) {
+                if (COMMENT_TYPES.includes(mark.type)) {
+                    const user = userMap.get(mark.user_id);
+                    const comment = {
+                        markId: mark.id,
+                        comment: mark.comment,
+                        userId: mark.user_id,
+                        username: user?.username || '',
+                        avatar: user?.avatar || '',
+                        isDeleted: mark.is_deleted,
+                        children: [],
+                        createdAt: typeof mark.created_at === 'string' ? new Date(mark.created_at) : mark.created_at,
+                        rootId: mark.root_id,
+                        showInput: false,
+                        loading: false,
+                        operateLoading: false
+                    };
+                    commentMap.set(mark.id, comment);
+                }
+            }
+            return commentMap;
+        }
+        /**
+         * 步骤3：构建评论关系（回复的父子关系）
+         */
+        buildCommentRelationships(markList, commentMap) {
+            const REPLY_TYPE = 3;
+            for (const mark of markList) {
+                if (mark.type !== REPLY_TYPE)
+                    continue;
+                if (!commentMap.has(mark.id) ||
+                    !commentMap.has(mark.parent_id) ||
+                    !commentMap.has(mark.root_id))
+                    continue;
+                const comment = commentMap.get(mark.id);
+                const parentComment = commentMap.get(mark.parent_id);
+                comment.reply = {
+                    id: parentComment.markId,
+                    username: parentComment.username,
+                    userId: parentComment.userId,
+                    avatar: parentComment.avatar
+                };
+                const rootComment = commentMap.get(mark.root_id);
+                if (rootComment) {
+                    rootComment.children.push(comment);
+                }
+            }
+        }
+        /**
+         * 步骤4：生成 MarkItemInfo 列表（按source分组）
+         */
+        generateMarkItemInfos(markList, commentMap) {
+            const infoItems = [];
+            const LINE_TYPES = [1, 4]; // LINE, ORIGIN_LINE
+            const COMMENT_TYPES = [2, 5]; // COMMENT, ORIGIN_COMMENT
+            const ORIGIN_TYPES = [4, 5]; // ORIGIN_LINE, ORIGIN_COMMENT
+            const REPLY_TYPE = 3;
+            for (const mark of markList) {
+                const source = mark.source;
+                // 跳过 REPLY 类型和数字类型的 source
+                if (typeof source === 'number' || mark.type === REPLY_TYPE) {
+                    console.log(`[MarkManager] generateMarkItemInfos: skip mark id=${mark.id} type=${mark.type} (REPLY or numeric source)`);
+                    continue;
+                }
+                // 跳过没有 approx_source 的原始标记
+                if (ORIGIN_TYPES.includes(mark.type) &&
+                    (!mark.approx_source || Object.keys(mark.approx_source).length === 0)) {
+                    console.warn(`[MarkManager] generateMarkItemInfos: skip ORIGIN mark id=${mark.id} type=${mark.type} — missing approx_source`);
+                    continue;
+                }
+                const markSources = source;
+                let markInfoItem = infoItems.find((infoItem) => this.checkMarkSourceIsSame(infoItem.source, markSources));
+                if (!markInfoItem) {
+                    if (mark.approx_source) {
+                        try {
+                            const newRange = this.getRangeFromApprox(mark.approx_source);
+                            const rawText = newRange ? getRangeTextWithNewlines(newRange) : undefined;
+                            mark.approx_source.raw_text = rawText;
+                        }
+                        catch (error) {
+                            console.error('create raw text failed', error, mark.approx_source?.exact);
+                        }
+                    }
+                    markInfoItem = {
+                        id: generateUUID(),
+                        source: markSources,
+                        comments: [],
+                        stroke: [],
+                        approx: mark.approx_source
+                    };
+                    infoItems.push(markInfoItem);
+                }
+                if (LINE_TYPES.includes(mark.type)) {
+                    markInfoItem.stroke.push({ mark_id: mark.id, userId: mark.user_id });
+                }
+                else if (COMMENT_TYPES.includes(mark.type)) {
+                    const comment = commentMap.get(mark.id);
+                    if (!comment || (comment.isDeleted && comment.children.length === 0)) {
+                        continue;
+                    }
+                    markInfoItem.comments.push(comment);
+                }
+            }
+
+            console.log('marklist: ')
+            console.log(markList)
+            console.log('infoItems: ')
+            console.log(infoItems)
+            return infoItems;
+        }
+        /**
+         * 检查两个 source 是否相同
+         */
+        checkMarkSourceIsSame(source1, source2) {
+            return deepEqual(source1, source2);
+        }
+        /**
+         * 从 approx 信息获取 Range（占位实现）
+         */
+        getRangeFromApprox(_approx) {
+            return null;
+        }
+        /**
+         * 渲染单个 MarkItemInfo
+         */
+        drawSingleMarkItem(info) {
+            console.log('drawSingleMarkItem')
+            console.log(info)
+            const hasStroke = info.stroke.length > 0;
+            const hasComment = info.comments.length > 0;
+            const userId = info.stroke.length > 0 ? info.stroke[0].userId : info.comments[0]?.userId;
+            this.renderer.drawMark(info.id, info.source, hasStroke, hasComment, userId);
+        }
+        /**
+         * 构建返回结果：uuid -> BackendMarkInfo[]
+         */
+        buildDrawMarksResult(markList) {
+            const result = {};
+            for (const itemInfo of this.markItemInfos) {
+                const relatedMarks = [];
+                for (const stroke of itemInfo.stroke) {
+                    if (stroke.mark_id) {
+                        const mark = markList.find((m) => m.id === stroke.mark_id);
+                        if (mark)
+                            relatedMarks.push(mark);
+                    }
+                }
+                for (const comment of itemInfo.comments) {
+                    const mark = markList.find((m) => m.id === comment.markId);
+                    if (mark)
+                        relatedMarks.push(mark);
+                    for (const child of comment.children) {
+                        const childMark = markList.find((m) => m.id === child.markId);
+                        if (childMark)
+                            relatedMarks.push(childMark);
+                    }
+                }
+                result[itemInfo.id] = relatedMarks;
+            }
+            return result;
+        }
+    }
+
+    class SlaxWebViewBridge {
+        constructor() {
+            // selection 相关状态
+            this.selectionMonitor = null;
+            this.markRenderer = null;
+            this.markManager = null;
+            this.selectionContainer = null;
+            this.markClickCleanup = null;
+            this.postMessage = postToNativeBridge;
+            this.getContentHeight = getContentHeight;
+            this.scrollToAnchor = scrollToAnchor;
+            this.highlightElement = highlightElement;
+            this.findMatchingElement = findMatchingElement;
+            this.scrollToElement = scrollToElement;
+            this.init();
+        }
+        init() {
+            applyPolyfills();
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    this.onDOMReady();
+                });
+            }
+            else {
+                this.onDOMReady();
+            }
+            console.log('[WebView Bridge] Bridge initialized successfully');
+        }
+        onDOMReady() {
+            initImageClickHandlers();
+            initBookmarkNotFoundHandlers();
+            // 通知 native bridge DOM 已加载完成
+            postToNativeBridge({
+                type: 'domReady'
+            });
+            console.log('[WebView Bridge] DOM ready event sent to native bridge');
+        }
+        // ==================== 划线选择功能 ====================
+        /**
+         * 开始监听文本选择
+         * @param containerSelector 监听容器的 CSS 选择器
+         * @param currentUserId 当前用户ID（可选，用于判断是否为自己的划线）
+         */
+        startSelectionMonitoring(containerSelector, currentUserId) {
+            const container = document.querySelector(containerSelector);
+            if (!container) {
+                console.error(`[WebView Bridge] Container not found: ${containerSelector}`);
+                return;
+            }
+            // 如果已有监听器，先停止
+            this.stopSelectionMonitoring();
+            this.selectionContainer = container;
+            this.markRenderer = new MarkRenderer(container, currentUserId);
+            this.markManager = new MarkManager(container, currentUserId);
+            this.selectionMonitor = new SelectionMonitor(container);
+            this.setupMarkClickListener(container);
+            this.selectionMonitor.start((data) => {
+                const jsonData = JSON.stringify({
+                    paths: data.paths,
+                    approx: data.approx,
+                    selection: data.selection.map((item) => {
+                        if (item.type === 'text') {
+                            return {
+                                type: 'text',
+                                text: item.text,
+                                start_offset: item.startOffset,
+                                end_offset: item.endOffset
+                            };
+                        }
+                        else {
+                            return { type: 'image', src: item.src };
+                        }
+                    })
+                });
+                postToNativeBridge({
+                    type: 'textSelected',
+                    data: jsonData,
+                    position: JSON.stringify(data.position)
+                });
+            });
+            console.log(`[WebView Bridge] Selection monitoring started on: ${containerSelector}`);
+        }
+        /**
+         * 停止监听文本选择
+         */
+        stopSelectionMonitoring() {
+            if (this.selectionMonitor) {
+                this.selectionMonitor.stop();
+                this.selectionMonitor = null;
+            }
+            if (this.markClickCleanup) {
+                this.markClickCleanup();
+                this.markClickCleanup = null;
+            }
+            this.selectionContainer = null;
+            this.markRenderer = null;
+            this.markManager = null;
+        }
+        /**
+         * 清除当前文本选择
+         */
+        clearSelection() {
+            this.selectionMonitor?.clearSelection();
+        }
+        /**
+         * 绘制标记
+         * @param id 标记ID（传 null 则自动生成）
+         * @param pathsJson MarkPathItem[] 的 JSON 字符串
+         * @param isStroke 是否为划线
+         * @param hasComment 是否有评论
+         * @param userId 用户ID（可选）
+         * @returns 标记ID
+         */
+        drawMark(id, pathsJson, isStroke, hasComment, userId) {
+            const markId = id || generateUUID();
+            if (!this.markRenderer) {
+                console.warn('[WebView Bridge] drawMark: selection monitoring not started');
+                return markId;
+            }
+            try {
+                const paths = JSON.parse(pathsJson);
+                const success = this.markRenderer.drawMark(markId, paths, isStroke, hasComment, userId);
+                postToNativeBridge({ type: 'markRendered', markId, success });
+                return markId;
+            }
+            catch (error) {
+                postToNativeBridge({ type: 'selectionError', error: `Failed to draw mark: ${error}` });
+                return markId;
+            }
+        }
+        /**
+         * 更新标记
+         */
+        updateMark(id, isStroke, hasComment, userId) {
+            if (!this.markRenderer)
+                return;
+            try {
+                this.markRenderer.updateMark(id, isStroke, hasComment, userId);
+            }
+            catch (error) {
+                postToNativeBridge({ type: 'selectionError', error: `Failed to update mark: ${error}` });
+            }
+        }
+        /**
+         * 删除标记
+         */
+        removeMark(id) {
+            if (!this.markRenderer)
+                return;
+            try {
+                this.markRenderer.removeMark(id);
+            }
+            catch (error) {
+                postToNativeBridge({ type: 'selectionError', error: `Failed to remove mark: ${error}` });
+            }
+        }
+        /**
+         * 高亮标记
+         */
+        highlightMark(id) {
+            if (!this.markRenderer)
+                return;
+            try {
+                this.markRenderer.highlightMark(id);
+            }
+            catch (error) {
+                postToNativeBridge({ type: 'selectionError', error: `Failed to highlight mark: ${error}` });
+            }
+        }
+        /**
+         * 清除所有高亮
+         */
+        clearHighlights() {
+            this.markRenderer?.clearAllHighlights();
+        }
+        /**
+         * 清除所有标记
+         */
+        clearAllMarks() {
+            this.markRenderer?.clearAllMarks();
+            this.markManager?.clearAllMarks();
+        }
+        /**
+         * 获取所有标记ID
+         */
+        getAllMarkIds() {
+            return this.markRenderer?.getAllMarkIds() ?? [];
+        }
+        /**
+         * 批量绘制标记（从后端 MarkDetail 数据）
+         * @param markDetailJson MarkDetail 的 JSON 字符串
+         * @returns DrawMarksResult 的 JSON 字符串：{ uuid: BackendMarkInfo[] }
+         */
+        drawMarks(markDetailJson) {
+            if (!this.markManager) {
+                console.warn('[WebView Bridge] drawMarks: selection monitoring not started');
+                return JSON.stringify({});
+            }
+            try {
+                const markDetail = JSON.parse(markDetailJson);
+                console.log(`[WebView Bridge] drawMarks: start, mark_list.length=${markDetail.mark_list?.length ?? 0}, user_list keys=${Object.keys(markDetail.user_list ?? {}).length}`);
+                const result = this.markManager.drawMarks(markDetail);
+                const uuids = Object.keys(result);
+                console.log(`[WebView Bridge] drawMarks: done, rendered ${uuids.length} mark group(s), uuids=[${uuids.join(', ')}]`);
+                return JSON.stringify(result);
+            }
+            catch (error) {
+                console.error('[WebView Bridge] drawMarks: failed', error);
+                postToNativeBridge({ type: 'selectionError', error: `Failed to draw marks: ${error}` });
+                return JSON.stringify({});
+            }
+        }
+        /**
+         * 根据 UUID 删除标记
+         */
+        removeMarkByUuid(uuid) {
+            if (!this.markManager)
+                return;
+            try {
+                this.markManager.removeMarkByUuid(uuid);
+            }
+            catch (error) {
+                postToNativeBridge({ type: 'selectionError', error: `Failed to remove mark by UUID: ${error}` });
+            }
+        }
+        /**
+         * 设置当前用户ID（会重建内部 renderer/manager）
+         */
+        setCurrentUserId(userId) {
+            if (this.selectionContainer) {
+                this.markRenderer = new MarkRenderer(this.selectionContainer, userId);
+                this.markManager = new MarkManager(this.selectionContainer, userId);
+            }
+        }
+        /**
+         * 设置 mark 点击事件监听
+         */
+        setupMarkClickListener(container) {
+            const handler = (event) => {
+                const target = event.target;
+                let markElement = target;
+                while (markElement && markElement !== container) {
+                    if (markElement.tagName === 'SLAX-MARK' && markElement.dataset.uuid) {
+                        const markId = markElement.dataset.uuid;
+                        const markData = JSON.stringify({
+                            id: markId,
+                            text: markElement.textContent || '',
+                            classList: Array.from(markElement.classList)
+                        });
+                        const containerRect = container.getBoundingClientRect();
+                        const markRect = markElement.getBoundingClientRect();
+                        const position = {
+                            x: event.clientX - containerRect.left,
+                            y: event.clientY - containerRect.top,
+                            width: markRect.width,
+                            height: markRect.height,
+                            top: markRect.top - containerRect.top,
+                            left: markRect.left - containerRect.left,
+                            right: markRect.right - containerRect.left,
+                            bottom: markRect.bottom - containerRect.top
+                        };
+                        postToNativeBridge({
+                            type: 'markClicked',
+                            markId,
+                            data: markData,
+                            position: JSON.stringify(position)
+                        });
+                        event.stopPropagation();
+                        break;
+                    }
+                    markElement = markElement.parentElement;
+                }
+            };
+            container.addEventListener('click', handler);
+            this.markClickCleanup = () => container.removeEventListener('click', handler);
+        }
+    }
+
+    exports.SlaxWebViewBridge = SlaxWebViewBridge;
+
+    return exports;
+
+})({});
+window.SlaxWebViewBridge = new SlaxReaderWebBridgeExports.SlaxWebViewBridge();

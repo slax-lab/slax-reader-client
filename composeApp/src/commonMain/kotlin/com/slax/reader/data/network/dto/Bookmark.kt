@@ -234,7 +234,7 @@ data class MarkInfo(
 
 @Serializable
 data class MarkUserInfo(
-    val id: Long = 0,
+    @SerialName("user_id") val id: Long = 0,
     val username: String = "",
     val avatar: String = ""
 )

@@ -23,6 +23,7 @@ import com.slax.reader.ui.bookmark.states.OverviewDelegate
 import com.slax.reader.utils.bookmarkEvent
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlinx.serialization.json.Json
 
 data class FeedbackPageParams(
     val title: String? = null,
@@ -53,6 +54,9 @@ sealed interface BookmarkDetailEffect {
     data class NavigateToFeedback(val params: FeedbackPageParams) : BookmarkDetailEffect
 
     data class ScrollToAnchor(val anchor: String) : BookmarkDetailEffect
+
+    /** 通知 UI 层调用 JS drawMarks，传入序列化后的 MarkDetail JSON */
+    data class DrawMarks(val markDetailJson: String) : BookmarkDetailEffect
 }
 
 data class BookmarkContentState(
@@ -74,6 +78,9 @@ class BookmarkDetailViewModel(
 
     companion object {
         private const val SAVE_DEBOUNCE_MS = 2000L
+
+        /** 用于向 JS Bridge 序列化划线数据，必须保留所有默认值字段 */
+        private val markDetailJson = Json { encodeDefaults = true }
     }
 
     private val _bookmarkId = MutableStateFlow<String?>(null)
@@ -270,6 +277,24 @@ class BookmarkDetailViewModel(
     fun loadOutline() {
         val id = _bookmarkId.value ?: return
         outlineDelegate.loadOutline(id)
+    }
+
+    /**
+     * 拉取当前书签的划线列表并通过 [BookmarkDetailEffect.DrawMarks] 派发给 UI 层。
+     * 在 WebView 页面加载完成（PageLoaded）后调用，确保 JS Bridge 已就绪。
+     * 失败时静默忽略，划线为非核心功能，不影响阅读体验。
+     */
+    fun loadAndDrawMarks() {
+        val id = _bookmarkId.value ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching { apiService.getBookmarkMarkList(id) }
+                .onSuccess { httpData ->
+                    httpData.data?.let { markDetail ->
+                        val json = markDetailJson.encodeToString(markDetail)
+                        _effects.emit(BookmarkDetailEffect.DrawMarks(json))
+                    }
+                }
+        }
     }
 
     // 加载书签的保存阅读位置
