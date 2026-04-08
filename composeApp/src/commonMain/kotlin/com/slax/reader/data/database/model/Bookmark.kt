@@ -14,9 +14,7 @@ import kotlinx.serialization.json.Json
 data class BookmarkMetadata(
     val tags: List<String>,
     val share: ShareSettings?,
-    val bookmark: BookmarkDetails,
-    val starred_at: String?,
-    val archived_at: String?,
+    val bookmark: BookmarkDetails
 )
 
 @Immutable
