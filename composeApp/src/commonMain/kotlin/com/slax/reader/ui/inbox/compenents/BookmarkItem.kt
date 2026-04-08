@@ -142,7 +142,6 @@ fun BookmarkItemRow(
             }
     ) {
         if (showSwipeActions) {
-            println("current sortType: $sortType cell name: $currentTitle")
             Row(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
