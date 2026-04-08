@@ -63,6 +63,11 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
                 is BookmarkDetailEffect.ScrollToAnchor -> {
                     webViewState.scrollToAnchor(effect.anchor)
                 }
+                is BookmarkDetailEffect.DrawMarks -> {
+                    webViewState.evaluateJs(
+                        "window.SlaxWebViewBridge.drawMarks(`${escapeJsTemplateString(effect.markDetailJson)}`)"
+                    )
+                }
             }
         }
     }
@@ -110,6 +115,11 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
                     selectionMenuVisible.value = false
                     selectedText.value = ""
                     selectionYPx.floatValue = 0f
+                }
+                is WebViewEvent.PageLoaded -> {
+                    // 启动划线选区监听（初始化 JS 侧的 markManager），再拉取并绘制划线数据
+                    webViewState.evaluateJs("window.SlaxWebViewBridge.startSelectionMonitoring('body')")
+                    viewModel.loadAndDrawMarks()
                 }
                 else -> {}
             }

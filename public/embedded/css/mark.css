@@ -1,78 +1,71 @@
-/* Slax Selection Bridge 默认样式 */
+/* 划线评论单独注入 */
 
 slax-mark {
-    cursor: pointer;
-    transition: background-color 0.2s ease;
+    color: inherit;
+    position: relative;
+    transition: color 250ms;
 }
 
-/* 划线样式 */
+:root {
+    --slax-mark-border-color: #f6af69;
+    --slax-mark-border-color-alpha: #f6af69ee;
+    --slax-mark-highlight-bg: #FCF4E8;
+}
+
+slax-mark.comment,
 slax-mark.stroke {
-    background-color: rgba(255, 235, 59, 0.3);
-    border-bottom: 2px solid rgba(255, 193, 7, 0.6);
+    cursor: pointer;
+    border-bottom: 1.5px dashed var(--slax-mark-border-color) !important;
 }
 
-/* 有评论的标记 */
-slax-mark.comment {
-    background-color: rgba(33, 150, 243, 0.2);
-    border-bottom: 2px solid rgba(33, 150, 243, 0.6);
-}
-
-/* 自己的划线 */
 slax-mark.self-stroke {
-    background-color: rgba(76, 175, 80, 0.3);
-    border-bottom: 2px solid rgba(76, 175, 80, 0.6);
+    border-bottom: 1.5px solid var(--slax-mark-border-color) !important;
 }
 
-/* 高亮状态 */
 slax-mark.highlighted {
-    background-color: rgba(255, 152, 0, 0.5) !important;
-    border-bottom: 2px solid rgba(255, 152, 0, 0.8) !important;
-    animation: pulse 1s ease-in-out;
+    background-color: var(--slax-mark-highlight-bg);
 }
 
-/* 划线 + 评论 */
-slax-mark.stroke.comment {
-    background: linear-gradient(
-            to bottom,
-            rgba(255, 235, 59, 0.3) 0%,
-            rgba(33, 150, 243, 0.2) 100%
-    );
-    border-bottom: 2px solid rgba(156, 39, 176, 0.6);
+slax-mark:has(img) {
+    padding: 0;
+    position: relative;
+    display: inline-block;
 }
 
-/* 悬停效果 */
-slax-mark:hover {
-    background-color: rgba(255, 152, 0, 0.4) !important;
+slax-mark:has(img).comment {
+    border: 2px dashed var(--slax-mark-border-color) !important;
 }
 
-/* 高亮动画 */
-@keyframes pulse {
-    0%, 100% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.02);
-    }
+slax-mark:has(img).stroke {
+    border: 2px solid var(--slax-mark-border-color) !important;
 }
 
-/* 图片标记 */
-slax-mark img {
-    border: 2px solid transparent;
-    transition: border-color 0.2s ease;
+slax-mark:has(img)::after {
+    content: '···';
+    position: absolute;
+    height: 25px;
+    width: 25px;
+    padding-left: 0;
+    padding-right: 0;
+    border-radius: 50%;
+    background-color: var(--slax-mark-border-color-alpha);
+    right: -5px;
+    top: -5px;
+    line-height: 25px;
+    color: #fff;
+    font-size: 15px;
+    text-align: center;
+    transition: transform 250ms;
 }
 
-slax-mark.stroke img {
-    border-color: rgba(255, 193, 7, 0.6);
+slax-mark:has(img) slax-mark {
+    padding: 0 !important;
 }
 
-slax-mark.comment img {
-    border-color: rgba(33, 150, 243, 0.6);
+slax-mark:has(img) slax-mark::after {
+    content: none;
 }
 
-slax-mark.self-stroke img {
-    border-color: rgba(76, 175, 80, 0.6);
-}
-
-slax-mark.highlighted img {
-    border-color: rgba(255, 152, 0, 0.8);
+slax-mark slax-mark {
+    border: none !important;
 }
