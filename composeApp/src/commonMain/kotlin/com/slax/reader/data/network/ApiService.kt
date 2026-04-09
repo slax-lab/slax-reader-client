@@ -130,6 +130,19 @@ class ApiService(
         return get("/v1/bookmark/mark_list", query = mapOf("bookmark_uid" to id))
     }
 
+    suspend fun addBookmarkMark(params: AddMarkParams): HttpData<AddMarkResult> {
+        return post("/v1/mark/create", body = params)
+    }
+
+    suspend fun removeBookmark(markId: Long): HttpData<Unit> {
+        return post(
+            "/v1/mark/delete", body = mapOf(
+                "mark_id" to markId
+            )
+        )
+    }
+
+
     suspend fun addBookmarkWithContent(
         url: String,
         content: String?,
