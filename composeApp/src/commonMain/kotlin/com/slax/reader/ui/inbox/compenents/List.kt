@@ -33,6 +33,8 @@ fun ArticleList(
     println("[watch][UI] recomposition ArticleList")
 
     val bookmarks by viewModel.bookmarks.collectAsState()
+    val sortType by viewModel.sortType.collectAsState()
+    val swipeConfig = remember(sortType) { sortType.toSwipeConfig() }
 
     val lazyListState = rememberLazyListState()
     val dividerLine: @Composable () -> Unit = remember {
@@ -73,7 +75,8 @@ fun ArticleList(
                     navCtrl = navCtrl,
                     viewModel = viewModel,
                     bookmark = bookmark,
-                    onEditTitle = onEditTitle
+                    swipeConfig = swipeConfig,
+                    onEditTitle = onEditTitle,
                 )
 
                 dividerLine()

@@ -26,11 +26,13 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
 import com.slax.reader.const.BookmarkRoutes
+import com.slax.reader.data.database.model.BookmarkSortType
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.utils.bookmarkListEvent
@@ -40,6 +42,34 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.*
 import kotlin.math.abs
+
+data class SwipeActionsConfig(
+    val showStarAction: Boolean,
+    val showArchiveAction: Boolean,
+    val maxSwipeWidthDp: Dp,
+    val sortType: BookmarkSortType,
+)
+
+fun BookmarkSortType.toSwipeConfig(): SwipeActionsConfig = when (this) {
+    BookmarkSortType.UPDATED -> SwipeActionsConfig(
+        showStarAction = true,
+        showArchiveAction = true,
+        maxSwipeWidthDp = 130.dp,
+        sortType = this,
+    )
+    BookmarkSortType.STARRED -> SwipeActionsConfig(
+        showStarAction = true,
+        showArchiveAction = false,
+        maxSwipeWidthDp = 70.dp,
+        sortType = this,
+    )
+    BookmarkSortType.ARCHIVED -> SwipeActionsConfig(
+        showStarAction = false,
+        showArchiveAction = true,
+        maxSwipeWidthDp = 70.dp,
+        sortType = this,
+    )
+}
 
 // 菜单触发源枚举
 enum class MenuTriggerSource {
@@ -53,6 +83,7 @@ fun BookmarkItemRow(
     navCtrl: NavController,
     viewModel: InboxListViewModel,
     bookmark: InboxListBookmarkItem,
+    swipeConfig: SwipeActionsConfig,
     onEditTitle: (InboxListBookmarkItem) -> Unit,
 ) {
     val haptics = LocalHapticFeedback.current
@@ -106,7 +137,7 @@ fun BookmarkItemRow(
         )
     )
 
-    val maxSwipeLeft = remember(density) { -with(density) { 130.dp.toPx() } }
+    val maxSwipeLeft = remember(density, swipeConfig.maxSwipeWidthDp) { -with(density) { swipeConfig.maxSwipeWidthDp.toPx() } }
     val maxSwipeRight = 0f
     val clickDragTolerancePx = remember(density) { with(density) { 8.dp.toPx() } }
 
@@ -114,10 +145,10 @@ fun BookmarkItemRow(
 
     LaunchedEffect(maxSwipeLeft, maxSwipeRight) {
         offsetXAnimatable.updateBounds(maxSwipeLeft, maxSwipeRight)
-        offsetXAnimatable.snapTo(offsetXAnimatable.value.coerceIn(maxSwipeLeft, maxSwipeRight))
+        offsetXAnimatable.snapTo(0f)
     }
 
-    val menuAlpha by remember {
+    val menuAlpha by remember(maxSwipeLeft) {
         derivedStateOf {
             val offset = offsetXAnimatable.value
             if (offset < 0f) {
@@ -149,67 +180,71 @@ fun BookmarkItemRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // 加星按钮
-                Surface(
-                    modifier = Modifier
-                        .size(40.dp, 30.dp)
-                        .fillMaxHeight(),
-                    color = Color(0xFFFFB648),
-                    shape = RoundedCornerShape(15.dp),
-                    onClick = {
-                        scope.launch {
-                            offsetXAnimatable.animateTo(0f, animationSpec = tween(200))
-                            viewModel.toggleStar(bookmark.id, bookmark.isStarred != 1)
-                            bookmarkListEvent
-                                .action("item_interact")
-                                .param("element", "star")
-                                .source("inbox")
-                                .send()
+                if (swipeConfig.showStarAction) {
+                    // 加星按钮
+                    Surface(
+                        modifier = Modifier
+                            .size(40.dp, 30.dp)
+                            .fillMaxHeight(),
+                        color = Color(0xFFFFB648),
+                        shape = RoundedCornerShape(15.dp),
+                        onClick = {
+                            scope.launch {
+                                offsetXAnimatable.animateTo(0f, animationSpec = tween(200))
+                                viewModel.toggleStar(bookmark.id, bookmark.isStarred != 1)
+                                bookmarkListEvent
+                                    .action("item_interact")
+                                    .param("element", "star")
+                                    .source("inbox")
+                                    .send()
+                            }
                         }
-                    }
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
                     ) {
-                        Image(
-                            painter = painterResource(if (bookmark.isStarred == 1) Res.drawable.ic_floating_panel_starred else Res.drawable.ic_cell_action_star),
-                            contentDescription = "bookmark_star".i18n(),
-                            modifier = Modifier.size(20.dp),
-                            contentScale = ContentScale.Fit
-                        )
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(if (bookmark.isStarred == 1) Res.drawable.ic_cell_action_starred else Res.drawable.ic_cell_action_star),
+                                contentDescription = "bookmark_star".i18n(),
+                                modifier = Modifier.size(20.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
                     }
                 }
 
-                // 归档按钮
-                Surface(
-                    modifier = Modifier
-                        .size(40.dp, 30.dp)
-                        .fillMaxHeight(),
-                    color = Color(0xFF333333),
-                    shape = RoundedCornerShape(15.dp),
-                    onClick = {
-                        scope.launch {
-                            offsetXAnimatable.animateTo(0f, animationSpec = tween(200))
-                            viewModel.toggleArchive(bookmark.id, bookmark.archiveStatus != 1)
-                            bookmarkListEvent
-                                .action("item_interact")
-                                .param("element", "archive")
-                                .source("inbox")
-                                .send()
+                if (swipeConfig.showArchiveAction) {
+                    // 归档按钮
+                    Surface(
+                        modifier = Modifier
+                            .size(40.dp, 30.dp)
+                            .fillMaxHeight(),
+                        color = Color(0xFF333333),
+                        shape = RoundedCornerShape(15.dp),
+                        onClick = {
+                            scope.launch {
+                                offsetXAnimatable.animateTo(0f, animationSpec = tween(200))
+                                viewModel.toggleArchive(bookmark.id, bookmark.archiveStatus != 1)
+                                bookmarkListEvent
+                                    .action("item_interact")
+                                    .param("element", "archive")
+                                    .source("inbox")
+                                    .send()
+                            }
                         }
-                    }
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
                     ) {
-                        Image(
-                            painter = painterResource(if (bookmark.archiveStatus == 1) Res.drawable.ic_floating_panel_archieved else Res.drawable.ic_cell_action_archieve),
-                            contentDescription = "bookmark_archive".i18n(),
-                            modifier = Modifier.size(20.dp),
-                            contentScale = ContentScale.Fit
-                        )
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(if (bookmark.archiveStatus == 1) Res.drawable.ic_cell_action_archieved else Res.drawable.ic_cell_action_archieve),
+                                contentDescription = "bookmark_archive".i18n(),
+                                modifier = Modifier.size(20.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
                     }
                 }
             }
@@ -325,7 +360,7 @@ fun BookmarkItemRow(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        ItemStatus(bookmark.downloadStatus)
+                        ItemStatus(bookmark.downloadStatus, swipeConfig.sortType)
 
                         Text(
                             text = bookmark.displayTitle(),

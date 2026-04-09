@@ -279,6 +279,7 @@ const val articleStyle = """
 
 const val bottomLineStyle = """
     .bottom-seperator-line {
+      margin-top: 55px;
       position: relative;
       height: 50px;
     }
@@ -297,7 +298,7 @@ const val bottomLineStyle = """
     .bottom-seperator-line .seperator-line::before {
       content: '';
       position: absolute;
-      width: 80px;
+      width: 40px;
       height: 1px;
       background: #E6E6E6FF;
       top: 50%;
@@ -309,7 +310,7 @@ const val bottomLineStyle = """
     .bottom-seperator-line .seperator-line::after {
       content: '';
       position: absolute;
-      width: 80px;
+      width: 40px;
       height: 1px;
       background: #E6E6E6FF;
       top: 50%;

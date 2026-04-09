@@ -14,7 +14,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.Color
@@ -24,6 +23,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -180,5 +181,150 @@ fun MenuItem(
                 )
             )
         }
+    }
+}
+
+/**
+ * Inbox下拉菜单
+ */
+@Composable
+fun InboxDropdownMenu(
+    expanded: Boolean,
+    onDismissRequest: () -> Unit,
+    yOffset: Dp,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    println("[watch][UI] recomposition InboxDropdownMenu")
+
+    var showPopup by remember { mutableStateOf(false) }
+    var animateIn by remember { mutableStateOf(false) }
+
+    LaunchedEffect(expanded) {
+        if (expanded) {
+            showPopup = true
+            delay(50)
+            animateIn = true
+        } else {
+            animateIn = false
+            delay(200)
+            showPopup = false
+        }
+    }
+
+    if (showPopup) {
+        val density = LocalDensity.current
+
+        Popup(
+            alignment = Alignment.TopCenter,
+            onDismissRequest = onDismissRequest,
+            properties = PopupProperties(
+                focusable = true,
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true
+            ),
+            offset = IntOffset(
+                x = 0,
+                y = with(density) { yOffset.roundToPx() }
+            )
+        ) {
+            Box(modifier = Modifier.width(200.dp)) {
+                AnimatedVisibility(
+                    visible = animateIn,
+                    enter = fadeIn(animationSpec = tween(durationMillis = 200)) +
+                            scaleIn(
+                                initialScale = 0.92f,
+                                animationSpec = tween(durationMillis = 200)
+                            ),
+                    exit = fadeOut(animationSpec = tween(durationMillis = 150)) +
+                            scaleOut(
+                                targetScale = 0.92f,
+                                animationSpec = tween(durationMillis = 150)
+                            )
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .dropShadow(
+                                shape = RoundedCornerShape(20.dp),
+                                shadow = Shadow(
+                                    radius = 10.dp,
+                                    spread = 0.dp,
+                                    color = Color(0x14000000),
+                                    offset = DpOffset(x = 0.dp, 5.dp)
+                                )
+                            )
+                            .clip(RoundedCornerShape(20.dp))
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .background(
+                                    color = Color(0xFFF5F5F3),
+                                    shape = RoundedCornerShape(20.dp)
+                                )
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .border(
+                                    width = 1.5.dp,
+                                    color = Color.White,
+                                    shape = RoundedCornerShape(20.dp)
+                                )
+                        )
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 18.dp),
+                            verticalArrangement = Arrangement.spacedBy(0.dp)
+                        ) {
+                            content()
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Inbox菜单项目
+ */
+@Composable
+fun InboxMenuTextItem(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(46.5.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(
+                if (selected || isPressed) Color(0x0F0F1419) else Color.Transparent
+            )
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null
+            ) { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            style = TextStyle(
+                color = if (selected) Color(0xFF16B998) else Color(0xFF0F1419),
+                fontSize = 16.sp,
+                lineHeight = 22.5.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center
+            )
+        )
     }
 }
