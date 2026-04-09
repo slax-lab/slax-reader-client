@@ -285,3 +285,29 @@ object MarkTypeSerializer : KSerializer<MarkType> {
         return MarkType.entries.first { it.value == v }
     }
 }
+
+@Serializable
+data class AddMarkParams(
+    /** 书签 ID */
+    val bookmark_uid: Long,
+    /** 划线/评论类型，复用 MarkType 枚举 */
+    val type: MarkType,
+    /** 划线路径，与 MarkInfo.source 保持一致 */
+    val source: List<MarkPathItem> = emptyList(),
+    /** 选中的内容片段 */
+    val select_content: List<String> = emptyList(),
+    /** 近似位置信息，用于在内容变更后仍能定位 */
+    val approx_source: MarkPathApprox? = null,
+    /** 评论文本，划线时可为空 */
+    val comment: String = "",
+    /** 回复目标的 Mark ID，仅 REPLY 类型使用 */
+    val parent_id: Long? = null,
+)
+
+@Serializable
+data class AddMarkResult(
+    /** 新创建的 Mark ID */
+    val mark_id: Long,
+    /** 顶层 Mark ID，用于评论树定位 */
+    val root_id: Long,
+)
