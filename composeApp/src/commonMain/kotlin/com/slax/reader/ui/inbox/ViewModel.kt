@@ -42,7 +42,7 @@ class InboxListViewModel(
                 bookmarkDao.watchUserBookmarkPaged(type),
                 localBookmarkDao.watchUserLocalBookmarkMap()
             ) { bookmarks, localMap ->
-                bookmarks.map { bookmark ->
+                bookmarks?.map { bookmark ->
                     val local = localMap[bookmark.id]
                     if (local != null) {
                         bookmark.copy(downloadStatus = local.downloadStatus, isAutoCached = local.isAutoCached)
@@ -53,7 +53,7 @@ class InboxListViewModel(
             }
         }
         .scan(emptyList<InboxListBookmarkItem>()) { prev, new ->
-            if (new.isEmpty() && prev.isNotEmpty()) prev else new
+            if (new == null && prev.isNotEmpty()) prev else new ?: emptyList()
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

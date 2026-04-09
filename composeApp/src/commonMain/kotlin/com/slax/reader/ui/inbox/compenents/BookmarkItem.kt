@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
 import com.slax.reader.const.BookmarkRoutes
+import com.slax.reader.data.database.model.BookmarkSortType
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.utils.bookmarkListEvent
@@ -58,6 +59,7 @@ fun BookmarkItemRow(
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
+    val sortType by viewModel.sortType.collectAsState()
 
     var menuTriggerSource by remember { mutableStateOf(MenuTriggerSource.NONE) }
     val showMenu by remember {
@@ -106,7 +108,7 @@ fun BookmarkItemRow(
         )
     )
 
-    val maxSwipeLeft = remember(density) { -with(density) { 130.dp.toPx() } }
+    val maxSwipeLeft = remember(density, sortType) { -with(density) { if( sortType == BookmarkSortType.UPDATED)  130.dp.toPx() else 70.dp.toPx() } }
     val maxSwipeRight = 0f
     val clickDragTolerancePx = remember(density) { with(density) { 8.dp.toPx() } }
 
@@ -149,67 +151,71 @@ fun BookmarkItemRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // 加星按钮
-                Surface(
-                    modifier = Modifier
-                        .size(40.dp, 30.dp)
-                        .fillMaxHeight(),
-                    color = Color(0xFFFFB648),
-                    shape = RoundedCornerShape(15.dp),
-                    onClick = {
-                        scope.launch {
-                            offsetXAnimatable.animateTo(0f, animationSpec = tween(200))
-                            viewModel.toggleStar(bookmark.id, bookmark.isStarred != 1)
-                            bookmarkListEvent
-                                .action("item_interact")
-                                .param("element", "star")
-                                .source("inbox")
-                                .send()
+                if (sortType != BookmarkSortType.ARCHIVED) {
+                    // 加星按钮
+                    Surface(
+                        modifier = Modifier
+                            .size(40.dp, 30.dp)
+                            .fillMaxHeight(),
+                        color = Color(0xFFFFB648),
+                        shape = RoundedCornerShape(15.dp),
+                        onClick = {
+                            scope.launch {
+                                offsetXAnimatable.animateTo(0f, animationSpec = tween(200))
+                                viewModel.toggleStar(bookmark.id, bookmark.isStarred != 1)
+                                bookmarkListEvent
+                                    .action("item_interact")
+                                    .param("element", "star")
+                                    .source("inbox")
+                                    .send()
+                            }
                         }
-                    }
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
                     ) {
-                        Image(
-                            painter = painterResource(if (bookmark.isStarred == 1) Res.drawable.ic_floating_panel_starred else Res.drawable.ic_cell_action_star),
-                            contentDescription = "bookmark_star".i18n(),
-                            modifier = Modifier.size(20.dp),
-                            contentScale = ContentScale.Fit
-                        )
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(if (bookmark.isStarred == 1) Res.drawable.ic_cell_action_starred else Res.drawable.ic_cell_action_star),
+                                contentDescription = "bookmark_star".i18n(),
+                                modifier = Modifier.size(20.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
                     }
                 }
 
-                // 归档按钮
-                Surface(
-                    modifier = Modifier
-                        .size(40.dp, 30.dp)
-                        .fillMaxHeight(),
-                    color = Color(0xFF333333),
-                    shape = RoundedCornerShape(15.dp),
-                    onClick = {
-                        scope.launch {
-                            offsetXAnimatable.animateTo(0f, animationSpec = tween(200))
-                            viewModel.toggleArchive(bookmark.id, bookmark.archiveStatus != 1)
-                            bookmarkListEvent
-                                .action("item_interact")
-                                .param("element", "archive")
-                                .source("inbox")
-                                .send()
+                if (sortType != BookmarkSortType.STARRED) {
+                    // 归档按钮
+                    Surface(
+                        modifier = Modifier
+                            .size(40.dp, 30.dp)
+                            .fillMaxHeight(),
+                        color = Color(0xFF333333),
+                        shape = RoundedCornerShape(15.dp),
+                        onClick = {
+                            scope.launch {
+                                offsetXAnimatable.animateTo(0f, animationSpec = tween(200))
+                                viewModel.toggleArchive(bookmark.id, bookmark.archiveStatus != 1)
+                                bookmarkListEvent
+                                    .action("item_interact")
+                                    .param("element", "archive")
+                                    .source("inbox")
+                                    .send()
+                            }
                         }
-                    }
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
                     ) {
-                        Image(
-                            painter = painterResource(if (bookmark.archiveStatus == 1) Res.drawable.ic_floating_panel_archieved else Res.drawable.ic_cell_action_archieve),
-                            contentDescription = "bookmark_archive".i18n(),
-                            modifier = Modifier.size(20.dp),
-                            contentScale = ContentScale.Fit
-                        )
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(if (bookmark.archiveStatus == 1) Res.drawable.ic_cell_action_archieved else Res.drawable.ic_cell_action_archieve),
+                                contentDescription = "bookmark_archive".i18n(),
+                                modifier = Modifier.size(20.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
                     }
                 }
             }
@@ -325,7 +331,7 @@ fun BookmarkItemRow(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        ItemStatus(bookmark.downloadStatus)
+                        ItemStatus(bookmark.downloadStatus, sortType)
 
                         Text(
                             text = bookmark.displayTitle(),
