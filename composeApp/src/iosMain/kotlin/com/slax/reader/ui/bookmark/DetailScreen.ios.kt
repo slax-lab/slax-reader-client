@@ -42,6 +42,7 @@ data class WebViewMessage(
     val text: String? = null,
     val selectionY: Float? = null,
     val markId: String? = null,
+    val markItemInfo: String? = null,
 )
 
 @Composable
@@ -216,10 +217,16 @@ actual fun DetailScreen(
         // 评论面板
         val commentPanelVisible by commentPanelState
         val selectedText by LocalSelectedText.current
+        val selectedMarkItemInfoState = LocalSelectedMarkItemInfo.current
+        val selectedMarkItemInfo by selectedMarkItemInfoState
         CommentPanelSheet(
             highlightedText = selectedText,
+            comments = selectedMarkItemInfo?.comments ?: emptyList(),
             visible = commentPanelVisible,
-            onDismiss = { commentPanelState.value = false },
+            onDismiss = {
+                selectedMarkItemInfoState.value = null
+                commentPanelState.value = false
+            },
             onActionClick = { /* 后续实现各操作逻辑 */ }
         )
     }

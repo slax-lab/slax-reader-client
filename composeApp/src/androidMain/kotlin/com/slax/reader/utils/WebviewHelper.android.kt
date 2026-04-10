@@ -26,7 +26,6 @@ import com.slax.reader.const.JS_BRIDGE_NAME
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.domain.image.ImageDownloadManager
 import com.slax.reader.ui.bookmark.WebViewMessage
-import kotlinx.serialization.json.Json
 import org.koin.compose.koinInject
 import kotlin.math.roundToInt
 
@@ -114,7 +113,7 @@ actual fun AppWebView(
                 addJavascriptInterface(object {
                     @JavascriptInterface
                     fun postMessage(message: String) {
-                        runCatching { Json.decodeFromString<WebViewMessage>(message) }
+                        runCatching { bridgeJson.decodeFromString<WebViewMessage>(message) }
                             .onSuccess { msg ->
                                 when (msg.type) {
                                     "imageClick" -> {
@@ -152,8 +151,13 @@ actual fun AppWebView(
                                         val markId = msg.markId
                                         val text = msg.text
                                         if (!markId.isNullOrBlank()) {
+                                            val markItemInfo = msg.markItemInfo?.let {
+                                                runCatching {
+                                                    bridgeJson.decodeFromString<BridgeMarkItemInfo>(it)
+                                                }.getOrNull()
+                                            }
                                             webState.dispatchEvent(
-                                                WebViewEvent.MarkClicked(markId, text ?: "")
+                                                WebViewEvent.MarkClicked(markId, text ?: "", markItemInfo)
                                             )
                                         }
                                     }

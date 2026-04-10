@@ -66,7 +66,11 @@ sealed interface WebViewEvent {
     data object TextDeselected : WebViewEvent
 
     /** 用户点击了已渲染的划线标记 */
-    data class MarkClicked(val markId: String, val text: String) : WebViewEvent
+    data class MarkClicked(
+        val markId: String,
+        val text: String,
+        val markItemInfo: BridgeMarkItemInfo? = null,
+    ) : WebViewEvent
 }
 
 @Composable
