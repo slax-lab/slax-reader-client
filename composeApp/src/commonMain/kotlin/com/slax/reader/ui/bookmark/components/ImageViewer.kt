@@ -103,6 +103,12 @@ private fun ImageViewerContent(
     val scaleStates = remember(imageUrls.size) {
         List(imageUrls.size) { mutableStateOf(1f) }
     }
+    val offsetXStates = remember(imageUrls.size) {
+        List(imageUrls.size) { mutableStateOf(0f) }
+    }
+    val offsetYStates = remember(imageUrls.size) {
+        List(imageUrls.size) { mutableStateOf(0f) }
+    }
 
     // 始终允许 Pager 滑动，通过手势事件消费机制精确控制
     val userScrollEnabled = true
@@ -126,12 +132,14 @@ private fun ImageViewerContent(
             modifier = Modifier.fillMaxSize(),
             userScrollEnabled = userScrollEnabled,
             verticalAlignment = Alignment.CenterVertically,
-            beyondViewportPageCount = 2
+            beyondViewportPageCount = 0
         ) { page ->
             ZoomableImagePage(
                 fetcherFactory = fetcherFactory,
                 imageUrl = imageUrls[page],
                 scaleState = scaleStates.getOrNull(page) ?: remember { mutableStateOf(1f) },
+                offsetXState = offsetXStates.getOrNull(page) ?: remember { mutableStateOf(0f) },
+                offsetYState = offsetYStates.getOrNull(page) ?: remember { mutableStateOf(0f) },
                 currentPage = page,
                 pageCount = imageUrls.size,
                 isPagerScrolling = isPagerScrolling,
@@ -151,13 +159,23 @@ private fun ImageViewerContent(
         }
     }
 
-    // 监听页面变化，重置非当前页面的缩放状态
+    // 监听页面变化，重置非当前页面的缩放和偏移状态
     // 只在滚动完全停止后才重置，避免翻页动画过程中突变
     LaunchedEffect(pagerState.currentPage, pagerState.isScrollInProgress) {
         if (!pagerState.isScrollInProgress) {
             scaleStates.forEachIndexed { index, state ->
                 if (index != pagerState.currentPage && state.value != 1f) {
                     state.value = 1f
+                }
+            }
+            offsetXStates.forEachIndexed { index, state ->
+                if (index != pagerState.currentPage && state.value != 0f) {
+                    state.value = 0f
+                }
+            }
+            offsetYStates.forEachIndexed { index, state ->
+                if (index != pagerState.currentPage && state.value != 0f) {
+                    state.value = 0f
                 }
             }
         }
@@ -172,6 +190,8 @@ private fun ZoomableImagePage(
     fetcherFactory: SlaxStaticFetcher.Factory,
     imageUrl: String,
     scaleState: MutableState<Float>,
+    offsetXState: MutableState<Float>,
+    offsetYState: MutableState<Float>,
     currentPage: Int,
     pageCount: Int,
     isPagerScrolling: Boolean,
@@ -179,8 +199,8 @@ private fun ZoomableImagePage(
     modifier: Modifier = Modifier
 ) {
     var scale by scaleState
-    var offsetX by remember { mutableFloatStateOf(0f) }
-    var offsetY by remember { mutableFloatStateOf(0f) }
+    var offsetX by offsetXState
+    var offsetY by offsetYState
 
     var containerSize by remember { mutableStateOf(IntSize.Zero) }
     var imageSize by remember { mutableStateOf(Size.Zero) }

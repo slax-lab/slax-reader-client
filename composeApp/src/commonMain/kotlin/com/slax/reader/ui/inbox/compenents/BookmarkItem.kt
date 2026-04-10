@@ -26,6 +26,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -42,6 +43,34 @@ import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.*
 import kotlin.math.abs
 
+data class SwipeActionsConfig(
+    val showStarAction: Boolean,
+    val showArchiveAction: Boolean,
+    val maxSwipeWidthDp: Dp,
+    val sortType: BookmarkSortType,
+)
+
+fun BookmarkSortType.toSwipeConfig(): SwipeActionsConfig = when (this) {
+    BookmarkSortType.UPDATED -> SwipeActionsConfig(
+        showStarAction = true,
+        showArchiveAction = true,
+        maxSwipeWidthDp = 130.dp,
+        sortType = this,
+    )
+    BookmarkSortType.STARRED -> SwipeActionsConfig(
+        showStarAction = true,
+        showArchiveAction = false,
+        maxSwipeWidthDp = 70.dp,
+        sortType = this,
+    )
+    BookmarkSortType.ARCHIVED -> SwipeActionsConfig(
+        showStarAction = false,
+        showArchiveAction = true,
+        maxSwipeWidthDp = 70.dp,
+        sortType = this,
+    )
+}
+
 // 菜单触发源枚举
 enum class MenuTriggerSource {
     NONE,           // 未触发
@@ -54,12 +83,12 @@ fun BookmarkItemRow(
     navCtrl: NavController,
     viewModel: InboxListViewModel,
     bookmark: InboxListBookmarkItem,
+    swipeConfig: SwipeActionsConfig,
     onEditTitle: (InboxListBookmarkItem) -> Unit,
 ) {
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
-    val sortType by viewModel.sortType.collectAsState()
 
     var menuTriggerSource by remember { mutableStateOf(MenuTriggerSource.NONE) }
     val showMenu by remember {
@@ -108,7 +137,7 @@ fun BookmarkItemRow(
         )
     )
 
-    val maxSwipeLeft = remember(density, sortType) { -with(density) { if( sortType == BookmarkSortType.UPDATED)  130.dp.toPx() else 70.dp.toPx() } }
+    val maxSwipeLeft = remember(density, swipeConfig.maxSwipeWidthDp) { -with(density) { swipeConfig.maxSwipeWidthDp.toPx() } }
     val maxSwipeRight = 0f
     val clickDragTolerancePx = remember(density) { with(density) { 8.dp.toPx() } }
 
@@ -116,10 +145,10 @@ fun BookmarkItemRow(
 
     LaunchedEffect(maxSwipeLeft, maxSwipeRight) {
         offsetXAnimatable.updateBounds(maxSwipeLeft, maxSwipeRight)
-        offsetXAnimatable.snapTo(offsetXAnimatable.value.coerceIn(maxSwipeLeft, maxSwipeRight))
+        offsetXAnimatable.snapTo(0f)
     }
 
-    val menuAlpha by remember {
+    val menuAlpha by remember(maxSwipeLeft) {
         derivedStateOf {
             val offset = offsetXAnimatable.value
             if (offset < 0f) {
@@ -151,7 +180,7 @@ fun BookmarkItemRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (sortType != BookmarkSortType.ARCHIVED) {
+                if (swipeConfig.showStarAction) {
                     // 加星按钮
                     Surface(
                         modifier = Modifier
@@ -185,7 +214,7 @@ fun BookmarkItemRow(
                     }
                 }
 
-                if (sortType != BookmarkSortType.STARRED) {
+                if (swipeConfig.showArchiveAction) {
                     // 归档按钮
                     Surface(
                         modifier = Modifier
@@ -331,7 +360,7 @@ fun BookmarkItemRow(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        ItemStatus(bookmark.downloadStatus, sortType)
+                        ItemStatus(bookmark.downloadStatus, swipeConfig.sortType)
 
                         Text(
                             text = bookmark.displayTitle(),
