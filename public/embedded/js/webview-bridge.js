@@ -422,9 +422,9 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                 }
                 score[y] =
                     score[y - 1] +
-                    maxBlockScore -
-                    carry +
-                    advanceBlock(ctx, charPeq, y, carry);
+                        maxBlockScore -
+                        carry +
+                        advanceBlock(ctx, charPeq, y, carry);
             }
             else {
                 // Error count for bottom block exceeds threshold, reduce the number of
@@ -471,128 +471,128 @@ var SlaxReaderWebBridgeExports = (function (exports) {
     var hasRequiredLib$1;
 
     function requireLib$1 () {
-        if (hasRequiredLib$1) return lib;
-        hasRequiredLib$1 = 1;
-        (function (exports$1) {
+    	if (hasRequiredLib$1) return lib;
+    	hasRequiredLib$1 = 1;
+    	(function (exports$1) {
 
-            Object.defineProperty(exports$1, "__esModule", {
-                value: true
-            });
-            exports$1["default"] = seek;
-            var E_END = 'Iterator exhausted before seek ended.';
-            var E_SHOW = 'Argument 1 of seek must use filter NodeFilter.SHOW_TEXT.';
-            var E_WHERE = 'Argument 2 of seek must be an integer or a Text Node.';
-            var DOCUMENT_POSITION_PRECEDING = 2;
-            var SHOW_TEXT = 4;
-            var TEXT_NODE = 3;
+    		Object.defineProperty(exports$1, "__esModule", {
+    		  value: true
+    		});
+    		exports$1["default"] = seek;
+    		var E_END = 'Iterator exhausted before seek ended.';
+    		var E_SHOW = 'Argument 1 of seek must use filter NodeFilter.SHOW_TEXT.';
+    		var E_WHERE = 'Argument 2 of seek must be an integer or a Text Node.';
+    		var DOCUMENT_POSITION_PRECEDING = 2;
+    		var SHOW_TEXT = 4;
+    		var TEXT_NODE = 3;
 
-            function seek(iter, where) {
-                if (iter.whatToShow !== SHOW_TEXT) {
-                    var error; // istanbul ignore next
+    		function seek(iter, where) {
+    		  if (iter.whatToShow !== SHOW_TEXT) {
+    		    var error; // istanbul ignore next
 
-                    try {
-                        error = new DOMException(E_SHOW, 'InvalidStateError');
-                    } catch (_unused) {
-                        error = new Error(E_SHOW);
-                        error.code = 11;
-                        error.name = 'InvalidStateError';
+    		    try {
+    		      error = new DOMException(E_SHOW, 'InvalidStateError');
+    		    } catch (_unused) {
+    		      error = new Error(E_SHOW);
+    		      error.code = 11;
+    		      error.name = 'InvalidStateError';
 
-                        error.toString = function () {
-                            return "InvalidStateError: ".concat(E_SHOW);
-                        };
-                    }
+    		      error.toString = function () {
+    		        return "InvalidStateError: ".concat(E_SHOW);
+    		      };
+    		    }
 
-                    throw error;
-                }
+    		    throw error;
+    		  }
 
-                var count = 0;
-                var node = iter.referenceNode;
-                var predicates = null;
+    		  var count = 0;
+    		  var node = iter.referenceNode;
+    		  var predicates = null;
 
-                if (isInteger(where)) {
-                    predicates = {
-                        forward: function forward() {
-                            return count < where;
-                        },
-                        backward: function backward() {
-                            return count > where || !iter.pointerBeforeReferenceNode;
-                        }
-                    };
-                } else if (isText(where)) {
-                    var forward = before(node, where) ? function () {
-                        return false;
-                    } : function () {
-                        return node !== where;
-                    };
+    		  if (isInteger(where)) {
+    		    predicates = {
+    		      forward: function forward() {
+    		        return count < where;
+    		      },
+    		      backward: function backward() {
+    		        return count > where || !iter.pointerBeforeReferenceNode;
+    		      }
+    		    };
+    		  } else if (isText(where)) {
+    		    var forward = before(node, where) ? function () {
+    		      return false;
+    		    } : function () {
+    		      return node !== where;
+    		    };
 
-                    var backward = function backward() {
-                        return node !== where || !iter.pointerBeforeReferenceNode;
-                    };
+    		    var backward = function backward() {
+    		      return node !== where || !iter.pointerBeforeReferenceNode;
+    		    };
 
-                    predicates = {
-                        forward: forward,
-                        backward: backward
-                    };
-                } else {
-                    throw new TypeError(E_WHERE);
-                }
+    		    predicates = {
+    		      forward: forward,
+    		      backward: backward
+    		    };
+    		  } else {
+    		    throw new TypeError(E_WHERE);
+    		  }
 
-                while (predicates.forward()) {
-                    node = iter.nextNode();
+    		  while (predicates.forward()) {
+    		    node = iter.nextNode();
 
-                    if (node === null) {
-                        throw new RangeError(E_END);
-                    }
+    		    if (node === null) {
+    		      throw new RangeError(E_END);
+    		    }
 
-                    count += node.nodeValue.length;
-                }
+    		    count += node.nodeValue.length;
+    		  }
 
-                if (iter.nextNode()) {
-                    node = iter.previousNode();
-                }
+    		  if (iter.nextNode()) {
+    		    node = iter.previousNode();
+    		  }
 
-                while (predicates.backward()) {
-                    node = iter.previousNode();
+    		  while (predicates.backward()) {
+    		    node = iter.previousNode();
 
-                    if (node === null) {
-                        throw new RangeError(E_END);
-                    }
+    		    if (node === null) {
+    		      throw new RangeError(E_END);
+    		    }
 
-                    count -= node.nodeValue.length;
-                }
+    		    count -= node.nodeValue.length;
+    		  }
 
-                if (!isText(iter.referenceNode)) {
-                    throw new RangeError(E_END);
-                }
+    		  if (!isText(iter.referenceNode)) {
+    		    throw new RangeError(E_END);
+    		  }
 
-                return count;
-            }
+    		  return count;
+    		}
 
-            function isInteger(n) {
-                if (typeof n !== 'number') return false;
-                return isFinite(n) && Math.floor(n) === n;
-            }
+    		function isInteger(n) {
+    		  if (typeof n !== 'number') return false;
+    		  return isFinite(n) && Math.floor(n) === n;
+    		}
 
-            function isText(node) {
-                return node.nodeType === TEXT_NODE;
-            }
+    		function isText(node) {
+    		  return node.nodeType === TEXT_NODE;
+    		}
 
-            function before(ref, node) {
-                return ref.compareDocumentPosition(node) & DOCUMENT_POSITION_PRECEDING;
-            }
-
-        } (lib));
-        return lib;
+    		function before(ref, node) {
+    		  return ref.compareDocumentPosition(node) & DOCUMENT_POSITION_PRECEDING;
+    		}
+    		
+    	} (lib));
+    	return lib;
     }
 
     var domSeek;
     var hasRequiredDomSeek;
 
     function requireDomSeek () {
-        if (hasRequiredDomSeek) return domSeek;
-        hasRequiredDomSeek = 1;
-        domSeek = requireLib$1()['default'];
-        return domSeek;
+    	if (hasRequiredDomSeek) return domSeek;
+    	hasRequiredDomSeek = 1;
+    	domSeek = requireLib$1()['default'];
+    	return domSeek;
     }
 
     var rangeToString = {};
@@ -600,172 +600,172 @@ var SlaxReaderWebBridgeExports = (function (exports) {
     var hasRequiredRangeToString;
 
     function requireRangeToString () {
-        if (hasRequiredRangeToString) return rangeToString;
-        hasRequiredRangeToString = 1;
-        (function (exports$1) {
+    	if (hasRequiredRangeToString) return rangeToString;
+    	hasRequiredRangeToString = 1;
+    	(function (exports$1) {
 
-            Object.defineProperty(exports$1, "__esModule", {
-                value: true
-            });
-            exports$1["default"] = rangeToString;
+    		Object.defineProperty(exports$1, "__esModule", {
+    		  value: true
+    		});
+    		exports$1["default"] = rangeToString;
 
-            /**
-             * Return the next node after `node` in a tree order traversal of the document.
-             */
-            function nextNode(node, skipChildren) {
-                if (!skipChildren && node.firstChild) {
-                    return node.firstChild;
-                }
+    		/**
+    		 * Return the next node after `node` in a tree order traversal of the document.
+    		 */
+    		function nextNode(node, skipChildren) {
+    		  if (!skipChildren && node.firstChild) {
+    		    return node.firstChild;
+    		  }
 
-                do {
-                    if (node.nextSibling) {
-                        return node.nextSibling;
-                    }
+    		  do {
+    		    if (node.nextSibling) {
+    		      return node.nextSibling;
+    		    }
 
-                    node = node.parentNode;
-                } while (node);
-                /* istanbul ignore next */
-
-
-                return node;
-            }
-
-            function firstNode(range) {
-                if (range.startContainer.nodeType === Node.ELEMENT_NODE) {
-                    var node = range.startContainer.childNodes[range.startOffset];
-                    return node || nextNode(range.startContainer, true
-                        /* skip children */
-                    );
-                }
-
-                return range.startContainer;
-            }
-
-            function firstNodeAfter(range) {
-                if (range.endContainer.nodeType === Node.ELEMENT_NODE) {
-                    var node = range.endContainer.childNodes[range.endOffset];
-                    return node || nextNode(range.endContainer, true
-                        /* skip children */
-                    );
-                }
-
-                return nextNode(range.endContainer);
-            }
-
-            function forEachNodeInRange(range, cb) {
-                var node = firstNode(range);
-                var pastEnd = firstNodeAfter(range);
-
-                while (node !== pastEnd) {
-                    cb(node);
-                    node = nextNode(node);
-                }
-            }
-            /**
-             * A ponyfill for Range.toString().
-             * Spec: https://dom.spec.whatwg.org/#dom-range-stringifier
-             *
-             * Works around the buggy Range.toString() implementation in IE and Edge.
-             * See https://github.com/tilgovi/dom-anchor-text-position/issues/4
-             */
+    		    node = node.parentNode;
+    		  } while (node);
+    		  /* istanbul ignore next */
 
 
-            function rangeToString(range) {
-                // This is a fairly direct translation of the Range.toString() implementation
-                // in Blink.
-                var text = '';
-                forEachNodeInRange(range, function (node) {
-                    if (node.nodeType !== Node.TEXT_NODE) {
-                        return;
-                    }
+    		  return node;
+    		}
 
-                    var start = node === range.startContainer ? range.startOffset : 0;
-                    var end = node === range.endContainer ? range.endOffset : node.textContent.length;
-                    text += node.textContent.slice(start, end);
-                });
-                return text;
-            }
+    		function firstNode(range) {
+    		  if (range.startContainer.nodeType === Node.ELEMENT_NODE) {
+    		    var node = range.startContainer.childNodes[range.startOffset];
+    		    return node || nextNode(range.startContainer, true
+    		    /* skip children */
+    		    );
+    		  }
 
-        } (rangeToString));
-        return rangeToString;
+    		  return range.startContainer;
+    		}
+
+    		function firstNodeAfter(range) {
+    		  if (range.endContainer.nodeType === Node.ELEMENT_NODE) {
+    		    var node = range.endContainer.childNodes[range.endOffset];
+    		    return node || nextNode(range.endContainer, true
+    		    /* skip children */
+    		    );
+    		  }
+
+    		  return nextNode(range.endContainer);
+    		}
+
+    		function forEachNodeInRange(range, cb) {
+    		  var node = firstNode(range);
+    		  var pastEnd = firstNodeAfter(range);
+
+    		  while (node !== pastEnd) {
+    		    cb(node);
+    		    node = nextNode(node);
+    		  }
+    		}
+    		/**
+    		 * A ponyfill for Range.toString().
+    		 * Spec: https://dom.spec.whatwg.org/#dom-range-stringifier
+    		 *
+    		 * Works around the buggy Range.toString() implementation in IE and Edge.
+    		 * See https://github.com/tilgovi/dom-anchor-text-position/issues/4
+    		 */
+
+
+    		function rangeToString(range) {
+    		  // This is a fairly direct translation of the Range.toString() implementation
+    		  // in Blink.
+    		  var text = '';
+    		  forEachNodeInRange(range, function (node) {
+    		    if (node.nodeType !== Node.TEXT_NODE) {
+    		      return;
+    		    }
+
+    		    var start = node === range.startContainer ? range.startOffset : 0;
+    		    var end = node === range.endContainer ? range.endOffset : node.textContent.length;
+    		    text += node.textContent.slice(start, end);
+    		  });
+    		  return text;
+    		}
+    		
+    	} (rangeToString));
+    	return rangeToString;
     }
 
     var hasRequiredLib;
 
     function requireLib () {
-        if (hasRequiredLib) return lib$1;
-        hasRequiredLib = 1;
+    	if (hasRequiredLib) return lib$1;
+    	hasRequiredLib = 1;
 
-        Object.defineProperty(lib$1, "__esModule", {
-            value: true
-        });
-        lib$1.fromRange = fromRange;
-        lib$1.toRange = toRange;
+    	Object.defineProperty(lib$1, "__esModule", {
+    	  value: true
+    	});
+    	lib$1.fromRange = fromRange;
+    	lib$1.toRange = toRange;
 
-        var _domSeek = _interopRequireDefault(requireDomSeek());
+    	var _domSeek = _interopRequireDefault(requireDomSeek());
 
-        var _rangeToString = _interopRequireDefault(requireRangeToString());
+    	var _rangeToString = _interopRequireDefault(requireRangeToString());
 
-        function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+    	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 
-        var SHOW_TEXT = 4;
+    	var SHOW_TEXT = 4;
 
-        function fromRange(root, range) {
-            if (root === undefined) {
-                throw new Error('missing required parameter "root"');
-            }
+    	function fromRange(root, range) {
+    	  if (root === undefined) {
+    	    throw new Error('missing required parameter "root"');
+    	  }
 
-            if (range === undefined) {
-                throw new Error('missing required parameter "range"');
-            }
+    	  if (range === undefined) {
+    	    throw new Error('missing required parameter "range"');
+    	  }
 
-            var document = root.ownerDocument;
-            var prefix = document.createRange();
-            var startNode = range.startContainer;
-            var startOffset = range.startOffset;
-            prefix.setStart(root, 0);
-            prefix.setEnd(startNode, startOffset);
-            var start = (0, _rangeToString["default"])(prefix).length;
-            var end = start + (0, _rangeToString["default"])(range).length;
-            return {
-                start: start,
-                end: end
-            };
-        }
+    	  var document = root.ownerDocument;
+    	  var prefix = document.createRange();
+    	  var startNode = range.startContainer;
+    	  var startOffset = range.startOffset;
+    	  prefix.setStart(root, 0);
+    	  prefix.setEnd(startNode, startOffset);
+    	  var start = (0, _rangeToString["default"])(prefix).length;
+    	  var end = start + (0, _rangeToString["default"])(range).length;
+    	  return {
+    	    start: start,
+    	    end: end
+    	  };
+    	}
 
-        function toRange(root) {
-            var selector = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    	function toRange(root) {
+    	  var selector = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
-            if (root === undefined) {
-                throw new Error('missing required parameter "root"');
-            }
+    	  if (root === undefined) {
+    	    throw new Error('missing required parameter "root"');
+    	  }
 
-            var document = root.ownerDocument;
-            var range = document.createRange();
-            var iter = document.createNodeIterator(root, SHOW_TEXT);
-            var start = selector.start || 0;
-            var end = selector.end || start;
-            var startOffset = start - (0, _domSeek["default"])(iter, start);
-            var startNode = iter.referenceNode;
-            var remainder = end - start + startOffset;
-            var endOffset = remainder - (0, _domSeek["default"])(iter, remainder);
-            var endNode = iter.referenceNode;
-            range.setStart(startNode, startOffset);
-            range.setEnd(endNode, endOffset);
-            return range;
-        }
-
-        return lib$1;
+    	  var document = root.ownerDocument;
+    	  var range = document.createRange();
+    	  var iter = document.createNodeIterator(root, SHOW_TEXT);
+    	  var start = selector.start || 0;
+    	  var end = selector.end || start;
+    	  var startOffset = start - (0, _domSeek["default"])(iter, start);
+    	  var startNode = iter.referenceNode;
+    	  var remainder = end - start + startOffset;
+    	  var endOffset = remainder - (0, _domSeek["default"])(iter, remainder);
+    	  var endNode = iter.referenceNode;
+    	  range.setStart(startNode, startOffset);
+    	  range.setEnd(endNode, endOffset);
+    	  return range;
+    	}
+    	
+    	return lib$1;
     }
 
     var domAnchorTextPosition;
     var hasRequiredDomAnchorTextPosition;
 
     function requireDomAnchorTextPosition () {
-        if (hasRequiredDomAnchorTextPosition) return domAnchorTextPosition;
-        hasRequiredDomAnchorTextPosition = 1;
-        domAnchorTextPosition = requireLib();
-        return domAnchorTextPosition;
+    	if (hasRequiredDomAnchorTextPosition) return domAnchorTextPosition;
+    	hasRequiredDomAnchorTextPosition = 1;
+    	domAnchorTextPosition = requireLib();
+    	return domAnchorTextPosition;
     }
 
     var domAnchorTextPositionExports = requireDomAnchorTextPosition();
@@ -984,8 +984,8 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                         continue;
                     }
                     if (
-                        // 如果字符是 [0-9A-Za-z_-]
-                        (codeUnit >= 0x0030 && codeUnit <= 0x0039) ||
+                    // 如果字符是 [0-9A-Za-z_-]
+                    (codeUnit >= 0x0030 && codeUnit <= 0x0039) ||
                         (codeUnit >= 0x0041 && codeUnit <= 0x005A) ||
                         (codeUnit >= 0x0061 && codeUnit <= 0x007A) ||
                         codeUnit === 0x005F ||
@@ -1335,7 +1335,7 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             };
             processNode(range.commonAncestorContainer);
             return selectedInfo.length > 0 &&
-            !selectedInfo.every((item) => item.type === 'text' && item.text.trim().length === 0)
+                !selectedInfo.every((item) => item.type === 'text' && item.text.trim().length === 0)
                 ? selectedInfo
                 : [];
         }
@@ -1677,6 +1677,12 @@ var SlaxReaderWebBridgeExports = (function (exports) {
         removeMarkByUuid(uuid) {
             this.renderer.removeMark(uuid);
             this.markItemInfos = this.markItemInfos.filter((info) => info.id !== uuid);
+        }
+        /**
+         * 根据本地 UUID 获取 MarkItemInfo
+         */
+        getMarkItemInfoByUuid(uuid) {
+            return this.markItemInfos.find((info) => info.id === uuid) ?? null;
         }
         /**
          * 清除所有标记
@@ -2171,6 +2177,7 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             this.markManager = null;
             this.selectionContainer = null;
             this.markClickCleanup = null;
+            this.onMarkTap = null;
             this.postMessage = postToNativeBridge;
             this.getContentHeight = getContentHeight;
             this.scrollToAnchor = scrollToAnchor;
@@ -2246,8 +2253,15 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                     return;
                 const allMarks = Array.from(container.querySelectorAll(`slax-mark[data-uuid="${markId}"]`));
                 const fullText = allMarks.map((el) => el.textContent || '').join('');
-                postToNativeBridge({ type: 'markClicked', markId, text: fullText });
+                const markItemInfo = this.markManager?.getMarkItemInfoByUuid(markId) ?? null;
+                postToNativeBridge({
+                    type: 'markClicked',
+                    markId,
+                    text: fullText,
+                    markItemInfo: markItemInfo ? JSON.stringify(markItemInfo) : null
+                });
             };
+            this.onMarkTap = onMarkTap;
             this.markRenderer = new MarkRenderer(container, currentUserId, onMarkTap);
             this.markManager = new MarkManager(container, currentUserId, onMarkTap);
             this.selectionMonitor = new SelectionMonitor(container);
@@ -2475,8 +2489,8 @@ var SlaxReaderWebBridgeExports = (function (exports) {
          */
         setCurrentUserId(userId) {
             if (this.selectionContainer) {
-                this.markRenderer = new MarkRenderer(this.selectionContainer, userId);
-                this.markManager = new MarkManager(this.selectionContainer, userId);
+                this.markRenderer = new MarkRenderer(this.selectionContainer, userId, this.onMarkTap ?? undefined);
+                this.markManager = new MarkManager(this.selectionContainer, userId, this.onMarkTap ?? undefined);
             }
         }
     }

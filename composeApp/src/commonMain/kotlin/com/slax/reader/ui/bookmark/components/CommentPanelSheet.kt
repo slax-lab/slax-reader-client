@@ -42,6 +42,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.slax.reader.utils.BridgeMarkCommentInfo
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_comment_panel_close
@@ -76,6 +77,7 @@ object CommentPanelActionId {
 fun CommentPanelSheet(
     highlightedText: String,
     visible: Boolean,
+    comments: List<BridgeMarkCommentInfo> = emptyList(),
     onDismiss: () -> Unit,
     onActionClick: (actionId: String) -> Unit,
     commentListContent: (@Composable () -> Unit)? = null,
@@ -139,7 +141,13 @@ fun CommentPanelSheet(
                     )
 
                     // 区域3：评论列表显示区（无内容时高度为0，有内容时自动增高，最大200dp）
-                    CommentListArea(content = commentListContent)
+                    CommentListArea(
+                        content = commentListContent ?: if (comments.isNotEmpty()) {
+                            { DefaultCommentList(comments = comments) }
+                        } else {
+                            null
+                        }
+                    )
 
                     // 区域4：发表评论区域
                     PostCommentArea()
@@ -285,6 +293,61 @@ private fun HighlightedActionButton(
                 fontWeight = FontWeight.Normal
             )
         )
+    }
+}
+
+@Composable
+private fun DefaultCommentList(comments: List<BridgeMarkCommentInfo>) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        comments.forEach { comment ->
+            CommentItem(comment = comment, depth = 0)
+        }
+    }
+}
+
+@Composable
+private fun CommentItem(comment: BridgeMarkCommentInfo, depth: Int) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = (depth * 12).dp)
+    ) {
+        Text(
+            text = comment.username.ifBlank { "未知用户" },
+            style = TextStyle(
+                fontSize = 13.sp,
+                color = Color(0xFF111111),
+                fontWeight = FontWeight.Medium,
+                lineHeight = 18.sp
+            )
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        val replyPrefix = comment.reply?.username?.takeIf { it.isNotBlank() }?.let { "回复 @$it：" } ?: ""
+        Text(
+            text = if (comment.isDeleted) "该评论已删除" else replyPrefix + comment.comment,
+            style = TextStyle(
+                fontSize = 14.sp,
+                color = Color(0xFF333333),
+                fontWeight = FontWeight.Normal,
+                lineHeight = 20.sp
+            )
+        )
+
+        if (comment.children.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                comment.children.forEach { child ->
+                    CommentItem(comment = child, depth = depth + 1)
+                }
+            }
+        }
     }
 }
 

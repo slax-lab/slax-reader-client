@@ -30,6 +30,11 @@ val LocalCommentPanelVisible = compositionLocalOf<MutableState<Boolean>> {
     error("LocalCommentPanelVisible not provided")
 }
 
+/** 当前点击划线对应的 MarkItemInfo */
+val LocalSelectedMarkItemInfo = compositionLocalOf<MutableState<BridgeMarkItemInfo?>> {
+    error("LocalSelectedMarkItemInfo not provided")
+}
+
 sealed interface DetailScreenEvent {
     data object BackClick : DetailScreenEvent
     data object NavigateToSubscription : DetailScreenEvent
@@ -47,6 +52,7 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
     val selectedText = remember { mutableStateOf("") }
     val selectionYPx = remember { mutableFloatStateOf(0f) }
     val commentPanelVisible = remember { mutableStateOf(false) }
+    val selectedMarkItemInfo = remember { mutableStateOf<BridgeMarkItemInfo?>(null) }
 
     val webViewState = rememberAppWebViewState(coroutineScope)
 
@@ -122,8 +128,9 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
                     viewModel.loadAndDrawMarks()
                 }
                 is WebViewEvent.MarkClicked -> {
-                    // 点击已有划线时，显示评论面板并展示该划线的文本内容
+                    // 点击已有划线时，显示评论面板并展示该划线的文本内容与评论数据
                     selectedText.value = event.text
+                    selectedMarkItemInfo.value = event.markItemInfo
                     commentPanelVisible.value = true
                 }
                 else -> {}
@@ -155,7 +162,8 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
         LocalSelectionMenuVisible provides selectionMenuVisible,
         LocalSelectedText provides selectedText,
         LocalSelectionYPx provides selectionYPx,
-        LocalCommentPanelVisible provides commentPanelVisible
+        LocalCommentPanelVisible provides commentPanelVisible,
+        LocalSelectedMarkItemInfo provides selectedMarkItemInfo,
     ) {
         DetailScreen(
             bookmarkId = bookmarkId,

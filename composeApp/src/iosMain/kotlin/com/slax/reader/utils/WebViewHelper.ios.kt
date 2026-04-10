@@ -123,7 +123,7 @@ actual fun AppWebView(
 
     val scriptMessageHandler = remember {
         ScriptMessageHandler { message ->
-            runCatching { Json.decodeFromString<WebViewMessage>(message) }
+            runCatching { bridgeJson.decodeFromString<WebViewMessage>(message) }
                 .onSuccess { msg ->
                     when (msg.type) {
                         "domReady" -> {
@@ -171,8 +171,13 @@ actual fun AppWebView(
                             val markId = msg.markId
                             val text = msg.text
                             if (!markId.isNullOrBlank()) {
+                                val markItemInfo = msg.markItemInfo?.let {
+                                    runCatching {
+                                        bridgeJson.decodeFromString<BridgeMarkItemInfo>(it)
+                                    }.getOrNull()
+                                }
                                 webState.dispatchEvent(
-                                    WebViewEvent.MarkClicked(markId, text ?: "")
+                                    WebViewEvent.MarkClicked(markId, text ?: "", markItemInfo)
                                 )
                             }
                         }
@@ -566,7 +571,7 @@ actual fun WebView(
 ) {
     val scriptMessageHandler = remember {
         ScriptMessageHandler { message ->
-            runCatching { Json.decodeFromString<WebViewMessage>(message) }
+            runCatching { bridgeJson.decodeFromString<WebViewMessage>(message) }
                 .onSuccess { msg ->
                     when (msg.type) {
                         "imageClick" -> {
