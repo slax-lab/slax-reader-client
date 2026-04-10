@@ -121,6 +121,11 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
                     webViewState.evaluateJs("window.SlaxWebViewBridge.startSelectionMonitoring('body')")
                     viewModel.loadAndDrawMarks()
                 }
+                is WebViewEvent.MarkClicked -> {
+                    // 点击已有划线时，显示评论面板并展示该划线的文本内容
+                    selectedText.value = event.text
+                    commentPanelVisible.value = true
+                }
                 else -> {}
             }
         }

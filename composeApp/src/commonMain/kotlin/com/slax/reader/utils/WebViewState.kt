@@ -64,6 +64,9 @@ sealed interface WebViewEvent {
 
     /** 用户取消了文本选中 */
     data object TextDeselected : WebViewEvent
+
+    /** 用户点击了已渲染的划线标记 */
+    data class MarkClicked(val markId: String, val text: String) : WebViewEvent
 }
 
 @Composable

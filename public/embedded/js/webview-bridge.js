@@ -1427,9 +1427,10 @@ var SlaxReaderWebBridgeExports = (function (exports) {
      * 负责在页面上绘制、更新和删除标记（划线和评论）
      */
     class MarkRenderer {
-        constructor(container, currentUserId) {
+        constructor(container, currentUserId, onMarkTap) {
             this.container = container;
             this.currentUserId = currentUserId;
+            this.onMarkTap = onMarkTap;
         }
         /**
          * 根据 MarkPathItem 绘制标记
@@ -1529,6 +1530,11 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                 mark.classList.add('self-stroke');
             if (isHighlighted)
                 mark.classList.add('highlighted');
+            // 直接在元素上绑定 touchend，避免容器级别委托时 event.target 不可靠的问题
+            if (this.onMarkTap) {
+                const tapCallback = this.onMarkTap;
+                mark.addEventListener('touchend', (e) => tapCallback(id, e));
+            }
             try {
                 range.surroundContents(mark);
             }
@@ -1551,6 +1557,11 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                 mark.classList.add('self-stroke');
             if (isHighlighted)
                 mark.classList.add('highlighted');
+            // 直接在元素上绑定 touchend
+            if (this.onMarkTap) {
+                const tapCallback = this.onMarkTap;
+                mark.addEventListener('touchend', (e) => tapCallback(id, e));
+            }
             ele.parentElement?.insertBefore(mark, ele);
             ele.remove();
             mark.appendChild(ele);
@@ -1639,10 +1650,10 @@ var SlaxReaderWebBridgeExports = (function (exports) {
      * 负责处理后端 MarkDetail 数据的预处理、分组和渲染
      */
     class MarkManager {
-        constructor(container, currentUserId) {
+        constructor(container, currentUserId, onMarkTap) {
             this.markItemInfos = [];
             this.container = container;
-            this.renderer = new MarkRenderer(container, currentUserId);
+            this.renderer = new MarkRenderer(container, currentUserId, onMarkTap);
         }
         /**
          * 绘制多个标记
@@ -2204,10 +2215,42 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             // 如果已有监听器，先停止
             this.stopSelectionMonitoring();
             this.selectionContainer = container;
-            this.markRenderer = new MarkRenderer(container, currentUserId);
-            this.markManager = new MarkManager(container, currentUserId);
+            // 追踪 touchstart 位置，供每个 slax-mark 的 touchend 回调做滚动判断
+            let touchStartX = 0;
+            let touchStartY = 0;
+            const trackTouchStart = (e) => {
+                if (e.touches.length === 1) {
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                }
+            };
+            document.addEventListener('touchstart', trackTouchStart, { passive: true });
+            this.markClickCleanup = () => document.removeEventListener('touchstart', trackTouchStart);
+            /**
+             * 每个 slax-mark 元素绑定此回调（在 MarkRenderer 内直接 addEventListener）。
+             * 在元素自身的 touchend 中判断：选区是否为空、手指是否移动过大，
+             * 再聚合同 UUID 所有 mark 的文本发送给 native。
+             */
+            const onMarkTap = (markId, event) => {
+                if (event.changedTouches.length === 0)
+                    return;
+                // 有文本选中说明用户在选词，不触发划线点击
+                const selection = window.getSelection();
+                if (selection && !selection.isCollapsed)
+                    return;
+                const touch = event.changedTouches[0];
+                const dx = Math.abs(touch.clientX - touchStartX);
+                const dy = Math.abs(touch.clientY - touchStartY);
+                // 移动超过 10px 视为滚动
+                if (dx > 10 || dy > 10)
+                    return;
+                const allMarks = Array.from(container.querySelectorAll(`slax-mark[data-uuid="${markId}"]`));
+                const fullText = allMarks.map((el) => el.textContent || '').join('');
+                postToNativeBridge({ type: 'markClicked', markId, text: fullText });
+            };
+            this.markRenderer = new MarkRenderer(container, currentUserId, onMarkTap);
+            this.markManager = new MarkManager(container, currentUserId, onMarkTap);
             this.selectionMonitor = new SelectionMonitor(container);
-            this.setupMarkClickListener(container);
             this.selectionMonitor.start((data) => {
                 const jsonData = JSON.stringify({
                     paths: data.paths,
@@ -2435,48 +2478,6 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                 this.markRenderer = new MarkRenderer(this.selectionContainer, userId);
                 this.markManager = new MarkManager(this.selectionContainer, userId);
             }
-        }
-        /**
-         * 设置 mark 点击事件监听
-         */
-        setupMarkClickListener(container) {
-            const handler = (event) => {
-                const target = event.target;
-                let markElement = target;
-                while (markElement && markElement !== container) {
-                    if (markElement.tagName === 'SLAX-MARK' && markElement.dataset.uuid) {
-                        const markId = markElement.dataset.uuid;
-                        const markData = JSON.stringify({
-                            id: markId,
-                            text: markElement.textContent || '',
-                            classList: Array.from(markElement.classList)
-                        });
-                        const containerRect = container.getBoundingClientRect();
-                        const markRect = markElement.getBoundingClientRect();
-                        const position = {
-                            x: event.clientX - containerRect.left,
-                            y: event.clientY - containerRect.top,
-                            width: markRect.width,
-                            height: markRect.height,
-                            top: markRect.top - containerRect.top,
-                            left: markRect.left - containerRect.left,
-                            right: markRect.right - containerRect.left,
-                            bottom: markRect.bottom - containerRect.top
-                        };
-                        postToNativeBridge({
-                            type: 'markClicked',
-                            markId,
-                            data: markData,
-                            position: JSON.stringify(position)
-                        });
-                        event.stopPropagation();
-                        break;
-                    }
-                    markElement = markElement.parentElement;
-                }
-            };
-            container.addEventListener('click', handler);
-            this.markClickCleanup = () => container.removeEventListener('click', handler);
         }
     }
 
