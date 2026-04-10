@@ -289,7 +289,7 @@ object MarkTypeSerializer : KSerializer<MarkType> {
 @Serializable
 data class AddMarkParams(
     /** 书签 ID */
-    val bookmark_uid: Long,
+    val bookmark_uid: String,
     /** 划线/评论类型，复用 MarkType 枚举 */
     val type: MarkType,
     /** 划线路径，与 MarkInfo.source 保持一致 */
@@ -310,4 +310,46 @@ data class AddMarkResult(
     val mark_id: Long,
     /** 顶层 Mark ID，用于评论树定位 */
     val root_id: Long,
+)
+
+// ==================== JS Bridge strokeCurrentSelection 返回类型 ====================
+
+/**
+ * JS Bridge strokeCurrentSelection 返回的划线创建数据
+ *
+ * 包含本地渲染所需的 uuid 以及调用 /v1/mark/create 接口所需的全部字段。
+ * 字段与 JS 侧 StrokeCreateData 接口一一对应。
+ */
+@Serializable
+data class StrokeCreateData(
+    /** 本地生成的 UUID，用于后续通过 updateMarkIdByUuid 关联后端 mark_id */
+    val uuid: String,
+    /** 后端接口 source 字段 */
+    val source: List<StrokeCreateSource> = emptyList(),
+    /** 后端接口 select_content 字段 */
+    val select_content: List<StrokeCreateSelectContent> = emptyList(),
+    /** 后端接口 approx_source 字段 */
+    val approx_source: MarkPathApprox? = null,
+)
+
+/** 划线接口的 source 条目，字段映射：xpath → MarkPathItem.path */
+@Serializable
+data class StrokeCreateSource(
+    val type: String = "text",
+    /** CSS 选择器路径，对应后端接口字段 path */
+    val xpath: String = "",
+    /** 文本起始偏移（图片类型为 0） */
+    val start_offset: Int = 0,
+    /** 文本结束偏移（图片类型为 0） */
+    val end_offset: Int = 0,
+)
+
+/** 划线接口的 select_content 条目 */
+@Serializable
+data class StrokeCreateSelectContent(
+    val type: String = "text",
+    /** 文本内容（图片类型为空字符串） */
+    val text: String = "",
+    /** 图片 src（文本类型为空字符串） */
+    val src: String = "",
 )

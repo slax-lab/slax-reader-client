@@ -61,11 +61,13 @@ fun rememberSelectionActions(): List<SelectionAction> {
  * @param actionId 操作标识，见 [SelectionActionId]
  * @param webViewState WebView 状态，用于执行 JS 指令
  * @param onCommentRequest 点击"评论"按钮时的回调，由调用方负责显示评论面板
+ * @param onHighlightRequest 点击"划线"按钮时的回调，由调用方触发划线流程
  */
 fun handleSelectionAction(
     actionId: String,
     webViewState: AppWebViewState,
     onCommentRequest: (() -> Unit)? = null,
+    onHighlightRequest: (() -> Unit)? = null,
 ) {
     when (actionId) {
         SelectionActionId.COPY -> {
@@ -73,7 +75,7 @@ fun handleSelectionAction(
             webViewState.evaluateJs("document.execCommand('copy')")
         }
         SelectionActionId.HIGHLIGHT -> {
-            // TODO: 划线功能，后续实现
+            onHighlightRequest?.invoke()
         }
         SelectionActionId.COMMENT -> {
             onCommentRequest?.invoke()

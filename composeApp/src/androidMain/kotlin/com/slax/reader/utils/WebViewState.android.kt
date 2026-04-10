@@ -27,6 +27,10 @@ actual class AppWebViewState actual constructor(
         scope.launch { _commands.emit(WebViewCommand.EvaluateJs(script)) }
     }
 
+    actual fun evaluateJsWithCallback(script: String, callback: (String) -> Unit) {
+        scope.launch { _commands.emit(WebViewCommand.EvaluateJs(script, callback)) }
+    }
+
     actual fun scrollToAnchor(anchor: String) {
         evaluateJs("window.SlaxWebViewBridge.scrollToAnchor(`${escapeJsTemplateString(anchor)}`)")
     }

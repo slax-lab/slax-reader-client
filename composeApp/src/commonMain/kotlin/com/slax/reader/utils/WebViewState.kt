@@ -34,6 +34,7 @@ expect class AppWebViewState(
     val initialCookies: List<WebViewCookie>?
 
     fun evaluateJs(script: String)
+    fun evaluateJsWithCallback(script: String, callback: (String) -> Unit)
     fun scrollToAnchor(anchor: String)
     fun reload()
     fun setCookies(cookies: List<WebViewCookie>, url: String, complateHandler: (() -> Unit)? = null)

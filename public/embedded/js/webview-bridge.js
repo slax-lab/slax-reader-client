@@ -1437,7 +1437,6 @@ var SlaxReaderWebBridgeExports = (function (exports) {
         drawMark(id, paths, isStroke, hasComment, userId) {
             try {
                 const isSelfStroke = userId !== undefined && userId === this.currentUserId;
-                console.log(`[MarkRenderer] drawMark: id=${id}, paths=${paths.length}, isStroke=${isStroke}, hasComment=${hasComment}, isSelfStroke=${isSelfStroke}`);
                 const baseInfo = {
                     id,
                     isStroke,
@@ -1446,16 +1445,10 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                     isHighlighted: false
                 };
                 let drawMarkSuccess = false;
-                const failedSelectors = [];
-                console.log(paths)
                 for (const markItem of paths) {
                     if (!isStroke && !hasComment)
                         continue;
                     const infos = this.transferNodeInfos(markItem);
-                    console.log(`[MarkRenderer] drawMark: path type=${markItem.type}, selector="${markItem.path}", transferNodeInfos result count=${infos.length}`);
-                    if (infos.length === 0) {
-                        failedSelectors.push(markItem.path);
-                    }
                     for (const infoItem of infos) {
                         if (infoItem.type === 'image') {
                             this.addImageMark({ ...baseInfo, ele: infoItem.ele });
@@ -1465,13 +1458,10 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                     }
                     drawMarkSuccess = infos.length > 0;
                 }
-                if (!drawMarkSuccess) {
-                    console.warn(`[MarkRenderer] drawMark: id=${id} — no nodes rendered, failed selectors: [${failedSelectors.map(s => `"${s}"`).join(', ')}]`);
-                }
                 return drawMarkSuccess;
             }
             catch (error) {
-                console.error('[MarkRenderer] drawMark: failed', error);
+                console.error('Failed to draw mark:', error);
                 return false;
             }
         }
@@ -1483,12 +1473,10 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             if (markItem.type === 'text') {
                 const baseElement = this.container.querySelector(markItem.path);
                 if (!baseElement) {
-                    console.warn(`[MarkRenderer] transferNodeInfos: element not found for path="${markItem.path}"`);
                     return infos;
                 }
                 const nodes = getAllTextNodes(baseElement);
                 const nodeLengths = nodes.map((node) => (node.textContent || '').length);
-                console.log(`[MarkRenderer] transferNodeInfos: path="${markItem.path}", textNodes=${nodes.length}, start=${markItem.start}, end=${markItem.end}`);
                 let startOffset = markItem.start || 0;
                 const endOffset = markItem.end || 0;
                 let base = 0;
@@ -1511,18 +1499,13 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             else if (markItem.type === 'image') {
                 let element = this.container.querySelector(markItem.path);
                 if (!element || !element.src) {
-                    console.log(`[MarkRenderer] transferNodeInfos: image not found at path="${markItem.path}", trying inside slax-mark`);
                     // 尝试在slax-mark标签内查找
                     const paths = markItem.path.split('>');
                     const tailIdx = paths.length - 1;
                     const newPath = [...paths.slice(0, tailIdx), ' slax-mark ', paths[tailIdx]];
                     element = this.container.querySelector(newPath.join('>'));
-                    if (!element) {
-                        console.warn(`[MarkRenderer] transferNodeInfos: image not found inside slax-mark either, path="${newPath.join('>')}"`);
-                    }
                 }
                 if (element) {
-                    console.log(`[MarkRenderer] transferNodeInfos: image found, src="${element.src}"`);
                     infos.push({ type: 'image', ele: element });
                 }
             }
@@ -1547,12 +1530,10 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             if (isHighlighted)
                 mark.classList.add('highlighted');
             try {
-                console.log('surroundContents with mark:', { id, text: node.textContent?.slice(0, 30), start, end });
                 range.surroundContents(mark);
-                console.log('surroundContents success')
             }
             catch (error) {
-                console.error(`[MarkRenderer] addMark: surroundContents failed, id=${id}, node="${node.textContent?.slice(0, 30)}", start=${start}, end=${end}`, error);
+                console.error('Failed to surround contents:', error);
             }
         }
         /**
@@ -1670,21 +1651,13 @@ var SlaxReaderWebBridgeExports = (function (exports) {
          * @returns 键值对：uuid -> 该uuid对应的后端mark列表
          */
         drawMarks(marks) {
-            console.log(`[MarkManager] drawMarks: start, mark_list.length=${marks.mark_list?.length ?? 0}`);
             const userMap = this.createUserMap(marks.user_list);
-            console.log(`[MarkManager] drawMarks: userMap size=${userMap.size}`);
             const commentMap = this.buildCommentMap(marks.mark_list, userMap);
-            console.log(`[MarkManager] drawMarks: commentMap size=${commentMap.size}`);
             this.buildCommentRelationships(marks.mark_list, commentMap);
             this.markItemInfos = this.generateMarkItemInfos(marks.mark_list, commentMap);
-            console.log(`[MarkManager] drawMarks: generated ${this.markItemInfos.length} MarkItemInfo(s)`);
-            let successCount = 0;
             for (const info of this.markItemInfos) {
-                console.log(`[MarkManager] drawMarks: drawing item id=${info.id}, stroke=${info.stroke.length}, comments=${info.comments.length}, source.length=${info.source?.length ?? 0}`);
                 this.drawSingleMarkItem(info);
-                successCount++;
             }
-            console.log(`[MarkManager] drawMarks: done, drew ${successCount} item(s)`);
             return this.buildDrawMarksResult(marks.mark_list);
         }
         /**
@@ -1791,14 +1764,11 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             for (const mark of markList) {
                 const source = mark.source;
                 // 跳过 REPLY 类型和数字类型的 source
-                if (typeof source === 'number' || mark.type === REPLY_TYPE) {
-                    console.log(`[MarkManager] generateMarkItemInfos: skip mark id=${mark.id} type=${mark.type} (REPLY or numeric source)`);
+                if (typeof source === 'number' || mark.type === REPLY_TYPE)
                     continue;
-                }
                 // 跳过没有 approx_source 的原始标记
                 if (ORIGIN_TYPES.includes(mark.type) &&
                     (!mark.approx_source || Object.keys(mark.approx_source).length === 0)) {
-                    console.warn(`[MarkManager] generateMarkItemInfos: skip ORIGIN mark id=${mark.id} type=${mark.type} — missing approx_source`);
                     continue;
                 }
                 const markSources = source;
@@ -1834,12 +1804,302 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                     markInfoItem.comments.push(comment);
                 }
             }
-
-            console.log('marklist: ')
-            console.log(markList)
-            console.log('infoItems: ')
-            console.log(infoItems)
             return infoItems;
+        }
+        /**
+         * 对当前选中区域执行划线处理
+         *
+         * 读取 window.getSelection() → 解析路径和 approx → 构建 MarkItemInfo → 渲染划线
+         *
+         * 注意：此方法不调用后端 API，只在本地渲染。
+         * 返回值包含调用 /v1/mark/create 接口所需的全部字段，以及用于后续关联的 uuid。
+         * 拿到后端 mark_id 后，调用 updateMarkIdByUuid 完成关联。
+         *
+         * @param userId 当前用户ID（可选）
+         * @returns StrokeCreateData（含 uuid 及接口入参），若选区无效则返回 null
+         */
+        strokeCurrentSelection(userId) {
+            console.log('[MarkManager] strokeCurrentSelection 开始，userId:', userId);
+            const selection = window.getSelection();
+            if (!selection || selection.rangeCount === 0) {
+                console.log('[MarkManager] strokeCurrentSelection 终止：无选区');
+                return null;
+            }
+            const range = selection.getRangeAt(0);
+            if (range.collapsed) {
+                console.log('[MarkManager] strokeCurrentSelection 终止：选区已折叠');
+                return null;
+            }
+            if (!this.container.contains(range.commonAncestorContainer)) {
+                console.log('[MarkManager] strokeCurrentSelection 终止：选区不在容器内');
+                return null;
+            }
+            // 一次性解析选区内的节点信息，后续各步骤共用
+            const selectionInfo = this.getSelectionInfoFromRange(range);
+            console.log('[MarkManager] strokeCurrentSelection selectionInfo 解析结果，数量:', selectionInfo.length, selectionInfo);
+            if (selectionInfo.length === 0) {
+                console.log('[MarkManager] strokeCurrentSelection 终止：selectionInfo 为空');
+                return null;
+            }
+            // 解析渲染所需的路径（MarkPathItem[]）
+            const paths = this.buildPathsFromSelectionInfo(selectionInfo);
+            console.log('[MarkManager] strokeCurrentSelection paths 解析结果，数量:', paths.length, paths);
+            if (paths.length === 0) {
+                console.log('[MarkManager] strokeCurrentSelection 终止：paths 为空');
+                return null;
+            }
+            // 解析 approx（同时得到接口格式的 approx_source，含 position_start/position_end）
+            const { approx, approxCreate } = this.parseApproxFromRange(range);
+            console.log('[MarkManager] strokeCurrentSelection approx:', approx, 'approxCreate:', approxCreate);
+            // 构建接口所需的 select_content
+            const selectContent = this.buildSelectContent(selectionInfo);
+            console.log('[MarkManager] strokeCurrentSelection selectContent:', selectContent);
+            // 接口所需的 source（xpath 格式）
+            const apiSource = this.convertToApiSource(paths);
+            console.log('[MarkManager] strokeCurrentSelection apiSource:', apiSource);
+            // 检查是否已存在相同 source 的 MarkItemInfo（幂等处理）
+            const existing = this.markItemInfos.find((info) => this.checkMarkSourceIsSame(info.source, paths));
+            if (existing) {
+                console.log('[MarkManager] strokeCurrentSelection 命中已有 MarkItemInfo，uuid:', existing.id);
+                const alreadyStroked = existing.stroke.some((s) => s.userId === (userId ?? 0));
+                if (!alreadyStroked) {
+                    console.log('[MarkManager] strokeCurrentSelection 当前用户尚未划线，追加 stroke');
+                    existing.stroke.push({ mark_id: undefined, userId: userId ?? 0 });
+                    this.drawSingleMarkItem(existing);
+                }
+                else {
+                    console.log('[MarkManager] strokeCurrentSelection 当前用户已有划线，跳过渲染');
+                }
+                return {
+                    uuid: existing.id,
+                    source: apiSource,
+                    select_content: selectContent,
+                    approx_source: approxCreate
+                };
+            }
+            // 构建新的 MarkItemInfo 并渲染
+            const uuid = generateUUID();
+            console.log('[MarkManager] strokeCurrentSelection 创建新 MarkItemInfo，uuid:', uuid);
+            const infoItem = {
+                id: uuid,
+                source: paths,
+                stroke: [{ mark_id: undefined, userId: userId ?? 0 }],
+                comments: [],
+                approx
+            };
+            this.markItemInfos.push(infoItem);
+            this.drawSingleMarkItem(infoItem);
+            const result = {
+                uuid,
+                source: apiSource,
+                select_content: selectContent,
+                approx_source: approxCreate
+            };
+            console.log('[MarkManager] strokeCurrentSelection 完成，返回:', result);
+            return result;
+        }
+        /**
+         * 通过 uuid 找到对应的 MarkItemInfo，并将其 stroke 中 mark_id 为空的项更新为指定 mark_id
+         *
+         * 用于在后端 API 返回 mark_id 后，将本地临时记录与后端数据关联
+         *
+         * @param uuid MarkItemInfo 的 uuid（由 strokeCurrentSelection 返回）
+         * @param markId 后端返回的 mark_id
+         * @param userId 用户ID（用于精确匹配对应 stroke 条目，可选）
+         */
+        updateMarkIdByUuid(uuid, markId, userId) {
+            console.log('[MarkManager] updateMarkIdByUuid 开始，uuid:', uuid, 'markId:', markId, 'userId:', userId);
+            console.log('[MarkManager] updateMarkIdByUuid 当前 markItemInfos（共 %d 条）:', this.markItemInfos.length, JSON.parse(JSON.stringify(this.markItemInfos)));
+            const infoItem = this.markItemInfos.find((info) => info.id === uuid);
+            if (!infoItem) {
+                console.warn('[MarkManager] updateMarkIdByUuid 未找到对应的 MarkItemInfo，uuid:', uuid);
+                return;
+            }
+            console.log('[MarkManager] updateMarkIdByUuid 找到 MarkItemInfo:', JSON.parse(JSON.stringify(infoItem)));
+            console.log('[MarkManager] updateMarkIdByUuid 当前 stroke 列表:', JSON.parse(JSON.stringify(infoItem.stroke)));
+            const stroke = infoItem.stroke.find((s) => !s.mark_id && (userId === undefined || s.userId === userId));
+            if (stroke) {
+                console.log('[MarkManager] updateMarkIdByUuid 找到匹配 stroke，更新前:', JSON.parse(JSON.stringify(stroke)));
+                stroke.mark_id = markId;
+                console.log('[MarkManager] updateMarkIdByUuid 更新后 stroke:', JSON.parse(JSON.stringify(stroke)));
+            }
+            else {
+                console.warn('[MarkManager] updateMarkIdByUuid 未找到可更新的 stroke（mark_id 为空且 userId 匹配）', 'userId 过滤条件:', userId);
+            }
+            console.log('[MarkManager] updateMarkIdByUuid 完成，最新 markItemInfos:', JSON.parse(JSON.stringify(this.markItemInfos)));
+        }
+        /**
+         * 将 Range 转换为 MarkPathItem 数组
+         *
+         * @deprecated 内部请改用 buildPathsFromSelectionInfo，避免重复解析 Range
+         */
+        parseRangeToPaths(range) {
+            return this.buildPathsFromSelectionInfo(this.getSelectionInfoFromRange(range));
+        }
+        /**
+         * 从已解析的选区节点信息构建 MarkPathItem 数组（供渲染使用）
+         *
+         * 相邻同 path 的文本项合并为一个条目；SLAX-MARK 标签会被穿透，
+         * 使用其真实父元素的路径，与 SelectionMonitor.convertSelectionToPaths 逻辑一致
+         */
+        buildPathsFromSelectionInfo(selectionInfo) {
+            const paths = [];
+            let currentPath = null;
+            let currentStart = 0;
+            let currentEnd = 0;
+            for (const item of selectionInfo) {
+                if (item.type === 'text') {
+                    let parent = item.node.parentElement;
+                    while (parent && parent.tagName === 'SLAX-MARK') {
+                        parent = parent.parentElement;
+                    }
+                    if (!parent)
+                        continue;
+                    const path = getElementPath(parent, this.container);
+                    const allTextNodes = getAllTextNodes(parent);
+                    let offset = 0;
+                    for (const textNode of allTextNodes) {
+                        if (textNode === item.node)
+                            break;
+                        offset += (textNode.textContent || '').length;
+                    }
+                    const start = offset + item.startOffset;
+                    const end = offset + item.endOffset;
+                    if (path === currentPath) {
+                        currentEnd = end;
+                    }
+                    else {
+                        if (currentPath !== null) {
+                            paths.push({ type: 'text', path: currentPath, start: currentStart, end: currentEnd });
+                        }
+                        currentPath = path;
+                        currentStart = start;
+                        currentEnd = end;
+                    }
+                }
+                else if (item.type === 'image') {
+                    if (currentPath !== null) {
+                        paths.push({ type: 'text', path: currentPath, start: currentStart, end: currentEnd });
+                        currentPath = null;
+                    }
+                    const path = getElementPath(item.element, this.container);
+                    paths.push({ type: 'image', path });
+                }
+            }
+            if (currentPath !== null) {
+                paths.push({ type: 'text', path: currentPath, start: currentStart, end: currentEnd });
+            }
+            return paths;
+        }
+        /**
+         * 将渲染用的 MarkPathItem[] 转换为接口入参格式 StrokeCreateSource[]
+         *
+         * 字段映射：path → xpath，start → start_offset，end → end_offset
+         * 图片类型的偏移量固定为 0
+         */
+        convertToApiSource(paths) {
+            return paths.map((p) => ({
+                type: p.type,
+                xpath: p.path,
+                start_offset: p.start ?? 0,
+                end_offset: p.end ?? 0
+            }));
+        }
+        /**
+         * 从已解析的选区节点信息构建 select_content
+         *
+         * 构建逻辑参考 DwebArticleSelection.handleMouseUp 对 list 的遍历：
+         * - 相邻文本项合并（去除换行）
+         * - 图片独立一项
+         */
+        buildSelectContent(selectionInfo) {
+            const result = [];
+            for (const item of selectionInfo) {
+                if (item.type === 'text') {
+                    const rawText = (item.node.textContent || '').slice(item.startOffset, item.endOffset);
+                    const text = rawText.replace(/\n/g, '');
+                    const last = result[result.length - 1];
+                    if (last?.type === 'text') {
+                        // 与 DwebArticleSelection 一致：相邻文本合并
+                        last.text += text;
+                    }
+                    else {
+                        result.push({ type: 'text', text, src: '' });
+                    }
+                }
+                else if (item.type === 'image') {
+                    result.push({ type: 'image', text: '', src: item.element.src });
+                }
+            }
+            return result;
+        }
+        /**
+         * 从 Range 获取选区信息（文本节点 + 图片列表）
+         */
+        getSelectionInfoFromRange(range) {
+            const result = [];
+            const isFullyInRange = (node) => {
+                const nr = document.createRange();
+                nr.selectNodeContents(node);
+                return (range.compareBoundaryPoints(Range.START_TO_START, nr) <= 0 &&
+                    range.compareBoundaryPoints(Range.END_TO_END, nr) >= 0);
+            };
+            const partiallyInRange = (node) => range.intersectsNode(node);
+            const processNode = (node) => {
+                if (node.nodeType === Node.TEXT_NODE && (node.textContent?.trim() || '').length > 0) {
+                    if (!partiallyInRange(node))
+                        return;
+                    let startOffset = node === range.startContainer ? range.startOffset : 0;
+                    let endOffset = node === range.endContainer ? range.endOffset : node.length;
+                    startOffset = Math.max(0, Math.min(startOffset, node.length));
+                    endOffset = Math.max(startOffset, Math.min(endOffset, node.length));
+                    if (endOffset > startOffset) {
+                        result.push({ type: 'text', node, startOffset, endOffset });
+                    }
+                }
+                else if (node.nodeType === Node.ELEMENT_NODE) {
+                    const el = node;
+                    if (el.tagName === 'IMG' && isFullyInRange(el)) {
+                        result.push({ type: 'image', element: el });
+                    }
+                    if (partiallyInRange(el)) {
+                        for (const child of Array.from(el.childNodes))
+                            processNode(child);
+                    }
+                }
+            };
+            processNode(range.commonAncestorContainer);
+            return result;
+        }
+        /**
+         * 从 Range 中提取 approx 信息，同时返回渲染格式和接口格式
+         *
+         * - approx：供 MarkItemInfo 内部使用（含 raw_text）
+         * - approxCreate：供 /v1/mark/create 接口使用（含 position_start / position_end）
+         *
+         * position_start = 容器起点到选区起点的完整文本长度
+         * position_end   = position_start + exact.length
+         */
+        parseApproxFromRange(range) {
+            const exact = getRangeTextWithNewlines(range);
+            const prefixRange = document.createRange();
+            prefixRange.setStart(this.container, 0);
+            prefixRange.setEnd(range.startContainer, range.startOffset);
+            const fullPrefix = getRangeTextWithNewlines(prefixRange);
+            const prefix = fullPrefix.slice(-50);
+            const suffixRange = document.createRange();
+            suffixRange.setStart(range.endContainer, range.endOffset);
+            if (this.container.lastChild) {
+                suffixRange.setEndAfter(this.container.lastChild);
+            }
+            const fullSuffix = getRangeTextWithNewlines(suffixRange);
+            const suffix = fullSuffix.slice(0, 50);
+            const position_start = fullPrefix.length;
+            const position_end = position_start + exact.length;
+            return {
+                approx: { exact, prefix, suffix, raw_text: exact },
+                approxCreate: { exact, prefix, suffix, position_start, position_end }
+            };
         }
         /**
          * 检查两个 source 是否相同
@@ -1857,8 +2117,6 @@ var SlaxReaderWebBridgeExports = (function (exports) {
          * 渲染单个 MarkItemInfo
          */
         drawSingleMarkItem(info) {
-            console.log('drawSingleMarkItem')
-            console.log(info)
             const hasStroke = info.stroke.length > 0;
             const hasComment = info.comments.length > 0;
             const userId = info.stroke.length > 0 ? info.stroke[0].userId : info.comments[0]?.userId;
@@ -2094,14 +2352,10 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             }
             try {
                 const markDetail = JSON.parse(markDetailJson);
-                console.log(`[WebView Bridge] drawMarks: start, mark_list.length=${markDetail.mark_list?.length ?? 0}, user_list keys=${Object.keys(markDetail.user_list ?? {}).length}`);
                 const result = this.markManager.drawMarks(markDetail);
-                const uuids = Object.keys(result);
-                console.log(`[WebView Bridge] drawMarks: done, rendered ${uuids.length} mark group(s), uuids=[${uuids.join(', ')}]`);
                 return JSON.stringify(result);
             }
             catch (error) {
-                console.error('[WebView Bridge] drawMarks: failed', error);
                 postToNativeBridge({ type: 'selectionError', error: `Failed to draw marks: ${error}` });
                 return JSON.stringify({});
             }
@@ -2117,6 +2371,60 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             }
             catch (error) {
                 postToNativeBridge({ type: 'selectionError', error: `Failed to remove mark by UUID: ${error}` });
+            }
+        }
+        /**
+         * 对当前选中区域执行划线处理（不调用后端 API，仅本地渲染）
+         *
+         * 读取 window.getSelection() → 解析路径和 approx → 构建 MarkItemInfo → 渲染划线标记
+         *
+         * 返回 JSON 字符串，结构如下（StrokeCreateData）：
+         * ```
+         * {
+         *   uuid: string              // 本地 UUID，用于 updateMarkIdByUuid 关联后端 mark_id
+         *   source: StrokeCreateSource[]        // /v1/mark/create 接口的 source 字段
+         *   select_content: StrokeCreateSelectContent[] // 接口的 select_content 字段
+         *   approx_source?: StrokeCreateApproxSource    // 接口的 approx_source 字段（含 position_start/position_end）
+         * }
+         * ```
+         *
+         * 选区无效时返回 null。
+         *
+         * @param userId 当前用户ID（可选，用于判断是否为自己的划线样式）
+         * @returns StrokeCreateData 的 JSON 字符串，或 null
+         */
+        strokeCurrentSelection(userId) {
+            if (!this.markManager) {
+                console.warn('[WebView Bridge] strokeCurrentSelection: selection monitoring not started');
+                return null;
+            }
+            try {
+                const result = this.markManager.strokeCurrentSelection(userId);
+                return result ? JSON.stringify(result) : null;
+            }
+            catch (error) {
+                postToNativeBridge({ type: 'selectionError', error: `Failed to stroke selection: ${error}` });
+                return null;
+            }
+        }
+        /**
+         * 通过 uuid 将后端返回的 mark_id 关联到本地 MarkItemInfo 的 stroke 记录
+         *
+         * 在调用 strokeCurrentSelection 拿到 uuid 后，等后端 API 返回 mark_id，
+         * 再调用此方法完成关联，以便后续删除/更新操作能找到正确的后端 ID。
+         *
+         * @param uuid strokeCurrentSelection 返回的 uuid
+         * @param markId 后端返回的 mark_id
+         * @param userId 用户ID（可选，用于精确匹配对应 stroke 条目）
+         */
+        updateMarkIdByUuid(uuid, markId, userId) {
+            if (!this.markManager)
+                return;
+            try {
+                this.markManager.updateMarkIdByUuid(uuid, markId, userId);
+            }
+            catch (error) {
+                postToNativeBridge({ type: 'selectionError', error: `Failed to update mark id by UUID: ${error}` });
             }
         }
         /**
