@@ -38,19 +38,15 @@ data class SelectionAction(
 object SelectionActionId {
     const val COPY = "copy"
     const val HIGHLIGHT = "highlight"
-    const val COMMENT = "comment"
-    const val CHAT = "chat"
 }
 
-/** 构建选中菜单的操作列表 */
+/** 构建选中菜单的操作列表（仅保留复制和划线） */
 @Composable
 fun rememberSelectionActions(): List<SelectionAction> {
     return remember {
         listOf(
             SelectionAction(SelectionActionId.COPY, "复制"),
             SelectionAction(SelectionActionId.HIGHLIGHT, "划线"),
-            SelectionAction(SelectionActionId.COMMENT, "评论"),
-            SelectionAction(SelectionActionId.CHAT, "Chat")
         )
     }
 }
@@ -66,7 +62,6 @@ fun rememberSelectionActions(): List<SelectionAction> {
 fun handleSelectionAction(
     actionId: String,
     webViewState: AppWebViewState,
-    onCommentRequest: (() -> Unit)? = null,
     onHighlightRequest: (() -> Unit)? = null,
 ) {
     when (actionId) {
@@ -77,12 +72,6 @@ fun handleSelectionAction(
         SelectionActionId.HIGHLIGHT -> {
             onHighlightRequest?.invoke()
         }
-        SelectionActionId.COMMENT -> {
-            onCommentRequest?.invoke()
-        }
-        SelectionActionId.CHAT -> {
-            // TODO: Chat 功能，后续实现
-        }
     }
 }
 
@@ -90,7 +79,7 @@ fun handleSelectionAction(
  * 文本选中时在选中区域附近显示的横向操作菜单
  *
  * 水平居中于界面，垂直方向根据选中位置动态定位。
- * 包含"复制"、"划线"、"评论"、"Chat"四个操作项，
+ * 包含"复制"、"划线"两个操作项，
  * 各项之间用竖分割线分隔，整体为圆角卡片样式。
  */
 @Composable

@@ -147,6 +147,16 @@ actual fun AppWebView(
                                     "textDeselected" -> {
                                         webState.dispatchEvent(WebViewEvent.TextDeselected)
                                     }
+
+                                    "markClicked" -> {
+                                        val markId = msg.markId
+                                        val text = msg.text
+                                        if (!markId.isNullOrBlank()) {
+                                            webState.dispatchEvent(
+                                                WebViewEvent.MarkClicked(markId, text ?: "")
+                                            )
+                                        }
+                                    }
                                 }
                             }
                     }

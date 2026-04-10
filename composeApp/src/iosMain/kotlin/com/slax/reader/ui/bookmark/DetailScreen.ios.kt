@@ -40,7 +40,8 @@ data class WebViewMessage(
     val timestamp: Long? = null,
 
     val text: String? = null,
-    val selectionY: Float? = null
+    val selectionY: Float? = null,
+    val markId: String? = null,
 )
 
 @Composable
@@ -199,11 +200,6 @@ actual fun DetailScreen(
                         handleSelectionAction(
                             actionId = actionId,
                             webViewState = webViewState,
-                            onCommentRequest = {
-                                // 隐藏选中菜单，显示评论面板
-                                selectionMenuState.value = false
-                                commentPanelState.value = true
-                            },
                             onHighlightRequest = {
                                 // 隐藏选中菜单，触发划线流程
                                 selectionMenuState.value = false
