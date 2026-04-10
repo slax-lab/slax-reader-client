@@ -21,6 +21,11 @@ import com.slax.reader.ui.bookmark.states.OutlineDelegate
 import com.slax.reader.ui.bookmark.states.OverlayDelegate
 import com.slax.reader.ui.bookmark.states.OverviewDelegate
 import com.slax.reader.utils.bookmarkEvent
+import com.slax.reader.data.network.dto.AddMarkParams
+import com.slax.reader.data.network.dto.MarkPathItem
+import com.slax.reader.data.network.dto.MarkType
+import com.slax.reader.data.network.dto.StrokeCreateData
+import com.slax.reader.utils.AppWebViewState
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.json.Json
@@ -294,6 +299,78 @@ class BookmarkDetailViewModel(
                         _effects.emit(BookmarkDetailEffect.DrawMarks(json))
                     }
                 }
+        }
+    }
+
+    /**
+     * 执行划线操作的完整链路：
+     * 1. 调用 JS Bridge strokeCurrentSelection 获取选区数据并在 WebView 中即时渲染
+     * 2. 将选区数据转换后调用后端 /v1/mark/create 创建划线记录
+     * 3. 用后端返回的 mark_id 通过 JS Bridge updateMarkIdByUuid 回补到本地
+     *
+     * @param webViewState 用于执行 JS Bridge 调用
+     */
+    fun strokeHighlight(webViewState: AppWebViewState) {
+        val bookmarkIdStr = _bookmarkId.value ?: return
+
+        // 调用 JS Bridge 获取选区数据（同时在前端渲染划线）
+        webViewState.evaluateJsWithCallback(
+            "window.SlaxWebViewBridge.strokeCurrentSelection()"
+        ) { resultJson ->
+            // JS 返回 null 或空字符串表示没有有效选区
+            if (resultJson.isNullOrBlank() || resultJson == "null") return@evaluateJsWithCallback
+
+            viewModelScope.launch(Dispatchers.IO) {
+                runCatching {
+                    // 解析 JS Bridge 返回的 StrokeCreateData
+                    // WebView 回调会对字符串值再包一层引号，需先解码外层字符串
+                    val actualJson = if (resultJson.startsWith("\"")) {
+                        Json.decodeFromString<String>(resultJson)
+                    } else {
+                        resultJson
+                    }
+                    val strokeData = Json.decodeFromString<StrokeCreateData>(actualJson)
+
+                    // 将 StrokeCreateSource 转换为 MarkPathItem（xpath → path 字段映射）
+                    val markSource = strokeData.source.map { src ->
+                        when (src.type) {
+                            "image" -> MarkPathItem.Image(path = src.xpath)
+                            else -> MarkPathItem.Text(
+                                path = src.xpath,
+                                start = src.start_offset,
+                                end = src.end_offset
+                            )
+                        }
+                    }
+
+                    // 将 StrokeCreateSelectContent 提取为纯文本列表
+                    val selectContent = strokeData.select_content.map { item ->
+                        when (item.type) {
+                            "image" -> item.src
+                            else -> item.text
+                        }
+                    }
+
+                    val params = AddMarkParams(
+                        bookmark_uid = bookmarkIdStr,
+                        type = MarkType.LINE,
+                        source = markSource,
+                        select_content = selectContent,
+                        approx_source = strokeData.approx_source,
+                    )
+
+                    // 调用后端创建划线
+                    val result = apiService.addBookmarkMark(params)
+                    val markId = result.data?.mark_id ?: return@launch
+
+                    // 用后端返回的 mark_id 回补到 JS Bridge 的本地数据
+                    webViewState.evaluateJs(
+                        "window.SlaxWebViewBridge.updateMarkIdByUuid('${strokeData.uuid}', $markId)"
+                    )
+                }.onFailure { error ->
+                    println("[划线] 创建失败: ${error.message}")
+                }
+            }
         }
     }
 
