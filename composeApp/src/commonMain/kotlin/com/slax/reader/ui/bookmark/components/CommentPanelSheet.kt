@@ -44,12 +44,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,6 +63,7 @@ import com.github.panpf.sketch.request.ComposableImageRequest
 import com.github.panpf.sketch.request.error
 import com.github.panpf.sketch.request.placeholder
 import com.slax.reader.utils.BridgeMarkCommentInfo
+import com.slax.reader.utils.BridgeMarkItemInfo
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.global_default_avatar
@@ -74,32 +80,53 @@ object CommentPanelActionId {
 }
 
 /**
+ * 划线/高亮文本的下划线样式
+ *
+ * 根据 mark 数据中 stroke 和 comments 的有无决定：
+ * - [SOLID]：有 stroke 数据 → 实线下划线
+ * - [DASHED]：无 stroke 但有 comment 数据 → 虚线下划线
+ * - [NONE]：两者都没有 → 无下划线
+ */
+private enum class HighlightUnderlineStyle {
+    NONE, SOLID, DASHED
+}
+
+/**
  * 划线评论面板底部弹窗
  *
  * 从底部弹出，顶部带20dp圆角，分为4个区域：
  * 1. header区域（关闭按钮）
- * 2. 划线内容显示区（文本 + 操作栏）
- * 3. 评论列表区域（动态高度，最大200dp，超出可滚动）
+ * 2. 划线内容显示区（文本 + 下划线 + 操作栏）
+ * 3. 评论列表区域（填充剩余空间，可滚动）
  * 4. 发表评论区域（输入框，紧贴底部安全区域）
  *
  * @param highlightedText 当前划线选中的文本内容
  * @param visible 面板的显示状态
+ * @param markItemInfo 当前选中的 mark 信息，内含 stroke 和 comments 数据
+ * @param userAvatarUrl 当前登录用户的头像 URL
  * @param onDismiss 关闭面板的回调
  * @param onActionClick 操作栏按钮点击回调，参数为 [CommentPanelActionId] 中定义的标识
- * @param commentListContent 评论列表区域的内容插槽，为空时高度为0
+ * @param commentListContent 评论列表区域的内容插槽，为空时使用默认评论列表
  * @param modifier 外部传入的Modifier
  */
 @Composable
 fun CommentPanelSheet(
     highlightedText: String,
     visible: Boolean,
-    comments: List<BridgeMarkCommentInfo> = emptyList(),
+    markItemInfo: BridgeMarkItemInfo? = null,
     userAvatarUrl: String? = null,
     onDismiss: () -> Unit,
     onActionClick: (actionId: String) -> Unit,
     commentListContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
+    // 从 markItemInfo 中提取评论列表和下划线样式
+    val comments = markItemInfo?.comments ?: emptyList()
+    val underlineStyle = when {
+        markItemInfo?.stroke?.isNotEmpty() == true -> HighlightUnderlineStyle.SOLID
+        markItemInfo?.comments?.isNotEmpty() == true -> HighlightUnderlineStyle.DASHED
+        else -> HighlightUnderlineStyle.NONE
+    }
     // 背景遮罩层，带淡入淡出动画
     AnimatedVisibility(
         visible = visible,
@@ -154,9 +181,10 @@ fun CommentPanelSheet(
                     // 区域1：Header
                     CommentPanelHeader(onDismiss = onDismiss)
 
-                    // 区域2：划线内容显示区（文本 + 操作栏）
+                    // 区域2：划线内容显示区（文本 + 下划线 + 操作栏）
                     HighlightedContentArea(
                         text = highlightedText,
+                        underlineStyle = underlineStyle,
                         onActionClick = onActionClick
                     )
 
@@ -211,25 +239,28 @@ private fun CommentPanelHeader(onDismiss: () -> Unit) {
 /**
  * 划线内容显示区
  *
- * 从上到下为：划线文本内容 → 操作栏（复制/划线/分享）
- * 文本左右边距20dp，字号15sp，颜色#FF333333，行高24dp，字重Regular
- * 操作栏与文本间距24dp，三个按钮水平居中，按钮间距40dp
+ * 从上到下为：划线文本内容（带下划线）→ 操作栏（复制/划线/分享）→ 底部间距
+ *
+ * 文本最多显示2行，超出省略号。根据 [underlineStyle] 在每行文字下方绘制：
+ * - SOLID：实线下划线，颜色 #CCB69AFF
+ * - DASHED：虚线下划线，颜色 #CCB69AFF
+ * - NONE：无下划线
+ *
+ * @param text 划线选中的文本
+ * @param underlineStyle 下划线样式
+ * @param onActionClick 操作栏点击回调
  */
 @Composable
 private fun HighlightedContentArea(
     text: String,
+    underlineStyle: HighlightUnderlineStyle = HighlightUnderlineStyle.NONE,
     onActionClick: (actionId: String) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth().background(Color(0xFFFCFCFC))) {
-        // 划线文本内容
-        Text(
+        // 划线文本内容（带自定义下划线）
+        HighlightedText(
             text = text,
-            style = TextStyle(
-                fontSize = 15.sp,
-                lineHeight = 24.sp,
-                fontWeight = FontWeight.Normal,
-                color = Color(0xFF333333)
-            ),
+            underlineStyle = underlineStyle,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
@@ -244,6 +275,65 @@ private fun HighlightedContentArea(
         // 底部 24dp 内间距
         Spacer(modifier = Modifier.height(24.dp))
     }
+}
+
+/**
+ * 带自定义下划线的高亮文本
+ *
+ * 最多显示2行，超出部分省略号。通过 [onTextLayout] 获取每行的位置信息，
+ * 使用 [drawBehind] 在文字下方绘制实线或虚线下划线。
+ *
+ * @param text 文本内容
+ * @param underlineStyle 下划线样式
+ * @param modifier 外部修饰符
+ */
+@Composable
+private fun HighlightedText(
+    text: String,
+    underlineStyle: HighlightUnderlineStyle,
+    modifier: Modifier = Modifier
+) {
+    // 下划线颜色
+    val underlineColor = Color(0xFFCCB69A)
+    // 虚线路径效果：10px 实线 + 6px 间隔
+    val dashPathEffect = remember { PathEffect.dashPathEffect(floatArrayOf(10f, 6f), 0f) }
+    // 保存文本布局结果
+    var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
+
+    Text(
+        text = text,
+        style = TextStyle(
+            fontSize = 15.sp,
+            lineHeight = 24.sp,
+            fontWeight = FontWeight.Normal,
+            color = Color(0xFF333333)
+        ),
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        onTextLayout = { textLayoutResult = it },
+        modifier = modifier.drawBehind {
+            val layout = textLayoutResult ?: return@drawBehind
+            if (underlineStyle == HighlightUnderlineStyle.NONE) return@drawBehind
+
+            val strokeWidth = 1.dp.toPx()
+            // 下划线绘制在每行文字底部偏下 2dp 的位置
+            val offsetY = 2.dp.toPx()
+
+            for (lineIndex in 0 until layout.lineCount) {
+                val lineLeft = layout.getLineLeft(lineIndex)
+                val lineRight = layout.getLineRight(lineIndex)
+                val lineBottom = layout.getLineBottom(lineIndex) + offsetY
+
+                drawLine(
+                    color = underlineColor,
+                    start = Offset(lineLeft, lineBottom),
+                    end = Offset(lineRight, lineBottom),
+                    strokeWidth = strokeWidth,
+                    pathEffect = if (underlineStyle == HighlightUnderlineStyle.DASHED) dashPathEffect else null
+                )
+            }
+        }
+    )
 }
 
 /**
@@ -320,13 +410,15 @@ private fun HighlightedActionButton(
         Icon(
             painter = painterResource(iconRes),
             contentDescription = contentDescription,
-            tint = Color.Unspecified
+            tint = Color.Unspecified,
+            modifier = Modifier.size(20.dp)
         )
         Text(
             text = label,
             style = TextStyle(
-                fontSize = 13.sp,
-                color = Color(0xFF333333),
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+                color = Color(0xCC333333),
                 fontWeight = FontWeight.Normal
             )
         )
