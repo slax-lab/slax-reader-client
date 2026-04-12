@@ -192,7 +192,7 @@ actual fun DetailScreen(
         val selectedMarkItemInfo by selectedMarkItemInfoState
         CommentPanelSheet(
             highlightedText = selectedText,
-            comments = selectedMarkItemInfo?.comments ?: emptyList(),
+            markItemInfo = selectedMarkItemInfo,
             userAvatarUrl = viewModel.userInfo.value?.picture,
             visible = commentPanelVisible,
             onDismiss = {
