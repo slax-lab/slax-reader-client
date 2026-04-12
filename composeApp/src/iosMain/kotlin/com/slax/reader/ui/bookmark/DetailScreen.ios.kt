@@ -222,6 +222,7 @@ actual fun DetailScreen(
         CommentPanelSheet(
             highlightedText = selectedText,
             comments = selectedMarkItemInfo?.comments ?: emptyList(),
+            userAvatarUrl = viewModel.userInfo.value?.picture,
             visible = commentPanelVisible,
             onDismiss = {
                 selectedMarkItemInfoState.value = null

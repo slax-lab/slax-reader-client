@@ -6,11 +6,14 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -33,18 +36,31 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.panpf.sketch.rememberAsyncImagePainter
+import com.github.panpf.sketch.request.ComposableImageRequest
+import com.github.panpf.sketch.request.error
+import com.github.panpf.sketch.request.placeholder
 import com.slax.reader.utils.BridgeMarkCommentInfo
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
+import slax_reader_client.composeapp.generated.resources.global_default_avatar
 import slax_reader_client.composeapp.generated.resources.ic_comment_panel_close
 import slax_reader_client.composeapp.generated.resources.ic_comment_panel_copy
 import slax_reader_client.composeapp.generated.resources.ic_comment_panel_highlighted
@@ -78,6 +94,7 @@ fun CommentPanelSheet(
     highlightedText: String,
     visible: Boolean,
     comments: List<BridgeMarkCommentInfo> = emptyList(),
+    userAvatarUrl: String? = null,
     onDismiss: () -> Unit,
     onActionClick: (actionId: String) -> Unit,
     commentListContent: (@Composable () -> Unit)? = null,
@@ -102,10 +119,13 @@ fun CommentPanelSheet(
     }
 
     // 底部弹窗主体，从下方滑入
-    Box(
+    BoxWithConstraints(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.BottomCenter
     ) {
+        // 弹窗最大高度 = 可用高度 - 80dp
+        val maxSheetHeight = maxHeight - 80.dp
+
         AnimatedVisibility(
             visible = visible,
             enter = slideInVertically(
@@ -123,7 +143,7 @@ fun CommentPanelSheet(
                 shadowElevation = 8.dp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .wrapContentHeight()
+                    .heightIn(max = maxSheetHeight)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
@@ -140,17 +160,18 @@ fun CommentPanelSheet(
                         onActionClick = onActionClick
                     )
 
-                    // 区域3：评论列表显示区（无内容时高度为0，有内容时自动增高，最大200dp）
+                    // 区域3：评论列表显示区（填充剩余空间，可滚动）
                     CommentListArea(
                         content = commentListContent ?: if (comments.isNotEmpty()) {
                             { DefaultCommentList(comments = comments) }
                         } else {
                             null
-                        }
+                        },
+                        modifier = Modifier.weight(1f, fill = false)
                     )
 
                     // 区域4：发表评论区域
-                    PostCommentArea()
+                    PostCommentArea(userAvatarUrl = userAvatarUrl)
                 }
             }
         }
@@ -168,7 +189,8 @@ private fun CommentPanelHeader(onDismiss: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .height(60.dp)
-            .padding(end = 20.dp),
+            .padding(end = 20.dp)
+            .background(Color(0xFFFCFCFC)),
         contentAlignment = Alignment.CenterEnd
     ) {
         Icon(
@@ -198,7 +220,7 @@ private fun HighlightedContentArea(
     text: String,
     onActionClick: (actionId: String) -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth().background(Color(0xFFFCFCFC))) {
         // 划线文本内容
         Text(
             text = text,
@@ -218,6 +240,9 @@ private fun HighlightedContentArea(
 
         // 划线内容操作栏
         HighlightedActionBar(onActionClick = onActionClick)
+
+        // 底部 24dp 内间距
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
@@ -263,6 +288,7 @@ private fun HighlightedActionBar(onActionClick: (actionId: String) -> Unit) {
 
 /**
  * 单个操作按钮：左icon + 右文本，icon与文本间距5dp
+ * 点击时通过降低透明度实现高亮反馈
  */
 @Composable
 private fun HighlightedActionButton(
@@ -271,14 +297,25 @@ private fun HighlightedActionButton(
     contentDescription: String,
     onClick: () -> Unit
 ) {
+    var isPressed by remember { mutableStateOf(false) }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(5.dp),
-        modifier = Modifier.clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = null,
-            onClick = onClick
-        )
+        modifier = Modifier
+            .alpha(if (isPressed) 0.5f else 1f)
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        isPressed = true
+                        try {
+                            awaitRelease()
+                        } finally {
+                            isPressed = false
+                        }
+                    },
+                    onTap = { onClick() }
+                )
+            }
     ) {
         Icon(
             painter = painterResource(iconRes),
@@ -296,55 +333,63 @@ private fun HighlightedActionButton(
     }
 }
 
+/** 评论列表中通用的元信息文字样式：#FF999999，12sp，行高16.5dp */
+private val commentMetaTextStyle = TextStyle(
+    fontSize = 12.sp,
+    color = Color(0xFF999999),
+    fontWeight = FontWeight.Normal,
+    lineHeight = 16.5.sp
+)
+
+/** 评论内容文字样式：#FF0F1419，15sp，行高24dp */
+private val commentBodyTextStyle = TextStyle(
+    fontSize = 15.sp,
+    color = Color(0xFF0F1419),
+    fontWeight = FontWeight.Normal,
+    lineHeight = 24.sp
+)
+
+/**
+ * 评论列表默认实现
+ *
+ * 承载父级评论单元格的纵向列表
+ */
 @Composable
 private fun DefaultCommentList(comments: List<BridgeMarkCommentInfo>) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         comments.forEach { comment ->
-            CommentItem(comment = comment, depth = 0)
+            CommentCell(comment = comment)
         }
     }
 }
 
+/**
+ * 评论单元格
+ *
+ * 左右各 20dp 内间距，上方 20dp 间距（无下方间距）。
+ * 从上到下由：评论头部、评论内容、子评论列表 三部分组成。
+ *
+ * @param comment 评论数据
+ */
 @Composable
-private fun CommentItem(comment: BridgeMarkCommentInfo, depth: Int) {
+private fun CommentCell(comment: BridgeMarkCommentInfo) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = (depth * 12).dp)
+            .padding(start = 20.dp, top = 20.dp, end = 20.dp)
     ) {
-        Text(
-            text = comment.username.ifBlank { "未知用户" },
-            style = TextStyle(
-                fontSize = 13.sp,
-                color = Color(0xFF111111),
-                fontWeight = FontWeight.Medium,
-                lineHeight = 18.sp
-            )
-        )
+        // 评论头部模块
+        CommentItemHeader(comment = comment)
 
-        Spacer(modifier = Modifier.height(4.dp))
+        // 评论内容模块（距头部 8dp，左侧 28dp 内间距）
+        Spacer(modifier = Modifier.height(8.dp))
+        CommentItemBody(comment = comment)
 
-        val replyPrefix = comment.reply?.username?.takeIf { it.isNotBlank() }?.let { "回复 @$it：" } ?: ""
-        Text(
-            text = if (comment.isDeleted) "该评论已删除" else replyPrefix + comment.comment,
-            style = TextStyle(
-                fontSize = 14.sp,
-                color = Color(0xFF333333),
-                fontWeight = FontWeight.Normal,
-                lineHeight = 20.sp
-            )
-        )
-
+        // 子评论列表模块（左侧 28dp 内间距，每个子评论上方 16dp 间距）
         if (comment.children.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(modifier = Modifier.padding(start = 28.dp)) {
                 comment.children.forEach { child ->
-                    CommentItem(comment = child, depth = depth + 1)
+                    ChildCommentCell(comment = child)
                 }
             }
         }
@@ -352,24 +397,200 @@ private fun CommentItem(comment: BridgeMarkCommentInfo, depth: Int) {
 }
 
 /**
- * 评论列表显示区域
+ * 子评论单元格
  *
- * 无内容时高度为0，有内容时自动撑高，最大高度200dp，超出后可滚动查看
+ * 上方 16dp 间距。与父评论共享相同的头部和内容布局。
  */
 @Composable
-private fun CommentListArea(content: (@Composable () -> Unit)?) {
-    if (content == null) return
-
-    // 最大高度200dp，超出后可通过滚动查看
-    val scrollState = rememberScrollState()
-    Box(
+private fun ChildCommentCell(comment: BridgeMarkCommentInfo) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(max = 200.dp)
-            .verticalScroll(scrollState)
+            .padding(top = 16.dp)
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            content()
+        // 子评论头部
+        CommentItemHeader(comment = comment)
+
+        // 子评论内容（距头部 8dp，左侧 28dp 内间距）
+        Spacer(modifier = Modifier.height(8.dp))
+        CommentItemBody(comment = comment)
+    }
+}
+
+/**
+ * 评论头部模块
+ *
+ * 左侧依次为：圆形头像(20dp) → 间距8dp → 名字 → 间距6dp → 竖分割线(9x0.5dp) → 间距6dp → 日期
+ * 右侧为回复按钮。所有内容垂直居中。
+ */
+@Composable
+private fun CommentItemHeader(comment: BridgeMarkCommentInfo) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // 圆形头像 20dp
+        val avatarPainter = rememberAsyncImagePainter(
+            request = ComposableImageRequest(comment.avatar.ifBlank { null }) {
+                placeholder(Res.drawable.global_default_avatar)
+                error(Res.drawable.global_default_avatar)
+            }
+        )
+        Image(
+            painter = avatarPainter,
+            contentDescription = "用户头像",
+            modifier = Modifier
+                .size(20.dp)
+                .clip(CircleShape),
+            contentScale = ContentScale.Crop
+        )
+
+        // 头像与名字间距 8dp
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // 名字
+        Text(
+            text = comment.username.ifBlank { "未知用户" },
+            style = commentMetaTextStyle,
+            maxLines = 1
+        )
+
+        // 名字与分割线间距 6dp
+        Spacer(modifier = Modifier.width(6.dp))
+
+        // 竖分割线：高9dp，宽0.5dp，背景 #FFD8D8D8
+        Box(
+            modifier = Modifier
+                .height(9.dp)
+                .width(0.5.dp)
+                .background(Color(0xFFD8D8D8))
+        )
+
+        // 分割线与日期间距 6dp
+        Spacer(modifier = Modifier.width(6.dp))
+
+        // 日期（格式 YY-MM-DD HH:mm）
+        Text(
+            text = formatCommentDate(comment.createdAt),
+            style = commentMetaTextStyle,
+            maxLines = 1
+        )
+
+        // 占满剩余空间，将回复按钮推到右侧
+        Spacer(modifier = Modifier.weight(1f))
+
+        // 回复按钮（按下时降低透明度实现高亮）
+        var isReplyPressed by remember { mutableStateOf(false) }
+        Text(
+            text = "回复",
+            style = commentMetaTextStyle,
+            maxLines = 1,
+            modifier = Modifier
+                .alpha(if (isReplyPressed) 0.5f else 1f)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onPress = {
+                            isReplyPressed = true
+                            try {
+                                awaitRelease()
+                            } finally {
+                                isReplyPressed = false
+                            }
+                        },
+                        onTap = { /* 后续接入回复逻辑 */ }
+                    )
+                }
+        )
+    }
+}
+
+/**
+ * 评论内容模块
+ *
+ * 左侧 28dp 内间距（与头像对齐），字号15sp，行高24dp，颜色 #FF0F1419
+ */
+@Composable
+private fun CommentItemBody(comment: BridgeMarkCommentInfo) {
+    Text(
+        text = if (comment.isDeleted) "该评论已删除" else comment.comment,
+        style = commentBodyTextStyle,
+        modifier = Modifier.padding(start = 28.dp)
+    )
+}
+
+/**
+ * 将评论时间字符串格式化为 YY-MM-DD HH:mm
+ *
+ * 支持 ISO 8601 等常见格式，无法解析时原样返回。
+ */
+private fun formatCommentDate(raw: String): String {
+    if (raw.isBlank()) return ""
+    return try {
+        // 常见格式：2024-03-15T10:30:00Z 或 2024-03-15 10:30:00
+        val cleaned = raw.replace("T", " ").replace("Z", "").trim()
+        // 至少需要 "YYYY-MM-DD HH:mm" 共 16 个字符
+        if (cleaned.length >= 16) {
+            val year = cleaned.substring(2, 4)   // YY
+            val month = cleaned.substring(5, 7)  // MM
+            val day = cleaned.substring(8, 10)    // DD
+            val hour = cleaned.substring(11, 13)  // HH
+            val minute = cleaned.substring(14, 16) // mm
+            "$year-$month-$day $hour:$minute"
+        } else if (cleaned.length >= 10) {
+            // 只有日期部分
+            val year = cleaned.substring(2, 4)
+            val month = cleaned.substring(5, 7)
+            val day = cleaned.substring(8, 10)
+            "$year-$month-$day"
+        } else {
+            raw
+        }
+    } catch (_: Exception) {
+        raw
+    }
+}
+
+/**
+ * 评论列表显示区域
+ *
+ * 顶部带 0.5dp 分割线（颜色 #14333333），底部 52dp 内间距。
+ * 无内容时高度为0，有内容时自动撑高，受外部 modifier（weight）约束最大高度，超出后可滚动查看。
+ *
+ * @param content 评论列表内容插槽
+ * @param modifier 外部传入的 Modifier，用于控制高度（如 weight）
+ */
+@Composable
+private fun CommentListArea(
+    content: (@Composable () -> Unit)?,
+    modifier: Modifier = Modifier
+) {
+    if (content == null) return
+
+    val scrollState = rememberScrollState()
+    Column(
+        modifier = modifier.fillMaxWidth()
+    ) {
+        // 顶部分割线：高 0.5dp，颜色 #14333333（8%透明度的深灰）
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(0.5.dp)
+                .background(Color(0x14333333))
+        )
+
+        // 可滚动评论内容
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f, fill = false)
+                .verticalScroll(scrollState)
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                content()
+
+                // 底部 52dp 内间距
+                Spacer(modifier = Modifier.height(52.dp))
+            }
         }
     }
 }
@@ -377,47 +598,57 @@ private fun CommentListArea(content: (@Composable () -> Unit)?) {
 /**
  * 发表评论区域
  *
- * 背景色 #F2F5F5F3，内部白色容器：上左右间距8dp，下方为底部安全区域
- * 白色容器：默认高度38dp，圆角8dp，左侧圆形头像（24dp），右侧高度自适应输入框
- * 输入框过高后可滚动查看，最大高度100dp
+ * 背景色 #FFF5F5F3，内部白色容器：上左右间距8dp，下方为 bottomInset + 8dp
+ *
+ * @param userAvatarUrl 当前登录用户的头像 URL
  */
 @Composable
-private fun PostCommentArea() {
-    // 获取设备底部安全区域
+private fun PostCommentArea(userAvatarUrl: String? = null) {
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color(0xFFF5F5F3))
-            .padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = bottomInset)
+            .padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = bottomInset + 8.dp)
     ) {
-        PostCommentInputContainer()
+        PostCommentInputContainer(userAvatarUrl = userAvatarUrl)
     }
 }
 
 /**
  * 发表评论输入容器
  *
- * 白色背景，圆角8dp，默认高度38dp（内容不足时）
- * 左侧圆形头像24dp，右侧输入框自适应高度，最大100dp
+ * 白色背景，圆角8dp，最小高度38dp。
+ * 左侧为当前用户圆形头像(24dp)，距顶部固定7dp（不垂直居中）。
+ * 右侧输入框自适应高度，最大100dp。
+ *
+ * @param userAvatarUrl 当前登录用户的头像 URL
  */
 @Composable
-private fun PostCommentInputContainer() {
+private fun PostCommentInputContainer(userAvatarUrl: String? = null) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 38.dp)
             .background(color = Color.White, shape = RoundedCornerShape(8.dp))
-            .padding(horizontal = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 8.dp)
     ) {
-        // 左侧圆形头像占位
-        Box(
+        // 左侧当前用户头像（距顶部固定 7dp，不垂直居中）
+        val avatarPainter = rememberAsyncImagePainter(
+            request = ComposableImageRequest(userAvatarUrl) {
+                placeholder(Res.drawable.global_default_avatar)
+                error(Res.drawable.global_default_avatar)
+            }
+        )
+        Image(
+            painter = avatarPainter,
+            contentDescription = "当前用户头像",
             modifier = Modifier
+                .padding(top = 7.dp)
                 .size(24.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFE0E0E0))
+                .clip(CircleShape),
+            contentScale = ContentScale.Crop
         )
 
         Spacer(modifier = Modifier.width(8.dp))
@@ -434,27 +665,25 @@ private fun PostCommentInputContainer() {
 /**
  * 评论输入框
  *
- * 默认展示占位文字，输入内容后高度自动撑高，超过最大高度后可滚动查看已输入内容
+ * 默认展示占位文字"发表评论"，输入内容后高度自动撑高。
+ * 键盘右下角显示确认键（ImeAction.Done）。
  */
 @Composable
 private fun PostCommentTextField(modifier: Modifier = Modifier) {
-    // 输入内容状态
-    val textState = androidx.compose.runtime.remember {
-        androidx.compose.runtime.mutableStateOf("")
-    }
+    var textValue by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
 
     androidx.compose.foundation.text.BasicTextField(
-        value = textState.value,
-        onValueChange = { textState.value = it },
+        value = textValue,
+        onValueChange = { textValue = it },
         textStyle = TextStyle(
             fontSize = 14.sp,
             color = Color(0xFF333333),
             lineHeight = 20.sp,
             fontWeight = FontWeight.Normal
         ),
-        modifier = modifier
-            .verticalScroll(scrollState),
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        modifier = modifier.verticalScroll(scrollState),
         decorationBox = { innerTextField ->
             Box(
                 modifier = Modifier
@@ -462,10 +691,9 @@ private fun PostCommentTextField(modifier: Modifier = Modifier) {
                     .padding(vertical = 9.dp),
                 contentAlignment = Alignment.CenterStart
             ) {
-                // 占位提示文字
-                if (textState.value.isEmpty()) {
+                if (textValue.isEmpty()) {
                     Text(
-                        text = "说点什么...",
+                        text = "发表评论",
                         style = TextStyle(
                             fontSize = 14.sp,
                             color = Color(0xFFBBBBBB),
