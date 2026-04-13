@@ -33,6 +33,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -78,6 +79,7 @@ import slax_reader_client.composeapp.generated.resources.ic_comment_panel_highli
 object CommentPanelActionId {
     const val COPY = "copy"
     const val HIGHLIGHT = "highlight"
+    const val REMOVE_HIGHLIGHT = "remove_highlight"
     const val SHARE = "share"
 }
 
@@ -105,6 +107,7 @@ private enum class HighlightUnderlineStyle {
  * @param highlightedText 当前划线选中的文本内容
  * @param visible 面板的显示状态
  * @param markItemInfo 当前选中的 mark 信息，内含 stroke 和 comments 数据
+ * @param highlightLoading 划线/删除划线操作是否正在进行中，为 true 时第二个按钮显示转圈
  * @param userAvatarUrl 当前登录用户的头像 URL
  * @param onDismiss 关闭面板的回调
  * @param onActionClick 操作栏按钮点击回调，参数为 [CommentPanelActionId] 中定义的标识
@@ -116,6 +119,7 @@ fun CommentPanelSheet(
     highlightedText: String,
     visible: Boolean,
     markItemInfo: BridgeMarkItemInfo? = null,
+    highlightLoading: Boolean = false,
     userAvatarUrl: String? = null,
     onDismiss: () -> Unit,
     onActionClick: (actionId: String) -> Unit,
@@ -124,8 +128,9 @@ fun CommentPanelSheet(
 ) {
     // 从 markItemInfo 中提取评论列表和下划线样式
     val comments = markItemInfo?.comments ?: emptyList()
+    val isStroked = markItemInfo?.stroke?.isNotEmpty() == true
     val underlineStyle = when {
-        markItemInfo?.stroke?.isNotEmpty() == true -> HighlightUnderlineStyle.SOLID
+        isStroked -> HighlightUnderlineStyle.SOLID
         markItemInfo?.comments?.isNotEmpty() == true -> HighlightUnderlineStyle.DASHED
         else -> HighlightUnderlineStyle.NONE
     }
@@ -187,6 +192,8 @@ fun CommentPanelSheet(
                     HighlightedContentArea(
                         text = highlightedText,
                         underlineStyle = underlineStyle,
+                        isStroked = isStroked,
+                        highlightLoading = highlightLoading,
                         onActionClick = onActionClick
                     )
 
@@ -241,7 +248,7 @@ private fun CommentPanelHeader(onDismiss: () -> Unit) {
 /**
  * 划线内容显示区
  *
- * 从上到下为：划线文本内容（带下划线）→ 操作栏（复制/划线/分享）→ 底部间距
+ * 从上到下为：划线文本内容（带下划线）→ 操作栏（复制/划线或删除划线）→ 底部间距
  *
  * 文本最多显示2行，超出省略号。根据 [underlineStyle] 在每行文字下方绘制：
  * - SOLID：实线下划线，颜色 #CCB69AFF
@@ -250,12 +257,16 @@ private fun CommentPanelHeader(onDismiss: () -> Unit) {
  *
  * @param text 划线选中的文本
  * @param underlineStyle 下划线样式
+ * @param isStroked 是否已划线，决定第二个按钮显示"划线"还是"删除划线"
+ * @param highlightLoading 划线/删除划线操作是否正在进行中
  * @param onActionClick 操作栏点击回调
  */
 @Composable
 private fun HighlightedContentArea(
     text: String,
     underlineStyle: HighlightUnderlineStyle = HighlightUnderlineStyle.NONE,
+    isStroked: Boolean = false,
+    highlightLoading: Boolean = false,
     onActionClick: (actionId: String) -> Unit
 ) {
     // 复制成功提示状态
@@ -277,6 +288,8 @@ private fun HighlightedContentArea(
 
             // 划线内容操作栏
             HighlightedActionBar(
+                isStroked = isStroked,
+                highlightLoading = highlightLoading,
                 onActionClick = { actionId ->
                     if (actionId == CommentPanelActionId.COPY) {
                         showCopyToast = true
@@ -360,13 +373,23 @@ private fun HighlightedText(
 /**
  * 划线内容操作栏
  *
- * 包含复制、划线两个按钮，整体水平+垂直居中，按钮间距40dp
- * 每个按钮：左icon + 右文本，icon与文本间距5dp
+ * 包含复制和划线/删除划线两个按钮，整体水平+垂直居中，按钮间距40dp。
+ * 第二个按钮根据 [isStroked] 状态切换：
+ * - 已划线时显示"删除划线"，点击触发 [CommentPanelActionId.REMOVE_HIGHLIGHT]
+ * - 未划线时显示"划线"，点击触发 [CommentPanelActionId.HIGHLIGHT]
  *
- * 注意：分享按钮暂时隐藏，后续再启用
+ * 当 [highlightLoading] 为 true 时，第二个按钮替换为加载转圈，禁止点击。
+ *
+ * @param isStroked 当前选中文本是否已划线
+ * @param highlightLoading 划线/删除划线操作是否正在进行中
+ * @param onActionClick 按钮点击回调
  */
 @Composable
-private fun HighlightedActionBar(onActionClick: (actionId: String) -> Unit) {
+private fun HighlightedActionBar(
+    isStroked: Boolean,
+    highlightLoading: Boolean = false,
+    onActionClick: (actionId: String) -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center,
@@ -381,12 +404,42 @@ private fun HighlightedActionBar(onActionClick: (actionId: String) -> Unit) {
 
         Spacer(modifier = Modifier.width(40.dp))
 
-        HighlightedActionButton(
-            iconRes = Res.drawable.ic_comment_panel_highlighted,
-            label = "划线",
-            contentDescription = "添加划线",
-            onClick = { onActionClick(CommentPanelActionId.HIGHLIGHT) }
-        )
+        if (highlightLoading) {
+            // 加载中：显示转圈指示器，尺寸与按钮图标一致
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(18.dp),
+                    color = Color(0xCC333333),
+                    strokeWidth = 2.dp,
+                )
+                Text(
+                    text = if (isStroked) "删除划线" else "划线",
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        color = Color(0x66333333),
+                        fontWeight = FontWeight.Normal
+                    )
+                )
+            }
+        } else if (isStroked) {
+            HighlightedActionButton(
+                iconRes = Res.drawable.ic_comment_panel_highlighted,
+                label = "删除划线",
+                contentDescription = "删除已有划线",
+                onClick = { onActionClick(CommentPanelActionId.REMOVE_HIGHLIGHT) }
+            )
+        } else {
+            HighlightedActionButton(
+                iconRes = Res.drawable.ic_comment_panel_highlighted,
+                label = "划线",
+                contentDescription = "添加划线",
+                onClick = { onActionClick(CommentPanelActionId.HIGHLIGHT) }
+            )
+        }
     }
 }
 
