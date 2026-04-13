@@ -19,8 +19,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.dropShadow
@@ -34,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.utils.AppWebViewState
 import com.slax.reader.utils.i18n
+import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
@@ -70,14 +74,18 @@ fun rememberSelectionActions(): List<SelectionAction> {
 /**
  * 处理选中菜单的操作点击
  *
+ * 任何操作执行后都会通过 [onDismiss] 隐藏菜单栏。
+ *
  * @param actionId 操作标识，见 [SelectionActionId]
  * @param webViewState WebView 状态，用于执行 JS 指令
+ * @param onDismiss 隐藏选中菜单栏的回调，所有操作执行后统一调用
  * @param onHighlightRequest 点击"划线"按钮时的回调，由调用方触发划线流程
  * @param onCommentRequest 点击"评论"按钮时的回调，由调用方显示评论面板
  */
 fun handleSelectionAction(
     actionId: String,
     webViewState: AppWebViewState,
+    onDismiss: () -> Unit,
     onHighlightRequest: (() -> Unit)? = null,
     onCommentRequest: (() -> Unit)? = null,
 ) {
@@ -93,6 +101,8 @@ fun handleSelectionAction(
             onCommentRequest?.invoke()
         }
     }
+    // 所有操作执行后统一隐藏菜单
+    onDismiss()
 }
 
 /**
@@ -188,5 +198,51 @@ private fun SelectionActionItem(
                 )
             )
         }
+    }
+}
+
+/**
+ * 复制成功 Toast 提示
+ *
+ * 深色背景圆角标签，白色文字"已复制"，1.5秒后自动消失。
+ * 通过 [visible] 控制显示，消失后回调 [onDismiss] 重置外部状态。
+ *
+ * @param visible 是否显示 Toast
+ * @param onDismiss Toast 消失后的回调，用于重置状态
+ * @param modifier 外部传入的 Modifier
+ */
+@Composable
+fun CopySuccessToast(
+    visible: Boolean,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LaunchedEffect(visible) {
+        if (visible) {
+            delay(1500L)
+            onDismiss()
+        }
+    }
+
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(animationSpec = tween(200)),
+        exit = fadeOut(animationSpec = tween(300)),
+        modifier = modifier
+    ) {
+        Text(
+            text = "已复制",
+            style = TextStyle(
+                fontSize = 13.sp,
+                color = Color.White,
+                fontWeight = FontWeight.Medium
+            ),
+            modifier = Modifier
+                .background(
+                    color = Color(0xFF333333),
+                    shape = RoundedCornerShape(6.dp)
+                )
+                .padding(horizontal = 16.dp, vertical = 6.dp)
+        )
     }
 }

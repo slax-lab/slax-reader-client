@@ -179,6 +179,9 @@ actual fun DetailScreen(
         val menuGapPx = with(density) { 32.dp.roundToPx() }
         val menuHeightPx = with(density) { 44.dp.roundToPx() }
 
+        // 复制成功 Toast 状态
+        var showCopyToast by remember { mutableStateOf(false) }
+
         val showMenu = selectionMenuVisible && selectionScreenPx > 0f && selectionScreenPx < containerHeightPx
 
         if (showMenu) {
@@ -201,21 +204,33 @@ actual fun DetailScreen(
                         handleSelectionAction(
                             actionId = actionId,
                             webViewState = webViewState,
-                            onHighlightRequest = {
-                                // 隐藏选中菜单，触发划线流程
+                            onDismiss = {
+                                // 隐藏选中菜单
                                 selectionMenuState.value = false
+                            },
+                            onHighlightRequest = {
+                                // 触发划线流程
                                 viewModel.strokeHighlight(webViewState)
                             },
                             onCommentRequest = {
-                                // 隐藏选中菜单，显示评论面板
-                                selectionMenuState.value = false
+                                // 显示评论面板
                                 commentPanelState.value = true
                             }
                         )
+                        if (actionId == SelectionActionId.COPY) {
+                            showCopyToast = true
+                        }
                     }
                 )
             }
         }
+
+        // 复制成功 Toast（独立于 Popup，菜单隐藏后仍可见）
+        CopySuccessToast(
+            visible = showCopyToast,
+            onDismiss = { showCopyToast = false },
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 120.dp)
+        )
 
         OutlineDialog()
 
