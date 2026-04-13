@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -692,19 +693,22 @@ private fun CommentListArea(
 /**
  * 发表评论区域
  *
- * 背景色 #FFF5F5F3，内部白色容器：上左右间距8dp，下方为 bottomInset + 8dp
+ * 背景色 #FFF5F5F3，内部白色容器：上左右间距8dp，下方为 bottomInset + 8dp。
+ * 键盘弹出时底部额外增加16dp间距，避免输入框紧贴键盘。
  *
  * @param userAvatarUrl 当前登录用户的头像 URL
  */
 @Composable
 private fun PostCommentArea(userAvatarUrl: String? = null) {
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+    val keyboardExtraPadding = if (imeBottom > 0.dp) 16.dp else 0.dp
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color(0xFFF5F5F3))
-            .padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = bottomInset + 8.dp)
+            .padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = bottomInset + 8.dp + keyboardExtraPadding)
     ) {
         PostCommentInputContainer(userAvatarUrl = userAvatarUrl)
     }
