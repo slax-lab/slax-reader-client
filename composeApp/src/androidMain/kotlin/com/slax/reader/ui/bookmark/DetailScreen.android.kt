@@ -147,8 +147,8 @@ actual fun DetailScreen(
         val commentPanelState = LocalCommentPanelVisible.current
         val density = LocalDensity.current
         val minTopPx = with(density) { 60.dp.roundToPx() }
-        val menuGapPx = with(density) { 8.dp.roundToPx() }
-        val menuHeightPx = with(density) { 38.dp.roundToPx() }
+        val menuGapPx = with(density) { 32.dp.roundToPx() }
+        val menuHeightPx = with(density) { 44.dp.roundToPx() }
 
         val showMenu = selectionMenuVisible && selectionYPx > 0f && selectionYPx < screenHeightPx
 
@@ -176,6 +176,11 @@ actual fun DetailScreen(
                                 // 隐藏选中菜单，触发划线流程
                                 selectionMenuState.value = false
                                 viewModel.strokeHighlight(webViewState)
+                            },
+                            onCommentRequest = {
+                                // 隐藏选中菜单，显示评论面板
+                                selectionMenuState.value = false
+                                commentPanelState.value = true
                             }
                         )
                     }
