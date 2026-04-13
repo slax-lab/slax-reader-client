@@ -4,6 +4,7 @@ slax-mark {
     color: inherit;
     position: relative;
     transition: color 250ms;
+    -webkit-tap-highlight-color: #ffd99933;
 }
 
 :root {
