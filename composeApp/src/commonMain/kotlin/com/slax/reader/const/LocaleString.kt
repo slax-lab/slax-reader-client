@@ -546,5 +546,21 @@ val localeString: Map<String, Map<String, String>> = mapOf(
     "subscription_required_btn_ok" to mapOf(
         "zh" to "我知道了",
         "en" to "Got it"
+    ),
+
+    // ========================================
+    // 文本选中操作菜单
+    // ========================================
+    "selection_action_copy" to mapOf(
+        "zh" to "复制",
+        "en" to "Copy"
+    ),
+    "selection_action_highlight" to mapOf(
+        "zh" to "划线",
+        "en" to "Highlight"
+    ),
+    "selection_action_comment" to mapOf(
+        "zh" to "评论",
+        "en" to "Comment"
     )
 )

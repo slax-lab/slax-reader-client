@@ -108,6 +108,11 @@ class BookmarkDetailViewModel(
 
     private var contentJob: Job? = null
 
+    /** 当前登录用户的 userId，用于 JS 侧判断划线归属 */
+    suspend fun getCurrentUserId(): String? {
+        return appPreferences.getAuthInfo().firstOrNull()?.userId
+    }
+
     val userInfo = userDao.watchUserInfo()
     val subscriptionInfo = subscriptionDao.watchSubscriptionInfo()
 
