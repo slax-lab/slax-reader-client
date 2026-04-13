@@ -73,7 +73,6 @@ import slax_reader_client.composeapp.generated.resources.global_default_avatar
 import slax_reader_client.composeapp.generated.resources.ic_comment_panel_close
 import slax_reader_client.composeapp.generated.resources.ic_comment_panel_copy
 import slax_reader_client.composeapp.generated.resources.ic_comment_panel_highlighted
-import slax_reader_client.composeapp.generated.resources.ic_comment_panel_share
 
 /** 评论面板操作按钮的标识 */
 object CommentPanelActionId {
@@ -259,24 +258,43 @@ private fun HighlightedContentArea(
     underlineStyle: HighlightUnderlineStyle = HighlightUnderlineStyle.NONE,
     onActionClick: (actionId: String) -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxWidth().background(Color(0xFFFCFCFC))) {
-        // 划线文本内容（带自定义下划线）
-        HighlightedText(
-            text = text,
-            underlineStyle = underlineStyle,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
+    // 复制成功提示状态
+    var showCopyToast by remember { mutableStateOf(false) }
+
+    Box(modifier = Modifier.fillMaxWidth().background(Color(0xFFFCFCFC))) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // 划线文本内容（带自定义下划线）
+            HighlightedText(
+                text = text,
+                underlineStyle = underlineStyle,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+            )
+
+            // 操作栏与文本的间距
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // 划线内容操作栏
+            HighlightedActionBar(
+                onActionClick = { actionId ->
+                    if (actionId == CommentPanelActionId.COPY) {
+                        showCopyToast = true
+                    }
+                    onActionClick(actionId)
+                }
+            )
+
+            // 底部 24dp 内间距
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        // 复制成功 Toast 提示
+        CopySuccessToast(
+            visible = showCopyToast,
+            onDismiss = { showCopyToast = false },
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp)
         )
-
-        // 操作栏与文本的间距
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // 划线内容操作栏
-        HighlightedActionBar(onActionClick = onActionClick)
-
-        // 底部 24dp 内间距
-        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
@@ -342,8 +360,10 @@ private fun HighlightedText(
 /**
  * 划线内容操作栏
  *
- * 包含复制、划线、分享三个按钮，整体水平+垂直居中，按钮间距40dp
+ * 包含复制、划线两个按钮，整体水平+垂直居中，按钮间距40dp
  * 每个按钮：左icon + 右文本，icon与文本间距5dp
+ *
+ * 注意：分享按钮暂时隐藏，后续再启用
  */
 @Composable
 private fun HighlightedActionBar(onActionClick: (actionId: String) -> Unit) {
@@ -366,15 +386,6 @@ private fun HighlightedActionBar(onActionClick: (actionId: String) -> Unit) {
             label = "划线",
             contentDescription = "添加划线",
             onClick = { onActionClick(CommentPanelActionId.HIGHLIGHT) }
-        )
-
-        Spacer(modifier = Modifier.width(40.dp))
-
-        HighlightedActionButton(
-            iconRes = Res.drawable.ic_comment_panel_share,
-            label = "分享",
-            contentDescription = "分享划线内容",
-            onClick = { onActionClick(CommentPanelActionId.SHARE) }
         )
     }
 }
