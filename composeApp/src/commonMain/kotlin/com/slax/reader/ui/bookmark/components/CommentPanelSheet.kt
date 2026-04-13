@@ -36,6 +36,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,6 +55,7 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
@@ -762,12 +764,21 @@ private fun PostCommentInputContainer(userAvatarUrl: String? = null) {
  */
 @Composable
 private fun PostCommentTextField(modifier: Modifier = Modifier) {
-    var textValue by remember { mutableStateOf("") }
+    var textFieldValue by remember { mutableStateOf(TextFieldValue()) }
     val scrollState = rememberScrollState()
 
+    // 仅当光标在文本末尾时，自动滚动到底部以跟随最新输入
+    LaunchedEffect(textFieldValue) {
+        if (textFieldValue.selection.collapsed &&
+            textFieldValue.selection.end == textFieldValue.text.length
+        ) {
+            scrollState.animateScrollTo(scrollState.maxValue)
+        }
+    }
+
     androidx.compose.foundation.text.BasicTextField(
-        value = textValue,
-        onValueChange = { textValue = it },
+        value = textFieldValue,
+        onValueChange = { textFieldValue = it },
         textStyle = TextStyle(
             fontSize = 14.sp,
             color = Color(0xFF333333),
@@ -783,7 +794,7 @@ private fun PostCommentTextField(modifier: Modifier = Modifier) {
                     .padding(vertical = 9.dp),
                 contentAlignment = Alignment.CenterStart
             ) {
-                if (textValue.isEmpty()) {
+                if (textFieldValue.text.isEmpty()) {
                     Text(
                         text = "发表评论",
                         style = TextStyle(
