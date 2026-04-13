@@ -54,11 +54,19 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -82,6 +90,20 @@ object CommentPanelActionId {
     const val REMOVE_HIGHLIGHT = "remove_highlight"
     const val SHARE = "share"
 }
+
+/**
+ * 回复目标信息
+ *
+ * 当用户点击某条评论的"回复"按钮时，记录被回复评论的关键信息。
+ * 用于在输入框前显示"回复 XXX："前缀，并在后续提交时指定 parent_id。
+ *
+ * @param markId 被回复评论的 markId，后续提交回复时作为 parent_id 使用
+ * @param username 被回复人的用户名，用于输入框前缀展示
+ */
+data class ReplyTarget(
+    val markId: Long,
+    val username: String,
+)
 
 /**
  * 划线/高亮文本的下划线样式
@@ -133,6 +155,16 @@ fun CommentPanelSheet(
         isStroked -> HighlightUnderlineStyle.SOLID
         markItemInfo?.comments?.isNotEmpty() == true -> HighlightUnderlineStyle.DASHED
         else -> HighlightUnderlineStyle.NONE
+    }
+
+    // 回复目标状态：点击评论的"回复"按钮后记录被回复人信息
+    var replyTarget by remember { mutableStateOf<ReplyTarget?>(null) }
+
+    // 面板关闭时自动清除回复状态
+    LaunchedEffect(visible) {
+        if (!visible) {
+            replyTarget = null
+        }
     }
     // 背景遮罩层，带淡入淡出动画
     AnimatedVisibility(
@@ -200,7 +232,17 @@ fun CommentPanelSheet(
                     // 区域3：评论列表显示区（填充剩余空间，可滚动）
                     CommentListArea(
                         content = commentListContent ?: if (comments.isNotEmpty()) {
-                            { DefaultCommentList(comments = comments) }
+                            {
+                                DefaultCommentList(
+                                    comments = comments,
+                                    onReplyClick = { comment ->
+                                        replyTarget = ReplyTarget(
+                                            markId = comment.markId,
+                                            username = comment.username.ifBlank { "未知用户" }
+                                        )
+                                    }
+                                )
+                            }
                         } else {
                             null
                         },
@@ -208,7 +250,11 @@ fun CommentPanelSheet(
                     )
 
                     // 区域4：发表评论区域
-                    PostCommentArea(userAvatarUrl = userAvatarUrl)
+                    PostCommentArea(
+                        userAvatarUrl = userAvatarUrl,
+                        replyTarget = replyTarget,
+                        onClearReplyTarget = { replyTarget = null }
+                    )
                 }
             }
         }
@@ -512,12 +558,18 @@ private val commentBodyTextStyle = TextStyle(
  * 评论列表默认实现
  *
  * 承载父级评论单元格的纵向列表
+ *
+ * @param comments 评论数据列表
+ * @param onReplyClick 点击回复按钮的回调，参数为被回复的评论
  */
 @Composable
-private fun DefaultCommentList(comments: List<BridgeMarkCommentInfo>) {
+private fun DefaultCommentList(
+    comments: List<BridgeMarkCommentInfo>,
+    onReplyClick: (BridgeMarkCommentInfo) -> Unit,
+) {
     Column(modifier = Modifier.fillMaxWidth()) {
         comments.forEach { comment ->
-            CommentCell(comment = comment)
+            CommentCell(comment = comment, onReplyClick = onReplyClick)
         }
     }
 }
@@ -529,16 +581,20 @@ private fun DefaultCommentList(comments: List<BridgeMarkCommentInfo>) {
  * 从上到下由：评论头部、评论内容、子评论列表 三部分组成。
  *
  * @param comment 评论数据
+ * @param onReplyClick 点击回复按钮的回调
  */
 @Composable
-private fun CommentCell(comment: BridgeMarkCommentInfo) {
+private fun CommentCell(
+    comment: BridgeMarkCommentInfo,
+    onReplyClick: (BridgeMarkCommentInfo) -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 20.dp, top = 20.dp, end = 20.dp)
     ) {
         // 评论头部模块
-        CommentItemHeader(comment = comment)
+        CommentItemHeader(comment = comment, onReplyClick = { onReplyClick(comment) })
 
         // 评论内容模块（距头部 8dp，左侧 28dp 内间距）
         Spacer(modifier = Modifier.height(8.dp))
@@ -548,7 +604,7 @@ private fun CommentCell(comment: BridgeMarkCommentInfo) {
         if (comment.children.isNotEmpty()) {
             Column(modifier = Modifier.padding(start = 28.dp)) {
                 comment.children.forEach { child ->
-                    ChildCommentCell(comment = child)
+                    ChildCommentCell(comment = child, onReplyClick = onReplyClick)
                 }
             }
         }
@@ -559,16 +615,22 @@ private fun CommentCell(comment: BridgeMarkCommentInfo) {
  * 子评论单元格
  *
  * 上方 16dp 间距。与父评论共享相同的头部和内容布局。
+ *
+ * @param comment 子评论数据
+ * @param onReplyClick 点击回复按钮的回调
  */
 @Composable
-private fun ChildCommentCell(comment: BridgeMarkCommentInfo) {
+private fun ChildCommentCell(
+    comment: BridgeMarkCommentInfo,
+    onReplyClick: (BridgeMarkCommentInfo) -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 16.dp)
     ) {
         // 子评论头部
-        CommentItemHeader(comment = comment)
+        CommentItemHeader(comment = comment, onReplyClick = { onReplyClick(comment) })
 
         // 子评论内容（距头部 8dp，左侧 28dp 内间距）
         Spacer(modifier = Modifier.height(8.dp))
@@ -581,9 +643,15 @@ private fun ChildCommentCell(comment: BridgeMarkCommentInfo) {
  *
  * 左侧依次为：圆形头像(20dp) → 间距8dp → 名字 → 间距6dp → 竖分割线(9x0.5dp) → 间距6dp → 日期
  * 右侧为回复按钮。所有内容垂直居中。
+ *
+ * @param comment 评论数据
+ * @param onReplyClick 点击回复按钮的回调
  */
 @Composable
-private fun CommentItemHeader(comment: BridgeMarkCommentInfo) {
+private fun CommentItemHeader(
+    comment: BridgeMarkCommentInfo,
+    onReplyClick: () -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -656,7 +724,7 @@ private fun CommentItemHeader(comment: BridgeMarkCommentInfo) {
                                 isReplyPressed = false
                             }
                         },
-                        onTap = { /* 后续接入回复逻辑 */ }
+                        onTap = { onReplyClick() }
                     )
                 }
         )
@@ -761,9 +829,15 @@ private fun CommentListArea(
  * 键盘弹出时底部额外增加16dp间距，避免输入框紧贴键盘。
  *
  * @param userAvatarUrl 当前登录用户的头像 URL
+ * @param replyTarget 当前回复目标，为 null 时表示普通评论模式
+ * @param onClearReplyTarget 清除回复目标的回调（退格删除前缀时触发）
  */
 @Composable
-private fun PostCommentArea(userAvatarUrl: String? = null) {
+private fun PostCommentArea(
+    userAvatarUrl: String? = null,
+    replyTarget: ReplyTarget? = null,
+    onClearReplyTarget: () -> Unit = {},
+) {
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
     val keyboardExtraPadding = if (imeBottom > 0.dp) 16.dp else 0.dp
@@ -774,7 +848,11 @@ private fun PostCommentArea(userAvatarUrl: String? = null) {
             .background(Color(0xFFF5F5F3))
             .padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = bottomInset + 8.dp + keyboardExtraPadding)
     ) {
-        PostCommentInputContainer(userAvatarUrl = userAvatarUrl)
+        PostCommentInputContainer(
+            userAvatarUrl = userAvatarUrl,
+            replyTarget = replyTarget,
+            onClearReplyTarget = onClearReplyTarget
+        )
     }
 }
 
@@ -786,9 +864,15 @@ private fun PostCommentArea(userAvatarUrl: String? = null) {
  * 右侧输入框自适应高度，最大100dp。
  *
  * @param userAvatarUrl 当前登录用户的头像 URL
+ * @param replyTarget 当前回复目标
+ * @param onClearReplyTarget 清除回复目标的回调
  */
 @Composable
-private fun PostCommentInputContainer(userAvatarUrl: String? = null) {
+private fun PostCommentInputContainer(
+    userAvatarUrl: String? = null,
+    replyTarget: ReplyTarget? = null,
+    onClearReplyTarget: () -> Unit = {},
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -817,6 +901,8 @@ private fun PostCommentInputContainer(userAvatarUrl: String? = null) {
 
         // 右侧输入框：自适应高度，最大100dp，超出可滚动
         PostCommentTextField(
+            replyTarget = replyTarget,
+            onClearReplyTarget = onClearReplyTarget,
             modifier = Modifier
                 .weight(1f)
                 .heightIn(min = 38.dp, max = 100.dp)
@@ -825,15 +911,51 @@ private fun PostCommentInputContainer(userAvatarUrl: String? = null) {
 }
 
 /**
+ * 回复模式下嵌入输入框的零宽空格哨兵字符
+ *
+ * 用途：当输入框处于回复模式时，始终在文本开头保持一个不可见的零宽空格。
+ * 这样即使用户看到的输入框是"空的"，实际文本值为 "\u200B" 而非 ""，
+ * 按退格键时会删除该哨兵字符，触发 onValueChange，从而被检测到并清除回复状态。
+ *
+ * 注意：后续提交评论时，需用 [String.replace] 剥离此字符以获取用户实际输入内容。
+ */
+private const val REPLY_SENTINEL = "\u200B"
+
+/**
  * 评论输入框
  *
  * 默认展示占位文字"发表评论"，输入内容后高度自动撑高。
  * 键盘右下角显示确认键（ImeAction.Done）。
+ *
+ * 回复模式下通过 [VisualTransformation] 在输入文字前内联渲染"回复 XXX："前缀：
+ * - 前缀嵌在文字流中，视觉上与用户输入的文字在同一行自然衔接
+ * - "回复"二字使用 #FF999999 颜色，"XXX："使用 #FF333333 颜色
+ * - 字号与输入框一致（14sp）
+ * - 前缀不可选中、不可编辑，读取 textFieldValue.text 时不包含前缀
+ * - 输入框为空时按退格键，通过 [REPLY_SENTINEL] 哨兵字符检测到退格操作并清除前缀
+ *
+ * @param replyTarget 当前回复目标，为 null 时显示普通评论模式
+ * @param onClearReplyTarget 清除回复目标的回调
+ * @param modifier 外部修饰符
  */
 @Composable
-private fun PostCommentTextField(modifier: Modifier = Modifier) {
+private fun PostCommentTextField(
+    replyTarget: ReplyTarget? = null,
+    onClearReplyTarget: () -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
     var textFieldValue by remember { mutableStateOf(TextFieldValue()) }
     val scrollState = rememberScrollState()
+
+    // 回复目标切换时重置输入内容
+    // 回复模式下插入零宽空格哨兵字符，使输入框"非空"，确保退格键能触发 onValueChange
+    LaunchedEffect(replyTarget) {
+        textFieldValue = if (replyTarget != null) {
+            TextFieldValue(REPLY_SENTINEL, selection = TextRange(REPLY_SENTINEL.length))
+        } else {
+            TextFieldValue()
+        }
+    }
 
     // 仅当光标在文本末尾时，自动滚动到底部以跟随最新输入
     LaunchedEffect(textFieldValue) {
@@ -844,16 +966,35 @@ private fun PostCommentTextField(modifier: Modifier = Modifier) {
         }
     }
 
+    val inputTextStyle = TextStyle(
+        fontSize = 14.sp,
+        color = Color(0xFF333333),
+        lineHeight = 20.sp,
+        fontWeight = FontWeight.Normal
+    )
+
+    // 回复模式下构造 VisualTransformation，在文字前方内联插入带颜色的前缀
+    val visualTransformation = remember(replyTarget) {
+        if (replyTarget != null) {
+            ReplyPrefixVisualTransformation(replyTarget.username)
+        } else {
+            VisualTransformation.None
+        }
+    }
+
     androidx.compose.foundation.text.BasicTextField(
         value = textFieldValue,
-        onValueChange = { textFieldValue = it },
-        textStyle = TextStyle(
-            fontSize = 14.sp,
-            color = Color(0xFF333333),
-            lineHeight = 20.sp,
-            fontWeight = FontWeight.Normal
-        ),
+        onValueChange = { newValue ->
+            if (replyTarget != null && !newValue.text.contains(REPLY_SENTINEL)) {
+                // 哨兵字符被删除 → 用户在"空"输入框按了退格键 → 清除回复前缀
+                onClearReplyTarget()
+            } else {
+                textFieldValue = newValue
+            }
+        },
+        textStyle = inputTextStyle,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        visualTransformation = visualTransformation,
         modifier = modifier.verticalScroll(scrollState),
         decorationBox = { innerTextField ->
             Box(
@@ -862,7 +1003,8 @@ private fun PostCommentTextField(modifier: Modifier = Modifier) {
                     .padding(vertical = 9.dp),
                 contentAlignment = Alignment.CenterStart
             ) {
-                if (textFieldValue.text.isEmpty()) {
+                // 占位文字：无回复目标且文本为空时显示"发表评论"
+                if (textFieldValue.text.isEmpty() && replyTarget == null) {
                     Text(
                         text = "发表评论",
                         style = TextStyle(
@@ -877,4 +1019,47 @@ private fun PostCommentTextField(modifier: Modifier = Modifier) {
             }
         }
     )
+}
+
+/**
+ * 回复前缀视觉变换
+ *
+ * 通过 [VisualTransformation] 在输入文字前方内联插入"回复 XXX："前缀。
+ * 前缀仅存在于视觉渲染层，不影响实际文本值，光标无法移入前缀区域。
+ *
+ * 颜色方案：
+ * - "回复 "：#FF999999（灰色）
+ * - "XXX："：#FF333333（深色，与用户输入文字一致）
+ *
+ * @param username 被回复人的用户名
+ */
+private class ReplyPrefixVisualTransformation(
+    private val username: String,
+) : VisualTransformation {
+
+    private val prefixReply = "回复 "
+    private val prefixName = "${username}："
+    private val prefixLength = prefixReply.length + prefixName.length
+
+    override fun filter(text: AnnotatedString): TransformedText {
+        val transformed = buildAnnotatedString {
+            // "回复 " 灰色
+            withStyle(SpanStyle(color = Color(0xFF999999))) {
+                append(prefixReply)
+            }
+            // "XXX：" 深色
+            withStyle(SpanStyle(color = Color(0xFF333333))) {
+                append(prefixName)
+            }
+            // 用户实际输入的文字
+            append(text)
+        }
+
+        val offsetMapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int = offset + prefixLength
+            override fun transformedToOriginal(offset: Int): Int = (offset - prefixLength).coerceAtLeast(0)
+        }
+
+        return TransformedText(transformed, offsetMapping)
+    }
 }
