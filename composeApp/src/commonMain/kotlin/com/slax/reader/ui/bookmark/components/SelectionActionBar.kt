@@ -162,7 +162,7 @@ private fun SelectionActionItem(
     Surface(
         onClick = onClick,
         interactionSource = interactionSource,
-        color = if (isPressed) Color(0xFF0F1419) else Color.Transparent,
+        color = if (isPressed) Color(0xFF424242) else Color.Transparent,
         shape = RoundedCornerShape(6.dp)
     ) {
         Row(
