@@ -134,7 +134,7 @@ class ApiService(
         return post("/v1/mark/create", body = params)
     }
 
-    suspend fun removeBookmark(markId: Long): HttpData<Unit> {
+    suspend fun removeBookmark(markId: Long): HttpData<String> {
         return post(
             "/v1/mark/delete", body = mapOf(
                 "mark_id" to markId

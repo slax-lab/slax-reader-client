@@ -20,6 +20,7 @@ import com.slax.reader.utils.*
 import kotlinx.serialization.Serializable
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.max
+import platform.UIKit.UIPasteboard
 
 @Serializable
 data class WebViewMessage(
@@ -239,16 +240,51 @@ actual fun DetailScreen(
         val selectedText by LocalSelectedText.current
         val selectedMarkItemInfoState = LocalSelectedMarkItemInfo.current
         val selectedMarkItemInfo by selectedMarkItemInfoState
+        var highlightLoading by remember { mutableStateOf(false) }
         CommentPanelSheet(
             highlightedText = selectedText,
             markItemInfo = selectedMarkItemInfo,
+            highlightLoading = highlightLoading,
             userAvatarUrl = viewModel.userInfo.value?.picture,
             visible = commentPanelVisible,
             onDismiss = {
                 selectedMarkItemInfoState.value = null
                 commentPanelState.value = false
             },
-            onActionClick = { /* 后续实现各操作逻辑 */ }
+            onActionClick = { actionId ->
+                when (actionId) {
+                    CommentPanelActionId.COPY -> {
+                        // 将选中文本复制到系统剪贴板
+                        UIPasteboard.generalPasteboard.string = selectedText
+                    }
+                    CommentPanelActionId.HIGHLIGHT -> {
+                        // 为已有 mark 添加划线
+                        val markInfo = selectedMarkItemInfoState.value ?: return@CommentPanelSheet
+                        highlightLoading = true
+                        viewModel.addStrokeToMark(
+                            webViewState = webViewState,
+                            markItemInfo = markInfo,
+                            onComplete = { updatedInfo ->
+                                selectedMarkItemInfoState.value = updatedInfo
+                                highlightLoading = false
+                            }
+                        )
+                    }
+                    CommentPanelActionId.REMOVE_HIGHLIGHT -> {
+                        // 删除已有 mark 的划线
+                        val markInfo = selectedMarkItemInfoState.value ?: return@CommentPanelSheet
+                        highlightLoading = true
+                        viewModel.removeStrokeFromMark(
+                            webViewState = webViewState,
+                            markItemInfo = markInfo,
+                            onComplete = { updatedInfo ->
+                                selectedMarkItemInfoState.value = updatedInfo
+                                highlightLoading = false
+                            }
+                        )
+                    }
+                }
+            }
         )
     }
 

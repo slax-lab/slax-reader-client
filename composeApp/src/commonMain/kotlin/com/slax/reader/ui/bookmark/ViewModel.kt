@@ -26,6 +26,8 @@ import com.slax.reader.data.network.dto.MarkPathItem
 import com.slax.reader.data.network.dto.MarkType
 import com.slax.reader.data.network.dto.StrokeCreateData
 import com.slax.reader.utils.AppWebViewState
+import com.slax.reader.utils.BridgeMarkItemInfo
+import com.slax.reader.utils.BridgeMarkStrokeInfo
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.json.Json
@@ -374,6 +376,125 @@ class BookmarkDetailViewModel(
                     )
                 }.onFailure { error ->
                     println("[划线] 创建失败: ${error.message}")
+                }
+            }
+        }
+    }
+
+    /**
+     * 为已有 mark（通过 CommentPanelSheet 点击已有标记进入）添加划线。
+     *
+     * 与 [strokeHighlight] 不同的是，这里无需调用 strokeCurrentSelection 获取选区，
+     * 因为 markItemInfo 已包含完整的 source/approx 数据。流程为：
+     * 1. 调用 JS Bridge addStrokeByUuid 在前端渲染划线样式
+     * 2. 调用后端 /v1/mark/create 创建划线记录
+     * 3. 用后端返回的 mark_id 通过 JS Bridge updateMarkIdByUuid 回补到本地
+     *
+     * @param webViewState 用于执行 JS Bridge 调用
+     * @param markItemInfo 当前选中的 mark 信息
+     * @param onComplete 操作完成回调，参数为更新后的 markItemInfo（新增了当前用户的 stroke）
+     */
+    fun addStrokeToMark(
+        webViewState: AppWebViewState,
+        markItemInfo: BridgeMarkItemInfo,
+        onComplete: (BridgeMarkItemInfo) -> Unit,
+    ) {
+        val bookmarkIdStr = _bookmarkId.value ?: return
+
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val currentUserId = getCurrentUserId()?.toLongOrNull() ?: 0L
+
+                // 1. 调用 JS Bridge 在前端渲染划线样式
+                webViewState.evaluateJs(
+                    "window.SlaxWebViewBridge.addStrokeByUuid('${markItemInfo.id}', $currentUserId)"
+                )
+
+                // 2. 将 markItemInfo 的 source 转换后调用后端创建划线
+                val selectContent = markItemInfo.approx?.raw_text?.let { listOf(it) }
+                    ?: listOf(markItemInfo.approx?.exact ?: "")
+
+                val params = AddMarkParams(
+                    bookmark_uid = bookmarkIdStr,
+                    type = MarkType.LINE,
+                    source = markItemInfo.source,
+                    select_content = selectContent,
+                    approx_source = markItemInfo.approx,
+                )
+
+                val result = apiService.addBookmarkMark(params)
+                val markId = result.data?.mark_id ?: return@launch
+
+                // 3. 用后端返回的 mark_id 回补到 JS Bridge 的本地数据
+                webViewState.evaluateJs(
+                    "window.SlaxWebViewBridge.updateMarkIdByUuid('${markItemInfo.id}', $markId)"
+                )
+
+                // 4. 更新 markItemInfo 并回调
+                val updatedInfo = markItemInfo.copy(
+                    stroke = markItemInfo.stroke + BridgeMarkStrokeInfo(
+                        markId = markId,
+                        userId = currentUserId,
+                    )
+                )
+                withContext(Dispatchers.Main) {
+                    onComplete(updatedInfo)
+                }
+            }.onFailure { error ->
+                println("[划线] 添加到已有 mark 失败: ${error.message}")
+                withContext(Dispatchers.Main) {
+                    onComplete(markItemInfo)
+                }
+            }
+        }
+    }
+
+    /**
+     * 删除已有 mark 的划线。
+     *
+     * 流程为：
+     * 1. 调用后端 /v1/mark/delete 删除划线记录
+     * 2. 调用 JS Bridge removeStrokeByUuid 从前端移除划线渲染
+     * 3. 更新 markItemInfo 并回调
+     *
+     * @param webViewState 用于执行 JS Bridge 调用
+     * @param markItemInfo 当前选中的 mark 信息
+     * @param onComplete 操作完成回调，参数为更新后的 markItemInfo（移除了当前用户的 stroke）
+     */
+    fun removeStrokeFromMark(
+        webViewState: AppWebViewState,
+        markItemInfo: BridgeMarkItemInfo,
+        onComplete: (BridgeMarkItemInfo) -> Unit,
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val currentUserId = getCurrentUserId()?.toLongOrNull() ?: 0L
+
+                // 找到当前用户的 stroke 记录，获取 markId 用于调用删除接口
+                val userStroke = markItemInfo.stroke.find { it.userId == currentUserId }
+                val markId = userStroke?.markId
+
+                // 1. 调用后端删除划线（markId 存在时）
+                if (markId != null) {
+                    apiService.removeBookmark(markId)
+                }
+
+                // 2. 调用 JS Bridge 移除前端渲染
+                webViewState.evaluateJs(
+                    "window.SlaxWebViewBridge.removeStrokeByUuid('${markItemInfo.id}', $currentUserId)"
+                )
+
+                // 3. 更新 markItemInfo 并回调
+                val updatedInfo = markItemInfo.copy(
+                    stroke = markItemInfo.stroke.filter { it.userId != currentUserId }
+                )
+                withContext(Dispatchers.Main) {
+                    onComplete(updatedInfo)
+                }
+            }.onFailure { error ->
+                println("[划线] 删除失败: ${error.message}")
+                withContext(Dispatchers.Main) {
+                    onComplete(markItemInfo)
                 }
             }
         }

@@ -125,7 +125,7 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
                 is WebViewEvent.PageLoaded -> {
                     // 启动划线选区监听（初始化 JS 侧的 markManager），再拉取并绘制划线数据
                     val currentUserId = viewModel.getCurrentUserId() ?: ""
-                    webViewState.evaluateJs("window.SlaxWebViewBridge.startSelectionMonitoring('body', '$currentUserId')")
+                    webViewState.evaluateJs("window.SlaxWebViewBridge.startSelectionMonitoring('body', ${currentUserId.toLongOrNull()})")
                     viewModel.loadAndDrawMarks()
                 }
                 is WebViewEvent.MarkClicked -> {
