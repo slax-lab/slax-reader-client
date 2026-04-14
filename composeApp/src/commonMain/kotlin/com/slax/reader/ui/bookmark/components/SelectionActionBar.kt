@@ -56,16 +56,25 @@ data class SelectionAction(
 object SelectionActionId {
     const val COPY = "copy"
     const val HIGHLIGHT = "highlight"
+    const val REMOVE_HIGHLIGHT = "remove_highlight"
     const val COMMENT = "comment"
 }
 
-/** 构建选中菜单的操作列表（复制、划线、评论） */
+/**
+ * 构建选中菜单的操作列表（复制、划线/删除划线、评论）
+ *
+ * @param hasStroke 当前选区是否已有当前用户的划线，为 true 时显示"删除划线"
+ */
 @Composable
-fun rememberSelectionActions(): List<SelectionAction> {
-    return remember {
+fun rememberSelectionActions(hasStroke: Boolean = false): List<SelectionAction> {
+    return remember(hasStroke) {
         listOf(
             SelectionAction(SelectionActionId.COPY, "selection_action_copy".i18n(), Res.drawable.ic_menu_action_copy),
-            SelectionAction(SelectionActionId.HIGHLIGHT, "selection_action_highlight".i18n(), Res.drawable.ic_menu_action_highlight),
+            if (hasStroke) {
+                SelectionAction(SelectionActionId.REMOVE_HIGHLIGHT, "selection_action_remove_highlight".i18n(), Res.drawable.ic_menu_action_highlight)
+            } else {
+                SelectionAction(SelectionActionId.HIGHLIGHT, "selection_action_highlight".i18n(), Res.drawable.ic_menu_action_highlight)
+            },
             SelectionAction(SelectionActionId.COMMENT, "selection_action_comment".i18n(), Res.drawable.ic_menu_action_comment),
         )
     }
@@ -80,6 +89,7 @@ fun rememberSelectionActions(): List<SelectionAction> {
  * @param webViewState WebView 状态，用于执行 JS 指令
  * @param onDismiss 隐藏选中菜单栏的回调，所有操作执行后统一调用
  * @param onHighlightRequest 点击"划线"按钮时的回调，由调用方触发划线流程
+ * @param onRemoveHighlightRequest 点击"删除划线"按钮时的回调，由调用方触发删除划线流程
  * @param onCommentRequest 点击"评论"按钮时的回调，由调用方显示评论面板
  */
 fun handleSelectionAction(
@@ -87,6 +97,7 @@ fun handleSelectionAction(
     webViewState: AppWebViewState,
     onDismiss: () -> Unit,
     onHighlightRequest: (() -> Unit)? = null,
+    onRemoveHighlightRequest: (() -> Unit)? = null,
     onCommentRequest: (() -> Unit)? = null,
 ) {
     when (actionId) {
@@ -96,6 +107,9 @@ fun handleSelectionAction(
         }
         SelectionActionId.HIGHLIGHT -> {
             onHighlightRequest?.invoke()
+        }
+        SelectionActionId.REMOVE_HIGHLIGHT -> {
+            onRemoveHighlightRequest?.invoke()
         }
         SelectionActionId.COMMENT -> {
             onCommentRequest?.invoke()

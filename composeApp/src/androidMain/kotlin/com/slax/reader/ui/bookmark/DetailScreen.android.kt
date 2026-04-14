@@ -149,6 +149,8 @@ actual fun DetailScreen(
         // 提前在 @Composable 上下文中捕获 MutableState 引用，供非 @Composable lambda 使用
         val selectionMenuState = LocalSelectionMenuVisible.current
         val commentPanelState = LocalCommentPanelVisible.current
+        val selectedMarkItemInfoState = LocalSelectedMarkItemInfo.current
+        val selectedMarkItemInfo by selectedMarkItemInfoState
         val density = LocalDensity.current
         val minTopPx = with(density) { 60.dp.roundToPx() }
         val menuGapPx = with(density) { 32.dp.roundToPx() }
@@ -156,6 +158,9 @@ actual fun DetailScreen(
 
         // 复制成功 Toast 状态
         var showCopyToast by remember { mutableStateOf(false) }
+
+        // 当前选区是否命中已有划线（用于 SelectionActionBar 的"划线"/"删除划线"切换）
+        val selectionHasStroke = selectedMarkItemInfo?.stroke?.isNotEmpty() == true
 
         val showMenu = selectionMenuVisible && selectionYPx > 0f && selectionYPx < screenHeightPx
 
@@ -174,7 +179,7 @@ actual fun DetailScreen(
             ) {
                 SelectionActionBar(
                     visible = true,
-                    actions = rememberSelectionActions(),
+                    actions = rememberSelectionActions(hasStroke = selectionHasStroke),
                     onActionClick = { actionId ->
                         handleSelectionAction(
                             actionId = actionId,
@@ -184,8 +189,18 @@ actual fun DetailScreen(
                                 selectionMenuState.value = false
                             },
                             onHighlightRequest = {
-                                // 触发划线流程
                                 viewModel.strokeHighlight(webViewState)
+                            },
+                            onRemoveHighlightRequest = {
+                                // 删除已有 mark 的划线
+                                val markInfo = selectedMarkItemInfoState.value ?: return@handleSelectionAction
+                                viewModel.removeStrokeFromMark(
+                                    webViewState = webViewState,
+                                    markItemInfo = markInfo,
+                                    onComplete = { updatedInfo ->
+                                        selectedMarkItemInfoState.value = updatedInfo
+                                    }
+                                )
                             },
                             onCommentRequest = {
                                 // 显示评论面板
@@ -212,8 +227,6 @@ actual fun DetailScreen(
         // 评论面板
         val commentPanelVisible by commentPanelState
         val selectedText by LocalSelectedText.current
-        val selectedMarkItemInfoState = LocalSelectedMarkItemInfo.current
-        val selectedMarkItemInfo by selectedMarkItemInfoState
         val clipboard = LocalClipboard.current
         val coroutineScope = rememberCoroutineScope()
         var highlightLoading by remember { mutableStateOf(false) }

@@ -1141,10 +1141,12 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                 this.selectionChangeTimeout = setTimeout(() => {
                     const selection = window.getSelection();
                     if (!selection || selection.rangeCount === 0) {
+                        this.onSelectionClearedCallback?.();
                         return;
                     }
                     const range = selection.getRangeAt(0);
                     if (range.collapsed) {
+                        this.onSelectionClearedCallback?.();
                         return;
                     }
                     if (!this.container.contains(range.commonAncestorContainer)) {
@@ -1186,12 +1188,15 @@ var SlaxReaderWebBridgeExports = (function (exports) {
         }
         /**
          * 开始监听选择
+         * @param callback 选区变化时的回调
+         * @param onSelectionCleared 选区取消（collapsed 或清空）时的回调
          */
-        start(callback) {
+        start(callback, onSelectionCleared) {
             if (this.isMonitoring) {
                 return;
             }
             this.onSelectionCallback = callback;
+            this.onSelectionClearedCallback = onSelectionCleared;
             // 使用 selectionchange 事件（更适合 Android WebView）
             document.addEventListener('selectionchange', this.handleSelectionChange);
             // 保留 mouseup 和 touchend 作为备用（兼容性）
@@ -1215,6 +1220,7 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             this.container.removeEventListener('touchend', this.handleMouseUp);
             this.isMonitoring = false;
             this.onSelectionCallback = undefined;
+            this.onSelectionClearedCallback = undefined;
         }
         /**
          * 从 range 解析选择（不需要事件对象）
@@ -1650,10 +1656,51 @@ var SlaxReaderWebBridgeExports = (function (exports) {
      * 负责处理后端 MarkDetail 数据的预处理、分组和渲染
      */
     class MarkManager {
-        constructor(container, currentUserId, onMarkTap) {
+        /** 获取当前选中区域对应的 MarkItemInfo */
+        get currentMarkItemInfo() {
+            return this._currentMarkItemInfo;
+        }
+        constructor(container, currentUserId, onMarkTap, onSelectionMarkInfoChange) {
             this.markItemInfos = [];
+            /** 当前选中区域对应的 MarkItemInfo（选区存在时有值，取消选区后为 null） */
+            this._currentMarkItemInfo = null;
             this.container = container;
             this.renderer = new MarkRenderer(container, currentUserId, onMarkTap);
+            this.onSelectionMarkInfoChange = onSelectionMarkInfoChange;
+        }
+        /**
+         * 根据当前选区检测对应的 MarkItemInfo
+         *
+         * 解析选区的 paths，如果与已有的 MarkItemInfo 的 source 完全匹配，
+         * 则返回该 MarkItemInfo；否则创建一个临时包装的 MarkItemInfo。
+         * 同时更新 currentMarkItemInfo 并触发回调。
+         *
+         * @param paths 当前选区解析出的 MarkPathItem 数组
+         * @param approx 当前选区的近似匹配信息
+         */
+        detectSelectionMarkItemInfo(paths, approx) {
+            if (paths.length === 0)
+                return;
+            // 选区未变化时跳过，避免 selectionchange 事件重复触发导致回调被反复调用
+            if (this._currentMarkItemInfo && this.checkMarkSourceIsSame(this._currentMarkItemInfo.source, paths)) {
+                return;
+            }
+            const existing = this.markItemInfos.find((info) => this.checkMarkSourceIsSame(info.source, paths));
+            const markItemInfo = existing ?? {
+                id: '',
+                source: paths,
+                comments: [],
+                stroke: [],
+                approx
+            };
+            this._currentMarkItemInfo = markItemInfo;
+            this.onSelectionMarkInfoChange?.(markItemInfo);
+        }
+        /**
+         * 清除当前选区对应的 MarkItemInfo（取消选区时调用，不触发回调）
+         */
+        clearCurrentMarkItemInfo() {
+            this._currentMarkItemInfo = null;
         }
         /**
          * 绘制多个标记
@@ -2282,6 +2329,7 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             this.selectionContainer = null;
             this.markClickCleanup = null;
             this.onMarkTap = null;
+            this.onSelectionMarkInfoChange = null;
             this.postMessage = postToNativeBridge;
             this.getContentHeight = getContentHeight;
             this.scrollToAnchor = scrollToAnchor;
@@ -2366,10 +2414,23 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                 });
             };
             this.onMarkTap = onMarkTap;
+            /**
+             * 选区对应的 MarkItemInfo 变化时，通过 native bridge 通知原生端
+             */
+            const onSelectionMarkInfoChange = (markItemInfo) => {
+                console.log('[WebView Bridge] Selection MarkItemInfo changed:', markItemInfo);
+                postToNativeBridge({
+                    type: 'selectionMarkItemInfo',
+                    markItemInfo: JSON.stringify(markItemInfo)
+                });
+            };
+            this.onSelectionMarkInfoChange = onSelectionMarkInfoChange;
             this.markRenderer = new MarkRenderer(container, currentUserId, onMarkTap);
-            this.markManager = new MarkManager(container, currentUserId, onMarkTap);
+            this.markManager = new MarkManager(container, currentUserId, onMarkTap, onSelectionMarkInfoChange);
             this.selectionMonitor = new SelectionMonitor(container);
             this.selectionMonitor.start((data) => {
+                // 选区变化时，检测当前选区是否匹配已有的 MarkItemInfo
+                this.markManager?.detectSelectionMarkItemInfo(data.paths, data.approx);
                 const jsonData = JSON.stringify({
                     paths: data.paths,
                     approx: data.approx,
@@ -2392,6 +2453,9 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                     data: jsonData,
                     position: JSON.stringify(data.position)
                 });
+            }, () => {
+                // 选区取消时，清除当前选区对应的 MarkItemInfo（不触发回调）
+                this.markManager?.clearCurrentMarkItemInfo();
             });
             console.log(`[WebView Bridge] Selection monitoring started on: ${containerSelector}`);
         }
@@ -2410,6 +2474,7 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             this.selectionContainer = null;
             this.markRenderer = null;
             this.markManager = null;
+            this.onSelectionMarkInfoChange = null;
         }
         /**
          * 清除当前文本选择
@@ -2663,7 +2728,7 @@ var SlaxReaderWebBridgeExports = (function (exports) {
         setCurrentUserId(userId) {
             if (this.selectionContainer) {
                 this.markRenderer = new MarkRenderer(this.selectionContainer, userId, this.onMarkTap ?? undefined);
-                this.markManager = new MarkManager(this.selectionContainer, userId, this.onMarkTap ?? undefined);
+                this.markManager = new MarkManager(this.selectionContainer, userId, this.onMarkTap ?? undefined, this.onSelectionMarkInfoChange ?? undefined);
             }
         }
     }

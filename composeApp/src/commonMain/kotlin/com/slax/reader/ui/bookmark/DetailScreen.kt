@@ -119,8 +119,12 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
                 }
                 is WebViewEvent.TextDeselected -> {
                     selectionMenuVisible.value = false
-                    selectedText.value = ""
                     selectionYPx.floatValue = 0f
+                    // 评论面板打开时不清空文本和 markItemInfo，避免面板中的 highlightedText 消失
+                    if (!commentPanelVisible.value) {
+                        selectedText.value = ""
+                        selectedMarkItemInfo.value = null
+                    }
                 }
                 is WebViewEvent.PageLoaded -> {
                     // 启动划线选区监听（初始化 JS 侧的 markManager），再拉取并绘制划线数据
@@ -133,6 +137,10 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
                     selectedText.value = event.text
                     selectedMarkItemInfo.value = event.markItemInfo
                     commentPanelVisible.value = true
+                }
+                is WebViewEvent.SelectionMarkItemInfo -> {
+                    // 选中文本时，Bridge 通知当前选区对应的 MarkItemInfo（用于 SelectionActionBar 判断划线状态）
+                    selectedMarkItemInfo.value = event.markItemInfo
                 }
                 else -> {}
             }

@@ -181,6 +181,17 @@ actual fun AppWebView(
                                 )
                             }
                         }
+
+                        "selectionMarkItemInfo" -> {
+                            val markItemInfo = msg.markItemInfo?.let {
+                                runCatching {
+                                    bridgeJson.decodeFromString<BridgeMarkItemInfo>(it)
+                                }.getOrNull()
+                            }
+                            webState.dispatchEvent(
+                                WebViewEvent.SelectionMarkItemInfo(markItemInfo)
+                            )
+                        }
                     }
                 }
         }
