@@ -422,9 +422,9 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                 }
                 score[y] =
                     score[y - 1] +
-                    maxBlockScore -
-                    carry +
-                    advanceBlock(ctx, charPeq, y, carry);
+                        maxBlockScore -
+                        carry +
+                        advanceBlock(ctx, charPeq, y, carry);
             }
             else {
                 // Error count for bottom block exceeds threshold, reduce the number of
@@ -471,128 +471,128 @@ var SlaxReaderWebBridgeExports = (function (exports) {
     var hasRequiredLib$1;
 
     function requireLib$1 () {
-        if (hasRequiredLib$1) return lib;
-        hasRequiredLib$1 = 1;
-        (function (exports$1) {
+    	if (hasRequiredLib$1) return lib;
+    	hasRequiredLib$1 = 1;
+    	(function (exports$1) {
 
-            Object.defineProperty(exports$1, "__esModule", {
-                value: true
-            });
-            exports$1["default"] = seek;
-            var E_END = 'Iterator exhausted before seek ended.';
-            var E_SHOW = 'Argument 1 of seek must use filter NodeFilter.SHOW_TEXT.';
-            var E_WHERE = 'Argument 2 of seek must be an integer or a Text Node.';
-            var DOCUMENT_POSITION_PRECEDING = 2;
-            var SHOW_TEXT = 4;
-            var TEXT_NODE = 3;
+    		Object.defineProperty(exports$1, "__esModule", {
+    		  value: true
+    		});
+    		exports$1["default"] = seek;
+    		var E_END = 'Iterator exhausted before seek ended.';
+    		var E_SHOW = 'Argument 1 of seek must use filter NodeFilter.SHOW_TEXT.';
+    		var E_WHERE = 'Argument 2 of seek must be an integer or a Text Node.';
+    		var DOCUMENT_POSITION_PRECEDING = 2;
+    		var SHOW_TEXT = 4;
+    		var TEXT_NODE = 3;
 
-            function seek(iter, where) {
-                if (iter.whatToShow !== SHOW_TEXT) {
-                    var error; // istanbul ignore next
+    		function seek(iter, where) {
+    		  if (iter.whatToShow !== SHOW_TEXT) {
+    		    var error; // istanbul ignore next
 
-                    try {
-                        error = new DOMException(E_SHOW, 'InvalidStateError');
-                    } catch (_unused) {
-                        error = new Error(E_SHOW);
-                        error.code = 11;
-                        error.name = 'InvalidStateError';
+    		    try {
+    		      error = new DOMException(E_SHOW, 'InvalidStateError');
+    		    } catch (_unused) {
+    		      error = new Error(E_SHOW);
+    		      error.code = 11;
+    		      error.name = 'InvalidStateError';
 
-                        error.toString = function () {
-                            return "InvalidStateError: ".concat(E_SHOW);
-                        };
-                    }
+    		      error.toString = function () {
+    		        return "InvalidStateError: ".concat(E_SHOW);
+    		      };
+    		    }
 
-                    throw error;
-                }
+    		    throw error;
+    		  }
 
-                var count = 0;
-                var node = iter.referenceNode;
-                var predicates = null;
+    		  var count = 0;
+    		  var node = iter.referenceNode;
+    		  var predicates = null;
 
-                if (isInteger(where)) {
-                    predicates = {
-                        forward: function forward() {
-                            return count < where;
-                        },
-                        backward: function backward() {
-                            return count > where || !iter.pointerBeforeReferenceNode;
-                        }
-                    };
-                } else if (isText(where)) {
-                    var forward = before(node, where) ? function () {
-                        return false;
-                    } : function () {
-                        return node !== where;
-                    };
+    		  if (isInteger(where)) {
+    		    predicates = {
+    		      forward: function forward() {
+    		        return count < where;
+    		      },
+    		      backward: function backward() {
+    		        return count > where || !iter.pointerBeforeReferenceNode;
+    		      }
+    		    };
+    		  } else if (isText(where)) {
+    		    var forward = before(node, where) ? function () {
+    		      return false;
+    		    } : function () {
+    		      return node !== where;
+    		    };
 
-                    var backward = function backward() {
-                        return node !== where || !iter.pointerBeforeReferenceNode;
-                    };
+    		    var backward = function backward() {
+    		      return node !== where || !iter.pointerBeforeReferenceNode;
+    		    };
 
-                    predicates = {
-                        forward: forward,
-                        backward: backward
-                    };
-                } else {
-                    throw new TypeError(E_WHERE);
-                }
+    		    predicates = {
+    		      forward: forward,
+    		      backward: backward
+    		    };
+    		  } else {
+    		    throw new TypeError(E_WHERE);
+    		  }
 
-                while (predicates.forward()) {
-                    node = iter.nextNode();
+    		  while (predicates.forward()) {
+    		    node = iter.nextNode();
 
-                    if (node === null) {
-                        throw new RangeError(E_END);
-                    }
+    		    if (node === null) {
+    		      throw new RangeError(E_END);
+    		    }
 
-                    count += node.nodeValue.length;
-                }
+    		    count += node.nodeValue.length;
+    		  }
 
-                if (iter.nextNode()) {
-                    node = iter.previousNode();
-                }
+    		  if (iter.nextNode()) {
+    		    node = iter.previousNode();
+    		  }
 
-                while (predicates.backward()) {
-                    node = iter.previousNode();
+    		  while (predicates.backward()) {
+    		    node = iter.previousNode();
 
-                    if (node === null) {
-                        throw new RangeError(E_END);
-                    }
+    		    if (node === null) {
+    		      throw new RangeError(E_END);
+    		    }
 
-                    count -= node.nodeValue.length;
-                }
+    		    count -= node.nodeValue.length;
+    		  }
 
-                if (!isText(iter.referenceNode)) {
-                    throw new RangeError(E_END);
-                }
+    		  if (!isText(iter.referenceNode)) {
+    		    throw new RangeError(E_END);
+    		  }
 
-                return count;
-            }
+    		  return count;
+    		}
 
-            function isInteger(n) {
-                if (typeof n !== 'number') return false;
-                return isFinite(n) && Math.floor(n) === n;
-            }
+    		function isInteger(n) {
+    		  if (typeof n !== 'number') return false;
+    		  return isFinite(n) && Math.floor(n) === n;
+    		}
 
-            function isText(node) {
-                return node.nodeType === TEXT_NODE;
-            }
+    		function isText(node) {
+    		  return node.nodeType === TEXT_NODE;
+    		}
 
-            function before(ref, node) {
-                return ref.compareDocumentPosition(node) & DOCUMENT_POSITION_PRECEDING;
-            }
-
-        } (lib));
-        return lib;
+    		function before(ref, node) {
+    		  return ref.compareDocumentPosition(node) & DOCUMENT_POSITION_PRECEDING;
+    		}
+    		
+    	} (lib));
+    	return lib;
     }
 
     var domSeek;
     var hasRequiredDomSeek;
 
     function requireDomSeek () {
-        if (hasRequiredDomSeek) return domSeek;
-        hasRequiredDomSeek = 1;
-        domSeek = requireLib$1()['default'];
-        return domSeek;
+    	if (hasRequiredDomSeek) return domSeek;
+    	hasRequiredDomSeek = 1;
+    	domSeek = requireLib$1()['default'];
+    	return domSeek;
     }
 
     var rangeToString = {};
@@ -600,172 +600,172 @@ var SlaxReaderWebBridgeExports = (function (exports) {
     var hasRequiredRangeToString;
 
     function requireRangeToString () {
-        if (hasRequiredRangeToString) return rangeToString;
-        hasRequiredRangeToString = 1;
-        (function (exports$1) {
+    	if (hasRequiredRangeToString) return rangeToString;
+    	hasRequiredRangeToString = 1;
+    	(function (exports$1) {
 
-            Object.defineProperty(exports$1, "__esModule", {
-                value: true
-            });
-            exports$1["default"] = rangeToString;
+    		Object.defineProperty(exports$1, "__esModule", {
+    		  value: true
+    		});
+    		exports$1["default"] = rangeToString;
 
-            /**
-             * Return the next node after `node` in a tree order traversal of the document.
-             */
-            function nextNode(node, skipChildren) {
-                if (!skipChildren && node.firstChild) {
-                    return node.firstChild;
-                }
+    		/**
+    		 * Return the next node after `node` in a tree order traversal of the document.
+    		 */
+    		function nextNode(node, skipChildren) {
+    		  if (!skipChildren && node.firstChild) {
+    		    return node.firstChild;
+    		  }
 
-                do {
-                    if (node.nextSibling) {
-                        return node.nextSibling;
-                    }
+    		  do {
+    		    if (node.nextSibling) {
+    		      return node.nextSibling;
+    		    }
 
-                    node = node.parentNode;
-                } while (node);
-                /* istanbul ignore next */
-
-
-                return node;
-            }
-
-            function firstNode(range) {
-                if (range.startContainer.nodeType === Node.ELEMENT_NODE) {
-                    var node = range.startContainer.childNodes[range.startOffset];
-                    return node || nextNode(range.startContainer, true
-                        /* skip children */
-                    );
-                }
-
-                return range.startContainer;
-            }
-
-            function firstNodeAfter(range) {
-                if (range.endContainer.nodeType === Node.ELEMENT_NODE) {
-                    var node = range.endContainer.childNodes[range.endOffset];
-                    return node || nextNode(range.endContainer, true
-                        /* skip children */
-                    );
-                }
-
-                return nextNode(range.endContainer);
-            }
-
-            function forEachNodeInRange(range, cb) {
-                var node = firstNode(range);
-                var pastEnd = firstNodeAfter(range);
-
-                while (node !== pastEnd) {
-                    cb(node);
-                    node = nextNode(node);
-                }
-            }
-            /**
-             * A ponyfill for Range.toString().
-             * Spec: https://dom.spec.whatwg.org/#dom-range-stringifier
-             *
-             * Works around the buggy Range.toString() implementation in IE and Edge.
-             * See https://github.com/tilgovi/dom-anchor-text-position/issues/4
-             */
+    		    node = node.parentNode;
+    		  } while (node);
+    		  /* istanbul ignore next */
 
 
-            function rangeToString(range) {
-                // This is a fairly direct translation of the Range.toString() implementation
-                // in Blink.
-                var text = '';
-                forEachNodeInRange(range, function (node) {
-                    if (node.nodeType !== Node.TEXT_NODE) {
-                        return;
-                    }
+    		  return node;
+    		}
 
-                    var start = node === range.startContainer ? range.startOffset : 0;
-                    var end = node === range.endContainer ? range.endOffset : node.textContent.length;
-                    text += node.textContent.slice(start, end);
-                });
-                return text;
-            }
+    		function firstNode(range) {
+    		  if (range.startContainer.nodeType === Node.ELEMENT_NODE) {
+    		    var node = range.startContainer.childNodes[range.startOffset];
+    		    return node || nextNode(range.startContainer, true
+    		    /* skip children */
+    		    );
+    		  }
 
-        } (rangeToString));
-        return rangeToString;
+    		  return range.startContainer;
+    		}
+
+    		function firstNodeAfter(range) {
+    		  if (range.endContainer.nodeType === Node.ELEMENT_NODE) {
+    		    var node = range.endContainer.childNodes[range.endOffset];
+    		    return node || nextNode(range.endContainer, true
+    		    /* skip children */
+    		    );
+    		  }
+
+    		  return nextNode(range.endContainer);
+    		}
+
+    		function forEachNodeInRange(range, cb) {
+    		  var node = firstNode(range);
+    		  var pastEnd = firstNodeAfter(range);
+
+    		  while (node !== pastEnd) {
+    		    cb(node);
+    		    node = nextNode(node);
+    		  }
+    		}
+    		/**
+    		 * A ponyfill for Range.toString().
+    		 * Spec: https://dom.spec.whatwg.org/#dom-range-stringifier
+    		 *
+    		 * Works around the buggy Range.toString() implementation in IE and Edge.
+    		 * See https://github.com/tilgovi/dom-anchor-text-position/issues/4
+    		 */
+
+
+    		function rangeToString(range) {
+    		  // This is a fairly direct translation of the Range.toString() implementation
+    		  // in Blink.
+    		  var text = '';
+    		  forEachNodeInRange(range, function (node) {
+    		    if (node.nodeType !== Node.TEXT_NODE) {
+    		      return;
+    		    }
+
+    		    var start = node === range.startContainer ? range.startOffset : 0;
+    		    var end = node === range.endContainer ? range.endOffset : node.textContent.length;
+    		    text += node.textContent.slice(start, end);
+    		  });
+    		  return text;
+    		}
+    		
+    	} (rangeToString));
+    	return rangeToString;
     }
 
     var hasRequiredLib;
 
     function requireLib () {
-        if (hasRequiredLib) return lib$1;
-        hasRequiredLib = 1;
+    	if (hasRequiredLib) return lib$1;
+    	hasRequiredLib = 1;
 
-        Object.defineProperty(lib$1, "__esModule", {
-            value: true
-        });
-        lib$1.fromRange = fromRange;
-        lib$1.toRange = toRange;
+    	Object.defineProperty(lib$1, "__esModule", {
+    	  value: true
+    	});
+    	lib$1.fromRange = fromRange;
+    	lib$1.toRange = toRange;
 
-        var _domSeek = _interopRequireDefault(requireDomSeek());
+    	var _domSeek = _interopRequireDefault(requireDomSeek());
 
-        var _rangeToString = _interopRequireDefault(requireRangeToString());
+    	var _rangeToString = _interopRequireDefault(requireRangeToString());
 
-        function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+    	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 
-        var SHOW_TEXT = 4;
+    	var SHOW_TEXT = 4;
 
-        function fromRange(root, range) {
-            if (root === undefined) {
-                throw new Error('missing required parameter "root"');
-            }
+    	function fromRange(root, range) {
+    	  if (root === undefined) {
+    	    throw new Error('missing required parameter "root"');
+    	  }
 
-            if (range === undefined) {
-                throw new Error('missing required parameter "range"');
-            }
+    	  if (range === undefined) {
+    	    throw new Error('missing required parameter "range"');
+    	  }
 
-            var document = root.ownerDocument;
-            var prefix = document.createRange();
-            var startNode = range.startContainer;
-            var startOffset = range.startOffset;
-            prefix.setStart(root, 0);
-            prefix.setEnd(startNode, startOffset);
-            var start = (0, _rangeToString["default"])(prefix).length;
-            var end = start + (0, _rangeToString["default"])(range).length;
-            return {
-                start: start,
-                end: end
-            };
-        }
+    	  var document = root.ownerDocument;
+    	  var prefix = document.createRange();
+    	  var startNode = range.startContainer;
+    	  var startOffset = range.startOffset;
+    	  prefix.setStart(root, 0);
+    	  prefix.setEnd(startNode, startOffset);
+    	  var start = (0, _rangeToString["default"])(prefix).length;
+    	  var end = start + (0, _rangeToString["default"])(range).length;
+    	  return {
+    	    start: start,
+    	    end: end
+    	  };
+    	}
 
-        function toRange(root) {
-            var selector = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    	function toRange(root) {
+    	  var selector = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
-            if (root === undefined) {
-                throw new Error('missing required parameter "root"');
-            }
+    	  if (root === undefined) {
+    	    throw new Error('missing required parameter "root"');
+    	  }
 
-            var document = root.ownerDocument;
-            var range = document.createRange();
-            var iter = document.createNodeIterator(root, SHOW_TEXT);
-            var start = selector.start || 0;
-            var end = selector.end || start;
-            var startOffset = start - (0, _domSeek["default"])(iter, start);
-            var startNode = iter.referenceNode;
-            var remainder = end - start + startOffset;
-            var endOffset = remainder - (0, _domSeek["default"])(iter, remainder);
-            var endNode = iter.referenceNode;
-            range.setStart(startNode, startOffset);
-            range.setEnd(endNode, endOffset);
-            return range;
-        }
-
-        return lib$1;
+    	  var document = root.ownerDocument;
+    	  var range = document.createRange();
+    	  var iter = document.createNodeIterator(root, SHOW_TEXT);
+    	  var start = selector.start || 0;
+    	  var end = selector.end || start;
+    	  var startOffset = start - (0, _domSeek["default"])(iter, start);
+    	  var startNode = iter.referenceNode;
+    	  var remainder = end - start + startOffset;
+    	  var endOffset = remainder - (0, _domSeek["default"])(iter, remainder);
+    	  var endNode = iter.referenceNode;
+    	  range.setStart(startNode, startOffset);
+    	  range.setEnd(endNode, endOffset);
+    	  return range;
+    	}
+    	
+    	return lib$1;
     }
 
     var domAnchorTextPosition;
     var hasRequiredDomAnchorTextPosition;
 
     function requireDomAnchorTextPosition () {
-        if (hasRequiredDomAnchorTextPosition) return domAnchorTextPosition;
-        hasRequiredDomAnchorTextPosition = 1;
-        domAnchorTextPosition = requireLib();
-        return domAnchorTextPosition;
+    	if (hasRequiredDomAnchorTextPosition) return domAnchorTextPosition;
+    	hasRequiredDomAnchorTextPosition = 1;
+    	domAnchorTextPosition = requireLib();
+    	return domAnchorTextPosition;
     }
 
     var domAnchorTextPositionExports = requireDomAnchorTextPosition();
@@ -984,8 +984,8 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                         continue;
                     }
                     if (
-                        // 如果字符是 [0-9A-Za-z_-]
-                        (codeUnit >= 0x0030 && codeUnit <= 0x0039) ||
+                    // 如果字符是 [0-9A-Za-z_-]
+                    (codeUnit >= 0x0030 && codeUnit <= 0x0039) ||
                         (codeUnit >= 0x0041 && codeUnit <= 0x005A) ||
                         (codeUnit >= 0x0061 && codeUnit <= 0x007A) ||
                         codeUnit === 0x005F ||
@@ -1341,7 +1341,7 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             };
             processNode(range.commonAncestorContainer);
             return selectedInfo.length > 0 &&
-            !selectedInfo.every((item) => item.type === 'text' && item.text.trim().length === 0)
+                !selectedInfo.every((item) => item.type === 'text' && item.text.trim().length === 0)
                 ? selectedInfo
                 : [];
         }
@@ -1765,6 +1765,80 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             return true;
         }
         /**
+         * 通过 source 添加划线（用于临时选区场景）
+         *
+         * 当 markItemInfo 是临时的（id 为空、未被 markItemInfos 持有）时使用此方法。
+         * 流程为：
+         * 1. 根据 source 检查 markItemInfos 中是否已有匹配项
+         * 2. 若没有则创建新的 MarkItemInfo 并 push 到 markItemInfos
+         * 3. 在对应 MarkItemInfo 中插入划线记录
+         * 4. 渲染 DOM 样式
+         * 5. 返回 uuid 和接口所需的 source/select_content/approx_source 数据
+         *
+         * @param source MarkPathItem 数组（从临时 markItemInfo 中获取）
+         * @param userId 执行划线的用户ID
+         * @param approx 近似位置信息（可选，为空时自动从 source 生成）
+         * @returns 包含 uuid 及接口入参的数据，失败返回 null
+         */
+        addStrokeBySource(source, userId, approx) {
+            if (!source || source.length === 0) {
+                console.warn('[MarkManager] addStrokeBySource 终止：source 为空');
+                return null;
+            }
+            // 若 approx 为空，根据 source 定位 DOM 元素重新生成
+            let resolvedApprox = approx;
+            if (!resolvedApprox) {
+                resolvedApprox = this.buildApproxFromSource(source);
+                if (resolvedApprox) {
+                    console.log('[MarkManager] addStrokeBySource 根据 source 生成了 approx:', resolvedApprox);
+                }
+            }
+            // 1. 检查是否已有匹配的 MarkItemInfo
+            let infoItem = this.markItemInfos.find((info) => this.checkMarkSourceIsSame(info.source, source));
+            // 2. 没有则创建新的
+            if (!infoItem) {
+                const uuid = generateUUID();
+                infoItem = {
+                    id: uuid,
+                    source,
+                    stroke: [],
+                    comments: [],
+                    approx: resolvedApprox
+                };
+                this.markItemInfos.push(infoItem);
+                console.log('[MarkManager] addStrokeBySource 创建新 MarkItemInfo，uuid:', uuid);
+            }
+            else {
+                console.log('[MarkManager] addStrokeBySource 命中已有 MarkItemInfo，uuid:', infoItem.id);
+            }
+            // 3. 幂等检查后插入划线记录
+            const alreadyStroked = infoItem.stroke.some((s) => s.userId === userId);
+            if (!alreadyStroked) {
+                infoItem.stroke.push({ mark_id: undefined, userId });
+            }
+            // 4. 渲染 DOM
+            this.drawSingleMarkItem(infoItem);
+            // 5. 构造返回数据
+            const apiSource = this.convertToApiSource(source);
+            const selectContent = resolvedApprox?.raw_text
+                ? [{ type: 'text', text: resolvedApprox.raw_text, src: '' }]
+                : [{ type: 'text', text: resolvedApprox?.exact ?? '', src: '' }];
+            const result = {
+                uuid: infoItem.id,
+                source: apiSource,
+                select_content: selectContent,
+                approx_source: resolvedApprox ? {
+                    exact: resolvedApprox.exact,
+                    prefix: resolvedApprox.prefix,
+                    suffix: resolvedApprox.suffix,
+                    position_start: 0,
+                    position_end: resolvedApprox.exact.length
+                } : undefined
+            };
+            console.log('[MarkManager] addStrokeBySource 完成，返回:', result);
+            return result;
+        }
+        /**
          * 根据 UUID 删除指定用户的划线
          *
          * 从对应 MarkItemInfo 的 stroke 数组中移除该用户的记录，并重新渲染 DOM 样式。
@@ -1803,11 +1877,14 @@ var SlaxReaderWebBridgeExports = (function (exports) {
          * 在对应 MarkItemInfo 的 comments 数组中追加一条评论记录，并重新渲染 DOM 样式。
          *
          * @param uuid MarkItemInfo 的本地 UUID
-         * @param userId 发表评论的用户ID
-         * @param comment 评论内容
+         * @param params 评论参数对象
+         * @param params.userId 发表评论的用户ID
+         * @param params.comment 评论内容
+         * @param params.username 用户名（用于即时展示）
+         * @param params.avatar 用户头像URL（用于即时展示）
          * @returns 是否成功添加（false 表示 uuid 不存在）
          */
-        addCommentByUuid(uuid, userId, comment) {
+        addCommentByUuid(uuid, params) {
             const infoItem = this.markItemInfos.find((info) => info.id === uuid);
             if (!infoItem) {
                 console.warn('[MarkManager] addCommentByUuid 未找到对应的 MarkItemInfo，uuid:', uuid);
@@ -1815,10 +1892,10 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             }
             const commentInfo = {
                 markId: 0,
-                comment,
-                userId,
-                username: '',
-                avatar: '',
+                comment: params.comment,
+                userId: params.userId,
+                username: params.username ?? '',
+                avatar: params.avatar ?? '',
                 isDeleted: false,
                 children: [],
                 createdAt: new Date(),
@@ -1828,8 +1905,92 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             };
             infoItem.comments.push(commentInfo);
             this.updateMarkItemUI(infoItem);
-            console.log('[MarkManager] addCommentByUuid 成功，uuid:', uuid, 'userId:', userId);
+            console.log('[MarkManager] addCommentByUuid 成功，uuid:', uuid, 'userId:', params.userId);
             return true;
+        }
+        /**
+         * 通过 source 添加评论（用于临时选区场景）
+         *
+         * 当 markItemInfo 是临时的（id 为空、未被 markItemInfos 持有）时使用此方法。
+         * 流程为：
+         * 1. 根据 source 检查 markItemInfos 中是否已有匹配项
+         * 2. 若没有则创建新的 MarkItemInfo 并 push 到 markItemInfos
+         * 3. 在对应 MarkItemInfo 中插入评论记录
+         * 4. 渲染 DOM 样式
+         * 5. 返回 uuid 和接口所需的 source/select_content/approx_source 数据
+         *
+         * @param source MarkPathItem 数组（从临时 markItemInfo 中获取）
+         * @param commentParams 评论参数
+         * @param approx 近似位置信息（可选，从临时 markItemInfo 中获取）
+         * @returns 包含 uuid 及接口入参的数据，失败返回 null
+         */
+        addCommentBySource(source, commentParams, approx) {
+            if (!source || source.length === 0) {
+                console.warn('[MarkManager] addCommentBySource 终止：source 为空');
+                return null;
+            }
+            // 若 approx 为空，根据 source 定位 DOM 元素重新生成
+            let resolvedApprox = approx;
+            if (!resolvedApprox) {
+                resolvedApprox = this.buildApproxFromSource(source);
+                if (resolvedApprox) {
+                    console.log('[MarkManager] addCommentBySource 根据 source 生成了 approx:', resolvedApprox);
+                }
+            }
+            // 1. 检查是否已有匹配的 MarkItemInfo
+            let infoItem = this.markItemInfos.find((info) => this.checkMarkSourceIsSame(info.source, source));
+            // 2. 没有则创建新的
+            if (!infoItem) {
+                const uuid = generateUUID();
+                infoItem = {
+                    id: uuid,
+                    source,
+                    stroke: [],
+                    comments: [],
+                    approx: resolvedApprox
+                };
+                this.markItemInfos.push(infoItem);
+                console.log('[MarkManager] addCommentBySource 创建新 MarkItemInfo，uuid:', uuid);
+            }
+            else {
+                console.log('[MarkManager] addCommentBySource 命中已有 MarkItemInfo，uuid:', infoItem.id);
+            }
+            // 3. 插入评论记录
+            const commentInfo = {
+                markId: 0,
+                comment: commentParams.comment,
+                userId: commentParams.userId,
+                username: commentParams.username ?? '',
+                avatar: commentParams.avatar ?? '',
+                isDeleted: false,
+                children: [],
+                createdAt: new Date(),
+                showInput: false,
+                loading: false,
+                operateLoading: false
+            };
+            infoItem.comments.push(commentInfo);
+            // 4. 渲染 DOM
+            this.drawSingleMarkItem(infoItem);
+            // 5. 构造返回数据
+            const apiSource = this.convertToApiSource(source);
+            const selectContent = resolvedApprox?.raw_text
+                ? [{ type: 'text', text: resolvedApprox.raw_text, src: '' }]
+                : [{ type: 'text', text: resolvedApprox?.exact ?? '', src: '' }];
+            const result = {
+                uuid: infoItem.id,
+                source: apiSource,
+                select_content: selectContent,
+                approx_source: resolvedApprox ? {
+                    exact: resolvedApprox.exact,
+                    prefix: resolvedApprox.prefix,
+                    suffix: resolvedApprox.suffix,
+                    position_start: 0,
+                    position_end: resolvedApprox.exact.length
+                } : undefined
+            };
+            console.log('[MarkManager] addCommentBySource 完成，返回:', result);
+            return result;
         }
         /**
          * 更新单个 MarkItemInfo 对应的 DOM 样式
@@ -2097,6 +2258,33 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             console.log('[MarkManager] updateMarkIdByUuid 完成，最新 markItemInfos:', JSON.parse(JSON.stringify(this.markItemInfos)));
         }
         /**
+         * 通过 uuid 将后端返回的 mark_id 回补到评论记录
+         *
+         * 找到指定 uuid 的 MarkItemInfo，将 comments 中最后一条 markId === 0 的临时评论
+         * 更新为后端返回的真实 markId，确保后续删除/更新操作能正确关联后端数据。
+         *
+         * @param uuid MarkItemInfo 的本地 UUID
+         * @param markId 后端返回的 mark_id
+         * @returns 是否成功更新
+         */
+        updateCommentMarkIdByUuid(uuid, markId) {
+            const infoItem = this.markItemInfos.find((info) => info.id === uuid);
+            if (!infoItem) {
+                console.warn('[MarkManager] updateCommentMarkIdByUuid 未找到对应的 MarkItemInfo，uuid:', uuid);
+                return false;
+            }
+            // 从后往前找第一条 markId 为 0 的临时评论（即最近一次 addCommentByUuid 添加的）
+            for (let i = infoItem.comments.length - 1; i >= 0; i--) {
+                if (infoItem.comments[i].markId === 0) {
+                    infoItem.comments[i].markId = markId;
+                    console.log('[MarkManager] updateCommentMarkIdByUuid 成功，uuid:', uuid, 'markId:', markId);
+                    return true;
+                }
+            }
+            console.warn('[MarkManager] updateCommentMarkIdByUuid 未找到 markId 为 0 的临时评论，uuid:', uuid);
+            return false;
+        }
+        /**
          * 将 Range 转换为 MarkPathItem 数组
          *
          * @deprecated 内部请改用 buildPathsFromSelectionInfo，避免重复解析 Range
@@ -2268,6 +2456,79 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                 approx: { exact, prefix, suffix, raw_text: exact },
                 approxCreate: { exact, prefix, suffix, position_start, position_end }
             };
+        }
+        /**
+         * 根据 source（MarkPathItem[]）构建 Range 并复用 parseApproxFromRange 生成 MarkPathApprox
+         *
+         * @param source MarkPathItem 数组
+         * @returns 生成的 MarkPathApprox，若 DOM 元素不存在则返回 undefined
+         */
+        buildApproxFromSource(source) {
+            const range = this.buildRangeFromSource(source);
+            if (!range)
+                return undefined;
+            try {
+                const { approx } = this.parseApproxFromRange(range);
+                return approx;
+            }
+            catch (error) {
+                console.warn('[MarkManager] buildApproxFromSource parseApproxFromRange 失败:', error);
+                return undefined;
+            }
+        }
+        /**
+         * 根据 source（MarkPathItem[]）定位 DOM 元素，构建一个覆盖整个选区的 Range
+         *
+         * @param source MarkPathItem 数组
+         * @returns 构建的 Range，若 DOM 元素不存在则返回 null
+         */
+        buildRangeFromSource(source) {
+            // 只处理文本类型的 source
+            const textSources = source.filter((s) => s.type === 'text');
+            if (textSources.length === 0)
+                return null;
+            const first = textSources[0];
+            const last = textSources[textSources.length - 1];
+            const firstElement = this.container.querySelector(first.path);
+            const lastElement = this.container.querySelector(last.path);
+            if (!firstElement || !lastElement)
+                return null;
+            // 在第一个元素中定位起始文本节点和偏移
+            const startResult = this.findTextNodeAtOffset(firstElement, first.start ?? 0);
+            // 在最后一个元素中定位结束文本节点和偏移
+            const endResult = this.findTextNodeAtOffset(lastElement, last.end ?? 0);
+            if (!startResult || !endResult)
+                return null;
+            try {
+                const range = document.createRange();
+                range.setStart(startResult.node, startResult.offset);
+                range.setEnd(endResult.node, endResult.offset);
+                return range;
+            }
+            catch (error) {
+                console.warn('[MarkManager] buildRangeFromSource Range 构建失败:', error);
+                return null;
+            }
+        }
+        /**
+         * 在元素的文本节点中定位指定字符偏移所对应的 { node, offset }
+         */
+        findTextNodeAtOffset(element, targetOffset) {
+            const textNodes = getAllTextNodes(element);
+            let accumulated = 0;
+            for (const node of textNodes) {
+                const nodeLen = (node.textContent || '').length;
+                if (accumulated + nodeLen >= targetOffset) {
+                    return { node, offset: targetOffset - accumulated };
+                }
+                accumulated += nodeLen;
+            }
+            // 偏移超出范围，定位到最后一个文本节点末尾
+            if (textNodes.length > 0) {
+                const lastNode = textNodes[textNodes.length - 1];
+                return { node: lastNode, offset: (lastNode.textContent || '').length };
+            }
+            return null;
         }
         /**
          * 检查两个 source 是否相同
@@ -2483,32 +2744,6 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             this.selectionMonitor?.clearSelection();
         }
         /**
-         * 绘制标记
-         * @param id 标记ID（传 null 则自动生成）
-         * @param pathsJson MarkPathItem[] 的 JSON 字符串
-         * @param isStroke 是否为划线
-         * @param hasComment 是否有评论
-         * @param userId 用户ID（可选）
-         * @returns 标记ID
-         */
-        drawMark(id, pathsJson, isStroke, hasComment, userId) {
-            const markId = id || generateUUID();
-            if (!this.markRenderer) {
-                console.warn('[WebView Bridge] drawMark: selection monitoring not started');
-                return markId;
-            }
-            try {
-                const paths = JSON.parse(pathsJson);
-                const success = this.markRenderer.drawMark(markId, paths, isStroke, hasComment, userId);
-                postToNativeBridge({ type: 'markRendered', markId, success });
-                return markId;
-            }
-            catch (error) {
-                postToNativeBridge({ type: 'selectionError', error: `Failed to draw mark: ${error}` });
-                return markId;
-            }
-        }
-        /**
          * 更新标记
          */
         updateMark(id, isStroke, hasComment, userId) {
@@ -2546,19 +2781,6 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             catch (error) {
                 postToNativeBridge({ type: 'selectionError', error: `Failed to highlight mark: ${error}` });
             }
-        }
-        /**
-         * 清除所有高亮
-         */
-        clearHighlights() {
-            this.markRenderer?.clearAllHighlights();
-        }
-        /**
-         * 清除所有标记
-         */
-        clearAllMarks() {
-            this.markRenderer?.clearAllMarks();
-            this.markManager?.clearAllMarks();
         }
         /**
          * 获取所有标记ID
@@ -2677,6 +2899,33 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             }
         }
         /**
+         * 通过 source 添加划线（用于临时选区场景）
+         *
+         * 当 markItemInfo 是临时的（id 为空、未被 markItemInfos 持有）时使用此方法。
+         * 会自动创建或复用已有的 MarkItemInfo，插入划线并渲染 DOM。
+         *
+         * @param sourceJson MarkPathItem[] 的 JSON 字符串
+         * @param userId 执行划线的用户ID
+         * @param approxJson MarkPathApprox 的 JSON 字符串（可选）
+         * @returns StrokeCreateData 的 JSON 字符串（含 uuid 及接口入参），失败返回 null
+         */
+        addStrokeBySource(sourceJson, userId, approxJson) {
+            if (!this.markManager) {
+                console.warn('[WebView Bridge] addStrokeBySource: selection monitoring not started');
+                return null;
+            }
+            try {
+                const source = JSON.parse(sourceJson);
+                const approx = approxJson ? JSON.parse(approxJson) : undefined;
+                const result = this.markManager.addStrokeBySource(source, userId, approx);
+                return result ? JSON.stringify(result) : null;
+            }
+            catch (error) {
+                postToNativeBridge({ type: 'selectionError', error: `Failed to add stroke by source: ${error}` });
+                return null;
+            }
+        }
+        /**
          * 根据 UUID 删除指定用户的划线
          *
          * 从 MarkItemInfo 的 stroke 数组中移除该用户的记录并刷新 slax-mark 样式。
@@ -2705,21 +2954,70 @@ var SlaxReaderWebBridgeExports = (function (exports) {
          * 在 MarkItemInfo 的 comments 数组中追加一条评论并刷新 slax-mark 样式（添加 .comment class）。
          *
          * @param uuid MarkItemInfo 的本地 UUID
-         * @param userId 发表评论的用户ID
-         * @param comment 评论内容
+         * @param params 评论参数对象，包含 userId、comment、username、avatar
          * @returns 是否成功添加
          */
-        addCommentByUuid(uuid, userId, comment) {
+        addCommentByUuid(uuid, params) {
             if (!this.markManager) {
                 console.warn('[WebView Bridge] addCommentByUuid: selection monitoring not started');
                 return false;
             }
             try {
-                return this.markManager.addCommentByUuid(uuid, userId, comment);
+                return this.markManager.addCommentByUuid(uuid, params);
             }
             catch (error) {
                 postToNativeBridge({ type: 'selectionError', error: `Failed to add comment by UUID: ${error}` });
                 return false;
+            }
+        }
+        /**
+         * 通过 UUID 将后端返回的 mark_id 回补到评论记录
+         *
+         * 在调用 addCommentByUuid 添加本地临时评论后，等后端 API 返回 mark_id，
+         * 再调用此方法将临时评论（markId=0）的 markId 更新为真实值。
+         *
+         * @param uuid MarkItemInfo 的本地 UUID
+         * @param markId 后端返回的 mark_id
+         * @returns 是否成功更新
+         */
+        updateCommentMarkIdByUuid(uuid, markId) {
+            if (!this.markManager) {
+                console.warn('[WebView Bridge] updateCommentMarkIdByUuid: selection monitoring not started');
+                return false;
+            }
+            try {
+                return this.markManager.updateCommentMarkIdByUuid(uuid, markId);
+            }
+            catch (error) {
+                postToNativeBridge({ type: 'selectionError', error: `Failed to update comment mark id by UUID: ${error}` });
+                return false;
+            }
+        }
+        /**
+         * 通过 source 添加评论（用于临时选区场景）
+         *
+         * 当 markItemInfo 是临时的（id 为空、未被 markItemInfos 持有）时使用此方法。
+         * 会自动创建或复用已有的 MarkItemInfo，插入评论并渲染 DOM。
+         *
+         * @param sourceJson MarkPathItem[] 的 JSON 字符串
+         * @param commentParams 评论参数对象
+         * @param approxJson MarkPathApprox 的 JSON 字符串（可选）
+         * @returns StrokeCreateData 的 JSON 字符串（含 uuid 及接口入参），失败返回 null
+         */
+        addCommentBySource(sourceJson, commentParams, approxJson) {
+            if (!this.markManager) {
+                console.warn('[WebView Bridge] addCommentBySource: selection monitoring not started');
+                return null;
+            }
+            try {
+                const source = JSON.parse(sourceJson);
+                const approx = approxJson ? JSON.parse(approxJson) : undefined;
+                const result = this.markManager.addCommentBySource(source, commentParams, approx);
+                return result ? JSON.stringify(result) : null;
+            }
+            catch (error) {
+                postToNativeBridge({ type: 'selectionError', error: `Failed to add comment by source: ${error}` });
+                return null;
             }
         }
         /**

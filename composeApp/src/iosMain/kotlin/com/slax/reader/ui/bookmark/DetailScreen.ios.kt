@@ -267,10 +267,12 @@ actual fun DetailScreen(
         val commentPanelVisible by commentPanelState
         val selectedText by LocalSelectedText.current
         var highlightLoading by remember { mutableStateOf(false) }
+        var commentLoading by remember { mutableStateOf(false) }
         CommentPanelSheet(
             highlightedText = selectedText,
             markItemInfo = selectedMarkItemInfo,
             highlightLoading = highlightLoading,
+            commentLoading = commentLoading,
             userAvatarUrl = viewModel.userInfo.value?.picture,
             visible = commentPanelVisible,
             onDismiss = {
@@ -310,6 +312,20 @@ actual fun DetailScreen(
                         )
                     }
                 }
+            },
+            onSubmitComment = { comment, parentId ->
+                val markInfo = selectedMarkItemInfoState.value ?: return@CommentPanelSheet
+                commentLoading = true
+                viewModel.addCommentToMark(
+                    webViewState = webViewState,
+                    markItemInfo = markInfo,
+                    comment = comment,
+                    parentId = parentId,
+                    onComplete = { updatedInfo ->
+                        selectedMarkItemInfoState.value = updatedInfo
+                        commentLoading = false
+                    }
+                )
             }
         )
     }

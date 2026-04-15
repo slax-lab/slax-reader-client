@@ -68,6 +68,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.panpf.sketch.rememberAsyncImagePainter
@@ -142,9 +143,11 @@ fun CommentPanelSheet(
     visible: Boolean,
     markItemInfo: BridgeMarkItemInfo? = null,
     highlightLoading: Boolean = false,
+    commentLoading: Boolean = false,
     userAvatarUrl: String? = null,
     onDismiss: () -> Unit,
     onActionClick: (actionId: String) -> Unit,
+    onSubmitComment: (comment: String, parentId: Long?) -> Unit = { _, _ -> },
     commentListContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -253,7 +256,13 @@ fun CommentPanelSheet(
                     PostCommentArea(
                         userAvatarUrl = userAvatarUrl,
                         replyTarget = replyTarget,
-                        onClearReplyTarget = { replyTarget = null }
+                        commentLoading = commentLoading,
+                        onClearReplyTarget = { replyTarget = null },
+                        onSubmitComment = { comment ->
+                            val parentId = replyTarget?.markId
+                            replyTarget = null
+                            onSubmitComment(comment, parentId)
+                        }
                     )
                 }
             }
@@ -830,13 +839,17 @@ private fun CommentListArea(
  *
  * @param userAvatarUrl 当前登录用户的头像 URL
  * @param replyTarget 当前回复目标，为 null 时表示普通评论模式
+ * @param commentLoading 评论提交是否正在进行中
  * @param onClearReplyTarget 清除回复目标的回调（退格删除前缀时触发）
+ * @param onSubmitComment 提交评论的回调，参数为清理后的评论文本
  */
 @Composable
 private fun PostCommentArea(
     userAvatarUrl: String? = null,
     replyTarget: ReplyTarget? = null,
+    commentLoading: Boolean = false,
     onClearReplyTarget: () -> Unit = {},
+    onSubmitComment: (comment: String) -> Unit = {},
 ) {
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
@@ -851,7 +864,9 @@ private fun PostCommentArea(
         PostCommentInputContainer(
             userAvatarUrl = userAvatarUrl,
             replyTarget = replyTarget,
-            onClearReplyTarget = onClearReplyTarget
+            commentLoading = commentLoading,
+            onClearReplyTarget = onClearReplyTarget,
+            onSubmitComment = onSubmitComment
         )
     }
 }
@@ -865,13 +880,17 @@ private fun PostCommentArea(
  *
  * @param userAvatarUrl 当前登录用户的头像 URL
  * @param replyTarget 当前回复目标
+ * @param commentLoading 评论提交是否正在进行中
  * @param onClearReplyTarget 清除回复目标的回调
+ * @param onSubmitComment 提交评论的回调
  */
 @Composable
 private fun PostCommentInputContainer(
     userAvatarUrl: String? = null,
     replyTarget: ReplyTarget? = null,
+    commentLoading: Boolean = false,
     onClearReplyTarget: () -> Unit = {},
+    onSubmitComment: (comment: String) -> Unit = {},
 ) {
     Row(
         modifier = Modifier
@@ -902,7 +921,9 @@ private fun PostCommentInputContainer(
         // 右侧输入框：自适应高度，最大100dp，超出可滚动
         PostCommentTextField(
             replyTarget = replyTarget,
+            commentLoading = commentLoading,
             onClearReplyTarget = onClearReplyTarget,
+            onSubmitComment = onSubmitComment,
             modifier = Modifier
                 .weight(1f)
                 .heightIn(min = 38.dp, max = 100.dp)
@@ -925,7 +946,7 @@ private const val REPLY_SENTINEL = "\u200B"
  * 评论输入框
  *
  * 默认展示占位文字"发表评论"，输入内容后高度自动撑高。
- * 键盘右下角显示确认键（ImeAction.Done）。
+ * 键盘右下角显示发送键（ImeAction.Send），按下后提交评论。
  *
  * 回复模式下通过 [VisualTransformation] 在输入文字前内联渲染"回复 XXX："前缀：
  * - 前缀嵌在文字流中，视觉上与用户输入的文字在同一行自然衔接
@@ -935,13 +956,17 @@ private const val REPLY_SENTINEL = "\u200B"
  * - 输入框为空时按退格键，通过 [REPLY_SENTINEL] 哨兵字符检测到退格操作并清除前缀
  *
  * @param replyTarget 当前回复目标，为 null 时显示普通评论模式
+ * @param commentLoading 评论提交是否正在进行中
  * @param onClearReplyTarget 清除回复目标的回调
+ * @param onSubmitComment 提交评论的回调，参数为清理后的评论文本
  * @param modifier 外部修饰符
  */
 @Composable
 private fun PostCommentTextField(
     replyTarget: ReplyTarget? = null,
+    commentLoading: Boolean = false,
     onClearReplyTarget: () -> Unit = {},
+    onSubmitComment: (comment: String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var textFieldValue by remember { mutableStateOf(TextFieldValue()) }
@@ -982,6 +1007,15 @@ private fun PostCommentTextField(
         }
     }
 
+    // 提交评论的处理函数：剥离哨兵字符 → 验证非空 → 回调 → 清空输入框
+    val handleSubmit = {
+        val cleanText = textFieldValue.text.replace(REPLY_SENTINEL, "").trim()
+        if (cleanText.isNotEmpty() && !commentLoading) {
+            onSubmitComment(cleanText)
+            textFieldValue = TextFieldValue()
+        }
+    }
+
     androidx.compose.foundation.text.BasicTextField(
         value = textFieldValue,
         onValueChange = { newValue ->
@@ -993,7 +1027,8 @@ private fun PostCommentTextField(
             }
         },
         textStyle = inputTextStyle,
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+        keyboardActions = KeyboardActions(onSend = { handleSubmit() }),
         visualTransformation = visualTransformation,
         modifier = modifier.verticalScroll(scrollState),
         decorationBox = { innerTextField ->

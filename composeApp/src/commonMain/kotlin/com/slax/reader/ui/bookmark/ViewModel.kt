@@ -26,8 +26,10 @@ import com.slax.reader.data.network.dto.MarkPathItem
 import com.slax.reader.data.network.dto.MarkType
 import com.slax.reader.data.network.dto.StrokeCreateData
 import com.slax.reader.utils.AppWebViewState
+import com.slax.reader.utils.BridgeMarkCommentInfo
 import com.slax.reader.utils.BridgeMarkItemInfo
 import com.slax.reader.utils.BridgeMarkStrokeInfo
+import com.slax.reader.utils.escapeJsTemplateString
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.json.Json
@@ -400,7 +402,24 @@ class BookmarkDetailViewModel(
         onComplete: (BridgeMarkItemInfo) -> Unit,
     ) {
         val bookmarkIdStr = _bookmarkId.value ?: return
+        val isTemporary = markItemInfo.id.isEmpty()
 
+        if (isTemporary) {
+            addStrokeToTemporaryMark(webViewState, markItemInfo, bookmarkIdStr, onComplete)
+        } else {
+            addStrokeToExistingMark(webViewState, markItemInfo, bookmarkIdStr, onComplete)
+        }
+    }
+
+    /**
+     * 已有 mark 的划线路径：addStrokeByUuid → API → updateMarkIdByUuid
+     */
+    private fun addStrokeToExistingMark(
+        webViewState: AppWebViewState,
+        markItemInfo: BridgeMarkItemInfo,
+        bookmarkIdStr: String,
+        onComplete: (BridgeMarkItemInfo) -> Unit,
+    ) {
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
                 val currentUserId = getCurrentUserId()?.toLongOrNull() ?: 0L
@@ -410,7 +429,7 @@ class BookmarkDetailViewModel(
                     "window.SlaxWebViewBridge.addStrokeByUuid('${markItemInfo.id}', $currentUserId)"
                 )
 
-                // 2. 将 markItemInfo 的 source 转换后调用后端创建划线
+                // 2. 调用后端创建划线
                 val selectContent = markItemInfo.approx?.raw_text?.let { listOf(it) }
                     ?: listOf(markItemInfo.approx?.exact ?: "")
 
@@ -425,7 +444,7 @@ class BookmarkDetailViewModel(
                 val result = apiService.addBookmarkMark(params)
                 val markId = result.data?.mark_id ?: return@launch
 
-                // 3. 用后端返回的 mark_id 回补到 JS Bridge 的本地数据
+                // 3. 回补 mark_id
                 webViewState.evaluateJs(
                     "window.SlaxWebViewBridge.updateMarkIdByUuid('${markItemInfo.id}', $markId)"
                 )
@@ -442,6 +461,105 @@ class BookmarkDetailViewModel(
                 }
             }.onFailure { error ->
                 println("[划线] 添加到已有 mark 失败: ${error.message}")
+                withContext(Dispatchers.Main) {
+                    onComplete(markItemInfo)
+                }
+            }
+        }
+    }
+
+    /**
+     * 临时选区的划线路径：addStrokeBySource → API → updateMarkIdByUuid
+     */
+    private fun addStrokeToTemporaryMark(
+        webViewState: AppWebViewState,
+        markItemInfo: BridgeMarkItemInfo,
+        bookmarkIdStr: String,
+        onComplete: (BridgeMarkItemInfo) -> Unit,
+    ) {
+        val sourceJson = escapeJsTemplateString(
+            markDetailJson.encodeToString(markItemInfo.source)
+        )
+        val approxJson = markItemInfo.approx?.let {
+            escapeJsTemplateString(markDetailJson.encodeToString(it))
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val currentUserId = getCurrentUserId()?.toLongOrNull() ?: 0L
+
+                // 1. 调用 JS Bridge addStrokeBySource，创建 MarkItemInfo + 渲染 + 返回接口数据
+                val approxArg = if (approxJson != null) "`$approxJson`" else "undefined"
+                val jsScript = "window.SlaxWebViewBridge.addStrokeBySource(" +
+                    "`$sourceJson`, $currentUserId, $approxArg)"
+
+                val resultJson = suspendCancellableCoroutine { cont ->
+                    webViewState.evaluateJsWithCallback(jsScript) { result ->
+                        cont.resumeWith(Result.success(result))
+                    }
+                }
+
+                if (resultJson.isBlank() || resultJson == "null") {
+                    println("[划线] addStrokeBySource 返回空")
+                    return@launch
+                }
+
+                // 解析返回的 StrokeCreateData
+                val actualJson = if (resultJson.startsWith("\"")) {
+                    Json.decodeFromString<String>(resultJson)
+                } else {
+                    resultJson
+                }
+                val createData = Json.decodeFromString<StrokeCreateData>(actualJson)
+
+                // 2. 转换 source 并调用后端
+                val markSource = createData.source.map { src ->
+                    when (src.type) {
+                        "image" -> MarkPathItem.Image(path = src.xpath)
+                        else -> MarkPathItem.Text(
+                            path = src.xpath,
+                            start = src.start_offset,
+                            end = src.end_offset
+                        )
+                    }
+                }
+
+                val selectContent = createData.select_content.map { item ->
+                    when (item.type) {
+                        "image" -> item.src
+                        else -> item.text
+                    }
+                }
+
+                val params = AddMarkParams(
+                    bookmark_uid = bookmarkIdStr,
+                    type = MarkType.LINE,
+                    source = markSource,
+                    select_content = selectContent,
+                    approx_source = createData.approx_source,
+                )
+
+                val result = apiService.addBookmarkMark(params)
+                val markId = result.data?.mark_id ?: return@launch
+
+                // 3. 回补 mark_id
+                webViewState.evaluateJs(
+                    "window.SlaxWebViewBridge.updateMarkIdByUuid('${createData.uuid}', $markId)"
+                )
+
+                // 4. 构造更新后的 markItemInfo（用新 uuid 替换空 id）
+                val updatedInfo = markItemInfo.copy(
+                    id = createData.uuid,
+                    stroke = markItemInfo.stroke + BridgeMarkStrokeInfo(
+                        markId = markId,
+                        userId = currentUserId,
+                    )
+                )
+                withContext(Dispatchers.Main) {
+                    onComplete(updatedInfo)
+                }
+            }.onFailure { error ->
+                println("[划线] 临时选区创建失败: ${error.message}")
                 withContext(Dispatchers.Main) {
                     onComplete(markItemInfo)
                 }
@@ -493,6 +611,236 @@ class BookmarkDetailViewModel(
                 }
             }.onFailure { error ->
                 println("[划线] 删除失败: ${error.message}")
+                withContext(Dispatchers.Main) {
+                    onComplete(markItemInfo)
+                }
+            }
+        }
+    }
+
+    /**
+     * 为 mark 添加评论的完整链路。
+     *
+     * 根据 markItemInfo.id 是否为空自动选择路径：
+     * - **已有 mark**（id 非空）：调用 addCommentByUuid 在本地追加评论
+     * - **临时选区**（id 为空）：调用 addCommentBySource 创建 MarkItemInfo 并追加评论
+     *
+     * 后续流程统一：调用后端 API 创建 → 回补 mark_id → 更新 UI。
+     *
+     * @param webViewState 用于执行 JS Bridge 调用
+     * @param markItemInfo 当前选中的 mark 信息
+     * @param comment 评论文本内容
+     * @param parentId 回复目标的 markId（普通评论传 null，回复时传被回复评论的 markId）
+     * @param onComplete 操作完成回调，参数为更新后的 markItemInfo
+     */
+    @OptIn(kotlin.time.ExperimentalTime::class)
+    fun addCommentToMark(
+        webViewState: AppWebViewState,
+        markItemInfo: BridgeMarkItemInfo,
+        comment: String,
+        parentId: Long? = null,
+        onComplete: (BridgeMarkItemInfo) -> Unit,
+    ) {
+        val bookmarkIdStr = _bookmarkId.value ?: return
+        val isTemporary = markItemInfo.id.isEmpty()
+
+        if (isTemporary) {
+            addCommentToTemporaryMark(webViewState, markItemInfo, bookmarkIdStr, comment, parentId, onComplete)
+        } else {
+            addCommentToExistingMark(webViewState, markItemInfo, bookmarkIdStr, comment, parentId, onComplete)
+        }
+    }
+
+    /**
+     * 已有 mark 的评论路径：addCommentByUuid → API → updateCommentMarkIdByUuid
+     */
+    @OptIn(kotlin.time.ExperimentalTime::class)
+    private fun addCommentToExistingMark(
+        webViewState: AppWebViewState,
+        markItemInfo: BridgeMarkItemInfo,
+        bookmarkIdStr: String,
+        comment: String,
+        parentId: Long?,
+        onComplete: (BridgeMarkItemInfo) -> Unit,
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val currentUserId = getCurrentUserId()?.toLongOrNull() ?: 0L
+                val currentUser = userInfo.value
+                val now = kotlin.time.Clock.System.now()
+
+                // 1. JS Bridge 乐观渲染
+                val escapedComment = escapeJsTemplateString(comment)
+                val escapedUsername = escapeJsTemplateString(currentUser?.name ?: "")
+                val escapedAvatar = escapeJsTemplateString(currentUser?.picture ?: "")
+                webViewState.evaluateJs(
+                    "window.SlaxWebViewBridge.addCommentByUuid('${markItemInfo.id}', " +
+                        "{userId: $currentUserId, comment: `$escapedComment`, username: `$escapedUsername`, avatar: `$escapedAvatar`})"
+                )
+
+                // 2. 调用后端创建评论
+                val markType = if (parentId != null) MarkType.REPLY else MarkType.COMMENT
+                val selectContent = markItemInfo.approx?.raw_text?.let { listOf(it) }
+                    ?: listOf(markItemInfo.approx?.exact ?: "")
+
+                val params = AddMarkParams(
+                    bookmark_uid = bookmarkIdStr,
+                    type = markType,
+                    source = markItemInfo.source,
+                    select_content = selectContent,
+                    approx_source = markItemInfo.approx,
+                    comment = comment,
+                    parent_id = parentId,
+                )
+
+                val result = apiService.addBookmarkMark(params)
+                val markId = result.data?.mark_id ?: return@launch
+
+                // 3. 回补 mark_id
+                webViewState.evaluateJs(
+                    "window.SlaxWebViewBridge.updateCommentMarkIdByUuid('${markItemInfo.id}', $markId)"
+                )
+
+                // 4. 更新 markItemInfo 并回调
+                val newComment = BridgeMarkCommentInfo(
+                    markId = markId,
+                    comment = comment,
+                    userId = currentUserId,
+                    username = currentUser?.name ?: "",
+                    avatar = currentUser?.picture ?: "",
+                    createdAt = now.toString(),
+                )
+                val updatedInfo = markItemInfo.copy(
+                    comments = markItemInfo.comments + newComment
+                )
+                withContext(Dispatchers.Main) {
+                    onComplete(updatedInfo)
+                }
+            }.onFailure { error ->
+                println("[评论] 创建失败: ${error.message}")
+                withContext(Dispatchers.Main) {
+                    onComplete(markItemInfo)
+                }
+            }
+        }
+    }
+
+    /**
+     * 临时选区的评论路径：addCommentBySource → API → updateCommentMarkIdByUuid
+     *
+     * addCommentBySource 会在 JS 端创建新的 MarkItemInfo 并返回 uuid 和接口入参，
+     * 后续流程与已有 mark 一致。
+     */
+    @OptIn(kotlin.time.ExperimentalTime::class)
+    private fun addCommentToTemporaryMark(
+        webViewState: AppWebViewState,
+        markItemInfo: BridgeMarkItemInfo,
+        bookmarkIdStr: String,
+        comment: String,
+        parentId: Long?,
+        onComplete: (BridgeMarkItemInfo) -> Unit,
+    ) {
+        val sourceJson = escapeJsTemplateString(
+            markDetailJson.encodeToString(markItemInfo.source)
+        )
+        val approxJson = markItemInfo.approx?.let {
+            escapeJsTemplateString(markDetailJson.encodeToString(it))
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val currentUserId = getCurrentUserId()?.toLongOrNull() ?: 0L
+                val currentUser = userInfo.value
+                val now = kotlin.time.Clock.System.now()
+
+                val escapedComment = escapeJsTemplateString(comment)
+                val escapedUsername = escapeJsTemplateString(currentUser?.name ?: "")
+                val escapedAvatar = escapeJsTemplateString(currentUser?.picture ?: "")
+
+                // 1. 调用 JS Bridge addCommentBySource，创建 MarkItemInfo + 渲染 + 返回接口数据
+                val approxArg = if (approxJson != null) "`$approxJson`" else "undefined"
+                val jsScript = "window.SlaxWebViewBridge.addCommentBySource(" +
+                    "`$sourceJson`, " +
+                    "{userId: $currentUserId, comment: `$escapedComment`, username: `$escapedUsername`, avatar: `$escapedAvatar`}, " +
+                    "$approxArg)"
+
+                // 使用 suspendCancellableCoroutine 等待 JS 回调
+                val resultJson = suspendCancellableCoroutine { cont ->
+                    webViewState.evaluateJsWithCallback(jsScript) { result ->
+                        cont.resumeWith(Result.success(result))
+                    }
+                }
+
+                if (resultJson.isBlank() || resultJson == "null") {
+                    println("[评论] addCommentBySource 返回空")
+                    return@launch
+                }
+
+                // 解析返回的 StrokeCreateData（包含 uuid 和接口入参）
+                val actualJson = if (resultJson.startsWith("\"")) {
+                    Json.decodeFromString<String>(resultJson)
+                } else {
+                    resultJson
+                }
+                val createData = Json.decodeFromString<StrokeCreateData>(actualJson)
+
+                // 2. 将 StrokeCreateSource 转换为 MarkPathItem
+                val markSource = createData.source.map { src ->
+                    when (src.type) {
+                        "image" -> MarkPathItem.Image(path = src.xpath)
+                        else -> MarkPathItem.Text(
+                            path = src.xpath,
+                            start = src.start_offset,
+                            end = src.end_offset
+                        )
+                    }
+                }
+
+                val selectContent = createData.select_content.map { item ->
+                    when (item.type) {
+                        "image" -> item.src
+                        else -> item.text
+                    }
+                }
+
+                // 3. 调用后端创建评论
+                val markType = if (parentId != null) MarkType.REPLY else MarkType.COMMENT
+                val params = AddMarkParams(
+                    bookmark_uid = bookmarkIdStr,
+                    type = markType,
+                    source = markSource,
+                    select_content = selectContent,
+                    approx_source = createData.approx_source,
+                    comment = comment,
+                    parent_id = parentId,
+                )
+
+                val result = apiService.addBookmarkMark(params)
+                val markId = result.data?.mark_id ?: return@launch
+
+                // 4. 回补 mark_id
+                webViewState.evaluateJs(
+                    "window.SlaxWebViewBridge.updateCommentMarkIdByUuid('${createData.uuid}', $markId)"
+                )
+
+                // 5. 构造更新后的 markItemInfo（用新 uuid 替换空 id）
+                val newComment = BridgeMarkCommentInfo(
+                    markId = markId,
+                    comment = comment,
+                    userId = currentUserId,
+                    username = currentUser?.name ?: "",
+                    avatar = currentUser?.picture ?: "",
+                    createdAt = now.toString(),
+                )
+                val updatedInfo = markItemInfo.copy(
+                    id = createData.uuid,
+                    comments = markItemInfo.comments + newComment
+                )
+                withContext(Dispatchers.Main) {
+                    onComplete(updatedInfo)
+                }
+            }.onFailure { error ->
+                println("[评论] 临时选区创建失败: ${error.message}")
                 withContext(Dispatchers.Main) {
                     onComplete(markItemInfo)
                 }
