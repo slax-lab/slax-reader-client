@@ -711,7 +711,7 @@ class BookmarkDetailViewModel(
                     createdAt = now.toString(),
                 )
                 val updatedInfo = markItemInfo.copy(
-                    comments = markItemInfo.comments + newComment
+                    comments = insertCommentToList(markItemInfo.comments, newComment, parentId)
                 )
                 withContext(Dispatchers.Main) {
                     onComplete(updatedInfo)
@@ -834,7 +834,7 @@ class BookmarkDetailViewModel(
                 )
                 val updatedInfo = markItemInfo.copy(
                     id = createData.uuid,
-                    comments = markItemInfo.comments + newComment
+                    comments = insertCommentToList(markItemInfo.comments, newComment, parentId)
                 )
                 withContext(Dispatchers.Main) {
                     onComplete(updatedInfo)
@@ -844,6 +844,31 @@ class BookmarkDetailViewModel(
                 withContext(Dispatchers.Main) {
                     onComplete(markItemInfo)
                 }
+            }
+        }
+    }
+
+    /**
+     * 将新评论插入到 comments 列表的正确位置。
+     *
+     * - parentId 为 null：普通评论，追加到顶层列表末尾
+     * - parentId 非 null：回复，找到 parentId 所属的根评论，追加到其 children 末尾
+     */
+    private fun insertCommentToList(
+        comments: List<BridgeMarkCommentInfo>,
+        newComment: BridgeMarkCommentInfo,
+        parentId: Long?,
+    ): List<BridgeMarkCommentInfo> {
+        if (parentId == null) return comments + newComment
+
+        return comments.map { rootComment ->
+            // parentId 直接匹配根评论，或匹配根评论的某个子评论
+            val isTargetRoot = rootComment.markId == parentId ||
+                rootComment.children.any { it.markId == parentId }
+            if (isTargetRoot) {
+                rootComment.copy(children = rootComment.children + newComment)
+            } else {
+                rootComment
             }
         }
     }
