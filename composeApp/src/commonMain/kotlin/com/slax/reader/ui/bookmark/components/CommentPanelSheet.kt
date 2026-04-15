@@ -900,6 +900,7 @@ private fun PostCommentArea(
 ) {
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+    // 键盘弹出时额外增加 16dp 间距，避免输入框紧贴键盘顶部
     val keyboardExtraPadding = if (imeBottom > 0.dp) 16.dp else 0.dp
 
     Box(
