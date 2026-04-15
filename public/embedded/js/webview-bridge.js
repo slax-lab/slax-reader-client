@@ -1845,7 +1845,7 @@ var SlaxReaderWebBridgeExports = (function (exports) {
          * 如果移除后 stroke 和 comments 均为空，则整体删除该标记。
          *
          * @param uuid MarkItemInfo 的本地 UUID
-         * @param userId 要删除划线的用户ID
+         * @param userId 要取消划线的用户ID
          * @returns 是否成功删除（false 表示 uuid 不存在或该用户无划线）
          */
         removeStrokeByUuid(uuid, userId) {
@@ -2932,7 +2932,7 @@ var SlaxReaderWebBridgeExports = (function (exports) {
          * 若 stroke 和 comments 均为空，则整体删除该标记。
          *
          * @param uuid MarkItemInfo 的本地 UUID
-         * @param userId 要删除划线的用户ID
+         * @param userId 要取消划线的用户ID
          * @returns 是否成功删除
          */
         removeStrokeByUuid(uuid, userId) {

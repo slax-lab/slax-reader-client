@@ -61,9 +61,9 @@ object SelectionActionId {
 }
 
 /**
- * 构建选中菜单的操作列表（复制、划线/删除划线、评论）
+ * 构建选中菜单的操作列表（复制、划线/取消划线、评论）
  *
- * @param hasStroke 当前选区是否已有当前用户的划线，为 true 时显示"删除划线"
+ * @param hasStroke 当前选区是否已有当前用户的划线，为 true 时显示"取消划线"
  */
 @Composable
 fun rememberSelectionActions(hasStroke: Boolean = false): List<SelectionAction> {
@@ -89,7 +89,7 @@ fun rememberSelectionActions(hasStroke: Boolean = false): List<SelectionAction> 
  * @param webViewState WebView 状态，用于执行 JS 指令
  * @param onDismiss 隐藏选中菜单栏的回调，所有操作执行后统一调用
  * @param onHighlightRequest 点击"划线"按钮时的回调，由调用方触发划线流程
- * @param onRemoveHighlightRequest 点击"删除划线"按钮时的回调，由调用方触发删除划线流程
+ * @param onRemoveHighlightRequest 点击"取消划线"按钮时的回调，由调用方触发取消划线流程
  * @param onCommentRequest 点击"评论"按钮时的回调，由调用方显示评论面板
  */
 fun handleSelectionAction(

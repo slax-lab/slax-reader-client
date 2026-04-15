@@ -28,7 +28,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -82,6 +81,7 @@ import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.global_default_avatar
 import slax_reader_client.composeapp.generated.resources.ic_comment_panel_close
 import slax_reader_client.composeapp.generated.resources.ic_comment_panel_copy
+import slax_reader_client.composeapp.generated.resources.ic_comment_panel_highlight
 import slax_reader_client.composeapp.generated.resources.ic_comment_panel_highlighted
 
 /** 评论面板操作按钮的标识 */
@@ -130,7 +130,7 @@ private enum class HighlightUnderlineStyle {
  * @param highlightedText 当前划线选中的文本内容
  * @param visible 面板的显示状态
  * @param markItemInfo 当前选中的 mark 信息，内含 stroke 和 comments 数据
- * @param highlightLoading 划线/删除划线操作是否正在进行中，为 true 时第二个按钮显示转圈
+ * @param highlightLoading 划线/取消划线操作是否正在进行中，为 true 时第二个按钮显示转圈
  * @param userAvatarUrl 当前登录用户的头像 URL
  * @param onDismiss 关闭面板的回调
  * @param onActionClick 操作栏按钮点击回调，参数为 [CommentPanelActionId] 中定义的标识
@@ -303,7 +303,7 @@ private fun CommentPanelHeader(onDismiss: () -> Unit) {
 /**
  * 划线内容显示区
  *
- * 从上到下为：划线文本内容（带下划线）→ 操作栏（复制/划线或删除划线）→ 底部间距
+ * 从上到下为：划线文本内容（带下划线）→ 操作栏（复制/划线或取消划线）→ 底部间距
  *
  * 文本最多显示2行，超出省略号。根据 [underlineStyle] 在每行文字下方绘制：
  * - SOLID：实线下划线，颜色 #CCB69AFF
@@ -312,8 +312,8 @@ private fun CommentPanelHeader(onDismiss: () -> Unit) {
  *
  * @param text 划线选中的文本
  * @param underlineStyle 下划线样式
- * @param isStroked 是否已划线，决定第二个按钮显示"划线"还是"删除划线"
- * @param highlightLoading 划线/删除划线操作是否正在进行中
+ * @param isStroked 是否已划线，决定第二个按钮显示"划线"还是"取消划线"
+ * @param highlightLoading 划线/取消划线操作是否正在进行中
  * @param onActionClick 操作栏点击回调
  */
 @Composable
@@ -428,15 +428,15 @@ private fun HighlightedText(
 /**
  * 划线内容操作栏
  *
- * 包含复制和划线/删除划线两个按钮，整体水平+垂直居中，按钮间距40dp。
+ * 包含复制和划线/取消划线两个按钮，整体水平+垂直居中，按钮间距40dp。
  * 第二个按钮根据 [isStroked] 状态切换：
- * - 已划线时显示"删除划线"，点击触发 [CommentPanelActionId.REMOVE_HIGHLIGHT]
+ * - 已划线时显示"取消划线"，点击触发 [CommentPanelActionId.REMOVE_HIGHLIGHT]
  * - 未划线时显示"划线"，点击触发 [CommentPanelActionId.HIGHLIGHT]
  *
  * 当 [highlightLoading] 为 true 时，第二个按钮替换为加载转圈，禁止点击。
  *
  * @param isStroked 当前选中文本是否已划线
- * @param highlightLoading 划线/删除划线操作是否正在进行中
+ * @param highlightLoading 划线/取消划线操作是否正在进行中
  * @param onActionClick 按钮点击回调
  */
 @Composable
@@ -471,7 +471,7 @@ private fun HighlightedActionBar(
                     strokeWidth = 2.dp,
                 )
                 Text(
-                    text = if (isStroked) "删除划线" else "划线",
+                    text = if (isStroked) "取消划线" else "划线",
                     style = TextStyle(
                         fontSize = 14.sp,
                         lineHeight = 20.sp,
@@ -483,13 +483,13 @@ private fun HighlightedActionBar(
         } else if (isStroked) {
             HighlightedActionButton(
                 iconRes = Res.drawable.ic_comment_panel_highlighted,
-                label = "删除划线",
+                label = "取消划线",
                 contentDescription = "删除已有划线",
                 onClick = { onActionClick(CommentPanelActionId.REMOVE_HIGHLIGHT) }
             )
         } else {
             HighlightedActionButton(
-                iconRes = Res.drawable.ic_comment_panel_highlighted,
+                iconRes = Res.drawable.ic_comment_panel_highlight,
                 label = "划线",
                 contentDescription = "添加划线",
                 onClick = { onActionClick(CommentPanelActionId.HIGHLIGHT) }
@@ -609,9 +609,9 @@ private fun CommentCell(
         Spacer(modifier = Modifier.height(8.dp))
         CommentItemBody(comment = comment)
 
-        // 子评论列表模块（左侧 28dp 内间距，每个子评论上方 16dp 间距）
+        // 子评论列表模块（左侧 20dp 内间距，每个子评论上方 16dp 间距）
         if (comment.children.isNotEmpty()) {
-            Column(modifier = Modifier.padding(start = 28.dp)) {
+            Column(modifier = Modifier.padding(start = 20.dp)) {
                 comment.children.forEach { child ->
                     ChildCommentCell(comment = child, onReplyClick = onReplyClick)
                 }
@@ -636,7 +636,7 @@ private fun ChildCommentCell(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 16.dp)
+            .padding(top = 16.dp, start = 8.dp)
     ) {
         // 子评论头部
         CommentItemHeader(comment = comment, onReplyClick = { onReplyClick(comment) })

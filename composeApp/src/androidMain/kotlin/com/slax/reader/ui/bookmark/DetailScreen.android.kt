@@ -159,7 +159,7 @@ actual fun DetailScreen(
         // 复制成功 Toast 状态
         var showCopyToast by remember { mutableStateOf(false) }
 
-        // 当前选区是否命中已有划线（用于 SelectionActionBar 的"划线"/"删除划线"切换）
+        // 当前选区是否命中已有划线（用于 SelectionActionBar 的"划线"/"取消划线"切换）
         val selectionHasStroke = selectedMarkItemInfo?.stroke?.isNotEmpty() == true
 
         val showMenu = selectionMenuVisible && selectionYPx > 0f && selectionYPx < screenHeightPx
@@ -189,7 +189,14 @@ actual fun DetailScreen(
                                 selectionMenuState.value = false
                             },
                             onHighlightRequest = {
-                                viewModel.strokeHighlight(webViewState)
+                                val markInfo = selectedMarkItemInfoState.value ?: return@handleSelectionAction
+                                viewModel.addStrokeToMark(
+                                    webViewState = webViewState,
+                                    markItemInfo = markInfo,
+                                    onComplete = { updatedInfo ->
+                                        selectedMarkItemInfoState.value = updatedInfo
+                                    }
+                                )
                             },
                             onRemoveHighlightRequest = {
                                 // 删除已有 mark 的划线

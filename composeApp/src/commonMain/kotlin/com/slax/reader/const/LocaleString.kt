@@ -560,7 +560,7 @@ val localeString: Map<String, Map<String, String>> = mapOf(
         "en" to "Highlight"
     ),
     "selection_action_remove_highlight" to mapOf(
-        "zh" to "删除划线",
+        "zh" to "取消划线",
         "en" to "Remove"
     ),
     "selection_action_comment" to mapOf(
