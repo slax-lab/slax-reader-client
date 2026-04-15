@@ -613,7 +613,11 @@ private fun CommentCell(
         if (comment.children.isNotEmpty()) {
             Column(modifier = Modifier.padding(start = 20.dp)) {
                 comment.children.forEach { child ->
-                    ChildCommentCell(comment = child, onReplyClick = onReplyClick)
+                    ChildCommentCell(
+                        comment = child,
+                        parentComment = comment,
+                        onReplyClick = onReplyClick
+                    )
                 }
             }
         }
@@ -623,14 +627,16 @@ private fun CommentCell(
 /**
  * 子评论单元格
  *
- * 上方 16dp 间距。与父评论共享相同的头部和内容布局。
+ * 上方 16dp 间距。与父评论共享相同的头部布局，内容前增加"回复 XXX："前缀标识被回复人。
  *
  * @param comment 子评论数据
+ * @param parentComment 父评论数据，当 reply 信息缺失时用于获取被回复人名称
  * @param onReplyClick 点击回复按钮的回调
  */
 @Composable
 private fun ChildCommentCell(
     comment: BridgeMarkCommentInfo,
+    parentComment: BridgeMarkCommentInfo,
     onReplyClick: (BridgeMarkCommentInfo) -> Unit,
 ) {
     Column(
@@ -641,9 +647,9 @@ private fun ChildCommentCell(
         // 子评论头部
         CommentItemHeader(comment = comment, onReplyClick = { onReplyClick(comment) })
 
-        // 子评论内容（距头部 8dp，左侧 28dp 内间距）
+        // 子评论内容（距头部 8dp，左侧 28dp 内间距），带"回复 XXX："前缀
         Spacer(modifier = Modifier.height(8.dp))
-        CommentItemBody(comment = comment)
+        ChildCommentItemBody(comment = comment, parentComment = parentComment)
     }
 }
 
@@ -749,6 +755,47 @@ private fun CommentItemHeader(
 private fun CommentItemBody(comment: BridgeMarkCommentInfo) {
     Text(
         text = if (comment.isDeleted) "该评论已删除" else comment.comment,
+        style = commentBodyTextStyle,
+        modifier = Modifier.padding(start = 28.dp)
+    )
+}
+
+/**
+ * 子评论内容模块
+ *
+ * 在评论文本前增加"回复 XXX："前缀，其中 XXX 为被回复人用户名。
+ * "回复 "和"："使用 #FF999999 灰色，XXX 使用 #FF999999 灰色，评论正文使用 #FF0F1419。
+ * 被回复人优先取 reply.username，缺失时取 parentComment.username。
+ *
+ * @param comment 子评论数据
+ * @param parentComment 父评论数据，当 reply 信息缺失时用于获取被回复人名称
+ */
+@Composable
+private fun ChildCommentItemBody(
+    comment: BridgeMarkCommentInfo,
+    parentComment: BridgeMarkCommentInfo,
+) {
+    if (comment.isDeleted) {
+        Text(
+            text = "该评论已删除",
+            style = commentBodyTextStyle,
+            modifier = Modifier.padding(start = 28.dp)
+        )
+        return
+    }
+
+    val replyUsername = comment.reply?.username?.ifBlank { null }
+        ?: parentComment.username.ifBlank { "未知用户" }
+
+    Text(
+        text = buildAnnotatedString {
+            append("回复 ")
+            withStyle(SpanStyle(color = Color(0xFF999999))) {
+                append(replyUsername)
+            }
+            append("：")
+            append(comment.comment)
+        },
         style = commentBodyTextStyle,
         modifier = Modifier.padding(start = 28.dp)
     )
@@ -948,9 +995,9 @@ private const val REPLY_SENTINEL = "\u200B"
  * 默认展示占位文字"发表评论"，输入内容后高度自动撑高。
  * 键盘右下角显示发送键（ImeAction.Send），按下后提交评论。
  *
- * 回复模式下通过 [VisualTransformation] 在输入文字前内联渲染"回复 XXX："前缀：
+ * 回复模式下通过 [VisualTransformation] 在输入文字前内联渲染"@XXX "前缀：
  * - 前缀嵌在文字流中，视觉上与用户输入的文字在同一行自然衔接
- * - "回复"二字使用 #FF999999 颜色，"XXX："使用 #FF333333 颜色
+ * - "@XXX " 使用 #FF999999 灰色
  * - 字号与输入框一致（14sp）
  * - 前缀不可选中、不可编辑，读取 textFieldValue.text 时不包含前缀
  * - 输入框为空时按退格键，通过 [REPLY_SENTINEL] 哨兵字符检测到退格操作并清除前缀
@@ -1059,12 +1106,11 @@ private fun PostCommentTextField(
 /**
  * 回复前缀视觉变换
  *
- * 通过 [VisualTransformation] 在输入文字前方内联插入"回复 XXX："前缀。
+ * 通过 [VisualTransformation] 在输入文字前方内联插入"@XXX "前缀。
  * 前缀仅存在于视觉渲染层，不影响实际文本值，光标无法移入前缀区域。
  *
  * 颜色方案：
- * - "回复 "：#FF999999（灰色）
- * - "XXX："：#FF333333（深色，与用户输入文字一致）
+ * - "@XXX "：#FF999999（灰色）
  *
  * @param username 被回复人的用户名
  */
@@ -1072,19 +1118,14 @@ private class ReplyPrefixVisualTransformation(
     private val username: String,
 ) : VisualTransformation {
 
-    private val prefixReply = "回复 "
-    private val prefixName = "${username}："
-    private val prefixLength = prefixReply.length + prefixName.length
+    private val prefix = "@$username "
+    private val prefixLength = prefix.length
 
     override fun filter(text: AnnotatedString): TransformedText {
         val transformed = buildAnnotatedString {
-            // "回复 " 灰色
+            // "@XXX " 灰色
             withStyle(SpanStyle(color = Color(0xFF999999))) {
-                append(prefixReply)
-            }
-            // "XXX：" 深色
-            withStyle(SpanStyle(color = Color(0xFF333333))) {
-                append(prefixName)
+                append(prefix)
             }
             // 用户实际输入的文字
             append(text)
