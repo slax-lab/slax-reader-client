@@ -777,6 +777,21 @@ class BookmarkDetailViewModel(
     }
 
     /**
+     * 删除评论。
+     *
+     * @param markId 要删除的评论的 markId
+     * @param markItemInfo 当前选中的 mark 信息
+     * @param onComplete 操作完成回调，参数为更新后的 markItemInfo
+     */
+    fun deleteComment(
+        markId: Long,
+        markItemInfo: BridgeMarkItemInfo,
+        onComplete: (BridgeMarkItemInfo) -> Unit,
+    ) {
+        // TODO: 后续实现删除评论的具体逻辑
+    }
+
+    /**
      * 将新评论插入到 comments 列表的正确位置。
      *
      * - parentId 为 null：普通评论，追加到顶层列表末尾
