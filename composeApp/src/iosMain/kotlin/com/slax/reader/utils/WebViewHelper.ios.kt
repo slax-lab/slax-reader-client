@@ -638,10 +638,13 @@ actual fun WebView(
                 this.navigationDelegate = navigationDelegate
 
                 val request = NSURLRequest(uRL = NSURL(string = url))
-                webState.initialCookies?.let { cookies ->
-                    webState.setCookies(cookies, url, {
+                val cookies = webState.initialCookies
+                if (cookies != null) {
+                    webState.setCookies(cookies, url) {
                         loadRequest(request)
-                    })
+                    }
+                } else {
+                    loadRequest(request)
                 }
             }
         },
