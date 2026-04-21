@@ -1131,6 +1131,7 @@ var SlaxReaderWebBridgeExports = (function (exports) {
     class SelectionMonitor {
         constructor(container) {
             this.isMonitoring = false;
+            this.lastSelectionText = '';
             /**
              * 处理选择变化事件（带防抖）
              */
@@ -1150,6 +1151,11 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                     if (!this.container.contains(range.commonAncestorContainer)) {
                         return;
                     }
+                    const currentText = selection.toString();
+                    if (currentText === this.lastSelectionText) {
+                        return;
+                    }
+                    this.lastSelectionText = currentText;
                     const selectionInfo = this.parseSelectionFromRange(range);
                     if (selectionInfo.selection.length === 0) {
                         return;
@@ -1214,6 +1220,7 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             this.container.removeEventListener('mouseup', this.handleMouseUp);
             this.container.removeEventListener('touchend', this.handleMouseUp);
             this.isMonitoring = false;
+            this.lastSelectionText = '';
             this.onSelectionCallback = undefined;
         }
         /**
@@ -2020,6 +2027,28 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             return result;
         }
         /**
+         * 获取当前选区数据
+         */
+        captureCurrentSelection() {
+            const selection = window.getSelection();
+            if (!selection || selection.rangeCount === 0) return null;
+            const range = selection.getRangeAt(0);
+            if (range.collapsed) return null;
+            if (!this.container.contains(range.commonAncestorContainer)) return null;
+            const selectionInfo = this.getSelectionInfoFromRange(range);
+            if (selectionInfo.length === 0) return null;
+            const paths = this.buildPathsFromSelectionInfo(selectionInfo);
+            if (paths.length === 0) return null;
+            const { approx, approxCreate } = this.parseApproxFromRange(range);
+            const selectContent = this.buildSelectContent(selectionInfo);
+            const apiSource = this.convertToApiSource(paths);
+            return {
+                source: apiSource,
+                select_content: selectContent,
+                approx_source: approxCreate
+            };
+        }
+        /**
          * 通过 uuid 找到对应的 MarkItemInfo，并将其 stroke 中 mark_id 为空的项更新为指定 mark_id
          *
          * 用于在后端 API 返回 mark_id 后，将本地临时记录与后端数据关联
@@ -2229,9 +2258,86 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             return deepEqual(source1, source2);
         }
         /**
-         * 从 approx 信息获取 Range（占位实现）
+         * 从 approx 信息定位文本并返回 Range
          */
-        getRangeFromApprox(_approx) {
+        getRangeFromApprox(approx) {
+            if (!approx || !approx.exact) return null;
+            const textContent = this.container.textContent || '';
+            if (!textContent) return null;
+
+            const getNodeAndOffsetAtPosition = (position) => {
+                const walker = document.createTreeWalker(this.container, NodeFilter.SHOW_TEXT, null);
+                let currentNode;
+                let currentOffset = 0;
+                while ((currentNode = walker.nextNode())) {
+                    const nodeLength = currentNode.textContent.length;
+                    if (currentOffset + nodeLength > position) {
+                        return { node: currentNode, offset: position - currentOffset };
+                    }
+                    currentOffset += nodeLength;
+                }
+                return null;
+            };
+
+            const createRangeFromMatch = (start, end) => {
+                const startInfo = getNodeAndOffsetAtPosition(start);
+                const endInfo = getNodeAndOffsetAtPosition(end);
+                if (!startInfo || !endInfo) return null;
+                const range = document.createRange();
+                range.setStart(startInfo.node, startInfo.offset);
+                range.setEnd(endInfo.node, endInfo.offset);
+                return range;
+            };
+
+            const calculateSimilarity = (str1, str2) => {
+                if (!str1 || !str2) return 0;
+                const maxErrors = Math.floor(Math.max(str1.length, str2.length) * 0.3);
+                const longer = str1.length < str2.length ? str2 : str1;
+                const shorter = str1.length < str2.length ? str1 : str2;
+                const matches = search(longer, shorter, maxErrors);
+                if (matches.length === 0) return 0;
+                const best = matches.reduce((b, c) => c.errors < b.errors ? c : b, matches[0]);
+                return 1 - best.errors / str1.length;
+            };
+
+            const calculateContextScore = (start, end, expected) => {
+                start = Math.max(0, start);
+                end = Math.min(textContent.length, end);
+                if (start >= end || !expected) return 0;
+                const actual = textContent.substring(start, end);
+                if (actual.length < expected.length * 0.5) return 0.3;
+                return calculateSimilarity(actual, expected);
+            };
+
+            // 策略1：模糊匹配 + 上下文评分
+            const fuzzyMatches = search(textContent, approx.exact, 0);
+            if (fuzzyMatches.length > 0) {
+                const ranked = fuzzyMatches.map(m => {
+                    const prefixScore = calculateContextScore(m.start - (approx.prefix || '').length, m.start, approx.prefix);
+                    const suffixScore = calculateContextScore(m.end, m.end + (approx.suffix || '').length, approx.suffix);
+                    let positionScore = 0;
+                    if (approx.position_start != null && approx.position_end != null) {
+                        const distance = Math.abs((m.start + m.end) / 2 - (approx.position_start + approx.position_end) / 2);
+                        positionScore = 1 - Math.min(1, distance / (textContent.length / 2));
+                    }
+                    return { start: m.start, end: m.end, totalScore: prefixScore * 0.4 + suffixScore * 0.4 + positionScore * 0.2 };
+                });
+                const best = ranked.reduce((b, c) => c.totalScore > b.totalScore ? c : b, ranked[0]);
+                if (best.totalScore > 0.3) return createRangeFromMatch(best.start, best.end);
+            }
+
+            // 策略2：引用匹配（允许 2 个字符误差）
+            const quoteMatches = search(textContent, approx.exact, 2);
+            if (quoteMatches.length > 0) {
+                quoteMatches.sort((a, b) => {
+                    const aRate = a.errors / (a.end - a.start);
+                    const bRate = b.errors / (b.end - b.start);
+                    if (aRate !== bRate) return aRate - bRate;
+                    return Math.abs(a.end - a.start - approx.exact.length) - Math.abs(b.end - b.start - approx.exact.length);
+                });
+                return createRangeFromMatch(quoteMatches[0].start, quoteMatches[0].end);
+            }
+
             return null;
         }
         /**
@@ -2565,6 +2671,23 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             }
             catch (error) {
                 postToNativeBridge({ type: 'selectionError', error: `Failed to stroke selection: ${error}` });
+                return null;
+            }
+        }
+        /**
+         * 获取当前选区数据
+         */
+        captureCurrentSelection() {
+            if (!this.markManager) {
+                console.warn('[WebView Bridge] captureCurrentSelection: selection monitoring not started');
+                return null;
+            }
+            try {
+                const result = this.markManager.captureCurrentSelection();
+                return result ? JSON.stringify(result) : null;
+            }
+            catch (error) {
+                postToNativeBridge({ type: 'selectionError', error: `Failed to capture selection: ${error}` });
                 return null;
             }
         }

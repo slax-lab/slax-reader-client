@@ -58,7 +58,7 @@ val repositoryModule = module {
     single { LocalBookmarkDao(get(named("daoScope")), get()) }
     single { SubscriptionDao(get(named("daoScope")), get()) }
     single { PowerSyncDao(get()) }
-    single { BookmarkCommentDao(get(named("daoScope")), get()) }
+    single { BookmarkCommentDao(get()) }
 }
 
 val viewModelModule = module {

@@ -45,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -141,19 +142,21 @@ fun CommentPanelSheet(
     highlightedText: String,
     visible: Boolean,
     markItemInfo: BridgeMarkItemInfo? = null,
+    panelComments: List<BridgeMarkCommentInfo> = emptyList(),
     highlightLoading: Boolean = false,
+    autoFocusInput: Boolean = false,
     userAvatarUrl: String? = null,
     onDismiss: () -> Unit,
     onActionClick: (actionId: String) -> Unit,
+    onSubmitComment: (comment: String, replyTarget: ReplyTarget?) -> Unit = { _, _ -> },
     commentListContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    // 从 markItemInfo 中提取评论列表和下划线样式
-    val comments = markItemInfo?.comments ?: emptyList()
+    val comments = panelComments.ifEmpty { markItemInfo?.comments ?: emptyList() }
     val isStroked = markItemInfo?.stroke?.isNotEmpty() == true
     val underlineStyle = when {
         isStroked -> HighlightUnderlineStyle.SOLID
-        markItemInfo?.comments?.isNotEmpty() == true -> HighlightUnderlineStyle.DASHED
+        comments.isNotEmpty() -> HighlightUnderlineStyle.DASHED
         else -> HighlightUnderlineStyle.NONE
     }
 
@@ -253,7 +256,12 @@ fun CommentPanelSheet(
                     PostCommentArea(
                         userAvatarUrl = userAvatarUrl,
                         replyTarget = replyTarget,
-                        onClearReplyTarget = { replyTarget = null }
+                        autoFocusInput = autoFocusInput,
+                        onClearReplyTarget = { replyTarget = null },
+                        onSubmit = { comment ->
+                            onSubmitComment(comment, replyTarget)
+                            replyTarget = null
+                        }
                     )
                 }
             }
@@ -822,21 +830,13 @@ private fun CommentListArea(
     }
 }
 
-/**
- * 发表评论区域
- *
- * 背景色 #FFF5F5F3，内部白色容器：上左右间距8dp，下方为 bottomInset + 8dp。
- * 键盘弹出时底部额外增加16dp间距，避免输入框紧贴键盘。
- *
- * @param userAvatarUrl 当前登录用户的头像 URL
- * @param replyTarget 当前回复目标，为 null 时表示普通评论模式
- * @param onClearReplyTarget 清除回复目标的回调（退格删除前缀时触发）
- */
 @Composable
 private fun PostCommentArea(
     userAvatarUrl: String? = null,
     replyTarget: ReplyTarget? = null,
+    autoFocusInput: Boolean = false,
     onClearReplyTarget: () -> Unit = {},
+    onSubmit: (comment: String) -> Unit = {},
 ) {
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
@@ -851,27 +851,20 @@ private fun PostCommentArea(
         PostCommentInputContainer(
             userAvatarUrl = userAvatarUrl,
             replyTarget = replyTarget,
-            onClearReplyTarget = onClearReplyTarget
+            autoFocusInput = autoFocusInput,
+            onClearReplyTarget = onClearReplyTarget,
+            onSubmit = onSubmit
         )
     }
 }
 
-/**
- * 发表评论输入容器
- *
- * 白色背景，圆角8dp，最小高度38dp。
- * 左侧为当前用户圆形头像(24dp)，距顶部固定7dp（不垂直居中）。
- * 右侧输入框自适应高度，最大100dp。
- *
- * @param userAvatarUrl 当前登录用户的头像 URL
- * @param replyTarget 当前回复目标
- * @param onClearReplyTarget 清除回复目标的回调
- */
 @Composable
 private fun PostCommentInputContainer(
     userAvatarUrl: String? = null,
     replyTarget: ReplyTarget? = null,
+    autoFocusInput: Boolean = false,
     onClearReplyTarget: () -> Unit = {},
+    onSubmit: (comment: String) -> Unit = {},
 ) {
     Row(
         modifier = Modifier
@@ -902,7 +895,9 @@ private fun PostCommentInputContainer(
         // 右侧输入框：自适应高度，最大100dp，超出可滚动
         PostCommentTextField(
             replyTarget = replyTarget,
+            autoFocusInput = autoFocusInput,
             onClearReplyTarget = onClearReplyTarget,
+            onSubmit = onSubmit,
             modifier = Modifier
                 .weight(1f)
                 .heightIn(min = 38.dp, max = 100.dp)
@@ -910,42 +905,32 @@ private fun PostCommentInputContainer(
     }
 }
 
-/**
- * 回复模式下嵌入输入框的零宽空格哨兵字符
- *
- * 用途：当输入框处于回复模式时，始终在文本开头保持一个不可见的零宽空格。
- * 这样即使用户看到的输入框是"空的"，实际文本值为 "\u200B" 而非 ""，
- * 按退格键时会删除该哨兵字符，触发 onValueChange，从而被检测到并清除回复状态。
- *
- * 注意：后续提交评论时，需用 [String.replace] 剥离此字符以获取用户实际输入内容。
- */
 private const val REPLY_SENTINEL = "\u200B"
 
-/**
- * 评论输入框
- *
- * 默认展示占位文字"发表评论"，输入内容后高度自动撑高。
- * 键盘右下角显示确认键（ImeAction.Done）。
- *
- * 回复模式下通过 [VisualTransformation] 在输入文字前内联渲染"回复 XXX："前缀：
- * - 前缀嵌在文字流中，视觉上与用户输入的文字在同一行自然衔接
- * - "回复"二字使用 #FF999999 颜色，"XXX："使用 #FF333333 颜色
- * - 字号与输入框一致（14sp）
- * - 前缀不可选中、不可编辑，读取 textFieldValue.text 时不包含前缀
- * - 输入框为空时按退格键，通过 [REPLY_SENTINEL] 哨兵字符检测到退格操作并清除前缀
- *
- * @param replyTarget 当前回复目标，为 null 时显示普通评论模式
- * @param onClearReplyTarget 清除回复目标的回调
- * @param modifier 外部修饰符
- */
 @Composable
 private fun PostCommentTextField(
     replyTarget: ReplyTarget? = null,
+    autoFocusInput: Boolean = false,
     onClearReplyTarget: () -> Unit = {},
+    onSubmit: (comment: String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var textFieldValue by remember { mutableStateOf(TextFieldValue()) }
     val scrollState = rememberScrollState()
+    val focusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
+
+    LaunchedEffect(autoFocusInput) {
+        if (autoFocusInput) {
+            focusRequester.requestFocus()
+        }
+    }
+
+    fun doSubmit() {
+        val rawText = textFieldValue.text.replace(REPLY_SENTINEL, "").trim()
+        if (rawText.isBlank()) return
+        onSubmit(rawText)
+        textFieldValue = TextFieldValue()
+    }
 
     // 回复目标切换时重置输入内容
     // 回复模式下插入零宽空格哨兵字符，使输入框"非空"，确保退格键能触发 onValueChange
@@ -994,8 +979,13 @@ private fun PostCommentTextField(
         },
         textStyle = inputTextStyle,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+            onDone = { doSubmit() }
+        ),
         visualTransformation = visualTransformation,
-        modifier = modifier.verticalScroll(scrollState),
+        modifier = modifier
+            .focusRequester(focusRequester)
+            .verticalScroll(scrollState),
         decorationBox = { innerTextField ->
             Box(
                 modifier = Modifier

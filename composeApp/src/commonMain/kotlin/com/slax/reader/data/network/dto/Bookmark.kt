@@ -8,6 +8,7 @@ import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonClassDiscriminator
 
 @Serializable
@@ -322,15 +323,29 @@ data class AddMarkResult(
  */
 @Serializable
 data class StrokeCreateData(
-    /** 本地生成的 UUID，用于后续通过 updateMarkIdByUuid 关联后端 mark_id */
-    val uuid: String,
-    /** 后端接口 source 字段 */
+    val uuid: String = "",
     val source: List<StrokeCreateSource> = emptyList(),
-    /** 后端接口 select_content 字段 */
     val select_content: List<StrokeCreateSelectContent> = emptyList(),
-    /** 后端接口 approx_source 字段 */
     val approx_source: MarkPathApprox? = null,
-)
+) {
+    companion object {
+        private val parseJson = Json { ignoreUnknownKeys = true }
+
+        fun fromJsResult(resultJson: String): StrokeCreateData {
+            val actualJson = if (resultJson.startsWith("\""))
+                parseJson.decodeFromString<String>(resultJson)
+            else resultJson
+            return parseJson.decodeFromString(actualJson)
+        }
+    }
+
+    fun toMarkPath(): List<MarkPathItem> = source.map { src ->
+        when (src.type) {
+            "image" -> MarkPathItem.Image(path = src.xpath)
+            else -> MarkPathItem.Text(path = src.xpath, start = src.start_offset, end = src.end_offset)
+        }
+    }
+}
 
 /** 划线接口的 source 条目，字段映射：xpath → MarkPathItem.path */
 @Serializable
@@ -352,4 +367,11 @@ data class StrokeCreateSelectContent(
     val text: String = "",
     /** 图片 src（文本类型为空字符串） */
     val src: String = "",
+)
+
+@Serializable
+data class MarkCommentUser(
+    val uuid: String = "",
+    val nick_name: String = "",
+    val avatar: String = ""
 )

@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.window.Popup
 import com.slax.reader.ui.bookmark.components.*
+import com.slax.reader.ui.bookmark.states.LocalMarkInteraction
 import com.slax.reader.ui.bookmark.states.ScrollInfo
 import com.slax.reader.utils.AppWebView
 import com.slax.reader.utils.AppWebViewState
@@ -44,6 +45,7 @@ data class WebViewMessage(
     val selectionY: Float? = null,
     val markId: String? = null,
     val markItemInfo: String? = null,
+    val data: String? = null,
 )
 
 @SuppressLint("UseKtx", "ConfigurationScreenWidthHeight")
@@ -144,11 +146,9 @@ actual fun DetailScreen(
         )
 
         // 文本选中操作菜单
-        val selectionMenuVisible by LocalSelectionMenuVisible.current
-        val selectionYPx by LocalSelectionYPx.current
-        // 提前在 @Composable 上下文中捕获 MutableState 引用，供非 @Composable lambda 使用
-        val selectionMenuState = LocalSelectionMenuVisible.current
-        val commentPanelState = LocalCommentPanelVisible.current
+        val markInteraction = LocalMarkInteraction.current
+        val selectionMenuVisible = markInteraction.menuVisible
+        val selectionYPx = markInteraction.selectionY
         val density = LocalDensity.current
         val minTopPx = with(density) { 60.dp.roundToPx() }
         val menuGapPx = with(density) { 32.dp.roundToPx() }
@@ -180,16 +180,17 @@ actual fun DetailScreen(
                             actionId = actionId,
                             webViewState = webViewState,
                             onDismiss = {
-                                // 隐藏选中菜单
-                                selectionMenuState.value = false
+                                markInteraction.dismissMenu()
                             },
                             onHighlightRequest = {
-                                // 触发划线流程
                                 viewModel.strokeHighlight(webViewState)
                             },
                             onCommentRequest = {
-                                // 显示评论面板
-                                commentPanelState.value = true
+                                markInteraction.dismissMenu()
+                                viewModel.captureSelectionForComment(webViewState) { text, markInfo ->
+                                    markInteraction.openPanelForNewComment(text, markInfo)
+                                    viewModel.commentDelegate.setSelectedMark(markInfo.source)
+                                }
                             }
                         )
                         if (actionId == SelectionActionId.COPY) {
@@ -210,54 +211,61 @@ actual fun DetailScreen(
         OutlineDialog()
 
         // 评论面板
-        val commentPanelVisible by commentPanelState
-        val selectedText by LocalSelectedText.current
-        val selectedMarkItemInfoState = LocalSelectedMarkItemInfo.current
-        val selectedMarkItemInfo by selectedMarkItemInfoState
+        val selectedText = markInteraction.selectedText
+        val selectedMarkItemInfo = markInteraction.selectedMark
+        val panelComments by viewModel.commentDelegate.panelCommentsFlow.collectAsState()
         val clipboard = LocalClipboard.current
         val coroutineScope = rememberCoroutineScope()
         var highlightLoading by remember { mutableStateOf(false) }
         CommentPanelSheet(
             highlightedText = selectedText,
             markItemInfo = selectedMarkItemInfo,
+            panelComments = panelComments,
             highlightLoading = highlightLoading,
+            autoFocusInput = markInteraction.shouldAutoFocus,
             userAvatarUrl = viewModel.userInfo.value?.picture,
-            visible = commentPanelVisible,
+            visible = markInteraction.panelVisible,
             onDismiss = {
-                selectedMarkItemInfoState.value = null
-                commentPanelState.value = false
+                markInteraction.dismissPanel()
+                viewModel.commentDelegate.setSelectedMark(null)
+            },
+            onSubmitComment = { comment, replyTarget ->
+                val markInfo = markInteraction.selectedMark ?: return@CommentPanelSheet
+
+                viewModel.submitComment(
+                    markItemInfo = markInfo,
+                    comment = comment,
+                    replyMarkId = replyTarget?.markId,
+                )
             },
             onActionClick = { actionId ->
                 when (actionId) {
                     CommentPanelActionId.COPY -> {
-                        // 将选中文本复制到系统剪贴板
                         val clipData = ClipData.newPlainText("slax_highlight", selectedText)
                         coroutineScope.launch {
                             clipboard.setClipEntry(ClipEntry(clipData))
                         }
                     }
                     CommentPanelActionId.HIGHLIGHT -> {
-                        // 为已有 mark 添加划线
-                        val markInfo = selectedMarkItemInfoState.value ?: return@CommentPanelSheet
+                        val markInfo = markInteraction.selectedMark ?: return@CommentPanelSheet
                         highlightLoading = true
                         viewModel.addStrokeToMark(
                             webViewState = webViewState,
                             markItemInfo = markInfo,
                             onComplete = { updatedInfo ->
-                                selectedMarkItemInfoState.value = updatedInfo
+                                markInteraction.selectedMark = updatedInfo
                                 highlightLoading = false
                             }
                         )
                     }
                     CommentPanelActionId.REMOVE_HIGHLIGHT -> {
-                        // 删除已有 mark 的划线
-                        val markInfo = selectedMarkItemInfoState.value ?: return@CommentPanelSheet
+                        val markInfo = markInteraction.selectedMark ?: return@CommentPanelSheet
                         highlightLoading = true
                         viewModel.removeStrokeFromMark(
                             webViewState = webViewState,
                             markItemInfo = markInfo,
                             onComplete = { updatedInfo ->
-                                selectedMarkItemInfoState.value = updatedInfo
+                                markInteraction.selectedMark = updatedInfo
                                 highlightLoading = false
                             }
                         )

@@ -2,6 +2,7 @@ package com.slax.reader.utils
 
 import com.slax.reader.data.network.dto.MarkPathApprox
 import com.slax.reader.data.network.dto.MarkPathItem
+import com.slax.reader.data.network.dto.StrokeCreateSelectContent
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -45,4 +46,20 @@ data class BridgeMarkItemInfo(
     val stroke: List<BridgeMarkStrokeInfo> = emptyList(),
     val comments: List<BridgeMarkCommentInfo> = emptyList(),
     val approx: MarkPathApprox? = null,
+) {
+    fun toSelectContent(): List<StrokeCreateSelectContent> {
+        val text = approx?.raw_text ?: approx?.exact ?: return emptyList()
+        return listOf(StrokeCreateSelectContent(text = text))
+    }
+}
+
+@Serializable
+private data class SelectionEventData(
+    val paths: List<MarkPathItem> = emptyList(),
+    val approx: MarkPathApprox? = null,
 )
+
+fun parseSelectionData(dataJson: String): BridgeMarkItemInfo? = runCatching {
+    val data = bridgeJson.decodeFromString<SelectionEventData>(dataJson)
+    BridgeMarkItemInfo(source = data.paths, approx = data.approx)
+}.getOrNull()
