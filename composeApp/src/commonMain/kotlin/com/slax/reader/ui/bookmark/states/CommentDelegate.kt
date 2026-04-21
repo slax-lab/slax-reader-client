@@ -2,7 +2,6 @@ package com.slax.reader.ui.bookmark.states
 
 import com.powersync.ExperimentalPowerSyncAPI
 import com.powersync.PowerSyncDatabase
-import com.powersync.sync.SyncStreamStatus
 import com.powersync.sync.SyncStreamSubscription
 import com.powersync.utils.JsonParam
 import com.slax.reader.const.AppError
@@ -25,6 +24,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -52,7 +52,7 @@ class CommentDelegate(
     }
 
     private var sub: SyncStreamSubscription? = null
-    private val _status = MutableStateFlow<SyncStreamStatus?>(null)
+    private var markUsersJob: Job? = null
     private val _bookmarkId = MutableStateFlow<String?>(null)
     private val _markUsers = MutableStateFlow<Map<String, MarkCommentUser>>(emptyMap())
     private val userInfo = userDao.watchUserInfo()
@@ -70,11 +70,12 @@ class CommentDelegate(
         val commentsBySource: Map<String, List<BookmarkCommentPO>> = emptyMap(),
         val repliesByRootId: Map<String, List<BookmarkCommentPO>> = emptyMap(),
         val raw: List<BookmarkCommentPO> = emptyList(),
+        val markUsers: Map<String, MarkCommentUser> = emptyMap(),
     )
 
     private val processed: StateFlow<Processed> = comments
         .onEach { refreshMarkUsersIfNeeded(it) }
-        .combine(_markUsers) { list, _ -> buildProcessed(list) }
+        .combine(_markUsers) { list, markUsers -> buildProcessed(list, markUsers) }
         .distinctUntilChanged()
         .stateIn(scope, SharingStarted.Eagerly, Processed())
 
@@ -86,8 +87,8 @@ class CommentDelegate(
     private val _selectedSourceJson = MutableStateFlow<String?>(null)
 
     val panelCommentsFlow: StateFlow<List<BridgeMarkCommentInfo>> = combine(
-        processed, _selectedSourceJson, _markUsers
-    ) { p, sourceJson, _ ->
+        processed, _selectedSourceJson
+    ) { p, sourceJson ->
         if (sourceJson == null) emptyList() else buildPanelComments(p, sourceJson)
     }.stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -101,17 +102,18 @@ class CommentDelegate(
             "bookmark_uuid" to JsonParam.String(bookmarkId)
         )
         sub = database.syncStream("bookmark_comment", streamParams).subscribe(ttl = 5.days)
-        _status.value = database.currentStatus.forStream(sub!!)
         _bookmarkId.value = bookmarkId
     }
 
     fun reset() {
-        scope.launch(Dispatchers.IO) { sub?.unsubscribe() }
+        val currentSub = sub
         sub = null
+        markUsersJob?.cancel()
+        markUsersJob = null
+        scope.launch(Dispatchers.IO) { currentSub?.unsubscribe() }
         _markUsers.value = emptyMap()
         _bookmarkId.value = null
         _selectedSourceJson.value = null
-        _status.value = null
     }
 
     suspend fun addMark(
@@ -156,8 +158,9 @@ class CommentDelegate(
         if (userIds.isEmpty()) return
         val unknownIds = userIds - _markUsers.value.keys - setOfNotNull(userInfo.value?.id)
         if (unknownIds.isEmpty()) return
+        if (markUsersJob?.isActive == true) return
 
-        scope.launch(Dispatchers.IO) {
+        markUsersJob = scope.launch(Dispatchers.IO) {
             runCatching {
                 val cached = localBookmarkDao.getMarkUsers(bookmarkId)
                 if (!cached.isNullOrBlank()) {
@@ -174,7 +177,7 @@ class CommentDelegate(
         }
     }
 
-    private fun buildProcessed(list: List<BookmarkCommentPO>): Processed {
+    private fun buildProcessed(list: List<BookmarkCommentPO>, markUsers: Map<String, MarkCommentUser>): Processed {
         if (list.isEmpty()) return Processed()
 
         val userMap = mutableMapOf<String, MarkUserInfo>()
@@ -184,7 +187,7 @@ class CommentDelegate(
 
         for (po in list) {
             val poUserId = po.metadataObj?.user_id ?: ""
-            collectUser(poUserId, userMap)
+            collectUser(poUserId, into = userMap, markUsers = markUsers)
 
             markList += MarkInfo(
                 id = po.id.toStableId(),
@@ -214,27 +217,25 @@ class CommentDelegate(
             commentsBySource = bySource,
             repliesByRootId = byRootId,
             raw = list,
+            markUsers = markUsers,
         )
     }
 
     private fun buildPanelComments(p: Processed, sourceJson: String): List<BridgeMarkCommentInfo> {
         val rootPOs = p.commentsBySource[sourceJson] ?: return emptyList()
 
-        // 先把所有 root COMMENT 转为 BridgeMarkCommentInfo
         val rootMap = LinkedHashMap<Long, BridgeMarkCommentInfo>(rootPOs.size)
         for (po in rootPOs) {
-            rootMap[po.id.toStableId()] = po.toBridgeComment()
+            rootMap[po.id.toStableId()] = po.toBridgeComment(p.markUsers)
         }
 
-        // 找到属于这些 root 的 REPLY
         for (po in rootPOs) {
             val replies = p.repliesByRootId[po.id] ?: continue
             val rootId = po.id.toStableId()
             val root = rootMap[rootId] ?: continue
 
             val children = replies.map { replyPO ->
-                val reply = replyPO.toBridgeComment()
-                // 被回复人
+                val reply = replyPO.toBridgeComment(p.markUsers)
                 val parentId = replyPO.metadataObj?.parent_id.toStableId()
                 val parent = rootMap[parentId]
                 if (parent != null) {
@@ -248,15 +249,14 @@ class CommentDelegate(
             rootMap[rootId] = root.copy(children = children)
         }
 
-        // 过滤：已删除且无子回复的不显示；子回复中已删除的直接移除
         return rootMap.values
             .map { it.copy(children = it.children.filter { c -> !c.isDeleted }) }
             .filter { !it.isDeleted || it.children.isNotEmpty() }
     }
 
-    private fun BookmarkCommentPO.toBridgeComment(): BridgeMarkCommentInfo {
+    private fun BookmarkCommentPO.toBridgeComment(markUsers: Map<String, MarkCommentUser>): BridgeMarkCommentInfo {
         val poUserId = metadataObj?.user_id ?: ""
-        val (name, avatar) = resolveUserInfo(poUserId)
+        val (name, avatar) = resolveUserInfo(poUserId, markUsers)
         return BridgeMarkCommentInfo(
             markId = id.toStableId(),
             comment = comment,
@@ -269,17 +269,17 @@ class CommentDelegate(
         )
     }
 
-    private fun resolveUserInfo(userId: String): Pair<String, String> {
+    private fun resolveUserInfo(userId: String, markUsers: Map<String, MarkCommentUser>): Pair<String, String> {
         val user = userInfo.value
         if (userId == user?.id) return (user.name) to (user.picture)
-        val cached = _markUsers.value[userId]
+        val cached = markUsers[userId]
         return (cached?.nick_name ?: "") to (cached?.avatar ?: "")
     }
 
-    private fun collectUser(userId: String, into: MutableMap<String, MarkUserInfo>) {
+    private fun collectUser(userId: String, into: MutableMap<String, MarkUserInfo>, markUsers: Map<String, MarkCommentUser>) {
         if (userId.isBlank() || userId in into) return
         val numId = userId.toStableId()
-        val (name, avatar) = resolveUserInfo(userId)
+        val (name, avatar) = resolveUserInfo(userId, markUsers)
         into[numId.toString()] = MarkUserInfo(id = numId, username = name, avatar = avatar)
     }
 }

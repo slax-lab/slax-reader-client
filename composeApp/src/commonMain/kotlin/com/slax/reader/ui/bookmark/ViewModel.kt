@@ -385,9 +385,10 @@ class BookmarkDetailViewModel(
             runCatching {
                 val uid = commentDelegate.currentUserId ?: ""
                 val uidLong = commentDelegate.currentUserIdLong
+                val sourceJson = markDetailJson.encodeToString(markItemInfo.source)
 
                 val recordId = commentDelegate.findCommentId { po ->
-                    po.type == MarkType.LINE.value && po.is_deleted == 0 && po.metadataObj?.user_id == uid
+                    po.type == MarkType.LINE.value && po.is_deleted == 0 && po.metadataObj?.user_id == uid && po.source == sourceJson
                 }
                 if (recordId != null) commentDelegate.deleteComment(recordId)
 
