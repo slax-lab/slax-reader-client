@@ -15,7 +15,7 @@
     "i18next": "^25.8.0",
     "react": "19.2.0",
     "react-i18next": "^16.5.3",
-    "react-native": "0.83.1",
+    "react-native": "^0.83.5",
     "react-native-get-random-values": "^1.11.0",
     "react-native-markdown-display": "^7.0.2",
     "reakt-native-toolkit": "^0.22.0"
