@@ -23,7 +23,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -189,7 +189,7 @@ fun CommentPanelSheet(
 
     // 底部弹窗主体，从下方滑入
     BoxWithConstraints(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize().imePadding(),
         contentAlignment = Alignment.BottomCenter
     ) {
         // 弹窗最大高度 = 可用高度 - 80dp
@@ -839,14 +839,12 @@ private fun PostCommentArea(
     onSubmit: (comment: String) -> Unit = {},
 ) {
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
-    val keyboardExtraPadding = if (imeBottom > 0.dp) 16.dp else 0.dp
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color(0xFFF5F5F3))
-            .padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = bottomInset + 8.dp + keyboardExtraPadding)
+            .padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = bottomInset + 8.dp)
     ) {
         PostCommentInputContainer(
             userAvatarUrl = userAvatarUrl,
