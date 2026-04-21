@@ -73,4 +73,19 @@ post_install do |installer|
       end
     end
   end
+
+  installer.aggregate_targets.map(&:user_project).uniq.each do |user_project|
+    user_project.targets.each do |target|
+      if target.name == 'share'
+        target.build_configurations.each do |config|
+          ldflags = config.build_settings['OTHER_LDFLAGS'] || ['$(inherited)']
+          ldflags = Array(ldflags)
+          unless ldflags.include?('-undefined')
+            config.build_settings['OTHER_LDFLAGS'] = ldflags + ['-undefined', 'dynamic_lookup']
+          end
+        end
+      end
+    end
+    user_project.save
+  end
 end

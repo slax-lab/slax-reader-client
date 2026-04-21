@@ -35,8 +35,8 @@ plugins {
     alias(libs.plugins.google.services)
     alias(libs.plugins.firebase.crashlytics)
     kotlin("native.cocoapods")
-    id("com.codingfeline.buildkonfig") version "0.17.1"
-    id("org.jetbrains.kotlinx.atomicfu") version "0.31.0"
+    id("com.codingfeline.buildkonfig") version "0.18.0"
+    id("org.jetbrains.kotlinx.atomicfu") version "0.32.1"
     id("io.github.ttypic.swiftklib") version "0.6.4"
     id("com.facebook.react")
     id("com.google.devtools.ksp") version "2.3.4"
