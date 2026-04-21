@@ -20,9 +20,8 @@ import com.slax.reader.ui.bookmark.states.CommentDelegate
 import com.slax.reader.ui.bookmark.states.OutlineDelegate
 import com.slax.reader.ui.bookmark.states.OverlayDelegate
 import com.slax.reader.ui.bookmark.states.OverviewDelegate
+import com.slax.reader.ui.bookmark.states.toStableId
 import com.slax.reader.utils.bookmarkEvent
-import com.slax.reader.data.network.dto.AddMarkParams
-import com.slax.reader.data.network.dto.MarkPathItem
 import com.slax.reader.data.network.dto.MarkType
 import com.slax.reader.data.network.dto.StrokeCreateData
 import com.slax.reader.utils.AppWebViewState
@@ -109,17 +108,13 @@ class BookmarkDetailViewModel(
     private var savePositionJob: Job? = null
 
     private var contentJob: Job? = null
-
-    /** 当前登录用户的 userId，用于 JS 侧判断划线归属 */
-    suspend fun getCurrentUserId(): String? {
-        return appPreferences.getAuthInfo().firstOrNull()?.userId
-    }
+    private var markObserveJob: Job? = null
 
     val userInfo = userDao.watchUserInfo()
     val subscriptionInfo = subscriptionDao.watchSubscriptionInfo()
 
     val overlayDelegate = OverlayDelegate()
-    val commentDelegate = CommentDelegate(database, commentDao, viewModelScope)
+    val commentDelegate = CommentDelegate(database, commentDao, localBookmarkDao, userDao, apiService, viewModelScope)
     val outlineDelegate = OutlineDelegate(localBookmarkDao, apiService, viewModelScope)
     val overviewDelegate = OverviewDelegate(localBookmarkDao, apiService, viewModelScope)
     val bookmarkDelegate = BookmarkDelegate(bookmarkDao, _bookmarkId, viewModelScope)
@@ -134,6 +129,7 @@ class BookmarkDetailViewModel(
         initialReadPosition = null
         currentPosition = -1f
         savePositionJob?.cancel()
+        markObserveJob?.cancel()
 
         overlayDelegate.reset()
         outlineDelegate.reset()
@@ -143,6 +139,7 @@ class BookmarkDetailViewModel(
         // 异步加载保存的阅读位置，不阻塞主流程
         viewModelScope.launch(Dispatchers.IO) {
             loadSavedPosition(bookmarkId)
+            commentDelegate.bind(bookmarkId)
         }
 
         loadOutline()
@@ -291,176 +288,94 @@ class BookmarkDetailViewModel(
         outlineDelegate.loadOutline(id)
     }
 
-    /**
-     * 拉取当前书签的划线列表并通过 [BookmarkDetailEffect.DrawMarks] 派发给 UI 层。
-     * 在 WebView 页面加载完成（PageLoaded）后调用，确保 JS Bridge 已就绪。
-     * 失败时静默忽略，划线为非核心功能，不影响阅读体验。
-     */
-    fun loadAndDrawMarks() {
-        val id = _bookmarkId.value ?: return
-        viewModelScope.launch(Dispatchers.IO) {
-            runCatching { apiService.getBookmarkMarkList(id) }
-                .onSuccess { httpData ->
-                    httpData.data?.let { markDetail ->
-                        val json = markDetailJson.encodeToString(markDetail)
-                        _effects.emit(BookmarkDetailEffect.DrawMarks(json))
-                    }
-                }
-        }
-    }
-
-    /**
-     * 执行划线操作的完整链路：
-     * 1. 调用 JS Bridge strokeCurrentSelection 获取选区数据并在 WebView 中即时渲染
-     * 2. 将选区数据转换后调用后端 /v1/mark/create 创建划线记录
-     * 3. 用后端返回的 mark_id 通过 JS Bridge updateMarkIdByUuid 回补到本地
-     *
-     * @param webViewState 用于执行 JS Bridge 调用
-     */
-    fun strokeHighlight(webViewState: AppWebViewState) {
-        val bookmarkIdStr = _bookmarkId.value ?: return
-
-        // 调用 JS Bridge 获取选区数据（同时在前端渲染划线）
-        webViewState.evaluateJsWithCallback(
-            "window.SlaxWebViewBridge.strokeCurrentSelection()"
-        ) { resultJson ->
-            // JS 返回 null 或空字符串表示没有有效选区
-            if (resultJson.isNullOrBlank() || resultJson == "null") return@evaluateJsWithCallback
-
-            viewModelScope.launch(Dispatchers.IO) {
-                runCatching {
-                    // 解析 JS Bridge 返回的 StrokeCreateData
-                    // WebView 回调会对字符串值再包一层引号，需先解码外层字符串
-                    val actualJson = if (resultJson.startsWith("\"")) {
-                        Json.decodeFromString<String>(resultJson)
-                    } else {
-                        resultJson
-                    }
-                    val strokeData = Json.decodeFromString<StrokeCreateData>(actualJson)
-
-                    // 将 StrokeCreateSource 转换为 MarkPathItem（xpath → path 字段映射）
-                    val markSource = strokeData.source.map { src ->
-                        when (src.type) {
-                            "image" -> MarkPathItem.Image(path = src.xpath)
-                            else -> MarkPathItem.Text(
-                                path = src.xpath,
-                                start = src.start_offset,
-                                end = src.end_offset
-                            )
-                        }
-                    }
-
-                    // 将 StrokeCreateSelectContent 提取为纯文本列表
-                    val selectContent = strokeData.select_content.map { item ->
-                        when (item.type) {
-                            "image" -> item.src
-                            else -> item.text
-                        }
-                    }
-
-                    val params = AddMarkParams(
-                        bookmark_uid = bookmarkIdStr,
-                        type = MarkType.LINE,
-                        source = markSource,
-                        select_content = selectContent,
-                        approx_source = strokeData.approx_source,
-                    )
-
-                    // 调用后端创建划线
-                    val result = apiService.addBookmarkMark(params)
-                    val markId = result.data?.mark_id ?: return@launch
-
-                    // 用后端返回的 mark_id 回补到 JS Bridge 的本地数据
-                    webViewState.evaluateJs(
-                        "window.SlaxWebViewBridge.updateMarkIdByUuid('${strokeData.uuid}', $markId)"
-                    )
-                }.onFailure { error ->
-                    println("[划线] 创建失败: ${error.message}")
-                }
+    fun startObservingMarks() {
+        markObserveJob?.cancel()
+        markObserveJob = viewModelScope.launch(Dispatchers.IO) {
+            commentDelegate.markDetailFlow.collect { markDetail ->
+                val json = markDetailJson.encodeToString(markDetail)
+                _effects.emit(BookmarkDetailEffect.DrawMarks(json))
             }
         }
     }
 
-    /**
-     * 为已有 mark（通过 CommentPanelSheet 点击已有标记进入）添加划线。
-     *
-     * 与 [strokeHighlight] 不同的是，这里无需调用 strokeCurrentSelection 获取选区，
-     * 因为 markItemInfo 已包含完整的 source/approx 数据。流程为：
-     * 1. 调用 JS Bridge addStrokeByUuid 在前端渲染划线样式
-     * 2. 调用后端 /v1/mark/create 创建划线记录
-     * 3. 用后端返回的 mark_id 通过 JS Bridge updateMarkIdByUuid 回补到本地
-     *
-     * @param webViewState 用于执行 JS Bridge 调用
-     * @param markItemInfo 当前选中的 mark 信息
-     * @param onComplete 操作完成回调，参数为更新后的 markItemInfo（新增了当前用户的 stroke）
-     */
+    fun strokeHighlight(webViewState: AppWebViewState) {
+        webViewState.evaluateJsWithCallback(
+            "window.SlaxWebViewBridge.strokeCurrentSelection()"
+        ) { resultJson ->
+            if (resultJson.isNullOrBlank() || resultJson == "null") return@evaluateJsWithCallback
+            viewModelScope.launch(Dispatchers.IO) {
+                runCatching {
+                    val data = StrokeCreateData.fromJsResult(resultJson)
+                    val localId = commentDelegate.addMark(
+                        type = MarkType.LINE,
+                        source = data.toMarkPath(),
+                        approxSource = data.approx_source,
+                        selectContent = data.select_content,
+                    )
+                    webViewState.evaluateJs(
+                        "window.SlaxWebViewBridge.updateMarkIdByUuid('${data.uuid}', ${localId.toStableId()})"
+                    )
+                }.onFailure { println("[划线] 创建失败: ${it.message}") }
+            }
+        }
+    }
+
+    fun captureSelectionForComment(
+        webViewState: AppWebViewState,
+        onCaptured: (text: String, markInfo: BridgeMarkItemInfo) -> Unit,
+    ) {
+        webViewState.evaluateJsWithCallback(
+            "window.SlaxWebViewBridge.captureCurrentSelection()"
+        ) { resultJson ->
+            if (resultJson.isNullOrBlank() || resultJson == "null") return@evaluateJsWithCallback
+            runCatching {
+                val data = StrokeCreateData.fromJsResult(resultJson)
+                val markInfo = BridgeMarkItemInfo(
+                    source = data.toMarkPath(),
+                    approx = data.approx_source,
+                )
+                val text = data.approx_source?.raw_text
+                    ?: data.approx_source?.exact
+                    ?: ""
+                if (text.isNotBlank()) {
+                    onCaptured(text, markInfo)
+                }
+            }.onFailure { println("[评论] 获取选区数据失败: ${it.message}") }
+        }
+    }
+
     fun addStrokeToMark(
         webViewState: AppWebViewState,
         markItemInfo: BridgeMarkItemInfo,
         onComplete: (BridgeMarkItemInfo) -> Unit,
     ) {
-        val bookmarkIdStr = _bookmarkId.value ?: return
-
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
-                val currentUserId = getCurrentUserId()?.toLongOrNull() ?: 0L
+                val uidLong = commentDelegate.currentUserIdLong
 
-                // 1. 调用 JS Bridge 在前端渲染划线样式
-                webViewState.evaluateJs(
-                    "window.SlaxWebViewBridge.addStrokeByUuid('${markItemInfo.id}', $currentUserId)"
-                )
+                webViewState.evaluateJs("window.SlaxWebViewBridge.addStrokeByUuid('${markItemInfo.id}', $uidLong)")
 
-                // 2. 将 markItemInfo 的 source 转换后调用后端创建划线
-                val selectContent = markItemInfo.approx?.raw_text?.let { listOf(it) }
-                    ?: listOf(markItemInfo.approx?.exact ?: "")
-
-                val params = AddMarkParams(
-                    bookmark_uid = bookmarkIdStr,
+                val localId = commentDelegate.addMark(
                     type = MarkType.LINE,
                     source = markItemInfo.source,
-                    select_content = selectContent,
-                    approx_source = markItemInfo.approx,
+                    approxSource = markItemInfo.approx,
+                    selectContent = markItemInfo.toSelectContent(),
                 )
-
-                val result = apiService.addBookmarkMark(params)
-                val markId = result.data?.mark_id ?: return@launch
-
-                // 3. 用后端返回的 mark_id 回补到 JS Bridge 的本地数据
                 webViewState.evaluateJs(
-                    "window.SlaxWebViewBridge.updateMarkIdByUuid('${markItemInfo.id}', $markId)"
+                    "window.SlaxWebViewBridge.updateMarkIdByUuid('${markItemInfo.id}', ${localId.toStableId()})"
                 )
 
-                // 4. 更新 markItemInfo 并回调
-                val updatedInfo = markItemInfo.copy(
-                    stroke = markItemInfo.stroke + BridgeMarkStrokeInfo(
-                        markId = markId,
-                        userId = currentUserId,
-                    )
+                val updated = markItemInfo.copy(
+                    stroke = markItemInfo.stroke + BridgeMarkStrokeInfo(markId = localId.toStableId(), userId = uidLong)
                 )
-                withContext(Dispatchers.Main) {
-                    onComplete(updatedInfo)
-                }
-            }.onFailure { error ->
-                println("[划线] 添加到已有 mark 失败: ${error.message}")
-                withContext(Dispatchers.Main) {
-                    onComplete(markItemInfo)
-                }
+                withContext(Dispatchers.Main) { onComplete(updated) }
+            }.onFailure {
+                println("[划线] 添加到已有 mark 失败: ${it.message}")
+                withContext(Dispatchers.Main) { onComplete(markItemInfo) }
             }
         }
     }
 
-    /**
-     * 删除已有 mark 的划线。
-     *
-     * 流程为：
-     * 1. 调用后端 /v1/mark/delete 删除划线记录
-     * 2. 调用 JS Bridge removeStrokeByUuid 从前端移除划线渲染
-     * 3. 更新 markItemInfo 并回调
-     *
-     * @param webViewState 用于执行 JS Bridge 调用
-     * @param markItemInfo 当前选中的 mark 信息
-     * @param onComplete 操作完成回调，参数为更新后的 markItemInfo（移除了当前用户的 stroke）
-     */
     fun removeStrokeFromMark(
         webViewState: AppWebViewState,
         markItemInfo: BridgeMarkItemInfo,
@@ -468,35 +383,57 @@ class BookmarkDetailViewModel(
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
-                val currentUserId = getCurrentUserId()?.toLongOrNull() ?: 0L
+                val uid = commentDelegate.currentUserId ?: ""
+                val uidLong = commentDelegate.currentUserIdLong
 
-                // 找到当前用户的 stroke 记录，获取 markId 用于调用删除接口
-                val userStroke = markItemInfo.stroke.find { it.userId == currentUserId }
-                val markId = userStroke?.markId
-
-                // 1. 调用后端删除划线（markId 存在时）
-                if (markId != null) {
-                    apiService.removeBookmark(markId)
+                val recordId = commentDelegate.findCommentId { po ->
+                    po.type == MarkType.LINE.value && po.is_deleted == 0 && po.metadataObj?.user_id == uid
                 }
+                if (recordId != null) commentDelegate.deleteComment(recordId)
 
-                // 2. 调用 JS Bridge 移除前端渲染
-                webViewState.evaluateJs(
-                    "window.SlaxWebViewBridge.removeStrokeByUuid('${markItemInfo.id}', $currentUserId)"
-                )
+                webViewState.evaluateJs("window.SlaxWebViewBridge.removeStrokeByUuid('${markItemInfo.id}', $uidLong)")
 
-                // 3. 更新 markItemInfo 并回调
-                val updatedInfo = markItemInfo.copy(
-                    stroke = markItemInfo.stroke.filter { it.userId != currentUserId }
-                )
-                withContext(Dispatchers.Main) {
-                    onComplete(updatedInfo)
-                }
-            }.onFailure { error ->
-                println("[划线] 删除失败: ${error.message}")
-                withContext(Dispatchers.Main) {
-                    onComplete(markItemInfo)
-                }
+                val updated = markItemInfo.copy(stroke = markItemInfo.stroke.filter { it.userId != uidLong })
+                withContext(Dispatchers.Main) { onComplete(updated) }
+            }.onFailure {
+                println("[划线] 删除失败: ${it.message}")
+                withContext(Dispatchers.Main) { onComplete(markItemInfo) }
             }
+        }
+    }
+
+    fun submitComment(
+        markItemInfo: BridgeMarkItemInfo,
+        comment: String,
+        replyMarkId: Long? = null,
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                if (replyMarkId != null) {
+                    val parentPO = commentDelegate.findComment { po ->
+                        po.id.toStableId() == replyMarkId
+                    } ?: return@launch
+                    val rootId = parentPO.metadataObj?.root_id ?: parentPO.id
+
+                    commentDelegate.addMark(
+                        type = MarkType.REPLY,
+                        source = markItemInfo.source,
+                        approxSource = markItemInfo.approx,
+                        selectContent = markItemInfo.toSelectContent(),
+                        comment = comment,
+                        rootId = rootId,
+                        parentId = parentPO.id,
+                    )
+                } else {
+                    commentDelegate.addMark(
+                        type = MarkType.COMMENT,
+                        source = markItemInfo.source,
+                        approxSource = markItemInfo.approx,
+                        selectContent = markItemInfo.toSelectContent(),
+                        comment = comment,
+                    )
+                }
+            }.onFailure { println("[评论] 提交失败: ${it.message}") }
         }
     }
 
@@ -546,6 +483,8 @@ class BookmarkDetailViewModel(
 
         contentJob?.cancel()
         contentJob = null
+        markObserveJob?.cancel()
+        markObserveJob = null
         commentDelegate.reset()
         outlineDelegate.reset()
         overviewDelegate.reset()

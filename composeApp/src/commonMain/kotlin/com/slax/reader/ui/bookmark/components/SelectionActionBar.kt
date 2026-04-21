@@ -91,7 +91,6 @@ fun handleSelectionAction(
 ) {
     when (actionId) {
         SelectionActionId.COPY -> {
-            // 通过 JS 执行复制操作，浏览器的 Selection 仍然处于选中状态
             webViewState.evaluateJs("document.execCommand('copy')")
         }
         SelectionActionId.HIGHLIGHT -> {
@@ -101,7 +100,6 @@ fun handleSelectionAction(
             onCommentRequest?.invoke()
         }
     }
-    // 所有操作执行后统一隐藏菜单
     onDismiss()
 }
 

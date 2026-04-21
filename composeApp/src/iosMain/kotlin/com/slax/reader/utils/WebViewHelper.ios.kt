@@ -155,11 +155,11 @@ actual fun AppWebView(
                         }
 
                         "textSelected" -> {
-                            val text = msg.text
+                            val markInfo = msg.data?.let { parseSelectionData(it) }
+                            val text = msg.text ?: markInfo?.approx?.exact
                             if (!text.isNullOrBlank()) {
-                                // 直接从 WKWebView 的 hitTest 获取触摸屏幕坐标（UIKit points）
                                 val touchY = (webState.webView as? NoMenuWKWebView)?.latestTouchScreenY ?: 0f
-                                webState.dispatchEvent(WebViewEvent.TextSelected(text, touchY))
+                                webState.dispatchEvent(WebViewEvent.TextSelected(text, touchY, markInfo))
                             }
                         }
 

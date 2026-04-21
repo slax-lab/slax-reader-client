@@ -137,9 +137,10 @@ actual fun AppWebView(
                                     }
 
                                     "textSelected" -> {
-                                        val text = msg.text
+                                        val markInfo = msg.data?.let { parseSelectionData(it) }
+                                        val text = msg.text ?: markInfo?.approx?.exact
                                         if (!text.isNullOrBlank()) {
-                                            webState.dispatchEvent(WebViewEvent.TextSelected(text, longPressScreenY))
+                                            webState.dispatchEvent(WebViewEvent.TextSelected(text, longPressScreenY, markInfo))
                                         }
                                     }
 

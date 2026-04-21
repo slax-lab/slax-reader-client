@@ -126,39 +126,8 @@ class ApiService(
         )
     }
 
-    suspend fun getBookmarkMarkList(id: String): HttpData<MarkDetail> {
-        return get("/v1/bookmark/mark_list", query = mapOf("bookmark_uid" to id))
-    }
-
-    suspend fun addBookmarkMark(params: AddMarkParams): HttpData<AddMarkResult> {
-        return post("/v1/mark/create", body = params)
-    }
-
-    suspend fun removeBookmark(markId: Long): HttpData<String> {
-        return post(
-            "/v1/mark/delete", body = mapOf(
-                "mark_id" to markId
-            )
-        )
-    }
-
-
-    suspend fun addBookmarkWithContent(
-        url: String,
-        content: String?,
-        title: String?
-    ): HttpData<CollectionBookmarkResult> {
-        return post(
-            "/v1/bookmark/add_url", body = CollectionBookmarkParam(
-                target_url = url, content = content, target_title = title
-            )
-        )
-    }
-
-    suspend fun createIapOrderId(productId: String): HttpData<CreateIapOrderResult> {
-        return post(
-            "/v1/subscription/create_inapp_purchase", body = CreateIapOrderParam(productId, platform = platformType)
-        )
+    suspend fun getMarkUsers(bookmarkUid: String): HttpData<List<MarkCommentUser>> {
+        return get("/v1/mark/users", query = mapOf("bookmark_uid" to bookmarkUid))
     }
 
     suspend fun checkIapResult(param: CheckIapParam) : HttpData<CheckIapResult> {
