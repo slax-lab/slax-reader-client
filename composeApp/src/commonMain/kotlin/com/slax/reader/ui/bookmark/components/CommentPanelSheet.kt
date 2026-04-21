@@ -71,6 +71,14 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupPositionProvider
 import com.github.panpf.sketch.rememberAsyncImagePainter
 import com.github.panpf.sketch.request.ComposableImageRequest
 import com.github.panpf.sketch.request.error
@@ -82,7 +90,9 @@ import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.global_default_avatar
 import slax_reader_client.composeapp.generated.resources.ic_comment_panel_close
 import slax_reader_client.composeapp.generated.resources.ic_comment_panel_copy
+import slax_reader_client.composeapp.generated.resources.ic_comment_panel_delete
 import slax_reader_client.composeapp.generated.resources.ic_comment_panel_highlighted
+import slax_reader_client.composeapp.generated.resources.ic_menu_action_copy
 
 /** 评论面板操作按钮的标识 */
 object CommentPanelActionId {
@@ -149,6 +159,7 @@ fun CommentPanelSheet(
     onDismiss: () -> Unit,
     onActionClick: (actionId: String) -> Unit,
     onSubmitComment: (comment: String, replyTarget: ReplyTarget?) -> Unit = { _, _ -> },
+    onDeleteComment: (markId: Long) -> Unit = {},
     commentListContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -243,7 +254,8 @@ fun CommentPanelSheet(
                                             markId = comment.markId,
                                             username = comment.username.ifBlank { "未知用户" }
                                         )
-                                    }
+                                    },
+                                    onDeleteComment = onDeleteComment
                                 )
                             }
                         } else {
@@ -569,15 +581,21 @@ private val commentBodyTextStyle = TextStyle(
  *
  * @param comments 评论数据列表
  * @param onReplyClick 点击回复按钮的回调，参数为被回复的评论
+ * @param onDeleteComment 删除评论的回调，参数为被删除评论的 markId
  */
 @Composable
 private fun DefaultCommentList(
     comments: List<BridgeMarkCommentInfo>,
     onReplyClick: (BridgeMarkCommentInfo) -> Unit,
+    onDeleteComment: (Long) -> Unit = {},
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         comments.forEach { comment ->
-            CommentCell(comment = comment, onReplyClick = onReplyClick)
+            CommentCell(
+                comment = comment,
+                onReplyClick = onReplyClick,
+                onDeleteComment = onDeleteComment
+            )
         }
     }
 }
@@ -585,36 +603,77 @@ private fun DefaultCommentList(
 /**
  * 评论单元格
  *
- * 左右各 20dp 内间距，上方 20dp 间距（无下方间距）。
- * 从上到下由：评论头部、评论内容、子评论列表 三部分组成。
- *
  * @param comment 评论数据
  * @param onReplyClick 点击回复按钮的回调
+ * @param onDeleteComment 删除评论的回调，参数为被删除评论的 markId
  */
 @Composable
 private fun CommentCell(
     comment: BridgeMarkCommentInfo,
     onReplyClick: (BridgeMarkCommentInfo) -> Unit,
+    onDeleteComment: (Long) -> Unit = {},
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 20.dp, top = 20.dp, end = 20.dp)
-    ) {
-        // 评论头部模块
-        CommentItemHeader(comment = comment, onReplyClick = { onReplyClick(comment) })
+    val clipboardManager = LocalClipboardManager.current
+    var isLongPressed by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
+    var longPressOffset by remember { mutableStateOf(Offset.Zero) }
 
-        // 评论内容模块（距头部 8dp，左侧 28dp 内间距）
-        Spacer(modifier = Modifier.height(8.dp))
-        CommentItemBody(comment = comment)
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(if (isLongPressed) Color(0xFFF5F5F3) else Color.Transparent)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onLongPress = { offset ->
+                            longPressOffset = offset
+                            isLongPressed = true
+                            showMenu = true
+                        }
+                    )
+                }
+                .padding(start = 20.dp, top = 20.dp)
+        ) {
+            // 评论头部模块
+            CommentItemHeader(comment = comment, onReplyClick = { onReplyClick(comment) })
 
-        // 子评论列表模块（左侧 28dp 内间距，每个子评论上方 16dp 间距）
-        if (comment.children.isNotEmpty()) {
-            Column(modifier = Modifier.padding(start = 28.dp)) {
-                comment.children.forEach { child ->
-                    ChildCommentCell(comment = child, onReplyClick = onReplyClick)
+            // 评论内容模块（距头部 8dp，左侧 28dp 内间距）
+            Spacer(modifier = Modifier.height(8.dp))
+            CommentItemBody(comment = comment)
+
+            // 子评论列表模块（左侧 28dp 内间距，每个子评论上方 16dp 间距）
+            if (comment.children.isNotEmpty()) {
+                Column(modifier = Modifier.padding(start = 28.dp)) {
+                    comment.children.forEach { child ->
+                        ChildCommentCell(
+                            comment = child,
+                            onReplyClick = onReplyClick,
+                            onDeleteComment = onDeleteComment
+                        )
+                    }
                 }
             }
+        }
+
+        // 长按弹出的操作菜单
+        if (showMenu) {
+            CommentContextMenu(
+                pressOffset = longPressOffset,
+                onCopyClick = {
+                    showMenu = false
+                    isLongPressed = false
+                    clipboardManager.setText(AnnotatedString(comment.comment))
+                },
+                onDeleteClick = {
+                    showMenu = false
+                    isLongPressed = false
+                    onDeleteComment(comment.markId)
+                },
+                onDismiss = {
+                    showMenu = false
+                    isLongPressed = false
+                }
+            )
         }
     }
 }
@@ -622,35 +681,70 @@ private fun CommentCell(
 /**
  * 子评论单元格
  *
- * 上方 16dp 间距。与父评论共享相同的头部和内容布局。
- *
  * @param comment 子评论数据
  * @param onReplyClick 点击回复按钮的回调
+ * @param onDeleteComment 删除评论的回调，参数为被删除评论的 markId
  */
 @Composable
 private fun ChildCommentCell(
     comment: BridgeMarkCommentInfo,
     onReplyClick: (BridgeMarkCommentInfo) -> Unit,
+    onDeleteComment: (Long) -> Unit = {},
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp)
-    ) {
-        // 子评论头部
-        CommentItemHeader(comment = comment, onReplyClick = { onReplyClick(comment) })
+    val clipboardManager = LocalClipboardManager.current
+    var isLongPressed by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
+    var longPressOffset by remember { mutableStateOf(Offset.Zero) }
 
-        // 子评论内容（距头部 8dp，左侧 28dp 内间距）
-        Spacer(modifier = Modifier.height(8.dp))
-        CommentItemBody(comment = comment)
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(if (isLongPressed) Color(0xFFF5F5F3) else Color.Transparent)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onLongPress = { offset ->
+                            longPressOffset = offset
+                            isLongPressed = true
+                            showMenu = true
+                        }
+                    )
+                }
+                .padding(top = 8.dp, start = 8.dp, bottom = 8.dp)
+        ) {
+            // 子评论头部
+            CommentItemHeader(comment = comment, onReplyClick = { onReplyClick(comment) })
+
+            // 子评论内容（距头部 8dp，左侧 28dp 内间距）
+            Spacer(modifier = Modifier.height(8.dp))
+            CommentItemBody(comment = comment)
+        }
+
+        // 长按弹出的操作菜单
+        if (showMenu) {
+            CommentContextMenu(
+                pressOffset = longPressOffset,
+                onCopyClick = {
+                    showMenu = false
+                    isLongPressed = false
+                    clipboardManager.setText(AnnotatedString(comment.comment))
+                },
+                onDeleteClick = {
+                    showMenu = false
+                    isLongPressed = false
+                    onDeleteComment(comment.markId)
+                },
+                onDismiss = {
+                    showMenu = false
+                    isLongPressed = false
+                }
+            )
+        }
     }
 }
 
 /**
  * 评论头部模块
- *
- * 左侧依次为：圆形头像(20dp) → 间距8dp → 名字 → 间距6dp → 竖分割线(9x0.5dp) → 间距6dp → 日期
- * 右侧为回复按钮。所有内容垂直居中。
  *
  * @param comment 评论数据
  * @param onReplyClick 点击回复按钮的回调
@@ -661,7 +755,7 @@ private fun CommentItemHeader(
     onReplyClick: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(end = 20.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // 圆形头像 20dp
@@ -749,8 +843,136 @@ private fun CommentItemBody(comment: BridgeMarkCommentInfo) {
     Text(
         text = if (comment.isDeleted) "该评论已删除" else comment.comment,
         style = commentBodyTextStyle,
-        modifier = Modifier.padding(start = 28.dp)
+        modifier = Modifier.padding(start = 28.dp, end = 20.dp)
     )
+}
+
+/** 长按菜单中菜单项的文字样式 */
+private val contextMenuTextStyle = TextStyle(
+    fontSize = 15.sp,
+    lineHeight = 21.sp,
+    color = Color(0xFFF5F5F3),
+    fontWeight = FontWeight.Normal
+)
+
+/**
+ * 评论操作菜单
+ *
+ * @param pressOffset 长按发生时的局部坐标，用于定位菜单水平位置
+ * @param onCopyClick 点击复制菜单项的回调
+ * @param onDeleteClick 点击删除菜单项的回调
+ * @param onDismiss 菜单关闭回调
+ */
+@Composable
+private fun CommentContextMenu(
+    pressOffset: Offset,
+    onCopyClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val density = LocalDensity.current
+
+    // 自定义 PopupPositionProvider：将菜单定位在长按点正上方 8dp，水平居中于长按点
+    val positionProvider = remember(pressOffset, density) {
+        object : PopupPositionProvider {
+            override fun calculatePosition(
+                anchorBounds: IntRect,
+                windowSize: IntSize,
+                layoutDirection: LayoutDirection,
+                popupContentSize: IntSize,
+            ): IntOffset {
+                // 长按点在屏幕上的 x 坐标（锚点左边界 + 局部偏移）
+                val pressScreenX = anchorBounds.left + pressOffset.x.toInt()
+                // 菜单水平居中于长按点，并夹紧到屏幕边界
+                val x = (pressScreenX - popupContentSize.width / 2)
+                    .coerceIn(0, windowSize.width - popupContentSize.width)
+                // 菜单显示在单元格顶部上方 8dp 处；若空间不足则贴顶显示
+                val gapPx = with(density) { 8.dp.roundToPx() }
+                val y = (anchorBounds.top - popupContentSize.height - gapPx)
+                    .coerceAtLeast(0)
+                return IntOffset(x, y)
+            }
+        }
+    }
+
+    Popup(
+        popupPositionProvider = positionProvider,
+        onDismissRequest = onDismiss,
+    ) {
+        // 菜单主体：黑色背景，12dp 圆角，拦截自身范围内的点击防止穿透
+        Box(
+            modifier = Modifier
+                .background(
+                    color = Color(0xFF333333),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {}
+                )
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // 复制菜单项
+                Row(
+                    modifier = Modifier
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onCopyClick
+                        ),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(1.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_menu_action_copy),
+                        contentDescription = "复制评论",
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = "复制",
+                        style = contextMenuTextStyle
+                    )
+                }
+
+                // 分割线
+                Box(
+                    modifier = Modifier
+                        .height(16.dp)
+                        .width(0.5.dp)
+                        .background(Color(0x66FFFFFF))
+                )
+
+                // 删除菜单项
+                Row(
+                    modifier = Modifier
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onDeleteClick
+                        ),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(1.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_comment_panel_delete),
+                        contentDescription = "删除评论",
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = "删除",
+                        style = contextMenuTextStyle
+                    )
+                }
+            }
+        }
+    }
 }
 
 /**
