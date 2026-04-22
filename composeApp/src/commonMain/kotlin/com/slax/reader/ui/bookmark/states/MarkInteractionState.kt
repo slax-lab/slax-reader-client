@@ -47,7 +47,6 @@ class MarkInteractionState {
         menuVisible = false
         if (!panelVisible) {
             selectedText = ""
-            selectionMatchedMark = null
         }
         selectionY = 0f
         capturedSelectionMark = null

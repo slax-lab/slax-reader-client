@@ -158,9 +158,6 @@ actual fun DetailScreen(
         // 复制成功 Toast 状态
         var showCopyToast by remember { mutableStateOf(false) }
 
-        // 当前选区是否命中已有划线（用于 SelectionActionBar 的"划线"/"删除划线"切换）
-        val selectionHasStroke = markInteraction.selectionMatchedMark?.stroke?.isNotEmpty() == true
-
         val showMenu = selectionMenuVisible && selectionYPx > 0f && selectionYPx < screenHeightPx
 
         if (showMenu) {
@@ -176,6 +173,8 @@ actual fun DetailScreen(
                 alignment = Alignment.TopCenter,
                 offset = IntOffset(0, offsetY)
             ) {
+                // 在 Popup 内部读取 selectionMatchedMark，确保状态订阅注册在 Popup 的子 Composition 中
+                val selectionHasStroke = markInteraction.selectionMatchedMark?.stroke?.isNotEmpty() == true
                 SelectionActionBar(
                     visible = true,
                     actions = rememberSelectionActions(hasStroke = selectionHasStroke),

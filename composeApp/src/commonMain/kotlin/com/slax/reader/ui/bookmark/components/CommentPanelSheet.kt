@@ -201,7 +201,7 @@ fun CommentPanelSheet(
 
     // 底部弹窗主体，从下方滑入
     BoxWithConstraints(
-        modifier = modifier.fillMaxSize().imePadding(),
+        modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.BottomCenter
     ) {
         // 弹窗最大高度 = 可用高度 - 80dp
@@ -230,7 +230,9 @@ fun CommentPanelSheet(
                         indication = null
                     ) { /* 阻止点击事件穿透 */ }
             ) {
-                Column(modifier = Modifier.fillMaxWidth()) {
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Box(modifier = Modifier.matchParentSize().background(Color(0xFFF5F5F3)))
+                    Column(modifier = Modifier.fillMaxWidth().imePadding().background(Color.White)) {
 
                     // 区域1：Header
                     CommentPanelHeader(onDismiss = onDismiss)
@@ -276,6 +278,7 @@ fun CommentPanelSheet(
                             replyTarget = null
                         }
                     )
+                }
                 }
             }
         }
