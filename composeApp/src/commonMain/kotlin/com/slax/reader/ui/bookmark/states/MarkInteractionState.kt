@@ -22,9 +22,6 @@ class MarkInteractionState {
     var panelVisible by mutableStateOf(false)
         private set
 
-    /** 选区对应的已有 MarkItemInfo（由 Bridge 的 selectionMarkItemInfo 消息设置，用于判断划线状态） */
-    var selectionMatchedMark by mutableStateOf<BridgeMarkItemInfo?>(null)
-
     /** 面板打开时是否自动聚焦输入框（选区→评论 时 true，点击已有 mark 时 false） */
     var shouldAutoFocus by mutableStateOf(false)
         private set
@@ -50,10 +47,6 @@ class MarkInteractionState {
         }
         selectionY = 0f
         capturedSelectionMark = null
-    }
-
-    fun onSelectionMarkInfoChanged(markInfo: BridgeMarkItemInfo?) {
-        selectionMatchedMark = markInfo
     }
 
     fun onMarkItemInfosChanged(markItemInfos: List<BridgeMarkItemInfo>) {

@@ -171,26 +171,11 @@ actual fun AppWebView(
                             val markId = msg.markId
                             val text = msg.text
                             if (!markId.isNullOrBlank()) {
-                                val markItemInfo = msg.markItemInfo?.let {
-                                    runCatching {
-                                        bridgeJson.decodeFromString<BridgeMarkItemInfo>(it)
-                                    }.getOrNull()
-                                }
+                                val markInfo = msg.data?.let { parseSelectionData(it) }
                                 webState.dispatchEvent(
-                                    WebViewEvent.MarkClicked(markId, text ?: "", markItemInfo)
+                                    WebViewEvent.MarkClicked(markId, text ?: "", markInfo)
                                 )
                             }
-                        }
-
-                        "selectionMarkItemInfo" -> {
-                            val markItemInfo = msg.markItemInfo?.let {
-                                runCatching {
-                                    bridgeJson.decodeFromString<BridgeMarkItemInfo>(it)
-                                }.getOrNull()
-                            }
-                            webState.dispatchEvent(
-                                WebViewEvent.SelectionMarkItemInfo(markItemInfo)
-                            )
                         }
 
                         "markItemInfosChanged" -> {

@@ -68,11 +68,6 @@ sealed interface WebViewEvent {
     /** 用户取消了文本选中 */
     data object TextDeselected : WebViewEvent
 
-    /** 用户选中文本时，选区对应的 MarkItemInfo 发生变化（可能为 null 表示选区未命中已有标记） */
-    data class SelectionMarkItemInfo(
-        val markItemInfo: BridgeMarkItemInfo? = null,
-    ) : WebViewEvent
-
     /** 用户点击了已渲染的划线标记 */
     data class MarkClicked(
         val markId: String,

@@ -114,6 +114,9 @@ actual fun AppWebView(
                     @JavascriptInterface
                     fun postMessage(message: String) {
                         runCatching { bridgeJson.decodeFromString<WebViewMessage>(message) }
+                            .onFailure { e ->
+                                println("[WebView Bridge] 消息解析失败: ${e.message}, 原始消息: $message")
+                            }
                             .onSuccess { msg ->
                                 when (msg.type) {
                                     "imageClick" -> {
@@ -161,17 +164,6 @@ actual fun AppWebView(
                                                 WebViewEvent.MarkClicked(markId, text ?: "", markItemInfo)
                                             )
                                         }
-                                    }
-
-                                    "selectionMarkItemInfo" -> {
-                                        val markItemInfo = msg.markItemInfo?.let {
-                                            runCatching {
-                                                bridgeJson.decodeFromString<BridgeMarkItemInfo>(it)
-                                            }.getOrNull()
-                                        }
-                                        webState.dispatchEvent(
-                                            WebViewEvent.SelectionMarkItemInfo(markItemInfo)
-                                        )
                                     }
 
                                     "markItemInfosChanged" -> {

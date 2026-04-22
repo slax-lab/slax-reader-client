@@ -38,13 +38,10 @@ data class WebViewMessage(
     val height: Int? = null,
     val src: String? = null,
     val allImages: List<String>? = null,
-    val position: Int? = null,
-    val index: Int? = null,
     val percentage: Double? = null,
     val text: String? = null,
     val selectionY: Float? = null,
     val markId: String? = null,
-    val markItemInfo: String? = null,
     val markItemInfos: String? = null,
     val data: String? = null,
 )
@@ -173,8 +170,8 @@ actual fun DetailScreen(
                 alignment = Alignment.TopCenter,
                 offset = IntOffset(0, offsetY)
             ) {
-                // 在 Popup 内部读取 selectionMatchedMark，确保状态订阅注册在 Popup 的子 Composition 中
-                val selectionHasStroke = markInteraction.selectionMatchedMark?.stroke?.isNotEmpty() == true
+                // 在 Popup 内部读取 capturedSelectionMark，确保状态订阅注册在 Popup 的子 Composition 中
+                val selectionHasStroke = markInteraction.capturedSelectionMark?.stroke?.isNotEmpty() == true
                 SelectionActionBar(
                     visible = true,
                     actions = rememberSelectionActions(hasStroke = selectionHasStroke),
@@ -189,7 +186,7 @@ actual fun DetailScreen(
                                 viewModel.strokeHighlight(webViewState)
                             },
                             onRemoveHighlightRequest = {
-                                val markInfo = markInteraction.selectionMatchedMark ?: return@handleSelectionAction
+                                val markInfo = markInteraction.capturedSelectionMark ?: return@handleSelectionAction
                                 viewModel.removeStrokeFromMark(
                                     markItemInfo = markInfo,
                                     onComplete = {
