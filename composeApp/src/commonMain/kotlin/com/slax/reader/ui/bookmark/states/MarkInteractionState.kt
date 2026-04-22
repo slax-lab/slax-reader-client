@@ -22,6 +22,9 @@ class MarkInteractionState {
     var panelVisible by mutableStateOf(false)
         private set
 
+    /** 选区对应的已有 MarkItemInfo（由 Bridge 的 selectionMarkItemInfo 消息设置，用于判断划线状态） */
+    var selectionMatchedMark by mutableStateOf<BridgeMarkItemInfo?>(null)
+
     /** 面板打开时是否自动聚焦输入框（选区→评论 时 true，点击已有 mark 时 false） */
     var shouldAutoFocus by mutableStateOf(false)
         private set
@@ -44,9 +47,33 @@ class MarkInteractionState {
         menuVisible = false
         if (!panelVisible) {
             selectedText = ""
+            selectionMatchedMark = null
         }
         selectionY = 0f
         capturedSelectionMark = null
+    }
+
+    /** 选区对应的 MarkItemInfo 变化（由 Bridge 的 selectionMarkItemInfo 事件触发） */
+    fun onSelectionMarkInfoChanged(markInfo: BridgeMarkItemInfo?) {
+        selectionMatchedMark = markInfo
+    }
+
+    /** JS 端 markItemInfos 列表变化时，同步更新当前 selectedMark 的 stroke/comments 数据 */
+    fun onMarkItemInfosChanged(markItemInfos: List<BridgeMarkItemInfo>) {
+        val current = selectedMark ?: return
+
+        val matched = if (current.id.isBlank()) {
+            // id 为空时，通过 source 和 approx 匹配
+            markItemInfos.find { it.source == current.source || it.approx == current.approx }
+        } else {
+            // id 不为空时，直接通过 id 匹配
+            markItemInfos.find { it.id == current.id }
+        } ?: return
+
+        // 比较 stroke 和 comments，不同则更新
+        if (matched.stroke != current.stroke || matched.comments != current.comments) {
+            selectedMark = matched
+        }
     }
 
     fun onMarkClicked(text: String, mark: BridgeMarkItemInfo) {
