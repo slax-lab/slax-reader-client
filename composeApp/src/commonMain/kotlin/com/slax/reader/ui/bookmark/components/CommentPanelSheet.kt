@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -51,6 +52,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -640,6 +642,7 @@ private fun CommentCell(
             // 评论内容模块（距头部 8dp，左侧 28dp 内间距）
             Spacer(modifier = Modifier.height(8.dp))
             CommentItemBody(comment = comment)
+            Spacer(modifier = Modifier.height(8.dp))
 
             // 子评论列表模块（左侧 28dp 内间距，每个子评论上方 16dp 间距）
             if (comment.children.isNotEmpty()) {
@@ -847,16 +850,12 @@ private fun CommentItemBody(comment: BridgeMarkCommentInfo) {
     )
 }
 
-/** 长按菜单中菜单项的文字样式 */
-private val contextMenuTextStyle = TextStyle(
-    fontSize = 15.sp,
-    lineHeight = 21.sp,
-    color = Color(0xFFF5F5F3),
-    fontWeight = FontWeight.Normal
-)
-
 /**
  * 评论操作菜单
+ *
+ * 以 [Popup] + [PopupPositionProvider] 方式定位，菜单优先显示在长按点正上方 8dp 处，
+ * 超出屏幕边界时自动夹紧，确保始终可见。
+ * 样式与 [SelectionActionBar] 保持一致：深色背景圆角卡片，包含图标+文字的菜单项。
  *
  * @param pressOffset 长按发生时的局部坐标，用于定位菜单水平位置
  * @param onCopyClick 点击复制菜单项的回调
@@ -872,7 +871,6 @@ private fun CommentContextMenu(
 ) {
     val density = LocalDensity.current
 
-    // 自定义 PopupPositionProvider：将菜单定位在长按点正上方 8dp，水平居中于长按点
     val positionProvider = remember(pressOffset, density) {
         object : PopupPositionProvider {
             override fun calculatePosition(
@@ -881,12 +879,9 @@ private fun CommentContextMenu(
                 layoutDirection: LayoutDirection,
                 popupContentSize: IntSize,
             ): IntOffset {
-                // 长按点在屏幕上的 x 坐标（锚点左边界 + 局部偏移）
                 val pressScreenX = anchorBounds.left + pressOffset.x.toInt()
-                // 菜单水平居中于长按点，并夹紧到屏幕边界
                 val x = (pressScreenX - popupContentSize.width / 2)
                     .coerceIn(0, windowSize.width - popupContentSize.width)
-                // 菜单显示在单元格顶部上方 8dp 处；若空间不足则贴顶显示
                 val gapPx = with(density) { 8.dp.roundToPx() }
                 val y = (anchorBounds.top - popupContentSize.height - gapPx)
                     .coerceAtLeast(0)
@@ -899,78 +894,74 @@ private fun CommentContextMenu(
         popupPositionProvider = positionProvider,
         onDismissRequest = onDismiss,
     ) {
-        // 菜单主体：黑色背景，12dp 圆角，拦截自身范围内的点击防止穿透
-        Box(
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .background(
                     color = Color(0xFF333333),
                     shape = RoundedCornerShape(12.dp)
                 )
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = {}
-                )
+                .padding(horizontal = 6.dp)
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // 复制菜单项
-                Row(
-                    modifier = Modifier
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = onCopyClick
-                        ),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(1.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_menu_action_copy),
-                        contentDescription = "复制评论",
-                        tint = Color.Unspecified,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = "复制",
-                        style = contextMenuTextStyle
-                    )
-                }
+            ContextMenuItem(
+                iconRes = Res.drawable.ic_menu_action_copy,
+                label = "复制",
+                onClick = onCopyClick
+            )
+            ContextMenuItem(
+                iconRes = Res.drawable.ic_comment_panel_delete,
+                label = "删除",
+                onClick = onDeleteClick,
+                applyTint = false
+            )
+        }
+    }
+}
 
-                // 分割线
-                Box(
-                    modifier = Modifier
-                        .height(16.dp)
-                        .width(0.5.dp)
-                        .background(Color(0x66FFFFFF))
+/**
+ * 长按菜单的单个操作项
+ *
+ * 样式与 [SelectionActionBar] 中的 SelectionActionItem 保持一致：
+ * 按下时背景变为 #FF424242，圆角 6dp，高度 32dp，icon 20dp + 间距 1dp + 文字。
+ */
+@Composable
+private fun ContextMenuItem(
+    iconRes: org.jetbrains.compose.resources.DrawableResource,
+    label: String,
+    onClick: () -> Unit,
+    applyTint: Boolean = true,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    Surface(
+        onClick = onClick,
+        interactionSource = interactionSource,
+        color = if (isPressed) Color(0xFF424242) else Color.Transparent,
+        shape = RoundedCornerShape(6.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(1.dp),
+            modifier = Modifier
+                .height(32.dp)
+                .padding(start = 6.dp, end = 10.dp)
+        ) {
+            Image(
+                painter = painterResource(iconRes),
+                contentDescription = label,
+                modifier = Modifier.size(20.dp),
+                colorFilter = if (applyTint) ColorFilter.tint(Color(0xFFF5F5F3)) else null
+            )
+            Text(
+                text = label,
+                style = TextStyle(
+                    fontSize = 15.sp,
+                    lineHeight = 21.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFFF5F5F3)
                 )
-
-                // 删除菜单项
-                Row(
-                    modifier = Modifier
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = onDeleteClick
-                        ),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(1.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_comment_panel_delete),
-                        contentDescription = "删除评论",
-                        tint = Color.Unspecified,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = "删除",
-                        style = contextMenuTextStyle
-                    )
-                }
-            }
+            )
         }
     }
 }
