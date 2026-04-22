@@ -298,7 +298,7 @@ class BookmarkDetailViewModel(
         }
     }
 
-    fun strokeHighlight(webViewState: AppWebViewState) {
+    fun strokeHighlight(webViewState: AppWebViewState, onComplete: (() -> Unit)? = null) {
         webViewState.evaluateJsWithCallback(
             "window.SlaxWebViewBridge.captureCurrentSelection()"
         ) { resultJson ->
@@ -312,7 +312,11 @@ class BookmarkDetailViewModel(
                         approxSource = data.approx_source,
                         selectContent = data.select_content,
                     )
-                }.onFailure { println("[划线] 创建失败: ${it.message}") }
+                    withContext(Dispatchers.Main) { onComplete?.invoke() }
+                }.onFailure {
+                    println("[划线] 创建失败: ${it.message}")
+                    withContext(Dispatchers.Main) { onComplete?.invoke() }
+                }
             }
         }
     }
@@ -354,7 +358,7 @@ class BookmarkDetailViewModel(
                     selectContent = markItemInfo.toSelectContent(),
                 )
 
-                onComplete()
+                withContext(Dispatchers.Main) { onComplete() }
             }.onFailure {
                 println("[划线] 添加到已有 mark 失败: ${it.message}")
                 withContext(Dispatchers.Main) { onComplete() }
@@ -388,6 +392,7 @@ class BookmarkDetailViewModel(
         markItemInfo: BridgeMarkItemInfo,
         comment: String,
         replyMarkId: Long? = null,
+        onComplete: (() -> Unit)? = null,
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
@@ -415,7 +420,11 @@ class BookmarkDetailViewModel(
                         comment = comment,
                     )
                 }
-            }.onFailure { println("[评论] 提交失败: ${it.message}") }
+                withContext(Dispatchers.Main) { onComplete?.invoke() }
+            }.onFailure {
+                println("[评论] 提交失败: ${it.message}")
+                withContext(Dispatchers.Main) { onComplete?.invoke() }
+            }
         }
     }
 

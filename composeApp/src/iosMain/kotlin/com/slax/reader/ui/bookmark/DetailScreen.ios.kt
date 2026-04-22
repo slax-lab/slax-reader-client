@@ -213,17 +213,23 @@ actual fun DetailScreen(
                                 if (markInfo != null) {
                                     viewModel.addStrokeToMark(
                                         markItemInfo = markInfo,
-                                        onComplete = {}
+                                        onComplete = {
+                                            webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
+                                        }
                                     )
                                 } else {
-                                    viewModel.strokeHighlight(webViewState)
+                                    viewModel.strokeHighlight(webViewState) {
+                                        webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
+                                    }
                                 }
                             },
                             onRemoveHighlightRequest = {
                                 val markInfo = markInteraction.capturedSelectionMark ?: return@handleSelectionAction
                                 viewModel.removeStrokeFromMark(
                                     markItemInfo = markInfo,
-                                    onComplete = {}
+                                    onComplete = {
+                                        webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
+                                    }
                                 )
                             },
                             onCommentRequest = {
@@ -236,6 +242,7 @@ actual fun DetailScreen(
                         )
                         if (actionId == SelectionActionId.COPY) {
                             showCopyToast = true
+                            webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
                         }
                     }
                 )
@@ -274,6 +281,11 @@ actual fun DetailScreen(
                     markItemInfo = markInfo,
                     comment = comment,
                     replyMarkId = replyTarget?.markId,
+                    onComplete = {
+                        markInteraction.dismissPanel()
+                        viewModel.commentDelegate.setSelectedMark(null)
+                        webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
+                    }
                 )
             },
             onDeleteComment = { markId ->
@@ -283,6 +295,9 @@ actual fun DetailScreen(
                 when (actionId) {
                     CommentPanelActionId.COPY -> {
                         UIPasteboard.generalPasteboard.string = selectedText
+                        markInteraction.dismissPanel()
+                        viewModel.commentDelegate.setSelectedMark(null)
+                        webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
                     }
                     CommentPanelActionId.HIGHLIGHT -> {
                         val markInfo = markInteraction.selectedMark ?: return@CommentPanelSheet
@@ -291,6 +306,9 @@ actual fun DetailScreen(
                             markItemInfo = markInfo,
                             onComplete = {
                                 highlightLoading = false
+                                markInteraction.dismissPanel()
+                                viewModel.commentDelegate.setSelectedMark(null)
+                                webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
                             }
                         )
                     }
@@ -301,6 +319,9 @@ actual fun DetailScreen(
                             markItemInfo = markInfo,
                             onComplete = {
                                 highlightLoading = false
+                                markInteraction.dismissPanel()
+                                viewModel.commentDelegate.setSelectedMark(null)
+                                webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
                             }
                         )
                     }

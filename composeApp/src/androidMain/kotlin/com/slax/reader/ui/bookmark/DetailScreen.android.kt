@@ -183,13 +183,16 @@ actual fun DetailScreen(
                                 markInteraction.dismissMenu()
                             },
                             onHighlightRequest = {
-                                viewModel.strokeHighlight(webViewState)
+                                viewModel.strokeHighlight(webViewState) {
+                                    webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
+                                }
                             },
                             onRemoveHighlightRequest = {
                                 val markInfo = markInteraction.capturedSelectionMark ?: return@handleSelectionAction
                                 viewModel.removeStrokeFromMark(
                                     markItemInfo = markInfo,
                                     onComplete = {
+                                        webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
                                     }
                                 )
                             },
@@ -203,6 +206,7 @@ actual fun DetailScreen(
                         )
                         if (actionId == SelectionActionId.COPY) {
                             showCopyToast = true
+                            webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
                         }
                     }
                 )
@@ -244,6 +248,11 @@ actual fun DetailScreen(
                     markItemInfo = markInfo,
                     comment = comment,
                     replyMarkId = replyTarget?.markId,
+                    onComplete = {
+                        markInteraction.dismissPanel()
+                        viewModel.commentDelegate.setSelectedMark(null)
+                        webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
+                    }
                 )
             },
             onDeleteComment = { markId ->
@@ -256,6 +265,9 @@ actual fun DetailScreen(
                         coroutineScope.launch {
                             clipboard.setClipEntry(ClipEntry(clipData))
                         }
+                        markInteraction.dismissPanel()
+                        viewModel.commentDelegate.setSelectedMark(null)
+                        webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
                     }
                     CommentPanelActionId.HIGHLIGHT -> {
                         val markInfo = markInteraction.selectedMark ?: return@CommentPanelSheet
@@ -264,6 +276,9 @@ actual fun DetailScreen(
                             markItemInfo = markInfo,
                             onComplete = {
                                 highlightLoading = false
+                                markInteraction.dismissPanel()
+                                viewModel.commentDelegate.setSelectedMark(null)
+                                webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
                             }
                         )
                     }
@@ -274,6 +289,9 @@ actual fun DetailScreen(
                             markItemInfo = markInfo,
                             onComplete = {
                                 highlightLoading = false
+                                markInteraction.dismissPanel()
+                                viewModel.commentDelegate.setSelectedMark(null)
+                                webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
                             }
                         )
                     }
