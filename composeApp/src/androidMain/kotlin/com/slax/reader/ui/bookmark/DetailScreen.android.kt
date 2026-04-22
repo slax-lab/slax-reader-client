@@ -45,6 +45,7 @@ data class WebViewMessage(
     val selectionY: Float? = null,
     val markId: String? = null,
     val markItemInfo: String? = null,
+    val markItemInfos: String? = null,
     val data: String? = null,
 )
 
@@ -157,6 +158,9 @@ actual fun DetailScreen(
         // 复制成功 Toast 状态
         var showCopyToast by remember { mutableStateOf(false) }
 
+        // 当前选区是否命中已有划线（用于 SelectionActionBar 的"划线"/"删除划线"切换）
+        val selectionHasStroke = markInteraction.selectionMatchedMark?.stroke?.isNotEmpty() == true
+
         val showMenu = selectionMenuVisible && selectionYPx > 0f && selectionYPx < screenHeightPx
 
         if (showMenu) {
@@ -174,7 +178,7 @@ actual fun DetailScreen(
             ) {
                 SelectionActionBar(
                     visible = true,
-                    actions = rememberSelectionActions(),
+                    actions = rememberSelectionActions(hasStroke = selectionHasStroke),
                     onActionClick = { actionId ->
                         handleSelectionAction(
                             actionId = actionId,
@@ -184,6 +188,15 @@ actual fun DetailScreen(
                             },
                             onHighlightRequest = {
                                 viewModel.strokeHighlight(webViewState)
+                            },
+                            onRemoveHighlightRequest = {
+                                // 删除已有 mark 的划线
+                                val markInfo = markInteraction.selectionMatchedMark ?: return@handleSelectionAction
+                                viewModel.removeStrokeFromMark(
+                                    markItemInfo = markInfo,
+                                    onComplete = {
+                                    }
+                                )
                             },
                             onCommentRequest = {
                                 markInteraction.dismissMenu()
@@ -238,6 +251,9 @@ actual fun DetailScreen(
                     replyMarkId = replyTarget?.markId,
                 )
             },
+            onDeleteComment = { markId ->
+                viewModel.deleteComment(markId)
+            },
             onActionClick = { actionId ->
                 when (actionId) {
                     CommentPanelActionId.COPY -> {
@@ -250,10 +266,8 @@ actual fun DetailScreen(
                         val markInfo = markInteraction.selectedMark ?: return@CommentPanelSheet
                         highlightLoading = true
                         viewModel.addStrokeToMark(
-                            webViewState = webViewState,
                             markItemInfo = markInfo,
-                            onComplete = { updatedInfo ->
-                                markInteraction.selectedMark = updatedInfo
+                            onComplete = {
                                 highlightLoading = false
                             }
                         )
@@ -262,10 +276,8 @@ actual fun DetailScreen(
                         val markInfo = markInteraction.selectedMark ?: return@CommentPanelSheet
                         highlightLoading = true
                         viewModel.removeStrokeFromMark(
-                            webViewState = webViewState,
                             markItemInfo = markInfo,
-                            onComplete = { updatedInfo ->
-                                markInteraction.selectedMark = updatedInfo
+                            onComplete = {
                                 highlightLoading = false
                             }
                         )
