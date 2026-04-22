@@ -101,6 +101,14 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
                     markInteraction.onMarkClicked(event.text, info)
                     viewModel.commentDelegate.setSelectedMark(info.source)
                 }
+                is WebViewEvent.SelectionMarkItemInfo -> {
+                    // 选中文本时，Bridge 通知当前选区对应的 MarkItemInfo（用于 SelectionActionBar 判断划线状态）
+                    markInteraction.onSelectionMarkInfoChanged(event.markItemInfo)
+                }
+                is WebViewEvent.MarkItemInfosChanged -> {
+                    // JS 端 markItemInfos 列表变化时，同步更新 selectedMark 的 stroke/comments 数据
+                    markInteraction.onMarkItemInfosChanged(event.markItemInfos)
+                }
                 else -> {}
             }
         }
