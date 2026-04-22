@@ -300,7 +300,7 @@ class BookmarkDetailViewModel(
 
     fun strokeHighlight(webViewState: AppWebViewState) {
         webViewState.evaluateJsWithCallback(
-            "window.SlaxWebViewBridge.strokeCurrentSelection()"
+            "window.SlaxWebViewBridge.captureCurrentSelection()"
         ) { resultJson ->
             if (resultJson.isNullOrBlank() || resultJson == "null") return@evaluateJsWithCallback
             viewModelScope.launch(Dispatchers.IO) {
@@ -311,9 +311,6 @@ class BookmarkDetailViewModel(
                         source = data.toMarkPath(),
                         approxSource = data.approx_source,
                         selectContent = data.select_content,
-                    )
-                    webViewState.evaluateJs(
-                        "window.SlaxWebViewBridge.updateMarkIdByUuid('${data.uuid}', ${localId.toStableId()})"
                     )
                 }.onFailure { println("[划线] 创建失败: ${it.message}") }
             }
@@ -345,60 +342,44 @@ class BookmarkDetailViewModel(
     }
 
     fun addStrokeToMark(
-        webViewState: AppWebViewState,
         markItemInfo: BridgeMarkItemInfo,
-        onComplete: (BridgeMarkItemInfo) -> Unit,
+        onComplete: () -> Unit,
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
-                val uidLong = commentDelegate.currentUserIdLong
-
-                webViewState.evaluateJs("window.SlaxWebViewBridge.addStrokeByUuid('${markItemInfo.id}', $uidLong)")
-
                 val localId = commentDelegate.addMark(
                     type = MarkType.LINE,
                     source = markItemInfo.source,
                     approxSource = markItemInfo.approx,
                     selectContent = markItemInfo.toSelectContent(),
                 )
-                webViewState.evaluateJs(
-                    "window.SlaxWebViewBridge.updateMarkIdByUuid('${markItemInfo.id}', ${localId.toStableId()})"
-                )
 
-                val updated = markItemInfo.copy(
-                    stroke = markItemInfo.stroke + BridgeMarkStrokeInfo(markId = localId.toStableId(), userId = uidLong)
-                )
-                withContext(Dispatchers.Main) { onComplete(updated) }
+                onComplete()
             }.onFailure {
                 println("[划线] 添加到已有 mark 失败: ${it.message}")
-                withContext(Dispatchers.Main) { onComplete(markItemInfo) }
+                withContext(Dispatchers.Main) { onComplete() }
             }
         }
     }
 
     fun removeStrokeFromMark(
-        webViewState: AppWebViewState,
         markItemInfo: BridgeMarkItemInfo,
-        onComplete: (BridgeMarkItemInfo) -> Unit,
+        onComplete: () -> Unit,
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
                 val uid = commentDelegate.currentUserId ?: ""
-                val uidLong = commentDelegate.currentUserIdLong
                 val sourceJson = markDetailJson.encodeToString(markItemInfo.source)
 
                 val recordId = commentDelegate.findCommentId { po ->
                     po.type == MarkType.LINE.value && po.is_deleted == 0 && po.metadataObj?.user_id == uid && po.source == sourceJson
                 }
+
                 if (recordId != null) commentDelegate.deleteComment(recordId)
-
-                webViewState.evaluateJs("window.SlaxWebViewBridge.removeStrokeByUuid('${markItemInfo.id}', $uidLong)")
-
-                val updated = markItemInfo.copy(stroke = markItemInfo.stroke.filter { it.userId != uidLong })
-                withContext(Dispatchers.Main) { onComplete(updated) }
+                withContext(Dispatchers.Main) { onComplete() }
             }.onFailure {
                 println("[划线] 删除失败: ${it.message}")
-                withContext(Dispatchers.Main) { onComplete(markItemInfo) }
+                withContext(Dispatchers.Main) { onComplete() }
             }
         }
     }
@@ -435,6 +416,19 @@ class BookmarkDetailViewModel(
                     )
                 }
             }.onFailure { println("[评论] 提交失败: ${it.message}") }
+        }
+    }
+
+    fun deleteComment(markId: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val recordId = commentDelegate.findCommentId { po ->
+                    po.id.toStableId() == markId
+                } ?: return@launch
+                commentDelegate.deleteComment(recordId)
+            }.onFailure {
+                println("[评论] 删除失败: ${it.message}")
+            }
         }
     }
 
