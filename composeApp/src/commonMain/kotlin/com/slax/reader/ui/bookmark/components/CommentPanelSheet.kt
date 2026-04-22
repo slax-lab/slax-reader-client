@@ -29,7 +29,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -636,15 +635,11 @@ private fun CommentCell(
                 }
                 .padding(start = 20.dp, top = 20.dp)
         ) {
-            // 评论头部模块
             CommentItemHeader(comment = comment, onReplyClick = { onReplyClick(comment) })
-
-            // 评论内容模块（距头部 8dp，左侧 28dp 内间距）
             Spacer(modifier = Modifier.height(8.dp))
             CommentItemBody(comment = comment)
             Spacer(modifier = Modifier.height(8.dp))
 
-            // 子评论列表模块（左侧 28dp 内间距，每个子评论上方 16dp 间距）
             if (comment.children.isNotEmpty()) {
                 Column(modifier = Modifier.padding(start = 28.dp)) {
                     comment.children.forEach { child ->
@@ -715,10 +710,7 @@ private fun ChildCommentCell(
                 }
                 .padding(top = 8.dp, start = 8.dp, bottom = 8.dp)
         ) {
-            // 子评论头部
             CommentItemHeader(comment = comment, onReplyClick = { onReplyClick(comment) })
-
-            // 子评论内容（距头部 8dp，左侧 28dp 内间距）
             Spacer(modifier = Modifier.height(8.dp))
             CommentItemBody(comment = comment)
         }
@@ -853,10 +845,6 @@ private fun CommentItemBody(comment: BridgeMarkCommentInfo) {
 /**
  * 评论操作菜单
  *
- * 以 [Popup] + [PopupPositionProvider] 方式定位，菜单优先显示在长按点正上方 8dp 处，
- * 超出屏幕边界时自动夹紧，确保始终可见。
- * 样式与 [SelectionActionBar] 保持一致：深色背景圆角卡片，包含图标+文字的菜单项。
- *
  * @param pressOffset 长按发生时的局部坐标，用于定位菜单水平位置
  * @param onCopyClick 点击复制菜单项的回调
  * @param onDeleteClick 点击删除菜单项的回调
@@ -921,8 +909,6 @@ private fun CommentContextMenu(
 /**
  * 长按菜单的单个操作项
  *
- * 样式与 [SelectionActionBar] 中的 SelectionActionItem 保持一致：
- * 按下时背景变为 #FF424242，圆角 6dp，高度 32dp，icon 20dp + 间距 1dp + 文字。
  */
 @Composable
 private fun ContextMenuItem(
@@ -1001,9 +987,6 @@ private fun formatCommentDate(raw: String): String {
 /**
  * 评论列表显示区域
  *
- * 顶部带 0.5dp 分割线（颜色 #14333333），底部 52dp 内间距。
- * 无内容时高度为0，有内容时自动撑高，受外部 modifier（weight）约束最大高度，超出后可滚动查看。
- *
  * @param content 评论列表内容插槽
  * @param modifier 外部传入的 Modifier，用于控制高度（如 weight）
  */
@@ -1018,7 +1001,6 @@ private fun CommentListArea(
     Column(
         modifier = modifier.fillMaxWidth()
     ) {
-        // 顶部分割线：高 0.5dp，颜色 #14333333（8%透明度的深灰）
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1026,7 +1008,6 @@ private fun CommentListArea(
                 .background(Color(0x14333333))
         )
 
-        // 可滚动评论内容
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1035,8 +1016,6 @@ private fun CommentListArea(
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 content()
-
-                // 底部 52dp 内间距
                 Spacer(modifier = Modifier.height(52.dp))
             }
         }
@@ -1084,7 +1063,6 @@ private fun PostCommentInputContainer(
             .background(color = Color.White, shape = RoundedCornerShape(8.dp))
             .padding(horizontal = 8.dp)
     ) {
-        // 左侧当前用户头像（距顶部固定 7dp，不垂直居中）
         val avatarPainter = rememberAsyncImagePainter(
             request = ComposableImageRequest(userAvatarUrl) {
                 placeholder(Res.drawable.global_default_avatar)

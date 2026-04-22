@@ -53,24 +53,19 @@ class MarkInteractionState {
         capturedSelectionMark = null
     }
 
-    /** 选区对应的 MarkItemInfo 变化（由 Bridge 的 selectionMarkItemInfo 事件触发） */
     fun onSelectionMarkInfoChanged(markInfo: BridgeMarkItemInfo?) {
         selectionMatchedMark = markInfo
     }
 
-    /** JS 端 markItemInfos 列表变化时，同步更新当前 selectedMark 的 stroke/comments 数据 */
     fun onMarkItemInfosChanged(markItemInfos: List<BridgeMarkItemInfo>) {
         val current = selectedMark ?: return
 
         val matched = if (current.id.isBlank()) {
-            // id 为空时，通过 source 和 approx 匹配
             markItemInfos.find { it.source == current.source || it.approx == current.approx }
         } else {
-            // id 不为空时，直接通过 id 匹配
             markItemInfos.find { it.id == current.id }
         } ?: return
 
-        // 比较 stroke 和 comments，不同则更新
         if (matched.stroke != current.stroke || matched.comments != current.comments) {
             selectedMark = matched
         }

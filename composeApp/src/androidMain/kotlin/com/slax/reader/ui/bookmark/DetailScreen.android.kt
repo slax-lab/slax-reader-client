@@ -190,7 +190,6 @@ actual fun DetailScreen(
                                 viewModel.strokeHighlight(webViewState)
                             },
                             onRemoveHighlightRequest = {
-                                // 删除已有 mark 的划线
                                 val markInfo = markInteraction.selectionMatchedMark ?: return@handleSelectionAction
                                 viewModel.removeStrokeFromMark(
                                     markItemInfo = markInfo,

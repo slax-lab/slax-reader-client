@@ -215,24 +215,19 @@ actual fun DetailScreen(
                             onHighlightRequest = {
                                 val markInfo = markInteraction.selectionMatchedMark
                                 if (markInfo != null) {
-                                    // 选区命中已有 mark，使用 addStrokeToMark 添加划线
                                     viewModel.addStrokeToMark(
                                         markItemInfo = markInfo,
-                                        onComplete = {
-                                        }
+                                        onComplete = {}
                                     )
                                 } else {
-                                    // 选区未命中已有 mark，走新建划线流程
                                     viewModel.strokeHighlight(webViewState)
                                 }
                             },
                             onRemoveHighlightRequest = {
-                                // 删除已有 mark 的划线
                                 val markInfo = markInteraction.selectionMatchedMark ?: return@handleSelectionAction
                                 viewModel.removeStrokeFromMark(
                                     markItemInfo = markInfo,
-                                    onComplete = {
-                                    }
+                                    onComplete = {}
                                 )
                             },
                             onCommentRequest = {
