@@ -369,7 +369,7 @@ actual fun AppWebView(
 
             val color = Color(0xFFFCFCFC).toUIColor()
             view.backgroundColor = color
-            view.tintColor = Color(0xFFCCB69A).toUIColor()
+            view.tintColor = Color(0x668AD8A8).toUIColor()
             view.opaque = false
             view.loadHTMLString(htmlContent, baseURL = null)
 
