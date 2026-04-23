@@ -335,7 +335,7 @@ private fun HighlightedContentArea(
         Column(modifier = Modifier.fillMaxWidth()) {
             // 划线文本内容（带自定义下划线）
             HighlightedText(
-                text = text,
+                text = text.replace(Regex("\n{2,}"), "\n"),
                 underlineStyle = underlineStyle,
                 modifier = Modifier
                     .fillMaxWidth()
