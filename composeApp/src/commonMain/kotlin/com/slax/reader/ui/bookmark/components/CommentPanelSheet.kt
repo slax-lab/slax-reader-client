@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -1070,6 +1071,8 @@ private fun PostCommentArea(
     onSubmit: (comment: String) -> Unit = {},
 ) {
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+    val keyboardSpacing = if (imeBottom > 0.dp) 8.dp else 0.dp
     var textFieldValue by remember { mutableStateOf(TextFieldValue()) }
 
     // 回复目标切换时重置输入内容
@@ -1092,7 +1095,7 @@ private fun PostCommentArea(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color(0xFFF5F5F3))
-            .padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = bottomInset + 8.dp),
+            .padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = bottomInset + 8.dp + keyboardSpacing),
         verticalAlignment = Alignment.Top
     ) {
         PostCommentInputContainer(
