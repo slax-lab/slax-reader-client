@@ -248,11 +248,7 @@ actual fun DetailScreen(
                     markItemInfo = markInfo,
                     comment = comment,
                     replyMarkId = replyTarget?.markId,
-                    onComplete = {
-                        markInteraction.dismissPanel()
-                        viewModel.commentDelegate.setSelectedMark(null)
-                        webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
-                    }
+                    onComplete = {}
                 )
             },
             onDeleteComment = { markId ->
