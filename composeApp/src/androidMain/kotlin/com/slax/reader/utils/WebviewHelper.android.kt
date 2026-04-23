@@ -48,6 +48,8 @@ actual fun AppWebView(
         modifier = modifier,
         factory = { context ->
             object : WebView(context) {
+                private var isSelectionActive = false
+
                 override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
                     val newHeightMeasureSpec = MeasureSpec.makeMeasureSpec(
                         0,
@@ -57,23 +59,24 @@ actual fun AppWebView(
                 }
 
                 override fun onScrollChanged(l: Int, t: Int, oldl: Int, oldt: Int) {
-                    scrollTo(0, 0)
+                    if (!isSelectionActive) {
+                        scrollTo(0, 0)
+                    }
                 }
 
-                /**
-                 * 拦截 ActionMode 启动，保留文本选中能力但清空系统菜单项。
-                 *
-                 * 不能返回 null，否则 WebView 会认为选中操作失败并取消选中。
-                 * 通过传入自定义 Callback 包装器，在 onPrepareActionMode 中清空菜单，
-                 * 实现"选中有效、菜单为空"的效果。
-                 */
                 override fun startActionMode(callback: ActionMode.Callback?): ActionMode? {
-                    val wrappedCallback = callback?.let { EmptyMenuActionModeCallback(it) }
+                    isSelectionActive = true
+                    val wrappedCallback = callback?.let {
+                        EmptyMenuActionModeCallback(it) { isSelectionActive = false }
+                    }
                     return super.startActionMode(wrappedCallback)
                 }
 
                 override fun startActionMode(callback: ActionMode.Callback?, type: Int): ActionMode? {
-                    val wrappedCallback = callback?.let { EmptyMenuActionModeCallback(it) }
+                    isSelectionActive = true
+                    val wrappedCallback = callback?.let {
+                        EmptyMenuActionModeCallback(it) { isSelectionActive = false }
+                    }
                     return super.startActionMode(wrappedCallback, type)
                 }
             }.apply {
@@ -441,23 +444,15 @@ actual fun OpenInBrowser(url: String) {
     customTabsIntent.launchUrl(ctx, url.toUri())
 }
 
-/**
- * ActionMode.Callback 包装器，保留选中行为但清空菜单项。
- *
- * Android WebView 的文本选中流程依赖 ActionMode 正常启动，
- * 如果 startActionMode 返回 null 会导致选中被取消。
- * 此包装器在 onPrepareActionMode 中清空 Menu，
- * 让 ActionMode 生命周期正常运行，但不显示任何系统菜单项。
- */
 private class EmptyMenuActionModeCallback(
-    private val delegate: ActionMode.Callback
+    private val delegate: ActionMode.Callback,
+    private val onDestroy: () -> Unit = {}
 ) : ActionMode.Callback {
     override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
         return delegate.onCreateActionMode(mode, menu)
     }
 
     override fun onPrepareActionMode(mode: ActionMode?, menu: Menu?): Boolean {
-        // 清空所有系统菜单项
         menu?.clear()
         return true
     }
@@ -468,6 +463,7 @@ private class EmptyMenuActionModeCallback(
 
     override fun onDestroyActionMode(mode: ActionMode?) {
         delegate.onDestroyActionMode(mode)
+        onDestroy()
     }
 }
 
