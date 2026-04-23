@@ -41,6 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -61,7 +62,6 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.TransformedText
@@ -69,7 +69,6 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.IntOffset
@@ -318,13 +317,6 @@ private fun CommentPanelHeader(onDismiss: () -> Unit) {
 /**
  * 划线内容显示区
  *
- * 从上到下为：划线文本内容（带下划线）→ 操作栏（复制/划线或删除划线）→ 底部间距
- *
- * 文本最多显示2行，超出省略号。根据 [underlineStyle] 在每行文字下方绘制：
- * - SOLID：实线下划线，颜色 #CCB69AFF
- * - DASHED：虚线下划线，颜色 #CCB69AFF
- * - NONE：无下划线
- *
  * @param text 划线选中的文本
  * @param underlineStyle 下划线样式
  * @param isStroked 是否已划线，决定第二个按钮显示"划线"还是"删除划线"
@@ -339,9 +331,6 @@ private fun HighlightedContentArea(
     highlightLoading: Boolean = false,
     onActionClick: (actionId: String) -> Unit
 ) {
-    // 复制成功提示状态
-    var showCopyToast by remember { mutableStateOf(false) }
-
     Box(modifier = Modifier.fillMaxWidth().background(Color(0xFFFCFCFC))) {
         Column(modifier = Modifier.fillMaxWidth()) {
             // 划线文本内容（带自定义下划线）
@@ -360,24 +349,12 @@ private fun HighlightedContentArea(
             HighlightedActionBar(
                 isStroked = isStroked,
                 highlightLoading = highlightLoading,
-                onActionClick = { actionId ->
-                    if (actionId == CommentPanelActionId.COPY) {
-                        showCopyToast = true
-                    }
-                    onActionClick(actionId)
-                }
+                onActionClick = onActionClick
             )
 
             // 底部 24dp 内间距
             Spacer(modifier = Modifier.height(24.dp))
         }
-
-        // 复制成功 Toast 提示
-        CopySuccessToast(
-            visible = showCopyToast,
-            onDismiss = { showCopyToast = false },
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp)
-        )
     }
 }
 
@@ -618,17 +595,24 @@ private fun CommentCell(
     onDeleteComment: (Long) -> Unit = {},
 ) {
     val clipboardManager = LocalClipboardManager.current
+    var isPressed by remember { mutableStateOf(false) }
     var isLongPressed by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     var longPressOffset by remember { mutableStateOf(Offset.Zero) }
+    var showCopyToast by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(if (isLongPressed) Color(0xFFF5F5F3) else Color.Transparent)
+                .background(if (isPressed || isLongPressed) Color(0xFFF5F5F3) else Color.Transparent)
                 .pointerInput(Unit) {
                     detectTapGestures(
+                        onPress = {
+                            isPressed = true
+                            try { awaitRelease() } finally { isPressed = false }
+                        },
+                        onTap = { onReplyClick(comment) },
                         onLongPress = { offset ->
                             longPressOffset = offset
                             isLongPressed = true
@@ -664,6 +648,7 @@ private fun CommentCell(
                     showMenu = false
                     isLongPressed = false
                     clipboardManager.setText(AnnotatedString(comment.comment))
+                    showCopyToast = true
                 },
                 onDeleteClick = {
                     showMenu = false
@@ -676,6 +661,13 @@ private fun CommentCell(
                 }
             )
         }
+
+        // 复制成功 Toast 提示
+        CopySuccessToast(
+            visible = showCopyToast,
+            onDismiss = { showCopyToast = false },
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp)
+        )
     }
 }
 
@@ -693,17 +685,24 @@ private fun ChildCommentCell(
     onDeleteComment: (Long) -> Unit = {},
 ) {
     val clipboardManager = LocalClipboardManager.current
+    var isPressed by remember { mutableStateOf(false) }
     var isLongPressed by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     var longPressOffset by remember { mutableStateOf(Offset.Zero) }
+    var showCopyToast by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(if (isLongPressed) Color(0xFFF5F5F3) else Color.Transparent)
+                .background(if (isPressed || isLongPressed) Color(0xFFF5F5F3) else Color.Transparent)
                 .pointerInput(Unit) {
                     detectTapGestures(
+                        onPress = {
+                            isPressed = true
+                            try { awaitRelease() } finally { isPressed = false }
+                        },
+                        onTap = { onReplyClick(comment) },
                         onLongPress = { offset ->
                             longPressOffset = offset
                             isLongPressed = true
@@ -726,6 +725,7 @@ private fun ChildCommentCell(
                     showMenu = false
                     isLongPressed = false
                     clipboardManager.setText(AnnotatedString(comment.comment))
+                    showCopyToast = true
                 },
                 onDeleteClick = {
                     showMenu = false
@@ -738,6 +738,13 @@ private fun ChildCommentCell(
                 }
             )
         }
+
+        // 复制成功 Toast 提示
+        CopySuccessToast(
+            visible = showCopyToast,
+            onDismiss = { showCopyToast = false },
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp)
+        )
     }
 }
 
@@ -861,8 +868,15 @@ private fun CommentContextMenu(
     onDismiss: () -> Unit,
 ) {
     val density = LocalDensity.current
+    var confirmingDelete by remember { mutableStateOf(false) }
+
+    // 缓存菜单右边缘和 Y 坐标，动画期间保持右边缘固定，左侧自然收缩
+    val cachedRightEdge = remember { intArrayOf(-1) }
+    val cachedY = remember { intArrayOf(-1) }
 
     val positionProvider = remember(pressOffset, density) {
+        cachedRightEdge[0] = -1
+        cachedY[0] = -1
         object : PopupPositionProvider {
             override fun calculatePosition(
                 anchorBounds: IntRect,
@@ -870,12 +884,20 @@ private fun CommentContextMenu(
                 layoutDirection: LayoutDirection,
                 popupContentSize: IntSize,
             ): IntOffset {
+                if (cachedRightEdge[0] >= 0) {
+                    // 右边缘固定，根据当前宽度倒推 x
+                    val x = (cachedRightEdge[0] - popupContentSize.width)
+                        .coerceIn(0, windowSize.width - popupContentSize.width)
+                    return IntOffset(x, cachedY[0])
+                }
                 val pressScreenX = anchorBounds.left + pressOffset.x.toInt()
                 val x = (pressScreenX - popupContentSize.width / 2)
                     .coerceIn(0, windowSize.width - popupContentSize.width)
                 val gapPx = with(density) { 8.dp.roundToPx() }
                 val y = (anchorBounds.top - popupContentSize.height - gapPx)
                     .coerceAtLeast(0)
+                cachedRightEdge[0] = x + popupContentSize.width
+                cachedY[0] = y
                 return IntOffset(x, y)
             }
         }
@@ -892,17 +914,26 @@ private fun CommentContextMenu(
                     color = Color(0xFF333333),
                     shape = RoundedCornerShape(12.dp)
                 )
+                .clip(RoundedCornerShape(12.dp))
                 .padding(horizontal = 6.dp)
         ) {
-            ContextMenuItem(
-                iconRes = Res.drawable.ic_menu_action_copy,
-                label = "复制",
-                onClick = onCopyClick
-            )
+            if (!confirmingDelete) {
+                ContextMenuItem(
+                    iconRes = Res.drawable.ic_menu_action_copy,
+                    label = "复制",
+                    onClick = onCopyClick
+                )
+            }
             ContextMenuItem(
                 iconRes = Res.drawable.ic_comment_panel_delete,
-                label = "删除",
-                onClick = onDeleteClick,
+                label = if (confirmingDelete) "确认删除吗？" else "删除",
+                onClick = {
+                    if (confirmingDelete) {
+                        onDeleteClick()
+                    } else {
+                        confirmingDelete = true
+                    }
+                },
                 applyTint = false
             )
         }
@@ -1034,20 +1065,84 @@ private fun PostCommentArea(
     onSubmit: (comment: String) -> Unit = {},
 ) {
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    var textFieldValue by remember { mutableStateOf(TextFieldValue()) }
 
-    Box(
+    // 回复目标切换时重置输入内容
+    // 回复模式下插入零宽空格哨兵字符，使输入框"非空"，确保退格键能触发 onValueChange
+    LaunchedEffect(replyTarget) {
+        textFieldValue = if (replyTarget != null) {
+            TextFieldValue(REPLY_SENTINEL, selection = TextRange(REPLY_SENTINEL.length))
+        } else {
+            TextFieldValue()
+        }
+    }
+
+    val hasContent by remember {
+        derivedStateOf {
+            textFieldValue.text.replace(REPLY_SENTINEL, "").trim().isNotBlank()
+        }
+    }
+
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color(0xFFF5F5F3))
-            .padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = bottomInset + 8.dp)
+            .padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = bottomInset + 8.dp),
+        verticalAlignment = Alignment.Top
     ) {
         PostCommentInputContainer(
             userAvatarUrl = userAvatarUrl,
             replyTarget = replyTarget,
             autoFocusInput = autoFocusInput,
-            onClearReplyTarget = onClearReplyTarget,
-            onSubmit = onSubmit
+            textFieldValue = textFieldValue,
+            onValueChange = { newValue ->
+                if (replyTarget != null && !newValue.text.contains(REPLY_SENTINEL)) {
+                    // 哨兵字符被删除 → 用户在"空"输入框按了退格键 → 清除回复前缀
+                    onClearReplyTarget()
+                } else {
+                    textFieldValue = newValue
+                }
+            },
+            modifier = Modifier.weight(1f)
         )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // 发送按钮
+        val sendInteractionSource = remember { MutableInteractionSource() }
+        val isSendPressed by sendInteractionSource.collectIsPressedAsState()
+        val backgroundColor = if (hasContent) Color(0xFF16B998) else Color(0x29999999)
+        val textColor = if (hasContent) Color.White else Color(0xFF999999)
+        val sendButtonAlpha = if (hasContent && isSendPressed) 0.7f else 1f
+
+        Box(
+            modifier = Modifier
+                .height(38.dp)
+                .alpha(sendButtonAlpha)
+                .background(backgroundColor, RoundedCornerShape(8.dp))
+                .clickable(
+                    enabled = hasContent,
+                    interactionSource = sendInteractionSource,
+                    indication = null
+                ) {
+                    val rawText = textFieldValue.text.replace(REPLY_SENTINEL, "").trim()
+                    if (rawText.isNotBlank()) {
+                        onSubmit(rawText)
+                        textFieldValue = TextFieldValue()
+                    }
+                }
+                .padding(horizontal = 11.5.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "发送",
+                style = TextStyle(
+                    fontSize = 16.sp,
+                    lineHeight = 26.sp,
+                    color = textColor
+                )
+            )
+        }
     }
 }
 
@@ -1056,12 +1151,12 @@ private fun PostCommentInputContainer(
     userAvatarUrl: String? = null,
     replyTarget: ReplyTarget? = null,
     autoFocusInput: Boolean = false,
-    onClearReplyTarget: () -> Unit = {},
-    onSubmit: (comment: String) -> Unit = {},
+    textFieldValue: TextFieldValue,
+    onValueChange: (TextFieldValue) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
             .heightIn(min = 38.dp)
             .background(color = Color.White, shape = RoundedCornerShape(8.dp))
             .padding(horizontal = 8.dp)
@@ -1088,8 +1183,8 @@ private fun PostCommentInputContainer(
         PostCommentTextField(
             replyTarget = replyTarget,
             autoFocusInput = autoFocusInput,
-            onClearReplyTarget = onClearReplyTarget,
-            onSubmit = onSubmit,
+            textFieldValue = textFieldValue,
+            onValueChange = onValueChange,
             modifier = Modifier
                 .weight(1f)
                 .heightIn(min = 38.dp, max = 100.dp)
@@ -1103,34 +1198,16 @@ private const val REPLY_SENTINEL = "\u200B"
 private fun PostCommentTextField(
     replyTarget: ReplyTarget? = null,
     autoFocusInput: Boolean = false,
-    onClearReplyTarget: () -> Unit = {},
-    onSubmit: (comment: String) -> Unit = {},
+    textFieldValue: TextFieldValue,
+    onValueChange: (TextFieldValue) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var textFieldValue by remember { mutableStateOf(TextFieldValue()) }
     val scrollState = rememberScrollState()
     val focusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
 
     LaunchedEffect(autoFocusInput) {
         if (autoFocusInput) {
             focusRequester.requestFocus()
-        }
-    }
-
-    fun doSubmit() {
-        val rawText = textFieldValue.text.replace(REPLY_SENTINEL, "").trim()
-        if (rawText.isBlank()) return
-        onSubmit(rawText)
-        textFieldValue = TextFieldValue()
-    }
-
-    // 回复目标切换时重置输入内容
-    // 回复模式下插入零宽空格哨兵字符，使输入框"非空"，确保退格键能触发 onValueChange
-    LaunchedEffect(replyTarget) {
-        textFieldValue = if (replyTarget != null) {
-            TextFieldValue(REPLY_SENTINEL, selection = TextRange(REPLY_SENTINEL.length))
-        } else {
-            TextFieldValue()
         }
     }
 
@@ -1161,19 +1238,8 @@ private fun PostCommentTextField(
 
     androidx.compose.foundation.text.BasicTextField(
         value = textFieldValue,
-        onValueChange = { newValue ->
-            if (replyTarget != null && !newValue.text.contains(REPLY_SENTINEL)) {
-                // 哨兵字符被删除 → 用户在"空"输入框按了退格键 → 清除回复前缀
-                onClearReplyTarget()
-            } else {
-                textFieldValue = newValue
-            }
-        },
+        onValueChange = onValueChange,
         textStyle = inputTextStyle,
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        keyboardActions = androidx.compose.foundation.text.KeyboardActions(
-            onDone = { doSubmit() }
-        ),
         visualTransformation = visualTransformation,
         modifier = modifier
             .focusRequester(focusRequester)
@@ -1208,10 +1274,6 @@ private fun PostCommentTextField(
  *
  * 通过 [VisualTransformation] 在输入文字前方内联插入"回复 XXX："前缀。
  * 前缀仅存在于视觉渲染层，不影响实际文本值，光标无法移入前缀区域。
- *
- * 颜色方案：
- * - "回复 "：#FF999999（灰色）
- * - "XXX："：#FF333333（深色，与用户输入文字一致）
  *
  * @param username 被回复人的用户名
  */

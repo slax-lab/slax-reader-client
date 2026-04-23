@@ -107,8 +107,8 @@ actual fun DetailScreen(
             when (event) {
                 is WebViewEvent.PageLoaded -> {
                     viewModel.consumeInitialReadPosition()?.let { position ->
-                        val totalInsetPx = webViewState.topContentInsetPx + 16f * density.density
-
+                        val totalInsetPx = webViewState.topContentInsetPx + statusBarHeightPx +
+                                16f * density.density
                         val positionPoints = (position - totalInsetPx) / densityScale
                         webViewState.evaluateJs("window.scrollTo(0, $positionPoints)")
                     }
@@ -119,7 +119,8 @@ actual fun DetailScreen(
                     visibleHeightPx = event.visibleHeight
                 }
                 is WebViewEvent.ScrollToPosition -> {
-                    val totalInsetPx = webViewState.topContentInsetPx + 16f * density.density
+                    val totalInsetPx = webViewState.topContentInsetPx + statusBarHeightPx +
+                            16f * density.density
                     println(totalInsetPx / densityScale)
                     webViewState.evaluateJs("window.scrollTo(0, Math.max(0,document.body.scrollHeight * ${event.percentage} - ${totalInsetPx / densityScale}))")
                 }
@@ -295,6 +296,7 @@ actual fun DetailScreen(
                 when (actionId) {
                     CommentPanelActionId.COPY -> {
                         UIPasteboard.generalPasteboard.string = selectedText
+                        showCopyToast = true
                         markInteraction.dismissPanel()
                         viewModel.commentDelegate.setSelectedMark(null)
                         webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")

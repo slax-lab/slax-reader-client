@@ -265,6 +265,7 @@ actual fun DetailScreen(
                         coroutineScope.launch {
                             clipboard.setClipEntry(ClipEntry(clipData))
                         }
+                        showCopyToast = true
                         markInteraction.dismissPanel()
                         viewModel.commentDelegate.setSelectedMark(null)
                         webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
