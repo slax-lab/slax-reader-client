@@ -49,6 +49,20 @@ class MarkInteractionState {
         capturedSelectionMark = null
     }
 
+    fun onMarkItemInfosChanged(markItemInfos: List<BridgeMarkItemInfo>) {
+        val current = selectedMark ?: return
+
+        val matched = if (current.id.isBlank()) {
+            markItemInfos.find { it.source == current.source || it.approx == current.approx }
+        } else {
+            markItemInfos.find { it.id == current.id }
+        } ?: return
+
+        if (matched.stroke != current.stroke || matched.comments != current.comments) {
+            selectedMark = matched
+        }
+    }
+
     fun onMarkClicked(text: String, mark: BridgeMarkItemInfo) {
         selectedText = text
         selectedMark = mark

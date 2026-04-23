@@ -114,6 +114,9 @@ actual fun AppWebView(
                     @JavascriptInterface
                     fun postMessage(message: String) {
                         runCatching { bridgeJson.decodeFromString<WebViewMessage>(message) }
+                            .onFailure { e ->
+                                println("[WebView Bridge] 消息解析失败: ${e.message}, 原始消息: $message")
+                            }
                             .onSuccess { msg ->
                                 when (msg.type) {
                                     "imageClick" -> {
@@ -152,15 +155,22 @@ actual fun AppWebView(
                                         val markId = msg.markId
                                         val text = msg.text
                                         if (!markId.isNullOrBlank()) {
-                                            val markItemInfo = msg.markItemInfo?.let {
-                                                runCatching {
-                                                    bridgeJson.decodeFromString<BridgeMarkItemInfo>(it)
-                                                }.getOrNull()
-                                            }
+                                            val markInfo = msg.data?.let { parseSelectionData(it) }
                                             webState.dispatchEvent(
-                                                WebViewEvent.MarkClicked(markId, text ?: "", markItemInfo)
+                                                WebViewEvent.MarkClicked(markId, text ?: "", markInfo)
                                             )
                                         }
+                                    }
+
+                                    "markItemInfosChanged" -> {
+                                        val markItemInfos = msg.markItemInfos?.let {
+                                            runCatching {
+                                                bridgeJson.decodeFromString<List<BridgeMarkItemInfo>>(it)
+                                            }.getOrNull()
+                                        } ?: emptyList()
+                                        webState.dispatchEvent(
+                                            WebViewEvent.MarkItemInfosChanged(markItemInfos)
+                                        )
                                     }
                                 }
                             }

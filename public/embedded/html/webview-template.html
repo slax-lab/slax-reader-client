@@ -38,43 +38,6 @@
     </script>
     <script>
         (function() {
-            var debounceTimer = null;
-            var lastSelectedText = '';
-
-            document.addEventListener('selectionchange', function() {
-                if (debounceTimer) {
-                    clearTimeout(debounceTimer);
-                }
-                debounceTimer = setTimeout(function() {
-                    var selection = window.getSelection();
-                    var text = selection ? selection.toString().trim() : '';
-
-                    if (text.length > 0 && text !== lastSelectedText) {
-                        lastSelectedText = text;
-
-                        // 获取选中区域顶部的视口 Y 坐标（iOS 使用此值定位菜单）
-                        var selectionY = 0;
-                        try {
-                            if (selection.rangeCount > 0) {
-                                var rect = selection.getRangeAt(0).getBoundingClientRect();
-                                selectionY = rect.top;
-                            }
-                        } catch (e) {}
-
-                        window.SlaxWebViewBridge.postMessage({
-                            type: 'textSelected',
-                            text: text,
-                            selectionY: selectionY
-                        });
-                    } else if (text.length === 0 && lastSelectedText.length > 0) {
-                        lastSelectedText = '';
-                        window.SlaxWebViewBridge.postMessage({
-                            type: 'textDeselected'
-                        });
-                    }
-                }, 200);
-            });
-
             // 阻止系统右键/长按上下文菜单弹出
             document.addEventListener('contextmenu', function(e) {
                 e.preventDefault();

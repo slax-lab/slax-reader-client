@@ -101,6 +101,9 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
                     markInteraction.onMarkClicked(event.text, info)
                     viewModel.commentDelegate.setSelectedMark(info.source)
                 }
+                is WebViewEvent.MarkItemInfosChanged -> {
+                    markInteraction.onMarkItemInfosChanged(event.markItemInfos)
+                }
                 else -> {}
             }
         }
