@@ -29,7 +29,7 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             window.webkit.messageHandlers.NativeBridge.postMessage(message);
             return true;
         }
-        console.warn('Native bridge not available');
+        console.warn('[NativeBridge] Native bridge not available, platform:', platform);
         return false;
     }
 
@@ -1103,6 +1103,21 @@ var SlaxReaderWebBridgeExports = (function (exports) {
         }
     }
     /**
+     * 修复无效的 CSS 选择器（自动转换以数字开头的 ID 和 Class 为属性选择器）
+     */
+    function fixCssSelector(selector) {
+        const regex = /(\[[^\]]+\])|#(\d[-\w]*)|\.((\d[-\w]*))/g;
+        return selector.replace(regex, (match, attrNode, idMatch, _fullClass, classMatch) => {
+            if (attrNode)
+                return match;
+            if (idMatch)
+                return `[id="${idMatch}"]`;
+            if (classMatch)
+                return `[class~="${classMatch}"]`;
+            return match;
+        });
+    }
+    /**
      * 深度比较两个对象是否相等
      */
     function deepEqual(obj1, obj2) {
@@ -1127,6 +1142,7 @@ var SlaxReaderWebBridgeExports = (function (exports) {
      * 选择监听器
      *
      * 负责监听用户的文本选择操作
+     * 仅通过 selectionchange 事件驱动，避免多监听源导致重复触发
      */
     class SelectionMonitor {
         constructor(container) {
@@ -1142,10 +1158,12 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                 this.selectionChangeTimeout = setTimeout(() => {
                     const selection = window.getSelection();
                     if (!selection || selection.rangeCount === 0) {
+                        this.clearLastSelection();
                         return;
                     }
                     const range = selection.getRangeAt(0);
                     if (range.collapsed) {
+                        this.clearLastSelection();
                         return;
                     }
                     if (!this.container.contains(range.commonAncestorContainer)) {
@@ -1166,43 +1184,20 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                     this.selectionChangeTimeout = undefined;
                 }, 300);
             };
-            /**
-             * 处理鼠标抬起事件（备用方案）
-             */
-            this.handleMouseUp = (event) => {
-                setTimeout(() => {
-                    const selection = window.getSelection();
-                    if (!selection || selection.rangeCount === 0) {
-                        return;
-                    }
-                    const range = selection.getRangeAt(0);
-                    if (range.collapsed) {
-                        return;
-                    }
-                    const selectionInfo = this.parseSelection(range, event);
-                    if (selectionInfo.selection.length === 0) {
-                        return;
-                    }
-                    if (this.onSelectionCallback) {
-                        this.onSelectionCallback(selectionInfo);
-                    }
-                }, 10);
-            };
             this.container = container;
         }
         /**
          * 开始监听选择
+         * @param callback 选区变化时的回调
+         * @param onSelectionCleared 选区取消（collapsed 或清空）时的回调
          */
-        start(callback) {
+        start(callback, onSelectionCleared) {
             if (this.isMonitoring) {
                 return;
             }
             this.onSelectionCallback = callback;
-            // 使用 selectionchange 事件（更适合 Android WebView）
+            this.onSelectionClearedCallback = onSelectionCleared;
             document.addEventListener('selectionchange', this.handleSelectionChange);
-            // 保留 mouseup 和 touchend 作为备用（兼容性）
-            this.container.addEventListener('mouseup', this.handleMouseUp);
-            this.container.addEventListener('touchend', this.handleMouseUp);
             this.isMonitoring = true;
         }
         /**
@@ -1217,11 +1212,19 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                 this.selectionChangeTimeout = undefined;
             }
             document.removeEventListener('selectionchange', this.handleSelectionChange);
-            this.container.removeEventListener('mouseup', this.handleMouseUp);
-            this.container.removeEventListener('touchend', this.handleMouseUp);
             this.isMonitoring = false;
             this.lastSelectionText = '';
             this.onSelectionCallback = undefined;
+            this.onSelectionClearedCallback = undefined;
+        }
+        /**
+         * 清除上次选区记录并通知外部
+         */
+        clearLastSelection() {
+            if (this.lastSelectionText !== '') {
+                this.lastSelectionText = '';
+                this.onSelectionClearedCallback?.();
+            }
         }
         /**
          * 从 range 解析选择（不需要事件对象）
@@ -1234,50 +1237,13 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             return { selection, paths, approx, position };
         }
         /**
-         * 解析选择的内容（带事件对象）
-         */
-        parseSelection(range, event) {
-            const selection = this.getSelectionInfo(range);
-            const paths = this.convertSelectionToPaths(selection);
-            const approx = this.getApproxInfo(range);
-            const position = this.getPositionInfo(range, event);
-            return { selection, paths, approx, position };
-        }
-        /**
-         * 从 range 获取位置信息（不需要事件对象）
+         * 从 range 获取位置信息
          */
         getPositionInfoFromRange(range) {
             const rangeRect = range.getBoundingClientRect();
             const containerRect = this.container.getBoundingClientRect();
             const clientX = rangeRect.left + rangeRect.width / 2;
             const clientY = rangeRect.bottom;
-            return {
-                x: clientX - containerRect.left,
-                y: clientY - containerRect.top,
-                width: rangeRect.width,
-                height: rangeRect.height,
-                top: rangeRect.top - containerRect.top,
-                left: rangeRect.left - containerRect.left,
-                right: rangeRect.right - containerRect.left,
-                bottom: rangeRect.bottom - containerRect.top
-            };
-        }
-        /**
-         * 获取位置信息（用于显示菜单）
-         */
-        getPositionInfo(range, event) {
-            const rangeRect = range.getBoundingClientRect();
-            const containerRect = this.container.getBoundingClientRect();
-            let clientX;
-            let clientY;
-            if (event instanceof MouseEvent) {
-                clientX = event.clientX;
-                clientY = event.clientY;
-            }
-            else {
-                clientX = event.changedTouches[0].clientX;
-                clientY = event.changedTouches[0].clientY;
-            }
             return {
                 x: clientX - containerRect.left,
                 y: clientY - containerRect.top,
@@ -1478,8 +1444,9 @@ var SlaxReaderWebBridgeExports = (function (exports) {
          */
         transferNodeInfos(markItem) {
             const infos = [];
+            const path = fixCssSelector(markItem.path);
             if (markItem.type === 'text') {
-                const baseElement = this.container.querySelector(markItem.path);
+                const baseElement = this.container.querySelector(path);
                 if (!baseElement) {
                     return infos;
                 }
@@ -1505,10 +1472,10 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                 }
             }
             else if (markItem.type === 'image') {
-                let element = this.container.querySelector(markItem.path);
+                let element = this.container.querySelector(path);
                 if (!element || !element.src) {
                     // 尝试在slax-mark标签内查找
-                    const paths = markItem.path.split('>');
+                    const paths = path.split('>');
                     const tailIdx = paths.length - 1;
                     const newPath = [...paths.slice(0, tailIdx), ' slax-mark ', paths[tailIdx]];
                     element = this.container.querySelector(newPath.join('>'));
@@ -1657,10 +1624,47 @@ var SlaxReaderWebBridgeExports = (function (exports) {
      * 负责处理后端 MarkDetail 数据的预处理、分组和渲染
      */
     class MarkManager {
-        constructor(container, currentUserId, onMarkTap) {
+        constructor(container, currentUserId, onMarkTap, onMarkItemInfosChange) {
             this.markItemInfos = [];
+            /** 抑制变化通知（用于内部连续操作避免重复通知） */
+            this._suppressChangeNotification = false;
             this.container = container;
             this.renderer = new MarkRenderer(container, currentUserId, onMarkTap);
+            this.onMarkItemInfosChange = onMarkItemInfosChange;
+        }
+        /**
+         * 根据选区 paths 解析对应的 MarkItemInfo
+         *
+         * 如果与已有的 MarkItemInfo 的 source 完全匹配，则返回该 MarkItemInfo；
+         * 否则创建一个临时的 MarkItemInfo。
+         */
+        resolveMarkItemInfo(paths, approx) {
+            if (paths.length === 0) {
+                return null;
+            }
+            const existing = this.markItemInfos.find((info) => this.checkMarkSourceIsSame(info.source, paths));
+            if (existing) {
+                if (!existing.approx && approx) {
+                    existing.approx = approx;
+                }
+                return existing;
+            }
+            const created = {
+                id: '',
+                source: paths,
+                comments: [],
+                stroke: [],
+                approx
+            };
+            return created;
+        }
+        /**
+         * 通知外部 markItemInfos 数据已变化
+         */
+        notifyMarkItemInfosChanged() {
+            if (this._suppressChangeNotification)
+                return;
+            this.onMarkItemInfosChange?.([...this.markItemInfos]);
         }
         /**
          * 绘制多个标记
@@ -1669,21 +1673,32 @@ var SlaxReaderWebBridgeExports = (function (exports) {
          * @returns 键值对：uuid -> 该uuid对应的后端mark列表
          */
         drawMarks(marks) {
+            // 保留旧的 markItemInfos，用于在重新生成时复用已有的 id
+            const previousMarkItemInfos = this.markItemInfos;
+            this._suppressChangeNotification = true;
+            this.clearAllMarks();
+            this._suppressChangeNotification = false;
             const userMap = this.createUserMap(marks.user_list);
             const commentMap = this.buildCommentMap(marks.mark_list, userMap);
             this.buildCommentRelationships(marks.mark_list, commentMap);
-            this.markItemInfos = this.generateMarkItemInfos(marks.mark_list, commentMap);
+            console.log('[MarkManager] drawMarks 变动前 markItemInfos（共 %d 条）:', previousMarkItemInfos.length, JSON.parse(JSON.stringify(previousMarkItemInfos)));
+            this.markItemInfos = this.generateMarkItemInfos(marks.mark_list, commentMap, previousMarkItemInfos);
+            console.log('[MarkManager] drawMarks 变动后 markItemInfos（共 %d 条）:', this.markItemInfos.length, JSON.parse(JSON.stringify(this.markItemInfos)));
             for (const info of this.markItemInfos) {
                 this.drawSingleMarkItem(info);
             }
+            this.notifyMarkItemInfosChanged();
             return this.buildDrawMarksResult(marks.mark_list);
         }
         /**
          * 根据 UUID 删除标记
          */
         removeMarkByUuid(uuid) {
+            console.log('[MarkManager] removeMarkByUuid 变动前 markItemInfos（共 %d 条）:', this.markItemInfos.length, JSON.parse(JSON.stringify(this.markItemInfos)));
             this.renderer.removeMark(uuid);
             this.markItemInfos = this.markItemInfos.filter((info) => info.id !== uuid);
+            console.log('[MarkManager] removeMarkByUuid 变动后 markItemInfos（共 %d 条），已移除 uuid:', this.markItemInfos.length, uuid, JSON.parse(JSON.stringify(this.markItemInfos)));
+            this.notifyMarkItemInfosChanged();
         }
         /**
          * 根据本地 UUID 获取 MarkItemInfo
@@ -1695,8 +1710,11 @@ var SlaxReaderWebBridgeExports = (function (exports) {
          * 清除所有标记
          */
         clearAllMarks() {
+            console.log('[MarkManager] clearAllMarks 变动前 markItemInfos（共 %d 条）:', this.markItemInfos.length, JSON.parse(JSON.stringify(this.markItemInfos)));
             this.renderer.clearAllMarks();
             this.markItemInfos = [];
+            console.log('[MarkManager] clearAllMarks 变动后 markItemInfos 已清空（共 0 条）');
+            this.notifyMarkItemInfosChanged();
         }
         /**
          * 根据 UUID 为指定用户添加划线
@@ -1709,19 +1727,29 @@ var SlaxReaderWebBridgeExports = (function (exports) {
          * @returns 是否成功添加（false 表示 uuid 不存在或用户已有划线）
          */
         addStrokeByUuid(uuid, userId) {
+            console.log('[MarkManager] addStrokeByUuid 入参 → uuid:', uuid, 'userId:', userId);
+            console.log('[MarkManager] addStrokeByUuid 当前 markItemInfos（共 %d 条）:', this.markItemInfos.length, JSON.parse(JSON.stringify(this.markItemInfos)));
             const infoItem = this.markItemInfos.find((info) => info.id === uuid);
             if (!infoItem) {
                 console.warn('[MarkManager] addStrokeByUuid 未找到对应的 MarkItemInfo，uuid:', uuid);
+                console.log('[MarkManager] addStrokeByUuid 出参 → false（uuid 不存在）');
                 return false;
             }
+            console.log('[MarkManager] addStrokeByUuid 找到 MarkItemInfo:', JSON.parse(JSON.stringify(infoItem)));
+            console.log('[MarkManager] addStrokeByUuid 当前 stroke 列表:', JSON.parse(JSON.stringify(infoItem.stroke)));
             const alreadyStroked = infoItem.stroke.some((s) => s.userId === userId);
             if (alreadyStroked) {
                 console.log('[MarkManager] addStrokeByUuid 用户已有划线，跳过，uuid:', uuid, 'userId:', userId);
+                console.log('[MarkManager] addStrokeByUuid 出参 → false（用户已有划线）');
                 return false;
             }
+            console.log('[MarkManager] addStrokeByUuid 变动前 stroke:', JSON.parse(JSON.stringify(infoItem.stroke)));
             infoItem.stroke.push({ mark_id: undefined, userId });
+            console.log('[MarkManager] addStrokeByUuid 变动后 stroke:', JSON.parse(JSON.stringify(infoItem.stroke)));
             this.updateMarkItemUI(infoItem);
-            console.log('[MarkManager] addStrokeByUuid 成功，uuid:', uuid, 'userId:', userId);
+            this.notifyMarkItemInfosChanged();
+            console.log('[MarkManager] addStrokeByUuid 操作完成后 markItemInfos（共 %d 条）:', this.markItemInfos.length, JSON.parse(JSON.stringify(this.markItemInfos)));
+            console.log('[MarkManager] addStrokeByUuid 出参 → true');
             return true;
         }
         /**
@@ -1735,26 +1763,41 @@ var SlaxReaderWebBridgeExports = (function (exports) {
          * @returns 是否成功删除（false 表示 uuid 不存在或该用户无划线）
          */
         removeStrokeByUuid(uuid, userId) {
+            console.log('[MarkManager] removeStrokeByUuid 入参 → uuid:', uuid, 'userId:', userId);
+            console.log('[MarkManager] removeStrokeByUuid 当前 markItemInfos（共 %d 条）:', this.markItemInfos.length, JSON.parse(JSON.stringify(this.markItemInfos)));
             const infoItem = this.markItemInfos.find((info) => info.id === uuid);
             if (!infoItem) {
                 console.warn('[MarkManager] removeStrokeByUuid 未找到对应的 MarkItemInfo，uuid:', uuid);
+                console.log('[MarkManager] removeStrokeByUuid 出参 → false（uuid 不存在）');
                 return false;
             }
+            console.log('[MarkManager] removeStrokeByUuid 找到 MarkItemInfo:', JSON.parse(JSON.stringify(infoItem)));
+            console.log('[MarkManager] removeStrokeByUuid 当前 stroke 列表:', JSON.parse(JSON.stringify(infoItem.stroke)));
             const strokeIndex = infoItem.stroke.findIndex((s) => s.userId === userId);
             if (strokeIndex === -1) {
                 console.log('[MarkManager] removeStrokeByUuid 该用户无划线，跳过，uuid:', uuid, 'userId:', userId);
+                console.log('[MarkManager] removeStrokeByUuid 出参 → false（用户无划线）');
                 return false;
             }
+            console.log('[MarkManager] removeStrokeByUuid 变动前 stroke:', JSON.parse(JSON.stringify(infoItem.stroke)));
+            console.log('[MarkManager] removeStrokeByUuid 即将移除 stroke[%d]:', strokeIndex, JSON.parse(JSON.stringify(infoItem.stroke[strokeIndex])));
             infoItem.stroke.splice(strokeIndex, 1);
-            // 划线和评论都为空时，整体删除该标记
+            console.log('[MarkManager] removeStrokeByUuid 变动后 stroke:', JSON.parse(JSON.stringify(infoItem.stroke)));
             if (infoItem.stroke.length === 0 && infoItem.comments.length === 0) {
-                this.removeMarkByUuid(uuid);
                 console.log('[MarkManager] removeStrokeByUuid 标记已无划线和评论，整体删除，uuid:', uuid);
+                console.log('[MarkManager] removeStrokeByUuid 删除前 markItemInfos（共 %d 条）:', this.markItemInfos.length);
+                this._suppressChangeNotification = true;
+                this.removeMarkByUuid(uuid);
+                this._suppressChangeNotification = false;
+                console.log('[MarkManager] removeStrokeByUuid 删除后 markItemInfos（共 %d 条）:', this.markItemInfos.length, JSON.parse(JSON.stringify(this.markItemInfos)));
             }
             else {
                 this.updateMarkItemUI(infoItem);
-                console.log('[MarkManager] removeStrokeByUuid 成功，uuid:', uuid, 'userId:', userId);
+                console.log('[MarkManager] removeStrokeByUuid 更新UI完成，剩余 stroke: %d, comments: %d', infoItem.stroke.length, infoItem.comments.length);
             }
+            console.log('[MarkManager] removeStrokeByUuid 操作完成后 markItemInfos（共 %d 条）:', this.markItemInfos.length, JSON.parse(JSON.stringify(this.markItemInfos)));
+            console.log('[MarkManager] removeStrokeByUuid 出参 → true');
+            this.notifyMarkItemInfosChanged();
             return true;
         }
         /**
@@ -1768,11 +1811,15 @@ var SlaxReaderWebBridgeExports = (function (exports) {
          * @returns 是否成功添加（false 表示 uuid 不存在）
          */
         addCommentByUuid(uuid, userId, comment) {
+            console.log('[MarkManager] addCommentByUuid 入参 → uuid:', uuid, 'userId:', userId, 'comment:', comment);
+            console.log('[MarkManager] addCommentByUuid 当前 markItemInfos（共 %d 条）:', this.markItemInfos.length, JSON.parse(JSON.stringify(this.markItemInfos)));
             const infoItem = this.markItemInfos.find((info) => info.id === uuid);
             if (!infoItem) {
                 console.warn('[MarkManager] addCommentByUuid 未找到对应的 MarkItemInfo，uuid:', uuid);
                 return false;
             }
+            console.log('[MarkManager] addCommentByUuid 找到 MarkItemInfo:', JSON.parse(JSON.stringify(infoItem)));
+            console.log('[MarkManager] addCommentByUuid 变动前 comments（共 %d 条）:', infoItem.comments.length, JSON.parse(JSON.stringify(infoItem.comments)));
             const commentInfo = {
                 markId: 0,
                 comment,
@@ -1787,8 +1834,10 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                 operateLoading: false
             };
             infoItem.comments.push(commentInfo);
+            console.log('[MarkManager] addCommentByUuid 变动后 comments（共 %d 条）:', infoItem.comments.length, JSON.parse(JSON.stringify(infoItem.comments)));
             this.updateMarkItemUI(infoItem);
-            console.log('[MarkManager] addCommentByUuid 成功，uuid:', uuid, 'userId:', userId);
+            this.notifyMarkItemInfosChanged();
+            console.log('[MarkManager] addCommentByUuid 操作完成后 markItemInfos（共 %d 条）:', this.markItemInfos.length, JSON.parse(JSON.stringify(this.markItemInfos)));
             return true;
         }
         /**
@@ -1883,7 +1932,7 @@ var SlaxReaderWebBridgeExports = (function (exports) {
         /**
          * 步骤4：生成 MarkItemInfo 列表（按source分组）
          */
-        generateMarkItemInfos(markList, commentMap) {
+        generateMarkItemInfos(markList, commentMap, previousMarkItemInfos = []) {
             const infoItems = [];
             const LINE_TYPES = [1, 4]; // LINE, ORIGIN_LINE
             const COMMENT_TYPES = [2, 5]; // COMMENT, ORIGIN_COMMENT
@@ -1901,6 +1950,17 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                 }
                 const markSources = source;
                 let markInfoItem = infoItems.find((infoItem) => this.checkMarkSourceIsSame(infoItem.source, markSources));
+                if (markInfoItem && !markInfoItem.approx && mark.approx_source) {
+                    try {
+                        const newRange = this.getRangeFromApprox(mark.approx_source);
+                        const rawText = newRange ? getRangeTextWithNewlines(newRange) : undefined;
+                        mark.approx_source.raw_text = rawText;
+                    }
+                    catch (error) {
+                        console.error('create raw text failed', error, mark.approx_source?.exact);
+                    }
+                    markInfoItem.approx = mark.approx_source;
+                }
                 if (!markInfoItem) {
                     if (mark.approx_source) {
                         try {
@@ -1912,8 +1972,11 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                             console.error('create raw text failed', error, mark.approx_source?.exact);
                         }
                     }
+                    // 从旧的 markItemInfos 中查找相同 source 的项，复用其 id，
+                    // 避免重新渲染后 id 变化导致外部持有的引用失效
+                    const previousItem = previousMarkItemInfos.find((prev) => this.checkMarkSourceIsSame(prev.source, markSources));
                     markInfoItem = {
-                        id: generateUUID(),
+                        id: previousItem?.id ?? generateUUID(),
                         source: markSources,
                         comments: [],
                         stroke: [],
@@ -1922,6 +1985,8 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                     infoItems.push(markInfoItem);
                 }
                 if (LINE_TYPES.includes(mark.type)) {
+                    if (!mark.comment && mark.is_deleted)
+                        continue;
                     markInfoItem.stroke.push({ mark_id: mark.id, userId: mark.user_id });
                 }
                 else if (COMMENT_TYPES.includes(mark.type)) {
@@ -1992,8 +2057,12 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                 const alreadyStroked = existing.stroke.some((s) => s.userId === (userId ?? 0));
                 if (!alreadyStroked) {
                     console.log('[MarkManager] strokeCurrentSelection 当前用户尚未划线，追加 stroke');
+                    console.log('[MarkManager] strokeCurrentSelection 变动前 existing.stroke:', JSON.parse(JSON.stringify(existing.stroke)));
                     existing.stroke.push({ mark_id: undefined, userId: userId ?? 0 });
+                    console.log('[MarkManager] strokeCurrentSelection 变动后 existing.stroke:', JSON.parse(JSON.stringify(existing.stroke)));
+                    console.log('[MarkManager] strokeCurrentSelection 变动后 markItemInfos（共 %d 条）:', this.markItemInfos.length, JSON.parse(JSON.stringify(this.markItemInfos)));
                     this.drawSingleMarkItem(existing);
+                    this.notifyMarkItemInfosChanged();
                 }
                 else {
                     console.log('[MarkManager] strokeCurrentSelection 当前用户已有划线，跳过渲染');
@@ -2015,8 +2084,11 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                 comments: [],
                 approx
             };
+            console.log('[MarkManager] strokeCurrentSelection 变动前 markItemInfos（共 %d 条）:', this.markItemInfos.length, JSON.parse(JSON.stringify(this.markItemInfos)));
             this.markItemInfos.push(infoItem);
+            console.log('[MarkManager] strokeCurrentSelection 变动后 markItemInfos（共 %d 条）:', this.markItemInfos.length, JSON.parse(JSON.stringify(this.markItemInfos)));
             this.drawSingleMarkItem(infoItem);
+            this.notifyMarkItemInfosChanged();
             const result = {
                 uuid,
                 source: apiSource,
@@ -2028,18 +2100,28 @@ var SlaxReaderWebBridgeExports = (function (exports) {
         }
         /**
          * 获取当前选区数据
+         *
+         * 与 strokeCurrentSelection 类似，但不执行渲染和幂等处理，
+         * 仅读取当前选区并返回接口所需的数据结构。
+         *
+         * @returns StrokeCreateData（不含 uuid），若选区无效则返回 null
          */
         captureCurrentSelection() {
             const selection = window.getSelection();
-            if (!selection || selection.rangeCount === 0) return null;
+            if (!selection || selection.rangeCount === 0)
+                return null;
             const range = selection.getRangeAt(0);
-            if (range.collapsed) return null;
-            if (!this.container.contains(range.commonAncestorContainer)) return null;
+            if (range.collapsed)
+                return null;
+            if (!this.container.contains(range.commonAncestorContainer))
+                return null;
             const selectionInfo = this.getSelectionInfoFromRange(range);
-            if (selectionInfo.length === 0) return null;
+            if (selectionInfo.length === 0)
+                return null;
             const paths = this.buildPathsFromSelectionInfo(selectionInfo);
-            if (paths.length === 0) return null;
-            const { approx, approxCreate } = this.parseApproxFromRange(range);
+            if (paths.length === 0)
+                return null;
+            const { approxCreate } = this.parseApproxFromRange(range);
             const selectContent = this.buildSelectContent(selectionInfo);
             const apiSource = this.convertToApiSource(paths);
             return {
@@ -2058,25 +2140,29 @@ var SlaxReaderWebBridgeExports = (function (exports) {
          * @param userId 用户ID（用于精确匹配对应 stroke 条目，可选）
          */
         updateMarkIdByUuid(uuid, markId, userId) {
-            console.log('[MarkManager] updateMarkIdByUuid 开始，uuid:', uuid, 'markId:', markId, 'userId:', userId);
+            console.log('[MarkManager] updateMarkIdByUuid 入参 → uuid:', uuid, 'markId:', markId, 'userId:', userId);
             console.log('[MarkManager] updateMarkIdByUuid 当前 markItemInfos（共 %d 条）:', this.markItemInfos.length, JSON.parse(JSON.stringify(this.markItemInfos)));
             const infoItem = this.markItemInfos.find((info) => info.id === uuid);
             if (!infoItem) {
                 console.warn('[MarkManager] updateMarkIdByUuid 未找到对应的 MarkItemInfo，uuid:', uuid);
+                console.log('[MarkManager] updateMarkIdByUuid 出参 → void（uuid 不存在，未做任何变更）');
                 return;
             }
             console.log('[MarkManager] updateMarkIdByUuid 找到 MarkItemInfo:', JSON.parse(JSON.stringify(infoItem)));
-            console.log('[MarkManager] updateMarkIdByUuid 当前 stroke 列表:', JSON.parse(JSON.stringify(infoItem.stroke)));
+            console.log('[MarkManager] updateMarkIdByUuid 变动前 stroke 列表:', JSON.parse(JSON.stringify(infoItem.stroke)));
             const stroke = infoItem.stroke.find((s) => !s.mark_id && (userId === undefined || s.userId === userId));
             if (stroke) {
                 console.log('[MarkManager] updateMarkIdByUuid 找到匹配 stroke，更新前:', JSON.parse(JSON.stringify(stroke)));
                 stroke.mark_id = markId;
                 console.log('[MarkManager] updateMarkIdByUuid 更新后 stroke:', JSON.parse(JSON.stringify(stroke)));
+                this.notifyMarkItemInfosChanged();
             }
             else {
                 console.warn('[MarkManager] updateMarkIdByUuid 未找到可更新的 stroke（mark_id 为空且 userId 匹配）', 'userId 过滤条件:', userId);
             }
-            console.log('[MarkManager] updateMarkIdByUuid 完成，最新 markItemInfos:', JSON.parse(JSON.stringify(this.markItemInfos)));
+            console.log('[MarkManager] updateMarkIdByUuid 变动后 stroke 列表:', JSON.parse(JSON.stringify(infoItem.stroke)));
+            console.log('[MarkManager] updateMarkIdByUuid 操作完成后 markItemInfos（共 %d 条）:', this.markItemInfos.length, JSON.parse(JSON.stringify(this.markItemInfos)));
+            console.log('[MarkManager] updateMarkIdByUuid 出参 → void（完成）');
         }
         /**
          * 将 Range 转换为 MarkPathItem 数组
@@ -2259,12 +2345,16 @@ var SlaxReaderWebBridgeExports = (function (exports) {
         }
         /**
          * 从 approx 信息定位文本并返回 Range
+         *
+         * 使用模糊匹配算法在容器文本内容中查找 approx.exact，
+         * 结合前缀/后缀上下文和位置信息进行评分排名，选择最佳匹配。
          */
         getRangeFromApprox(approx) {
-            if (!approx || !approx.exact) return null;
+            if (!approx || !approx.exact)
+                return null;
             const textContent = this.container.textContent || '';
-            if (!textContent) return null;
-
+            if (!textContent)
+                return null;
             const getNodeAndOffsetAtPosition = (position) => {
                 const walker = document.createTreeWalker(this.container, NodeFilter.SHOW_TEXT, null);
                 let currentNode;
@@ -2278,38 +2368,39 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                 }
                 return null;
             };
-
             const createRangeFromMatch = (start, end) => {
                 const startInfo = getNodeAndOffsetAtPosition(start);
                 const endInfo = getNodeAndOffsetAtPosition(end);
-                if (!startInfo || !endInfo) return null;
+                if (!startInfo || !endInfo)
+                    return null;
                 const range = document.createRange();
                 range.setStart(startInfo.node, startInfo.offset);
                 range.setEnd(endInfo.node, endInfo.offset);
                 return range;
             };
-
             const calculateSimilarity = (str1, str2) => {
-                if (!str1 || !str2) return 0;
+                if (!str1 || !str2)
+                    return 0;
                 const maxErrors = Math.floor(Math.max(str1.length, str2.length) * 0.3);
                 const longer = str1.length < str2.length ? str2 : str1;
                 const shorter = str1.length < str2.length ? str1 : str2;
                 const matches = search(longer, shorter, maxErrors);
-                if (matches.length === 0) return 0;
+                if (matches.length === 0)
+                    return 0;
                 const best = matches.reduce((b, c) => c.errors < b.errors ? c : b, matches[0]);
                 return 1 - best.errors / str1.length;
             };
-
             const calculateContextScore = (start, end, expected) => {
                 start = Math.max(0, start);
                 end = Math.min(textContent.length, end);
-                if (start >= end || !expected) return 0;
+                if (start >= end || !expected)
+                    return 0;
                 const actual = textContent.substring(start, end);
-                if (actual.length < expected.length * 0.5) return 0.3;
+                if (actual.length < expected.length * 0.5)
+                    return 0.3;
                 return calculateSimilarity(actual, expected);
             };
-
-            // 策略1：模糊匹配 + 上下文评分
+            // 策略1：精确匹配 + 上下文评分
             const fuzzyMatches = search(textContent, approx.exact, 0);
             if (fuzzyMatches.length > 0) {
                 const ranked = fuzzyMatches.map(m => {
@@ -2323,21 +2414,21 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                     return { start: m.start, end: m.end, totalScore: prefixScore * 0.4 + suffixScore * 0.4 + positionScore * 0.2 };
                 });
                 const best = ranked.reduce((b, c) => c.totalScore > b.totalScore ? c : b, ranked[0]);
-                if (best.totalScore > 0.3) return createRangeFromMatch(best.start, best.end);
+                if (best.totalScore > 0.3)
+                    return createRangeFromMatch(best.start, best.end);
             }
-
-            // 策略2：引用匹配（允许 2 个字符误差）
+            // 策略2：模糊匹配（允许 2 个字符误差）
             const quoteMatches = search(textContent, approx.exact, 2);
             if (quoteMatches.length > 0) {
                 quoteMatches.sort((a, b) => {
                     const aRate = a.errors / (a.end - a.start);
                     const bRate = b.errors / (b.end - b.start);
-                    if (aRate !== bRate) return aRate - bRate;
+                    if (aRate !== bRate)
+                        return aRate - bRate;
                     return Math.abs(a.end - a.start - approx.exact.length) - Math.abs(b.end - b.start - approx.exact.length);
                 });
                 return createRangeFromMatch(quoteMatches[0].start, quoteMatches[0].end);
             }
-
             return null;
         }
         /**
@@ -2383,11 +2474,11 @@ var SlaxReaderWebBridgeExports = (function (exports) {
         constructor() {
             // selection 相关状态
             this.selectionMonitor = null;
-            this.markRenderer = null;
             this.markManager = null;
             this.selectionContainer = null;
             this.markClickCleanup = null;
             this.onMarkTap = null;
+            this.onMarkItemInfosChange = null;
             this.postMessage = postToNativeBridge;
             this.getContentHeight = getContentHeight;
             this.scrollToAnchor = scrollToAnchor;
@@ -2468,36 +2559,31 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                     type: 'markClicked',
                     markId,
                     text: fullText,
-                    markItemInfo: markItemInfo ? JSON.stringify(markItemInfo) : null
+                    data: markItemInfo ? JSON.stringify(markItemInfo) : null
                 });
             };
             this.onMarkTap = onMarkTap;
-            this.markRenderer = new MarkRenderer(container, currentUserId, onMarkTap);
-            this.markManager = new MarkManager(container, currentUserId, onMarkTap);
+            /**
+             * markItemInfos 数据变化时，通过 native bridge 通知原生端
+             */
+            const onMarkItemInfosChange = (markItemInfos) => {
+                console.log('[WebView Bridge] MarkItemInfos changed, count:', markItemInfos.length);
+                postToNativeBridge({
+                    type: 'markItemInfosChanged',
+                    markItemInfos: JSON.stringify(markItemInfos)
+                });
+            };
+            this.onMarkItemInfosChange = onMarkItemInfosChange;
+            this.markManager = new MarkManager(container, currentUserId, onMarkTap, onMarkItemInfosChange);
             this.selectionMonitor = new SelectionMonitor(container);
             this.selectionMonitor.start((data) => {
-                const jsonData = JSON.stringify({
-                    paths: data.paths,
-                    approx: data.approx,
-                    selection: data.selection.map((item) => {
-                        if (item.type === 'text') {
-                            return {
-                                type: 'text',
-                                text: item.text,
-                                start_offset: item.startOffset,
-                                end_offset: item.endOffset
-                            };
-                        }
-                        else {
-                            return { type: 'image', src: item.src };
-                        }
-                    })
-                });
+                const markItemInfo = this.markManager?.resolveMarkItemInfo(data.paths, data.approx) ?? null;
                 postToNativeBridge({
                     type: 'textSelected',
-                    data: jsonData,
-                    position: JSON.stringify(data.position)
+                    data: markItemInfo ? JSON.stringify(markItemInfo) : null,
                 });
+            }, () => {
+                postToNativeBridge({ type: 'textDeselected' });
             });
             console.log(`[WebView Bridge] Selection monitoring started on: ${containerSelector}`);
         }
@@ -2514,98 +2600,14 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                 this.markClickCleanup = null;
             }
             this.selectionContainer = null;
-            this.markRenderer = null;
             this.markManager = null;
+            this.onMarkItemInfosChange = null;
         }
         /**
          * 清除当前文本选择
          */
         clearSelection() {
             this.selectionMonitor?.clearSelection();
-        }
-        /**
-         * 绘制标记
-         * @param id 标记ID（传 null 则自动生成）
-         * @param pathsJson MarkPathItem[] 的 JSON 字符串
-         * @param isStroke 是否为划线
-         * @param hasComment 是否有评论
-         * @param userId 用户ID（可选）
-         * @returns 标记ID
-         */
-        drawMark(id, pathsJson, isStroke, hasComment, userId) {
-            const markId = id || generateUUID();
-            if (!this.markRenderer) {
-                console.warn('[WebView Bridge] drawMark: selection monitoring not started');
-                return markId;
-            }
-            try {
-                const paths = JSON.parse(pathsJson);
-                const success = this.markRenderer.drawMark(markId, paths, isStroke, hasComment, userId);
-                postToNativeBridge({ type: 'markRendered', markId, success });
-                return markId;
-            }
-            catch (error) {
-                postToNativeBridge({ type: 'selectionError', error: `Failed to draw mark: ${error}` });
-                return markId;
-            }
-        }
-        /**
-         * 更新标记
-         */
-        updateMark(id, isStroke, hasComment, userId) {
-            if (!this.markRenderer)
-                return;
-            try {
-                this.markRenderer.updateMark(id, isStroke, hasComment, userId);
-            }
-            catch (error) {
-                postToNativeBridge({ type: 'selectionError', error: `Failed to update mark: ${error}` });
-            }
-        }
-        /**
-         * 删除标记
-         */
-        removeMark(id) {
-            if (!this.markRenderer)
-                return;
-            try {
-                this.markRenderer.removeMark(id);
-            }
-            catch (error) {
-                postToNativeBridge({ type: 'selectionError', error: `Failed to remove mark: ${error}` });
-            }
-        }
-        /**
-         * 高亮标记
-         */
-        highlightMark(id) {
-            if (!this.markRenderer)
-                return;
-            try {
-                this.markRenderer.highlightMark(id);
-            }
-            catch (error) {
-                postToNativeBridge({ type: 'selectionError', error: `Failed to highlight mark: ${error}` });
-            }
-        }
-        /**
-         * 清除所有高亮
-         */
-        clearHighlights() {
-            this.markRenderer?.clearAllHighlights();
-        }
-        /**
-         * 清除所有标记
-         */
-        clearAllMarks() {
-            this.markRenderer?.clearAllMarks();
-            this.markManager?.clearAllMarks();
-        }
-        /**
-         * 获取所有标记ID
-         */
-        getAllMarkIds() {
-            return this.markRenderer?.getAllMarkIds() ?? [];
         }
         /**
          * 批量绘制标记（从后端 MarkDetail 数据）
@@ -2628,54 +2630,11 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             }
         }
         /**
-         * 根据 UUID 删除标记
-         */
-        removeMarkByUuid(uuid) {
-            if (!this.markManager)
-                return;
-            try {
-                this.markManager.removeMarkByUuid(uuid);
-            }
-            catch (error) {
-                postToNativeBridge({ type: 'selectionError', error: `Failed to remove mark by UUID: ${error}` });
-            }
-        }
-        /**
-         * 对当前选中区域执行划线处理（不调用后端 API，仅本地渲染）
+         * 获取当前选区数据（不执行划线渲染）
          *
-         * 读取 window.getSelection() → 解析路径和 approx → 构建 MarkItemInfo → 渲染划线标记
+         * 仅读取当前选区并返回接口所需的数据结构，不进行本地渲染和幂等处理。
          *
-         * 返回 JSON 字符串，结构如下（StrokeCreateData）：
-         * ```
-         * {
-         *   uuid: string              // 本地 UUID，用于 updateMarkIdByUuid 关联后端 mark_id
-         *   source: StrokeCreateSource[]        // /v1/mark/create 接口的 source 字段
-         *   select_content: StrokeCreateSelectContent[] // 接口的 select_content 字段
-         *   approx_source?: StrokeCreateApproxSource    // 接口的 approx_source 字段（含 position_start/position_end）
-         * }
-         * ```
-         *
-         * 选区无效时返回 null。
-         *
-         * @param userId 当前用户ID（可选，用于判断是否为自己的划线样式）
-         * @returns StrokeCreateData 的 JSON 字符串，或 null
-         */
-        strokeCurrentSelection(userId) {
-            if (!this.markManager) {
-                console.warn('[WebView Bridge] strokeCurrentSelection: selection monitoring not started');
-                return null;
-            }
-            try {
-                const result = this.markManager.strokeCurrentSelection(userId);
-                return result ? JSON.stringify(result) : null;
-            }
-            catch (error) {
-                postToNativeBridge({ type: 'selectionError', error: `Failed to stroke selection: ${error}` });
-                return null;
-            }
-        }
-        /**
-         * 获取当前选区数据
+         * @returns 选区数据的 JSON 字符串，或 null
          */
         captureCurrentSelection() {
             if (!this.markManager) {
@@ -2692,101 +2651,11 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             }
         }
         /**
-         * 通过 uuid 将后端返回的 mark_id 关联到本地 MarkItemInfo 的 stroke 记录
-         *
-         * 在调用 strokeCurrentSelection 拿到 uuid 后，等后端 API 返回 mark_id，
-         * 再调用此方法完成关联，以便后续删除/更新操作能找到正确的后端 ID。
-         *
-         * @param uuid strokeCurrentSelection 返回的 uuid
-         * @param markId 后端返回的 mark_id
-         * @param userId 用户ID（可选，用于精确匹配对应 stroke 条目）
-         */
-        updateMarkIdByUuid(uuid, markId, userId) {
-            if (!this.markManager)
-                return;
-            try {
-                this.markManager.updateMarkIdByUuid(uuid, markId, userId);
-            }
-            catch (error) {
-                postToNativeBridge({ type: 'selectionError', error: `Failed to update mark id by UUID: ${error}` });
-            }
-        }
-        /**
-         * 根据 UUID 为指定用户添加划线
-         *
-         * 更新 MarkItemInfo 的 stroke 数组并刷新页面中对应 slax-mark 的样式。
-         * 已有该用户划线时幂等跳过。
-         *
-         * @param uuid MarkItemInfo 的本地 UUID
-         * @param userId 执行划线的用户ID
-         * @returns 是否成功添加
-         */
-        addStrokeByUuid(uuid, userId) {
-            if (!this.markManager) {
-                console.warn('[WebView Bridge] addStrokeByUuid: selection monitoring not started');
-                return false;
-            }
-            try {
-                return this.markManager.addStrokeByUuid(uuid, userId);
-            }
-            catch (error) {
-                postToNativeBridge({ type: 'selectionError', error: `Failed to add stroke by UUID: ${error}` });
-                return false;
-            }
-        }
-        /**
-         * 根据 UUID 删除指定用户的划线
-         *
-         * 从 MarkItemInfo 的 stroke 数组中移除该用户的记录并刷新 slax-mark 样式。
-         * 若 stroke 和 comments 均为空，则整体删除该标记。
-         *
-         * @param uuid MarkItemInfo 的本地 UUID
-         * @param userId 要删除划线的用户ID
-         * @returns 是否成功删除
-         */
-        removeStrokeByUuid(uuid, userId) {
-            if (!this.markManager) {
-                console.warn('[WebView Bridge] removeStrokeByUuid: selection monitoring not started');
-                return false;
-            }
-            try {
-                return this.markManager.removeStrokeByUuid(uuid, userId);
-            }
-            catch (error) {
-                postToNativeBridge({ type: 'selectionError', error: `Failed to remove stroke by UUID: ${error}` });
-                return false;
-            }
-        }
-        /**
-         * 根据 UUID 添加评论
-         *
-         * 在 MarkItemInfo 的 comments 数组中追加一条评论并刷新 slax-mark 样式（添加 .comment class）。
-         *
-         * @param uuid MarkItemInfo 的本地 UUID
-         * @param userId 发表评论的用户ID
-         * @param comment 评论内容
-         * @returns 是否成功添加
-         */
-        addCommentByUuid(uuid, userId, comment) {
-            if (!this.markManager) {
-                console.warn('[WebView Bridge] addCommentByUuid: selection monitoring not started');
-                return false;
-            }
-            try {
-                return this.markManager.addCommentByUuid(uuid, userId, comment);
-            }
-            catch (error) {
-                postToNativeBridge({ type: 'selectionError', error: `Failed to add comment by UUID: ${error}` });
-                return false;
-            }
-        }
-        /**
          * 设置当前用户ID（会重建内部 renderer/manager）
          */
         setCurrentUserId(userId) {
             if (this.selectionContainer) {
-                this.markRenderer = new MarkRenderer(this.selectionContainer, userId, this.onMarkTap ?? undefined);
-                this.markManager = new MarkManager(this.selectionContainer, userId, this.onMarkTap ?? undefined);
+                this.markManager = new MarkManager(this.selectionContainer, userId, this.onMarkTap ?? undefined, this.onMarkItemInfosChange ?? undefined);
             }
         }
     }

@@ -74,6 +74,11 @@ sealed interface WebViewEvent {
         val text: String,
         val markItemInfo: BridgeMarkItemInfo? = null,
     ) : WebViewEvent
+
+    /** JS 端 markItemInfos 列表发生变化 */
+    data class MarkItemInfosChanged(
+        val markItemInfos: List<BridgeMarkItemInfo>,
+    ) : WebViewEvent
 }
 
 @Composable

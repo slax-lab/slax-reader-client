@@ -53,13 +53,6 @@ data class BridgeMarkItemInfo(
     }
 }
 
-@Serializable
-private data class SelectionEventData(
-    val paths: List<MarkPathItem> = emptyList(),
-    val approx: MarkPathApprox? = null,
-)
-
 fun parseSelectionData(dataJson: String): BridgeMarkItemInfo? = runCatching {
-    val data = bridgeJson.decodeFromString<SelectionEventData>(dataJson)
-    BridgeMarkItemInfo(source = data.paths, approx = data.approx)
+    bridgeJson.decodeFromString<BridgeMarkItemInfo>(dataJson)
 }.getOrNull()

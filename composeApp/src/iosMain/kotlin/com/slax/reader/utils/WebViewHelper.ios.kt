@@ -171,15 +171,22 @@ actual fun AppWebView(
                             val markId = msg.markId
                             val text = msg.text
                             if (!markId.isNullOrBlank()) {
-                                val markItemInfo = msg.markItemInfo?.let {
-                                    runCatching {
-                                        bridgeJson.decodeFromString<BridgeMarkItemInfo>(it)
-                                    }.getOrNull()
-                                }
+                                val markInfo = msg.data?.let { parseSelectionData(it) }
                                 webState.dispatchEvent(
-                                    WebViewEvent.MarkClicked(markId, text ?: "", markItemInfo)
+                                    WebViewEvent.MarkClicked(markId, text ?: "", markInfo)
                                 )
                             }
+                        }
+
+                        "markItemInfosChanged" -> {
+                            val markItemInfos = msg.markItemInfos?.let {
+                                runCatching {
+                                    bridgeJson.decodeFromString<List<BridgeMarkItemInfo>>(it)
+                                }.getOrNull()
+                            } ?: emptyList()
+                            webState.dispatchEvent(
+                                WebViewEvent.MarkItemInfosChanged(markItemInfos)
+                            )
                         }
                     }
                 }
@@ -190,8 +197,12 @@ actual fun AppWebView(
     val densityScale = density.density
     val densityScaleState = rememberUpdatedState(densityScale)
 
-    // iOS contentInset 需要完整高度（topContentInsetPx 已包含状态栏高度）+ 视觉间距
-    val totalInsetPx = webState.topContentInsetPx + 16f * density.density
+    // 获取 statusBarsPadding 高度
+    val windowInsets = WindowInsets.statusBars
+    val statusBarHeightPx = windowInsets.getTop(density).toFloat()
+
+    // iOS contentInset 需要完整高度：Column + statusBarsPadding + 视觉间距
+    val totalInsetPx = webState.topContentInsetPx + statusBarHeightPx + 16f * density.density
 
     var externalUrl by remember { mutableStateOf<String?>(null) }
     val appPreference: AppPreferences = koinInject()
@@ -347,7 +358,7 @@ actual fun AppWebView(
 
             val color = Color(0xFFFCFCFC).toUIColor()
             view.backgroundColor = color
-            view.tintColor = Color(0xFFCCB69A).toUIColor()
+            view.tintColor = Color(0x668AD8A8).toUIColor()
             view.opaque = false
             view.loadHTMLString(htmlContent, baseURL = null)
 
