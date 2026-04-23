@@ -197,8 +197,12 @@ actual fun AppWebView(
     val densityScale = density.density
     val densityScaleState = rememberUpdatedState(densityScale)
 
-    // iOS contentInset 需要完整高度（topContentInsetPx 已包含状态栏高度）+ 视觉间距
-    val totalInsetPx = webState.topContentInsetPx + 16f * density.density
+    // 获取 statusBarsPadding 高度
+    val windowInsets = WindowInsets.statusBars
+    val statusBarHeightPx = windowInsets.getTop(density).toFloat()
+
+    // iOS contentInset 需要完整高度：Column + statusBarsPadding + 视觉间距
+    val totalInsetPx = webState.topContentInsetPx + statusBarHeightPx + 16f * density.density
 
     var externalUrl by remember { mutableStateOf<String?>(null) }
     val appPreference: AppPreferences = koinInject()
