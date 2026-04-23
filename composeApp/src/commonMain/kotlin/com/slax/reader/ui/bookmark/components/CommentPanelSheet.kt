@@ -75,7 +75,10 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.runtime.rememberCoroutineScope
+import com.slax.reader.utils.setPlainText
+import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
@@ -231,7 +234,7 @@ fun CommentPanelSheet(
             ) {
                 Box(modifier = Modifier.fillMaxWidth()) {
                     Box(modifier = Modifier.matchParentSize().background(Color(0xFFF5F5F3)))
-                    Column(modifier = Modifier.fillMaxWidth().imePadding().background(Color.White)) {
+                    Column(modifier = Modifier.fillMaxWidth().background(Color.White)) {
 
                     // 区域1：Header
                     CommentPanelHeader(onDismiss = onDismiss)
@@ -594,7 +597,8 @@ private fun CommentCell(
     onReplyClick: (BridgeMarkCommentInfo) -> Unit,
     onDeleteComment: (Long) -> Unit = {},
 ) {
-    val clipboardManager = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
     var isPressed by remember { mutableStateOf(false) }
     var isLongPressed by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
@@ -647,7 +651,7 @@ private fun CommentCell(
                 onCopyClick = {
                     showMenu = false
                     isLongPressed = false
-                    clipboardManager.setText(AnnotatedString(comment.comment))
+                    scope.launch { clipboard.setPlainText(comment.comment) }
                     showCopyToast = true
                 },
                 onDeleteClick = {
@@ -684,7 +688,8 @@ private fun ChildCommentCell(
     onReplyClick: (BridgeMarkCommentInfo) -> Unit,
     onDeleteComment: (Long) -> Unit = {},
 ) {
-    val clipboardManager = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
     var isPressed by remember { mutableStateOf(false) }
     var isLongPressed by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
@@ -724,7 +729,7 @@ private fun ChildCommentCell(
                 onCopyClick = {
                     showMenu = false
                     isLongPressed = false
-                    clipboardManager.setText(AnnotatedString(comment.comment))
+                    scope.launch { clipboard.setPlainText(comment.comment) }
                     showCopyToast = true
                 },
                 onDeleteClick = {
