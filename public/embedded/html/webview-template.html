@@ -38,6 +38,10 @@
     </script>
     <script>
         (function() {
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.NativeBridge) {
+                document.body.style.webkitHyphens = 'auto';
+                document.body.style.hyphens = 'auto';
+            }
             // 阻止系统右键/长按上下文菜单弹出
             document.addEventListener('contextmenu', function(e) {
                 e.preventDefault();
