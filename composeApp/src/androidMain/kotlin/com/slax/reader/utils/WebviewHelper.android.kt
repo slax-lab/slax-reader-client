@@ -55,16 +55,6 @@ actual fun AppWebView(
                     )
                     super.onMeasure(widthMeasureSpec, newHeightMeasureSpec)
                 }
-
-                override fun startActionMode(callback: ActionMode.Callback?): ActionMode? {
-                    val wrappedCallback = callback?.let { EmptyMenuActionModeCallback(it) }
-                    return super.startActionMode(wrappedCallback)
-                }
-
-                override fun startActionMode(callback: ActionMode.Callback?, type: Int): ActionMode? {
-                    val wrappedCallback = callback?.let { EmptyMenuActionModeCallback(it) }
-                    return super.startActionMode(wrappedCallback, type)
-                }
             }.apply {
                 webState.webView = this
                 setBackgroundColor(Color.TRANSPARENT)
