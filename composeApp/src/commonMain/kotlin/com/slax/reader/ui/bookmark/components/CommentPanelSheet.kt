@@ -45,8 +45,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -87,10 +89,13 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import com.slax.reader.utils.setPlainText
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
@@ -181,57 +186,20 @@ fun CommentPanelSheet(
     commentListContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    val comments = panelComments.ifEmpty { markItemInfo?.comments ?: emptyList() }
     val isStroked = markItemInfo?.stroke?.isNotEmpty() == true
     val underlineStyle = when {
         isStroked -> HighlightUnderlineStyle.SOLID
-        comments.isNotEmpty() -> HighlightUnderlineStyle.DASHED
+        panelComments.isNotEmpty() -> HighlightUnderlineStyle.DASHED
         else -> HighlightUnderlineStyle.NONE
     }
 
-    // 输入框是否有内容（从 PostCommentArea 提升上来，用于拦截关闭操作）
-    var commentHasContent by remember { mutableStateOf(false) }
-    // 是否显示"放弃评论"确认框
-    var showDiscardConfirm by remember { mutableStateOf(false) }
+    val state = rememberCommentPanelState()
+    state.comments = panelComments
 
-    // 包装 onDismiss：有内容时先弹确认框，否则直接关闭
-    val guardedDismiss: () -> Unit = {
-        if (commentHasContent) showDiscardConfirm = true else onDismiss()
-    }
+    var minSheetHeightPx by remember { mutableIntStateOf(0) }
 
-    // 回复目标状态：点击评论的"回复"按钮后记录被回复人信息
-    var replyTarget by remember { mutableStateOf<ReplyTarget?>(null) }
-
-    // 评论列表滚动状态，提升到此处以支持提交后自动滚动
-    val commentListScrollState = rememberScrollState()
-
-    // 评论单元格位置追踪：记录每个顶级评论的 Y 位置，用于回复后精准滚动
-    val commentCellTops = remember { mutableMapOf<Long, Int>() }
-
-    // 发评论后的滚动目标：SCROLL_TO_BOTTOM 表示滚到底部，其他正数表示目标评论的 markId
-    var pendingScrollTarget by remember { mutableStateOf(NO_SCROLL_PENDING) }
-
-    // 评论列表更新且有待处理的滚动目标时，执行滚动
-    LaunchedEffect(pendingScrollTarget, comments) {
-        if (pendingScrollTarget == NO_SCROLL_PENDING) return@LaunchedEffect
-        // 等待新评论布局完成
-        delay(200)
-        if (pendingScrollTarget == SCROLL_TO_BOTTOM) {
-            commentListScrollState.animateScrollTo(commentListScrollState.maxValue)
-        } else {
-            val targetPos = resolveScrollPosition(pendingScrollTarget, comments, commentCellTops)
-            commentListScrollState.animateScrollTo(targetPos ?: commentListScrollState.maxValue)
-        }
-        pendingScrollTarget = NO_SCROLL_PENDING
-    }
-
-    // 面板关闭时自动清除回复状态
     LaunchedEffect(visible) {
-        if (!visible) {
-            replyTarget = null
-            commentHasContent = false
-            showDiscardConfirm = false
-        }
+        if (!visible) minSheetHeightPx = 0
     }
     // 背景遮罩层，带淡入淡出动画
     AnimatedVisibility(
@@ -246,7 +214,7 @@ fun CommentPanelSheet(
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
-                    onClick = guardedDismiss
+                    onClick = { state.tryDismiss(onDismiss) }
                 )
         )
     }
@@ -276,7 +244,15 @@ fun CommentPanelSheet(
                 shadowElevation = 8.dp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = maxSheetHeight)
+                    .heightIn(
+                        min = with(LocalDensity.current) { minSheetHeightPx.toDp() },
+                        max = maxSheetHeight
+                    )
+                    .onSizeChanged { size ->
+                        if (size.height > minSheetHeightPx) {
+                            minSheetHeightPx = size.height
+                        }
+                    }
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
@@ -286,7 +262,7 @@ fun CommentPanelSheet(
                     Column(modifier = Modifier.fillMaxWidth().background(Color(0xFFF5F5F3)).let { if (isIOS()) it.imePadding() else it },) {
 
                     // 区域1：Header
-                    CommentPanelHeader(onDismiss = guardedDismiss)
+                    CommentPanelHeader(onDismiss = { state.tryDismiss(onDismiss) })
 
                     // 区域2：划线内容显示区（文本 + 下划线 + 操作栏）
                     HighlightedContentArea(
@@ -299,20 +275,21 @@ fun CommentPanelSheet(
 
                     // 区域3：评论列表显示区（填充剩余空间，可滚动）
                     CommentListArea(
-                        scrollState = commentListScrollState,
-                        content = commentListContent ?: if (comments.isNotEmpty()) {
+                        scrollState = state.scrollState,
+                        isProgrammaticScroll = { state.isProgrammaticScroll },
+                        content = commentListContent ?: if (panelComments.isNotEmpty()) {
                             {
                                 DefaultCommentList(
-                                    comments = comments,
+                                    comments = panelComments,
                                     onReplyClick = { comment ->
-                                        replyTarget = ReplyTarget(
+                                        state.replyTarget = ReplyTarget(
                                             markId = comment.markId,
                                             username = comment.username.ifBlank { "comment_panel_unknown_user".i18n() }
                                         )
                                     },
                                     onDeleteComment = onDeleteComment,
                                     onCellPositioned = { markId, topY ->
-                                        commentCellTops[markId] = topY
+                                        state.recordCellPosition(markId, topY)
                                     }
                                 )
                             }
@@ -325,14 +302,14 @@ fun CommentPanelSheet(
                     // 区域4：发表评论区域
                     PostCommentArea(
                         userAvatarUrl = userAvatarUrl,
-                        replyTarget = replyTarget,
+                        replyTarget = state.replyTarget,
                         autoFocusInput = autoFocusInput,
-                        onClearReplyTarget = { replyTarget = null },
-                        onHasContentChanged = { commentHasContent = it },
+                        onClearReplyTarget = { state.replyTarget = null },
+                        onHasContentChanged = { state.hasContent = it },
                         onSubmit = { comment ->
-                            pendingScrollTarget = replyTarget?.markId ?: SCROLL_TO_BOTTOM
-                            onSubmitComment(comment, replyTarget)
-                            replyTarget = null
+                            val target = state.replyTarget
+                            state.onPostSubmitted(target?.markId)
+                            onSubmitComment(comment, target)
                         }
                     )
                 }
@@ -342,17 +319,14 @@ fun CommentPanelSheet(
     }
 
     // 放弃评论确认框
-    if (showDiscardConfirm) {
+    if (state.showDiscardConfirm) {
         AlertDialog(
-            onDismissRequest = { showDiscardConfirm = false },
+            onDismissRequest = { state.cancelDiscard() },
             title = { Text("comment_panel_discard_title".i18n()) },
             text = { Text("comment_panel_discard_message".i18n()) },
             containerColor = Color.White,
             confirmButton = {
-                TextButton(onClick = {
-                    showDiscardConfirm = false
-                    onDismiss()
-                }) {
+                TextButton(onClick = { state.confirmDiscard(onDismiss) }) {
                     Text(
                         text = "comment_panel_discard_confirm".i18n(),
                         color = Color(0xFF999999)
@@ -360,7 +334,7 @@ fun CommentPanelSheet(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDiscardConfirm = false }) {
+                TextButton(onClick = { state.cancelDiscard() }) {
                     Text(
                         text = "comment_panel_discard_cancel".i18n(),
                         color = Color(0xFF16B998)
@@ -1090,17 +1064,17 @@ private fun formatCommentDate(raw: String): String {
 private fun CommentListArea(
     scrollState: ScrollState,
     content: (@Composable () -> Unit)?,
+    isProgrammaticScroll: () -> Boolean = { false },
     modifier: Modifier = Modifier
 ) {
     if (content == null) return
 
     val focusManager = LocalFocusManager.current
 
-    // 滑动时自动收起键盘
     LaunchedEffect(scrollState) {
         snapshotFlow { scrollState.isScrollInProgress }
             .collect { isScrolling ->
-                if (isScrolling) focusManager.clearFocus()
+                if (isScrolling && !isProgrammaticScroll()) focusManager.clearFocus()
             }
     }
 
@@ -1392,31 +1366,79 @@ private class ReplyPrefixVisualTransformation(
     }
 }
 
-/** 滚动目标常量：无待处理的滚动 */
-private const val NO_SCROLL_PENDING = 0L
+@Stable
+class CommentPanelState internal constructor(
+    val scrollState: ScrollState,
+    private val scope: CoroutineScope,
+) {
+    var hasContent by mutableStateOf(false)
+    var showDiscardConfirm by mutableStateOf(false)
+        private set
+    var replyTarget by mutableStateOf<ReplyTarget?>(null)
 
-/** 滚动目标常量：滚动到列表底部（新增顶级评论时使用） */
-private const val SCROLL_TO_BOTTOM = -1L
+    internal var comments: List<BridgeMarkCommentInfo> = emptyList()
+    private val cellTops = mutableMapOf<Long, Int>()
+    private var scrollJob: Job? = null
+    internal var isProgrammaticScroll = false
 
-/**
- * 根据回复目标的 markId 解析出应滚动到的 Y 位置
- * 
- * @param targetMarkId 需要滚动到的评论 markId，可能是顶级评论或子评论
- * @param comments 当前评论列表数据
- * @param positions 已知的评论 markId 到 Y 位置的映射（仅
- */
-private fun resolveScrollPosition(
-    targetMarkId: Long,
-    comments: List<BridgeMarkCommentInfo>,
-    positions: Map<Long, Int>,
-): Int? {
-    // 直接匹配顶级评论
-    positions[targetMarkId]?.let { return it }
-    // 目标是子评论 → 查找其所属的顶级评论
-    for (comment in comments) {
-        if (comment.children.any { it.markId == targetMarkId }) {
-            return positions[comment.markId]
+    fun tryDismiss(onDismiss: () -> Unit) {
+        if (hasContent) showDiscardConfirm = true else performDismiss(onDismiss)
+    }
+
+    fun confirmDiscard(onDismiss: () -> Unit) {
+        showDiscardConfirm = false
+        performDismiss(onDismiss)
+    }
+
+    fun cancelDiscard() {
+        showDiscardConfirm = false
+    }
+
+    fun recordCellPosition(markId: Long, topY: Int) {
+        cellTops[markId] = topY
+    }
+
+    fun onPostSubmitted(targetMarkId: Long?) {
+        replyTarget = null
+        scrollJob?.cancel()
+        scrollJob = scope.launch {
+            delay(200)
+            isProgrammaticScroll = true
+            try {
+                val pos = when (targetMarkId) {
+                    null -> scrollState.maxValue
+                    else -> resolveScrollPosition(targetMarkId) ?: scrollState.maxValue
+                }
+                scrollState.animateScrollTo(pos)
+            } finally {
+                isProgrammaticScroll = false
+            }
         }
     }
-    return null
+
+    private fun resolveScrollPosition(targetMarkId: Long): Int? {
+        cellTops[targetMarkId]?.let { return it }
+        for (comment in comments) {
+            if (comment.children.any { it.markId == targetMarkId }) {
+                return cellTops[comment.markId]
+            }
+        }
+        return null
+    }
+
+    private fun performDismiss(onDismiss: () -> Unit) {
+        scrollJob?.cancel()
+        replyTarget = null
+        hasContent = false
+        showDiscardConfirm = false
+        cellTops.clear()
+        onDismiss()
+    }
+}
+
+@Composable
+private fun rememberCommentPanelState(): CommentPanelState {
+    val scrollState = rememberScrollState()
+    val scope = rememberCoroutineScope()
+    return remember { CommentPanelState(scrollState, scope) }
 }
