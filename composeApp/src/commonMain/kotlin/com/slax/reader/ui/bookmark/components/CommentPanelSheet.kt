@@ -201,6 +201,10 @@ fun CommentPanelSheet(
     LaunchedEffect(visible) {
         if (!visible) minSheetHeightPx = 0
     }
+    // 评论数量变化时重置最小高度约束，使面板能根据内容自然收缩
+    LaunchedEffect(panelComments.size) {
+        minSheetHeightPx = 0
+    }
     // 背景遮罩层，带淡入淡出动画
     AnimatedVisibility(
         visible = visible,
@@ -356,7 +360,6 @@ private fun CommentPanelHeader(onDismiss: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .height(60.dp)
-            .padding(end = 20.dp)
             .background(Color(0xFFFCFCFC)),
         contentAlignment = Alignment.CenterEnd
     ) {
@@ -365,6 +368,7 @@ private fun CommentPanelHeader(onDismiss: () -> Unit) {
             contentDescription = "comment_panel_close".i18n(),
             tint = Color.Unspecified,
             modifier = Modifier
+                .padding(end = 20.dp)
                 .size(24.dp)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
