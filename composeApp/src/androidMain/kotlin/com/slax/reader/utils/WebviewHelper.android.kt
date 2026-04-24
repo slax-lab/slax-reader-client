@@ -48,8 +48,6 @@ actual fun AppWebView(
         modifier = modifier,
         factory = { context ->
             object : WebView(context) {
-                private var isSelectionActive = false
-
                 override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
                     val newHeightMeasureSpec = MeasureSpec.makeMeasureSpec(
                         0,
@@ -58,25 +56,13 @@ actual fun AppWebView(
                     super.onMeasure(widthMeasureSpec, newHeightMeasureSpec)
                 }
 
-                override fun onScrollChanged(l: Int, t: Int, oldl: Int, oldt: Int) {
-                    if (!isSelectionActive) {
-                        scrollTo(0, 0)
-                    }
-                }
-
                 override fun startActionMode(callback: ActionMode.Callback?): ActionMode? {
-                    isSelectionActive = true
-                    val wrappedCallback = callback?.let {
-                        EmptyMenuActionModeCallback(it) { isSelectionActive = false }
-                    }
+                    val wrappedCallback = callback?.let { EmptyMenuActionModeCallback(it) }
                     return super.startActionMode(wrappedCallback)
                 }
 
                 override fun startActionMode(callback: ActionMode.Callback?, type: Int): ActionMode? {
-                    isSelectionActive = true
-                    val wrappedCallback = callback?.let {
-                        EmptyMenuActionModeCallback(it) { isSelectionActive = false }
-                    }
+                    val wrappedCallback = callback?.let { EmptyMenuActionModeCallback(it) }
                     return super.startActionMode(wrappedCallback, type)
                 }
             }.apply {
@@ -445,8 +431,7 @@ actual fun OpenInBrowser(url: String) {
 }
 
 private class EmptyMenuActionModeCallback(
-    private val delegate: ActionMode.Callback,
-    private val onDestroy: () -> Unit = {}
+    private val delegate: ActionMode.Callback
 ) : ActionMode.Callback {
     override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
         return delegate.onCreateActionMode(mode, menu)
@@ -463,7 +448,6 @@ private class EmptyMenuActionModeCallback(
 
     override fun onDestroyActionMode(mode: ActionMode?) {
         delegate.onDestroyActionMode(mode)
-        onDestroy()
     }
 }
 
