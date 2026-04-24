@@ -243,7 +243,7 @@ fun CopySuccessToast(
         modifier = modifier
     ) {
         Text(
-            text = "已复制",
+            text = "comment_panel_copied".i18n(),
             style = TextStyle(
                 fontSize = 13.sp,
                 color = Color.White,

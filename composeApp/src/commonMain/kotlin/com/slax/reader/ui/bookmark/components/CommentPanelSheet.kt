@@ -25,19 +25,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -68,6 +70,8 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.style.Hyphens
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -77,10 +81,15 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import com.slax.reader.utils.setPlainText
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import com.github.panpf.sketch.rememberAsyncImagePainter
@@ -89,12 +98,14 @@ import com.github.panpf.sketch.request.error
 import com.github.panpf.sketch.request.placeholder
 import com.slax.reader.utils.BridgeMarkCommentInfo
 import com.slax.reader.utils.BridgeMarkItemInfo
+import com.slax.reader.utils.i18n
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.global_default_avatar
 import slax_reader_client.composeapp.generated.resources.ic_comment_panel_close
 import slax_reader_client.composeapp.generated.resources.ic_comment_panel_copy
 import slax_reader_client.composeapp.generated.resources.ic_comment_panel_delete
+import slax_reader_client.composeapp.generated.resources.ic_comment_panel_highlight
 import slax_reader_client.composeapp.generated.resources.ic_comment_panel_highlighted
 import slax_reader_client.composeapp.generated.resources.ic_menu_action_copy
 
@@ -175,13 +186,48 @@ fun CommentPanelSheet(
         else -> HighlightUnderlineStyle.NONE
     }
 
+    // 输入框是否有内容（从 PostCommentArea 提升上来，用于拦截关闭操作）
+    var commentHasContent by remember { mutableStateOf(false) }
+    // 是否显示"放弃评论"确认框
+    var showDiscardConfirm by remember { mutableStateOf(false) }
+
+    // 包装 onDismiss：有内容时先弹确认框，否则直接关闭
+    val guardedDismiss: () -> Unit = {
+        if (commentHasContent) showDiscardConfirm = true else onDismiss()
+    }
+
     // 回复目标状态：点击评论的"回复"按钮后记录被回复人信息
     var replyTarget by remember { mutableStateOf<ReplyTarget?>(null) }
+
+    // 评论列表滚动状态，提升到此处以支持提交后自动滚动
+    val commentListScrollState = rememberScrollState()
+
+    // 评论单元格位置追踪：记录每个顶级评论的 Y 位置，用于回复后精准滚动
+    val commentCellTops = remember { mutableMapOf<Long, Int>() }
+
+    // 发评论后的滚动目标：SCROLL_TO_BOTTOM 表示滚到底部，其他正数表示目标评论的 markId
+    var pendingScrollTarget by remember { mutableStateOf(NO_SCROLL_PENDING) }
+
+    // 评论列表更新且有待处理的滚动目标时，执行滚动
+    LaunchedEffect(pendingScrollTarget, comments) {
+        if (pendingScrollTarget == NO_SCROLL_PENDING) return@LaunchedEffect
+        // 等待新评论布局完成
+        delay(200)
+        if (pendingScrollTarget == SCROLL_TO_BOTTOM) {
+            commentListScrollState.animateScrollTo(commentListScrollState.maxValue)
+        } else {
+            val targetPos = resolveScrollPosition(pendingScrollTarget, comments, commentCellTops)
+            commentListScrollState.animateScrollTo(targetPos ?: commentListScrollState.maxValue)
+        }
+        pendingScrollTarget = NO_SCROLL_PENDING
+    }
 
     // 面板关闭时自动清除回复状态
     LaunchedEffect(visible) {
         if (!visible) {
             replyTarget = null
+            commentHasContent = false
+            showDiscardConfirm = false
         }
     }
     // 背景遮罩层，带淡入淡出动画
@@ -197,7 +243,7 @@ fun CommentPanelSheet(
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
-                    onClick = onDismiss
+                    onClick = guardedDismiss
                 )
         )
     }
@@ -238,7 +284,7 @@ fun CommentPanelSheet(
                     Column(modifier = Modifier.fillMaxWidth().background(Color.White)) {
 
                     // 区域1：Header
-                    CommentPanelHeader(onDismiss = onDismiss)
+                    CommentPanelHeader(onDismiss = guardedDismiss)
 
                     // 区域2：划线内容显示区（文本 + 下划线 + 操作栏）
                     HighlightedContentArea(
@@ -251,6 +297,7 @@ fun CommentPanelSheet(
 
                     // 区域3：评论列表显示区（填充剩余空间，可滚动）
                     CommentListArea(
+                        scrollState = commentListScrollState,
                         content = commentListContent ?: if (comments.isNotEmpty()) {
                             {
                                 DefaultCommentList(
@@ -258,10 +305,13 @@ fun CommentPanelSheet(
                                     onReplyClick = { comment ->
                                         replyTarget = ReplyTarget(
                                             markId = comment.markId,
-                                            username = comment.username.ifBlank { "未知用户" }
+                                            username = comment.username.ifBlank { "comment_panel_unknown_user".i18n() }
                                         )
                                     },
-                                    onDeleteComment = onDeleteComment
+                                    onDeleteComment = onDeleteComment,
+                                    onCellPositioned = { markId, topY ->
+                                        commentCellTops[markId] = topY
+                                    }
                                 )
                             }
                         } else {
@@ -276,7 +326,9 @@ fun CommentPanelSheet(
                         replyTarget = replyTarget,
                         autoFocusInput = autoFocusInput,
                         onClearReplyTarget = { replyTarget = null },
+                        onHasContentChanged = { commentHasContent = it },
                         onSubmit = { comment ->
+                            pendingScrollTarget = replyTarget?.markId ?: SCROLL_TO_BOTTOM
                             onSubmitComment(comment, replyTarget)
                             replyTarget = null
                         }
@@ -285,6 +337,35 @@ fun CommentPanelSheet(
                 }
             }
         }
+    }
+
+    // 放弃评论确认框
+    if (showDiscardConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDiscardConfirm = false },
+            title = { Text("comment_panel_discard_title".i18n()) },
+            text = { Text("comment_panel_discard_message".i18n()) },
+            containerColor = Color.White,
+            confirmButton = {
+                TextButton(onClick = {
+                    showDiscardConfirm = false
+                    onDismiss()
+                }) {
+                    Text(
+                        text = "comment_panel_discard_confirm".i18n(),
+                        color = Color(0xFF999999)
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardConfirm = false }) {
+                    Text(
+                        text = "comment_panel_discard_cancel".i18n(),
+                        color = Color(0xFF16B998)
+                    )
+                }
+            }
+        )
     }
 }
 
@@ -305,7 +386,7 @@ private fun CommentPanelHeader(onDismiss: () -> Unit) {
     ) {
         Icon(
             painter = painterResource(Res.drawable.ic_comment_panel_close),
-            contentDescription = "关闭评论面板",
+            contentDescription = "comment_panel_close".i18n(),
             tint = Color.Unspecified,
             modifier = Modifier
                 .size(24.dp)
@@ -391,7 +472,9 @@ private fun HighlightedText(
             fontSize = 15.sp,
             lineHeight = 24.sp,
             fontWeight = FontWeight.Normal,
-            color = Color(0xFF333333)
+            color = Color(0xFF333333),
+            hyphens = Hyphens.Auto,
+            lineBreak = LineBreak.Paragraph,
         ),
         maxLines = 2,
         overflow = TextOverflow.Ellipsis,
@@ -424,13 +507,6 @@ private fun HighlightedText(
 /**
  * 划线内容操作栏
  *
- * 包含复制和划线/删除划线两个按钮，整体水平+垂直居中，按钮间距40dp。
- * 第二个按钮根据 [isStroked] 状态切换：
- * - 已划线时显示"删除划线"，点击触发 [CommentPanelActionId.REMOVE_HIGHLIGHT]
- * - 未划线时显示"划线"，点击触发 [CommentPanelActionId.HIGHLIGHT]
- *
- * 当 [highlightLoading] 为 true 时，第二个按钮替换为加载转圈，禁止点击。
- *
  * @param isStroked 当前选中文本是否已划线
  * @param highlightLoading 划线/删除划线操作是否正在进行中
  * @param onActionClick 按钮点击回调
@@ -448,8 +524,8 @@ private fun HighlightedActionBar(
     ) {
         HighlightedActionButton(
             iconRes = Res.drawable.ic_comment_panel_copy,
-            label = "复制",
-            contentDescription = "复制划线内容",
+            label = "comment_panel_copy".i18n(),
+            contentDescription = "comment_panel_copy_highlight_desc".i18n(),
             onClick = { onActionClick(CommentPanelActionId.COPY) }
         )
 
@@ -467,7 +543,7 @@ private fun HighlightedActionBar(
                     strokeWidth = 2.dp,
                 )
                 Text(
-                    text = if (isStroked) "删除划线" else "划线",
+                    text = if (isStroked) "comment_panel_remove_highlight".i18n() else "comment_panel_highlight".i18n(),
                     style = TextStyle(
                         fontSize = 14.sp,
                         lineHeight = 20.sp,
@@ -479,15 +555,15 @@ private fun HighlightedActionBar(
         } else if (isStroked) {
             HighlightedActionButton(
                 iconRes = Res.drawable.ic_comment_panel_highlighted,
-                label = "删除划线",
-                contentDescription = "删除已有划线",
+                label = "comment_panel_remove_highlight".i18n(),
+                contentDescription = "comment_panel_remove_highlight_desc".i18n(),
                 onClick = { onActionClick(CommentPanelActionId.REMOVE_HIGHLIGHT) }
             )
         } else {
             HighlightedActionButton(
-                iconRes = Res.drawable.ic_comment_panel_highlighted,
-                label = "划线",
-                contentDescription = "添加划线",
+                iconRes = Res.drawable.ic_comment_panel_highlight,
+                label = "comment_panel_highlight".i18n(),
+                contentDescription = "comment_panel_add_highlight_desc".i18n(),
                 onClick = { onActionClick(CommentPanelActionId.HIGHLIGHT) }
             )
         }
@@ -567,19 +643,22 @@ private val commentBodyTextStyle = TextStyle(
  * @param comments 评论数据列表
  * @param onReplyClick 点击回复按钮的回调，参数为被回复的评论
  * @param onDeleteComment 删除评论的回调，参数为被删除评论的 markId
+ * @param onCellPositioned 评论单元格布局完成后的位置回调，参数为 markId 和该单元格的顶部 Y 位置
  */
 @Composable
 private fun DefaultCommentList(
     comments: List<BridgeMarkCommentInfo>,
     onReplyClick: (BridgeMarkCommentInfo) -> Unit,
     onDeleteComment: (Long) -> Unit = {},
+    onCellPositioned: (markId: Long, topY: Int) -> Unit = { _, _ -> },
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         comments.forEach { comment ->
             CommentCell(
                 comment = comment,
                 onReplyClick = onReplyClick,
-                onDeleteComment = onDeleteComment
+                onDeleteComment = onDeleteComment,
+                onCellPositioned = { topY -> onCellPositioned(comment.markId, topY) }
             )
         }
     }
@@ -591,12 +670,14 @@ private fun DefaultCommentList(
  * @param comment 评论数据
  * @param onReplyClick 点击回复按钮的回调
  * @param onDeleteComment 删除评论的回调，参数为被删除评论的 markId
+ * @param onCellPositioned 单元格布局完成后的位置回调，参数为顶部 Y 坐标
  */
 @Composable
 private fun CommentCell(
     comment: BridgeMarkCommentInfo,
     onReplyClick: (BridgeMarkCommentInfo) -> Unit,
     onDeleteComment: (Long) -> Unit = {},
+    onCellPositioned: (topY: Int) -> Unit = {},
 ) {
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
@@ -606,28 +687,36 @@ private fun CommentCell(
     var longPressOffset by remember { mutableStateOf(Offset.Zero) }
     var showCopyToast by remember { mutableStateOf(false) }
 
-    Box(modifier = Modifier.fillMaxWidth()) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .onGloballyPositioned { coords ->
+                onCellPositioned(coords.positionInParent().y.toInt())
+            }
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(if (isPressed || isLongPressed) Color(0xFFF5F5F3) else Color.Transparent)
-                .pointerInput(Unit) {
+                .pointerInput(comment.isDeleted) {
                     detectTapGestures(
                         onPress = {
                             isPressed = true
                             try { awaitRelease() } finally { isPressed = false }
                         },
-                        onTap = { onReplyClick(comment) },
+                        onTap = { if (!comment.isDeleted) onReplyClick(comment) },
                         onLongPress = { offset ->
-                            longPressOffset = offset
-                            isLongPressed = true
-                            showMenu = true
+                            if (!comment.isDeleted) {
+                                longPressOffset = offset
+                                isLongPressed = true
+                                showMenu = true
+                            }
                         }
                     )
                 }
                 .padding(start = 20.dp, top = 20.dp)
         ) {
-            CommentItemHeader(comment = comment, onReplyClick = { onReplyClick(comment) })
+            CommentItemHeader(comment = comment)
             Spacer(modifier = Modifier.height(8.dp))
             CommentItemBody(comment = comment)
             Spacer(modifier = Modifier.height(8.dp))
@@ -645,7 +734,6 @@ private fun CommentCell(
             }
         }
 
-        // 长按弹出的操作菜单
         if (showMenu) {
             CommentContextMenu(
                 pressOffset = longPressOffset,
@@ -667,7 +755,6 @@ private fun CommentCell(
             )
         }
 
-        // 复制成功 Toast 提示
         CopySuccessToast(
             visible = showCopyToast,
             onDismiss = { showCopyToast = false },
@@ -702,28 +789,29 @@ private fun ChildCommentCell(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(if (isPressed || isLongPressed) Color(0xFFF5F5F3) else Color.Transparent)
-                .pointerInput(Unit) {
+                .pointerInput(comment.isDeleted) {
                     detectTapGestures(
                         onPress = {
                             isPressed = true
                             try { awaitRelease() } finally { isPressed = false }
                         },
-                        onTap = { onReplyClick(comment) },
+                        onTap = { if (!comment.isDeleted) onReplyClick(comment) },
                         onLongPress = { offset ->
-                            longPressOffset = offset
-                            isLongPressed = true
-                            showMenu = true
+                            if (!comment.isDeleted) {
+                                longPressOffset = offset
+                                isLongPressed = true
+                                showMenu = true
+                            }
                         }
                     )
                 }
                 .padding(top = 8.dp, start = 8.dp, bottom = 8.dp)
         ) {
-            CommentItemHeader(comment = comment, onReplyClick = { onReplyClick(comment) })
+            CommentItemHeader(comment = comment)
             Spacer(modifier = Modifier.height(8.dp))
             CommentItemBody(comment = comment)
         }
 
-        // 长按弹出的操作菜单
         if (showMenu) {
             CommentContextMenu(
                 pressOffset = longPressOffset,
@@ -745,7 +833,6 @@ private fun ChildCommentCell(
             )
         }
 
-        // 复制成功 Toast 提示
         CopySuccessToast(
             visible = showCopyToast,
             onDismiss = { showCopyToast = false },
@@ -758,12 +845,10 @@ private fun ChildCommentCell(
  * 评论头部模块
  *
  * @param comment 评论数据
- * @param onReplyClick 点击回复按钮的回调
  */
 @Composable
 private fun CommentItemHeader(
     comment: BridgeMarkCommentInfo,
-    onReplyClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(end = 20.dp),
@@ -778,27 +863,23 @@ private fun CommentItemHeader(
         )
         Image(
             painter = avatarPainter,
-            contentDescription = "用户头像",
+            contentDescription = "comment_panel_user_avatar".i18n(),
             modifier = Modifier
                 .size(20.dp)
                 .clip(CircleShape),
             contentScale = ContentScale.Crop
         )
 
-        // 头像与名字间距 8dp
         Spacer(modifier = Modifier.width(8.dp))
 
-        // 名字
         Text(
-            text = comment.username.ifBlank { "未知用户" },
+            text = comment.username.ifBlank { "comment_panel_unknown_user".i18n() },
             style = commentMetaTextStyle,
             maxLines = 1
         )
 
-        // 名字与分割线间距 6dp
         Spacer(modifier = Modifier.width(6.dp))
 
-        // 竖分割线：高9dp，宽0.5dp，背景 #FFD8D8D8
         Box(
             modifier = Modifier
                 .height(9.dp)
@@ -806,40 +887,12 @@ private fun CommentItemHeader(
                 .background(Color(0xFFD8D8D8))
         )
 
-        // 分割线与日期间距 6dp
         Spacer(modifier = Modifier.width(6.dp))
 
-        // 日期（格式 YY-MM-DD HH:mm）
         Text(
             text = formatCommentDate(comment.createdAt),
             style = commentMetaTextStyle,
             maxLines = 1
-        )
-
-        // 占满剩余空间，将回复按钮推到右侧
-        Spacer(modifier = Modifier.weight(1f))
-
-        // 回复按钮（按下时降低透明度实现高亮）
-        var isReplyPressed by remember { mutableStateOf(false) }
-        Text(
-            text = "回复",
-            style = commentMetaTextStyle,
-            maxLines = 1,
-            modifier = Modifier
-                .alpha(if (isReplyPressed) 0.5f else 1f)
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onPress = {
-                            isReplyPressed = true
-                            try {
-                                awaitRelease()
-                            } finally {
-                                isReplyPressed = false
-                            }
-                        },
-                        onTap = { onReplyClick() }
-                    )
-                }
         )
     }
 }
@@ -852,7 +905,7 @@ private fun CommentItemHeader(
 @Composable
 private fun CommentItemBody(comment: BridgeMarkCommentInfo) {
     Text(
-        text = if (comment.isDeleted) "该评论已删除" else comment.comment,
+        text = if (comment.isDeleted) "comment_panel_deleted".i18n() else comment.comment,
         style = commentBodyTextStyle,
         modifier = Modifier.padding(start = 28.dp, end = 20.dp)
     )
@@ -926,13 +979,13 @@ private fun CommentContextMenu(
             if (!confirmingDelete) {
                 ContextMenuItem(
                     iconRes = Res.drawable.ic_menu_action_copy,
-                    label = "复制",
+                    label = "comment_panel_copy".i18n(),
                     onClick = onCopyClick
                 )
             }
             ContextMenuItem(
                 iconRes = Res.drawable.ic_comment_panel_delete,
-                label = if (confirmingDelete) "确认删除吗？" else "删除",
+                label = if (confirmingDelete) "comment_panel_confirm_delete".i18n() else "comment_panel_delete".i18n(),
                 onClick = {
                     if (confirmingDelete) {
                         onDeleteClick()
@@ -1027,17 +1080,28 @@ private fun formatCommentDate(raw: String): String {
 /**
  * 评论列表显示区域
  *
+ * @param scrollState 滚动状态，由外部提供以支持滚动控制
  * @param content 评论列表内容插槽
  * @param modifier 外部传入的 Modifier，用于控制高度（如 weight）
  */
 @Composable
 private fun CommentListArea(
+    scrollState: ScrollState,
     content: (@Composable () -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     if (content == null) return
 
-    val scrollState = rememberScrollState()
+    val focusManager = LocalFocusManager.current
+
+    // 滑动时自动收起键盘
+    LaunchedEffect(scrollState) {
+        snapshotFlow { scrollState.isScrollInProgress }
+            .collect { isScrolling ->
+                if (isScrolling) focusManager.clearFocus()
+            }
+    }
+
     Column(
         modifier = modifier.fillMaxWidth()
     ) {
@@ -1068,6 +1132,7 @@ private fun PostCommentArea(
     replyTarget: ReplyTarget? = null,
     autoFocusInput: Boolean = false,
     onClearReplyTarget: () -> Unit = {},
+    onHasContentChanged: (Boolean) -> Unit = {},
     onSubmit: (comment: String) -> Unit = {},
 ) {
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -1089,6 +1154,11 @@ private fun PostCommentArea(
         derivedStateOf {
             textFieldValue.text.replace(REPLY_SENTINEL, "").trim().isNotBlank()
         }
+    }
+
+    // 将 hasContent 变化通知给父级，用于拦截关闭操作
+    LaunchedEffect(hasContent) {
+        onHasContentChanged(hasContent)
     }
 
     Row(
@@ -1116,7 +1186,6 @@ private fun PostCommentArea(
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        // 发送按钮
         val sendInteractionSource = remember { MutableInteractionSource() }
         val isSendPressed by sendInteractionSource.collectIsPressedAsState()
         val backgroundColor = if (hasContent) Color(0xFF16B998) else Color(0x29999999)
@@ -1143,7 +1212,7 @@ private fun PostCommentArea(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "发送",
+                text = "comment_panel_send".i18n(),
                 style = TextStyle(
                     fontSize = 16.sp,
                     lineHeight = 26.sp,
@@ -1177,7 +1246,7 @@ private fun PostCommentInputContainer(
         )
         Image(
             painter = avatarPainter,
-            contentDescription = "当前用户头像",
+            contentDescription = "comment_panel_current_user_avatar".i18n(),
             modifier = Modifier
                 .padding(top = 7.dp)
                 .size(24.dp)
@@ -1215,6 +1284,8 @@ private fun PostCommentTextField(
 
     LaunchedEffect(autoFocusInput) {
         if (autoFocusInput) {
+            // 延迟等待面板动画和布局完成后再请求焦点，避免键盘弹起时面板尚未渲染导致的遮挡问题
+            delay(300)
             focusRequester.requestFocus()
         }
     }
@@ -1262,7 +1333,7 @@ private fun PostCommentTextField(
                 // 占位文字：无回复目标且文本为空时显示"发表评论"
                 if (textFieldValue.text.isEmpty() && replyTarget == null) {
                     Text(
-                        text = "发表评论",
+                        text = "comment_panel_placeholder".i18n(),
                         style = TextStyle(
                             fontSize = 14.sp,
                             color = Color(0xFFBBBBBB),
@@ -1289,7 +1360,7 @@ private class ReplyPrefixVisualTransformation(
     private val username: String,
 ) : VisualTransformation {
 
-    private val prefixReply = "回复 "
+    private val prefixReply = "comment_panel_reply_prefix".i18n()
     private val prefixName = "${username}："
     private val prefixLength = prefixReply.length + prefixName.length
 
@@ -1314,4 +1385,33 @@ private class ReplyPrefixVisualTransformation(
 
         return TransformedText(transformed, offsetMapping)
     }
+}
+
+/** 滚动目标常量：无待处理的滚动 */
+private const val NO_SCROLL_PENDING = 0L
+
+/** 滚动目标常量：滚动到列表底部（新增顶级评论时使用） */
+private const val SCROLL_TO_BOTTOM = -1L
+
+/**
+ * 根据回复目标的 markId 解析出应滚动到的 Y 位置
+ * 
+ * @param targetMarkId 需要滚动到的评论 markId，可能是顶级评论或子评论
+ * @param comments 当前评论列表数据
+ * @param positions 已知的评论 markId 到 Y 位置的映射（仅
+ */
+private fun resolveScrollPosition(
+    targetMarkId: Long,
+    comments: List<BridgeMarkCommentInfo>,
+    positions: Map<Long, Int>,
+): Int? {
+    // 直接匹配顶级评论
+    positions[targetMarkId]?.let { return it }
+    // 目标是子评论 → 查找其所属的顶级评论
+    for (comment in comments) {
+        if (comment.children.any { it.markId == targetMarkId }) {
+            return positions[comment.markId]
+        }
+    }
+    return null
 }
