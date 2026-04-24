@@ -170,6 +170,13 @@ actual fun DetailScreen(
 
         // 文本选中操作菜单
         val markInteraction = LocalMarkInteraction.current
+
+        // 当评论面板显示时，禁用状态栏点击触发的 scrollsToTop 行为，
+        // 防止点击状态栏区域导致背后的 WebView 滚动到顶部
+        val panelVisible = markInteraction.panelVisible
+        LaunchedEffect(panelVisible) {
+            webViewState.webView?.scrollView?.scrollsToTop = !panelVisible
+        }
         val selectionMenuVisible = markInteraction.menuVisible
         // selectionYPx 是 hitTest 实时获取的屏幕坐标（UIKit points），转为 Compose px
         val selectionYPx = markInteraction.selectionY

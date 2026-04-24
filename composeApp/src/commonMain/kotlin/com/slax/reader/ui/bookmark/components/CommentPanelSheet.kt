@@ -24,6 +24,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -32,6 +34,7 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -103,6 +106,7 @@ import com.github.panpf.sketch.request.placeholder
 import com.slax.reader.utils.BridgeMarkCommentInfo
 import com.slax.reader.utils.BridgeMarkItemInfo
 import com.slax.reader.utils.i18n
+import com.slax.reader.utils.isIOS
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.global_default_avatar
@@ -255,8 +259,7 @@ fun CommentPanelSheet(
                     ) { /* 阻止点击事件穿透 */ }
             ) {
                 Box(modifier = Modifier.fillMaxWidth()) {
-                    Box(modifier = Modifier.matchParentSize().background(Color(0xFFF5F5F3)))
-                    Column(modifier = Modifier.fillMaxWidth().background(Color.White)) {
+                    Column(modifier = Modifier.fillMaxWidth().background(Color(0xFFF5F5F3)).let { if (isIOS()) it.imePadding() else it },) {
 
                     // 区域1：Header
                     CommentPanelHeader(onDismiss = { state.tryDismiss(onDismiss) })
@@ -293,7 +296,7 @@ fun CommentPanelSheet(
                         } else {
                             null
                         },
-                        modifier = Modifier.weight(1f, fill = false)
+                        modifier = Modifier.weight(1f, fill = false).background(Color.White)
                     )
 
                     // 区域4：发表评论区域
@@ -1109,7 +1112,12 @@ private fun PostCommentArea(
     onSubmit: (comment: String) -> Unit = {},
 ) {
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
     var textFieldValue by remember { mutableStateOf(TextFieldValue()) }
+
+    // iOS 上键盘显示时，导航栏（home indicator）在键盘后面，不需要为其预留空间
+    val keyboardSpacing = if (imeBottom > 0.dp && !isIOS()) 8.dp else 0.dp
+    val effectiveBottomInset = if (isIOS() && imeBottom > 0.dp) 0.dp else bottomInset
 
     // 回复目标切换时重置输入内容
     // 回复模式下插入零宽空格哨兵字符，使输入框"非空"，确保退格键能触发 onValueChange
@@ -1136,7 +1144,7 @@ private fun PostCommentArea(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color(0xFFF5F5F3))
-            .padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = bottomInset + 8.dp),
+            .padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = effectiveBottomInset + 8.dp + keyboardSpacing),
         verticalAlignment = Alignment.Top
     ) {
         PostCommentInputContainer(
@@ -1286,7 +1294,7 @@ private fun PostCommentTextField(
         }
     }
 
-    androidx.compose.foundation.text.BasicTextField(
+    BasicTextField(
         value = textFieldValue,
         onValueChange = onValueChange,
         textStyle = inputTextStyle,
