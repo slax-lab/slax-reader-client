@@ -89,6 +89,8 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import com.slax.reader.utils.setPlainText
+import com.slax.reader.utils.toDateTime
+import com.slax.reader.utils.toISODateFormat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -244,7 +246,7 @@ fun CommentPanelSheet(
         ) {
             Surface(
                 shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-                color = Color.White,
+                color = Color(0xFFF5F5F3),
                 shadowElevation = 8.dp,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1026,32 +1028,14 @@ private fun ContextMenuItem(
 }
 
 /**
- * 将评论时间字符串格式化为 YY-MM-DD HH:mm
+ * 将评论时间字符串格式化为 YYYY-MM-DD HH:mm（本地时区）
  *
- * 支持 ISO 8601 等常见格式，无法解析时原样返回。
+ * 复用 Time.kt 的 toDateTime() 进行 UTC → 本地时区转换，无法解析时原样返回。
  */
 private fun formatCommentDate(raw: String): String {
     if (raw.isBlank()) return ""
     return try {
-        // 常见格式：2024-03-15T10:30:00Z 或 2024-03-15 10:30:00
-        val cleaned = raw.replace("T", " ").replace("Z", "").trim()
-        // 至少需要 "YYYY-MM-DD HH:mm" 共 16 个字符
-        if (cleaned.length >= 16) {
-            val year = cleaned.substring(2, 4)   // YY
-            val month = cleaned.substring(5, 7)  // MM
-            val day = cleaned.substring(8, 10)    // DD
-            val hour = cleaned.substring(11, 13)  // HH
-            val minute = cleaned.substring(14, 16) // mm
-            "$year-$month-$day $hour:$minute"
-        } else if (cleaned.length >= 10) {
-            // 只有日期部分
-            val year = cleaned.substring(2, 4)
-            val month = cleaned.substring(5, 7)
-            val day = cleaned.substring(8, 10)
-            "$year-$month-$day"
-        } else {
-            raw
-        }
+        raw.toDateTime().toISODateFormat().take(16)
     } catch (_: Exception) {
         raw
     }
