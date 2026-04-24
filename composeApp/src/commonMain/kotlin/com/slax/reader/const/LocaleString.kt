@@ -566,5 +566,93 @@ val localeString: Map<String, Map<String, String>> = mapOf(
     "selection_action_comment" to mapOf(
         "zh" to "评论",
         "en" to "Comment"
+    ),
+
+    // ========================================
+    // 评论面板（CommentPanelSheet）
+    // ========================================
+    "comment_panel_close" to mapOf(
+        "zh" to "关闭评论面板",
+        "en" to "Close comment panel"
+    ),
+    "comment_panel_copy" to mapOf(
+        "zh" to "复制",
+        "en" to "Copy"
+    ),
+    "comment_panel_highlight" to mapOf(
+        "zh" to "划线",
+        "en" to "Highlight"
+    ),
+    "comment_panel_remove_highlight" to mapOf(
+        "zh" to "删除划线",
+        "en" to "Remove"
+    ),
+    "comment_panel_copy_highlight_desc" to mapOf(
+        "zh" to "复制划线内容",
+        "en" to "Copy highlighted text"
+    ),
+    "comment_panel_add_highlight_desc" to mapOf(
+        "zh" to "添加划线",
+        "en" to "Add highlight"
+    ),
+    "comment_panel_remove_highlight_desc" to mapOf(
+        "zh" to "删除已有划线",
+        "en" to "Remove existing highlight"
+    ),
+    "comment_panel_delete" to mapOf(
+        "zh" to "删除",
+        "en" to "Delete"
+    ),
+    "comment_panel_confirm_delete" to mapOf(
+        "zh" to "确认删除吗？",
+        "en" to "Confirm delete?"
+    ),
+    "comment_panel_send" to mapOf(
+        "zh" to "发送",
+        "en" to "Send"
+    ),
+    "comment_panel_placeholder" to mapOf(
+        "zh" to "发表评论",
+        "en" to "Add a comment"
+    ),
+    "comment_panel_deleted" to mapOf(
+        "zh" to "该评论已删除",
+        "en" to "This comment has been deleted"
+    ),
+    "comment_panel_unknown_user" to mapOf(
+        "zh" to "未知用户",
+        "en" to "Unknown user"
+    ),
+    "comment_panel_reply_prefix" to mapOf(
+        "zh" to "回复 ",
+        "en" to "Reply "
+    ),
+    "comment_panel_user_avatar" to mapOf(
+        "zh" to "用户头像",
+        "en" to "User avatar"
+    ),
+    "comment_panel_current_user_avatar" to mapOf(
+        "zh" to "当前用户头像",
+        "en" to "Current user avatar"
+    ),
+    "comment_panel_copied" to mapOf(
+        "zh" to "已复制",
+        "en" to "Copied"
+    ),
+    "comment_panel_discard_title" to mapOf(
+        "zh" to "放弃评论？",
+        "en" to "Discard comment?"
+    ),
+    "comment_panel_discard_message" to mapOf(
+        "zh" to "你还有未发送的评论内容，关闭后将会丢失。",
+        "en" to "You have an unsent comment. It will be lost if you close now."
+    ),
+    "comment_panel_discard_confirm" to mapOf(
+        "zh" to "放弃",
+        "en" to "Discard"
+    ),
+    "comment_panel_discard_cancel" to mapOf(
+        "zh" to "继续编辑",
+        "en" to "Keep Editing"
     )
 )
