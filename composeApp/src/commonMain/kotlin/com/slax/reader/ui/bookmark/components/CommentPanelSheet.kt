@@ -1101,26 +1101,21 @@ private fun PostCommentArea(
 ) {
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
-    var textFieldValue by remember { mutableStateOf(TextFieldValue()) }
 
     // iOS 上键盘显示时，导航栏（home indicator）在键盘后面，不需要为其预留空间
     val keyboardSpacing = if (imeBottom > 0.dp && !isIOS()) 8.dp else 0.dp
     val effectiveBottomInset = if (isIOS() && imeBottom > 0.dp) 0.dp else bottomInset
 
-    // 回复目标切换时重置输入内容
-    // 回复模式下插入零宽空格哨兵字符，使输入框"非空"，确保退格键能触发 onValueChange
+    // 纯净的用户输入文本（不含前缀），是提交给接口的真实内容
+    var realInputText by remember { mutableStateOf("") }
+
+    // 回复目标切换时清空用户已输入的内容
     LaunchedEffect(replyTarget) {
-        textFieldValue = if (replyTarget != null) {
-            TextFieldValue(REPLY_SENTINEL, selection = TextRange(REPLY_SENTINEL.length))
-        } else {
-            TextFieldValue()
-        }
+        realInputText = ""
     }
 
     val hasContent by remember {
-        derivedStateOf {
-            textFieldValue.text.replace(REPLY_SENTINEL, "").trim().isNotBlank()
-        }
+        derivedStateOf { realInputText.trim().isNotBlank() }
     }
 
     // 将 hasContent 变化通知给父级，用于拦截关闭操作
@@ -1139,15 +1134,9 @@ private fun PostCommentArea(
             userAvatarUrl = userAvatarUrl,
             replyTarget = replyTarget,
             autoFocusInput = autoFocusInput,
-            textFieldValue = textFieldValue,
-            onValueChange = { newValue ->
-                if (replyTarget != null && !newValue.text.contains(REPLY_SENTINEL)) {
-                    // 哨兵字符被删除 → 用户在"空"输入框按了退格键 → 清除回复前缀
-                    onClearReplyTarget()
-                } else {
-                    textFieldValue = newValue
-                }
-            },
+            realInputText = realInputText,
+            onRealInputTextChange = { realInputText = it },
+            onClearReplyTarget = onClearReplyTarget,
             modifier = Modifier.weight(1f)
         )
 
@@ -1169,10 +1158,10 @@ private fun PostCommentArea(
                     interactionSource = sendInteractionSource,
                     indication = null
                 ) {
-                    val rawText = textFieldValue.text.replace(REPLY_SENTINEL, "").trim()
-                    if (rawText.isNotBlank()) {
-                        onSubmit(rawText)
-                        textFieldValue = TextFieldValue()
+                    val trimmed = realInputText.trim()
+                    if (trimmed.isNotBlank()) {
+                        onSubmit(trimmed)
+                        realInputText = ""
                     }
                 }
                 .padding(horizontal = 11.5.dp),
@@ -1195,8 +1184,9 @@ private fun PostCommentInputContainer(
     userAvatarUrl: String? = null,
     replyTarget: ReplyTarget? = null,
     autoFocusInput: Boolean = false,
-    textFieldValue: TextFieldValue,
-    onValueChange: (TextFieldValue) -> Unit,
+    realInputText: String,
+    onRealInputTextChange: (String) -> Unit,
+    onClearReplyTarget: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -1227,8 +1217,9 @@ private fun PostCommentInputContainer(
         PostCommentTextField(
             replyTarget = replyTarget,
             autoFocusInput = autoFocusInput,
-            textFieldValue = textFieldValue,
-            onValueChange = onValueChange,
+            realInputText = realInputText,
+            onRealInputTextChange = onRealInputTextChange,
+            onClearReplyTarget = onClearReplyTarget,
             modifier = Modifier
                 .weight(1f)
                 .heightIn(min = 38.dp, max = 100.dp)
@@ -1236,18 +1227,47 @@ private fun PostCommentInputContainer(
     }
 }
 
-private const val REPLY_SENTINEL = "\u200B"
-
+/**
+ * 回复评论输入框
+ *
+ * @param replyTarget 当前回复的目标（null 表示普通发评论模式）
+ * @param autoFocusInput 是否在首次组合时自动请求输入焦点
+ * @param realInputText 用户输入的纯净文本（不含前缀），由父级持有
+ * @param onRealInputTextChange 纯净文本变化回调
+ * @param onClearReplyTarget 用户通过退格主动清除回复状态时的回调
+ */
 @Composable
 private fun PostCommentTextField(
     replyTarget: ReplyTarget? = null,
     autoFocusInput: Boolean = false,
-    textFieldValue: TextFieldValue,
-    onValueChange: (TextFieldValue) -> Unit,
+    realInputText: String,
+    onRealInputTextChange: (String) -> Unit,
+    onClearReplyTarget: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
     val focusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
+
+    // 前缀字符串，仅在 replyTarget 变化时重新计算
+    val prefix = remember(replyTarget) {
+        replyTarget?.let { "${"comment_panel_reply_prefix".i18n()}${it.username}：" } ?: ""
+    }
+
+    // 输入框底层的 TextFieldValue，前缀与用户输入拼接为完整字符串
+    var textFieldValue by remember {
+        mutableStateOf(TextFieldValue(text = prefix + realInputText))
+    }
+
+    // 同步外部状态到内部（应对父级主动清空 realInputText、切换 replyTarget 等场景）
+    LaunchedEffect(prefix, realInputText) {
+        val expected = prefix + realInputText
+        if (textFieldValue.text != expected) {
+            textFieldValue = TextFieldValue(
+                text = expected,
+                selection = TextRange(expected.length)
+            )
+        }
+    }
 
     LaunchedEffect(autoFocusInput) {
         if (autoFocusInput) {
@@ -1273,18 +1293,57 @@ private fun PostCommentTextField(
         fontWeight = FontWeight.Normal
     )
 
-    // 回复模式下构造 VisualTransformation，在文字前方内联插入带颜色的前缀
-    val visualTransformation = remember(replyTarget) {
-        if (replyTarget != null) {
-            ReplyPrefixVisualTransformation(replyTarget.username)
-        } else {
-            VisualTransformation.None
-        }
+    // 视觉变换：对已内嵌在真实字符串中的前缀部分做差异化着色
+    val visualTransformation = remember(prefix) {
+        if (prefix.isNotEmpty()) ReplyPrefixVisualTransformation(prefix) else VisualTransformation.None
     }
 
     BasicTextField(
         value = textFieldValue,
-        onValueChange = onValueChange,
+        onValueChange = { newValue ->
+            if (prefix.isNotEmpty()) {
+                when {
+                    // 全选删除等操作导致文本完全清空 → 清除回复状态
+                    newValue.text.isEmpty() -> {
+                        onClearReplyTarget()
+                        onRealInputTextChange("")
+                        return@BasicTextField
+                    }
+                    // 前缀被破坏（用户在内容为空时继续退格）→ 清除回复状态，保留已输入内容
+                    !newValue.text.startsWith(prefix) -> {
+                        onClearReplyTarget()
+                        // 剔除前缀残留，尽力保留用户已输入的部分
+                        val residual = newValue.text.removePrefix(
+                            prefix.commonPrefixWith(newValue.text)
+                        )
+                        textFieldValue = TextFieldValue(
+                            text = residual,
+                            selection = TextRange(residual.length)
+                        )
+                        onRealInputTextChange(residual)
+                        return@BasicTextField
+                    }
+                    // 正常输入：强制将选区限制在前缀末尾之后，防止光标侵入前缀区域
+                    else -> {
+                        val safeSelection = TextRange(
+                            start = newValue.selection.start.coerceAtLeast(prefix.length),
+                            end = newValue.selection.end.coerceAtLeast(prefix.length)
+                        )
+                        textFieldValue = newValue.copy(selection = safeSelection)
+                        val newRealText = newValue.text.substring(prefix.length)
+                        if (newRealText != realInputText) {
+                            onRealInputTextChange(newRealText)
+                        }
+                    }
+                }
+            } else {
+                // 普通模式：直接透传
+                textFieldValue = newValue
+                if (newValue.text != realInputText) {
+                    onRealInputTextChange(newValue.text)
+                }
+            }
+        },
         textStyle = inputTextStyle,
         visualTransformation = visualTransformation,
         modifier = modifier
@@ -1297,8 +1356,8 @@ private fun PostCommentTextField(
                     .padding(vertical = 9.dp),
                 contentAlignment = Alignment.CenterStart
             ) {
-                // 占位文字：无回复目标且文本为空时显示"发表评论"
-                if (textFieldValue.text.isEmpty() && replyTarget == null) {
+                // 占位文字：无回复目标且用户尚未输入内容时显示
+                if (realInputText.isEmpty() && replyTarget == null) {
                     Text(
                         text = "comment_panel_placeholder".i18n(),
                         style = TextStyle(
@@ -1318,39 +1377,41 @@ private fun PostCommentTextField(
 /**
  * 回复前缀视觉变换
  *
- * 通过 [VisualTransformation] 在输入文字前方内联插入"回复 XXX："前缀。
- * 前缀仅存在于视觉渲染层，不影响实际文本值，光标无法移入前缀区域。
+ * 将已内嵌在真实字符串头部的前缀做差异化着色：
+ * - "回复 " 部分渲染为灰色
+ * - "XXX：" 部分渲染为深色
  *
- * @param username 被回复人的用户名
+ * 前缀作为真实字符串的一部分存在，[OffsetMapping] 使用 Identity 映射，
+ * 光标位置由 [PostCommentTextField] 中的选区拦截逻辑保证不进入前缀区域。
+ *
+ * @param prefix 完整前缀字符串，格式为"回复 XXX："
  */
 private class ReplyPrefixVisualTransformation(
-    private val username: String,
+    private val prefix: String,
 ) : VisualTransformation {
 
-    private val prefixReply = "comment_panel_reply_prefix".i18n()
-    private val prefixName = "${username}："
-    private val prefixLength = prefixReply.length + prefixName.length
+    // "回复 " 固定为 3 个字符（含空格），其余为用户名和"："
+    private val replyWordLength = "comment_panel_reply_prefix".i18n().length
 
     override fun filter(text: AnnotatedString): TransformedText {
         val transformed = buildAnnotatedString {
-            // "回复 " 灰色
-            withStyle(SpanStyle(color = Color(0xFF999999))) {
-                append(prefixReply)
+            if (text.text.startsWith(prefix)) {
+                // "回复 " 灰色
+                withStyle(SpanStyle(color = Color(0xFF999999))) {
+                    append(text.text.substring(0, replyWordLength))
+                }
+                // "XXX：" 深色
+                withStyle(SpanStyle(color = Color(0xFF333333))) {
+                    append(text.text.substring(replyWordLength, prefix.length))
+                }
+                // 用户实际输入的文字，保持原始 AnnotatedString spans
+                append(text.subSequence(prefix.length, text.length))
+            } else {
+                append(text)
             }
-            // "XXX：" 深色
-            withStyle(SpanStyle(color = Color(0xFF333333))) {
-                append(prefixName)
-            }
-            // 用户实际输入的文字
-            append(text)
         }
-
-        val offsetMapping = object : OffsetMapping {
-            override fun originalToTransformed(offset: Int): Int = offset + prefixLength
-            override fun transformedToOriginal(offset: Int): Int = (offset - prefixLength).coerceAtLeast(0)
-        }
-
-        return TransformedText(transformed, offsetMapping)
+        // 真实字符串与显示字符串长度一致，使用 Identity 映射
+        return TransformedText(transformed, OffsetMapping.Identity)
     }
 }
 
