@@ -270,6 +270,7 @@ actual fun DetailScreen(
         val selectedText = markInteraction.selectedText
         val selectedMarkItemInfo = markInteraction.selectedMark
         val panelComments by viewModel.commentDelegate.panelCommentsFlow.collectAsState()
+        val coroutineScope = rememberCoroutineScope()
         var highlightLoading by remember { mutableStateOf(false) }
         CommentPanelSheet(
             highlightedText = selectedText,
@@ -280,8 +281,7 @@ actual fun DetailScreen(
             userAvatarUrl = viewModel.userInfo.value?.picture,
             visible = markInteraction.panelVisible,
             onDismiss = {
-                markInteraction.dismissPanel()
-                viewModel.commentDelegate.setSelectedMark(null)
+                markInteraction.dismissPanelAnimated(coroutineScope) { viewModel.commentDelegate.setSelectedMark(null) }
             },
             onSubmitComment = { comment, replyTarget ->
                 val markInfo = markInteraction.selectedMark ?: return@CommentPanelSheet
@@ -300,8 +300,7 @@ actual fun DetailScreen(
                     CommentPanelActionId.COPY -> {
                         UIPasteboard.generalPasteboard.string = selectedText
                         showCopyToast = true
-                        markInteraction.dismissPanel()
-                        viewModel.commentDelegate.setSelectedMark(null)
+                        markInteraction.dismissPanelAnimated(coroutineScope) { viewModel.commentDelegate.setSelectedMark(null) }
                         webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
                     }
                     CommentPanelActionId.HIGHLIGHT -> {
@@ -311,8 +310,7 @@ actual fun DetailScreen(
                             markItemInfo = markInfo,
                             onComplete = {
                                 highlightLoading = false
-                                markInteraction.dismissPanel()
-                                viewModel.commentDelegate.setSelectedMark(null)
+                                markInteraction.dismissPanelAnimated(coroutineScope) { viewModel.commentDelegate.setSelectedMark(null) }
                                 webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
                             }
                         )
@@ -324,8 +322,7 @@ actual fun DetailScreen(
                             markItemInfo = markInfo,
                             onComplete = {
                                 highlightLoading = false
-                                markInteraction.dismissPanel()
-                                viewModel.commentDelegate.setSelectedMark(null)
+                                markInteraction.dismissPanelAnimated(coroutineScope) { viewModel.commentDelegate.setSelectedMark(null) }
                                 webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
                             }
                         )

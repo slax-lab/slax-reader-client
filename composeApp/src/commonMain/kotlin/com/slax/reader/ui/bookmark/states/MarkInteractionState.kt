@@ -7,6 +7,9 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.slax.reader.utils.BridgeMarkItemInfo
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Stable
 class MarkInteractionState {
@@ -82,6 +85,27 @@ class MarkInteractionState {
         panelVisible = false
         selectedMark = null
         shouldAutoFocus = false
+    }
+
+    /**
+     * 带退出动画的关闭面板：立即隐藏面板，等动画播完后再清空 selectedMark，
+     * 避免面板内容在退出动画期间闪烁消失。
+     *
+     * @param scope 调用方的 CoroutineScope
+     * @param animationDurationMs 退出动画时长，需与 CommentPanelSheet 中的 tween 时长保持一致
+     */
+    fun dismissPanelAnimated(
+        scope: CoroutineScope,
+        animationDurationMs: Long = 300L,
+        onAnimationEnd: (() -> Unit)? = null,
+    ) {
+        panelVisible = false
+        shouldAutoFocus = false
+        scope.launch {
+            delay(animationDurationMs)
+            selectedMark = null
+            onAnimationEnd?.invoke()
+        }
     }
 
     fun dismissMenu() {

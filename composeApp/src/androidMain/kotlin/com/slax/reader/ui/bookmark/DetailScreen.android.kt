@@ -238,8 +238,7 @@ actual fun DetailScreen(
             userAvatarUrl = viewModel.userInfo.value?.picture,
             visible = markInteraction.panelVisible,
             onDismiss = {
-                markInteraction.dismissPanel()
-                viewModel.commentDelegate.setSelectedMark(null)
+                markInteraction.dismissPanelAnimated(coroutineScope) { viewModel.commentDelegate.setSelectedMark(null) }
             },
             onSubmitComment = { comment, replyTarget ->
                 val markInfo = markInteraction.selectedMark ?: return@CommentPanelSheet
@@ -262,8 +261,7 @@ actual fun DetailScreen(
                             clipboard.setClipEntry(ClipEntry(clipData))
                         }
                         showCopyToast = true
-                        markInteraction.dismissPanel()
-                        viewModel.commentDelegate.setSelectedMark(null)
+                        markInteraction.dismissPanelAnimated(coroutineScope) { viewModel.commentDelegate.setSelectedMark(null) }
                         webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
                     }
                     CommentPanelActionId.HIGHLIGHT -> {
@@ -273,8 +271,7 @@ actual fun DetailScreen(
                             markItemInfo = markInfo,
                             onComplete = {
                                 highlightLoading = false
-                                markInteraction.dismissPanel()
-                                viewModel.commentDelegate.setSelectedMark(null)
+                                markInteraction.dismissPanelAnimated(coroutineScope) { viewModel.commentDelegate.setSelectedMark(null) }
                                 webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
                             }
                         )
@@ -286,8 +283,7 @@ actual fun DetailScreen(
                             markItemInfo = markInfo,
                             onComplete = {
                                 highlightLoading = false
-                                markInteraction.dismissPanel()
-                                viewModel.commentDelegate.setSelectedMark(null)
+                                markInteraction.dismissPanelAnimated(coroutineScope) { viewModel.commentDelegate.setSelectedMark(null) }
                                 webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
                             }
                         )
