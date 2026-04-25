@@ -30,12 +30,15 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -85,9 +88,7 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.platform.LocalClipboard
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.snapshotFlow
 import com.slax.reader.utils.setPlainText
 import com.slax.reader.utils.toDateTime
 import com.slax.reader.utils.toISODateFormat
@@ -96,9 +97,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import com.github.panpf.sketch.rememberAsyncImagePainter
@@ -169,7 +168,6 @@ private enum class HighlightUnderlineStyle {
  * @param userAvatarUrl 当前登录用户的头像 URL
  * @param onDismiss 关闭面板的回调
  * @param onActionClick 操作栏按钮点击回调，参数为 [CommentPanelActionId] 中定义的标识
- * @param commentListContent 评论列表区域的内容插槽，为空时使用默认评论列表
  * @param modifier 外部传入的Modifier
  */
 @Composable
@@ -185,7 +183,6 @@ fun CommentPanelSheet(
     onActionClick: (actionId: String) -> Unit,
     onSubmitComment: (comment: String, replyTarget: ReplyTarget?) -> Unit = { _, _ -> },
     onDeleteComment: (markId: Long) -> Unit = {},
-    commentListContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val isStroked = markItemInfo?.stroke?.isNotEmpty() == true
@@ -281,27 +278,15 @@ fun CommentPanelSheet(
 
                     // 区域3：评论列表显示区（填充剩余空间，可滚动）
                     CommentListArea(
-                        scrollState = state.scrollState,
-                        isProgrammaticScroll = { state.isProgrammaticScroll },
-                        content = commentListContent ?: if (panelComments.isNotEmpty()) {
-                            {
-                                DefaultCommentList(
-                                    comments = panelComments,
-                                    onReplyClick = { comment ->
-                                        state.replyTarget = ReplyTarget(
-                                            markId = comment.markId,
-                                            username = comment.username.ifBlank { "comment_panel_unknown_user".i18n() }
-                                        )
-                                    },
-                                    onDeleteComment = onDeleteComment,
-                                    onCellPositioned = { markId, topY ->
-                                        state.recordCellPosition(markId, topY)
-                                    }
-                                )
-                            }
-                        } else {
-                            null
+                        lazyListState = state.lazyListState,
+                        comments = panelComments,
+                        onReplyClick = { comment ->
+                            state.replyTarget = ReplyTarget(
+                                markId = comment.markId,
+                                username = comment.username.ifBlank { "comment_panel_unknown_user".i18n() }
+                            )
                         },
+                        onDeleteComment = onDeleteComment,
                         modifier = Modifier.weight(1f, fill = false).background(Color.White)
                     )
 
@@ -618,30 +603,52 @@ private val commentBodyTextStyle = TextStyle(
 )
 
 /**
- * 评论列表默认实现
+ * 评论列表显示区域
  *
- * 承载父级评论单元格的纵向列表
+ * 使用 LazyColumn 实现虚拟化渲染，避免评论过多时的性能问题。
+ * 以 markId 作为每个评论单元格的稳定 key，支持通过 [lazyListState] 滚动到指定评论。
  *
+ * @param lazyListState 列表滚动状态，由外部持有以支持程序化滚动
  * @param comments 评论数据列表
- * @param onReplyClick 点击回复按钮的回调，参数为被回复的评论
- * @param onDeleteComment 删除评论的回调，参数为被删除评论的 markId
- * @param onCellPositioned 评论单元格布局完成后的位置回调，参数为 markId 和该单元格的顶部 Y 位置
+ * @param onReplyClick 点击评论（触发回复）的回调
+ * @param onDeleteComment 删除评论的回调
+ * @param modifier 外部传入的 Modifier，用于控制高度（如 weight）
  */
 @Composable
-private fun DefaultCommentList(
+private fun CommentListArea(
+    lazyListState: LazyListState,
     comments: List<BridgeMarkCommentInfo>,
     onReplyClick: (BridgeMarkCommentInfo) -> Unit,
-    onDeleteComment: (Long) -> Unit = {},
-    onCellPositioned: (markId: Long, topY: Int) -> Unit = { _, _ -> },
+    onDeleteComment: (Long) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        comments.forEach { comment ->
-            CommentCell(
-                comment = comment,
-                onReplyClick = onReplyClick,
-                onDeleteComment = onDeleteComment,
-                onCellPositioned = { topY -> onCellPositioned(comment.markId, topY) }
-            )
+    if (comments.isEmpty()) return
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(0.5.dp)
+                .background(Color(0x14333333))
+        )
+
+        LazyColumn(
+            state = lazyListState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f, fill = false)
+        ) {
+            items(
+                items = comments,
+                key = { comment -> comment.markId }
+            ) { comment ->
+                CommentCell(
+                    comment = comment,
+                    onReplyClick = onReplyClick,
+                    onDeleteComment = onDeleteComment
+                )
+            }
+            item { Spacer(modifier = Modifier.height(52.dp)) }
         }
     }
 }
@@ -652,14 +659,12 @@ private fun DefaultCommentList(
  * @param comment 评论数据
  * @param onReplyClick 点击回复按钮的回调
  * @param onDeleteComment 删除评论的回调，参数为被删除评论的 markId
- * @param onCellPositioned 单元格布局完成后的位置回调，参数为顶部 Y 坐标
  */
 @Composable
 private fun CommentCell(
     comment: BridgeMarkCommentInfo,
     onReplyClick: (BridgeMarkCommentInfo) -> Unit,
     onDeleteComment: (Long) -> Unit = {},
-    onCellPositioned: (topY: Int) -> Unit = {},
 ) {
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
@@ -672,9 +677,6 @@ private fun CommentCell(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .onGloballyPositioned { coords ->
-                onCellPositioned(coords.positionInParent().y.toInt())
-            }
     ) {
         Column(
             modifier = Modifier
@@ -1041,55 +1043,6 @@ private fun formatCommentDate(raw: String): String {
     }
 }
 
-/**
- * 评论列表显示区域
- *
- * @param scrollState 滚动状态，由外部提供以支持滚动控制
- * @param content 评论列表内容插槽
- * @param modifier 外部传入的 Modifier，用于控制高度（如 weight）
- */
-@Composable
-private fun CommentListArea(
-    scrollState: ScrollState,
-    content: (@Composable () -> Unit)?,
-    isProgrammaticScroll: () -> Boolean = { false },
-    modifier: Modifier = Modifier
-) {
-    if (content == null) return
-
-    val focusManager = LocalFocusManager.current
-
-    LaunchedEffect(scrollState) {
-        snapshotFlow { scrollState.isScrollInProgress }
-            .collect { isScrolling ->
-                if (isScrolling && !isProgrammaticScroll()) focusManager.clearFocus()
-            }
-    }
-
-    Column(
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(0.5.dp)
-                .background(Color(0x14333333))
-        )
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f, fill = false)
-                .verticalScroll(scrollState)
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                content()
-                Spacer(modifier = Modifier.height(52.dp))
-            }
-        }
-    }
-}
-
 @Composable
 private fun PostCommentArea(
     userAvatarUrl: String? = null,
@@ -1417,7 +1370,7 @@ private class ReplyPrefixVisualTransformation(
 
 @Stable
 class CommentPanelState internal constructor(
-    val scrollState: ScrollState,
+    val lazyListState: LazyListState,
     private val scope: CoroutineScope,
 ) {
     var hasContent by mutableStateOf(false)
@@ -1426,9 +1379,7 @@ class CommentPanelState internal constructor(
     var replyTarget by mutableStateOf<ReplyTarget?>(null)
 
     internal var comments: List<BridgeMarkCommentInfo> = emptyList()
-    private val cellTops = mutableMapOf<Long, Int>()
     private var scrollJob: Job? = null
-    internal var isProgrammaticScroll = false
 
     fun tryDismiss(onDismiss: () -> Unit) {
         if (hasContent) showDiscardConfirm = true else performDismiss(onDismiss)
@@ -1443,36 +1394,27 @@ class CommentPanelState internal constructor(
         showDiscardConfirm = false
     }
 
-    fun recordCellPosition(markId: Long, topY: Int) {
-        cellTops[markId] = topY
-    }
-
     fun onPostSubmitted(targetMarkId: Long?) {
         replyTarget = null
         scrollJob?.cancel()
         scrollJob = scope.launch {
-            delay(200)
-            isProgrammaticScroll = true
-            try {
-                val pos = when (targetMarkId) {
-                    null -> scrollState.maxValue
-                    else -> resolveScrollPosition(targetMarkId) ?: scrollState.maxValue
-                }
-                scrollState.animateScrollTo(pos)
-            } finally {
-                isProgrammaticScroll = false
-            }
+            // 等待服务器返回新评论并刷新列表后再滚动
+            delay(300)
+            val index = resolveScrollIndex(targetMarkId)
+            if (index >= 0) lazyListState.animateScrollToItem(index)
         }
     }
 
-    private fun resolveScrollPosition(targetMarkId: Long): Int? {
-        cellTops[targetMarkId]?.let { return it }
-        for (comment in comments) {
-            if (comment.children.any { it.markId == targetMarkId }) {
-                return cellTops[comment.markId]
-            }
+    private fun resolveScrollIndex(targetMarkId: Long?): Int {
+        if (targetMarkId == null) {
+            // 没有回复目标 → 滚到最后一条评论（+1 跳过底部 Spacer item）
+            return (comments.size - 1 + 1).coerceAtLeast(0)
         }
-        return null
+        // 找到目标评论所在的父评论 index（目标可能是父评论本身或其子评论）
+        return comments.indexOfFirst { parent ->
+            parent.markId == targetMarkId ||
+            parent.children.any { it.markId == targetMarkId }
+        }
     }
 
     private fun performDismiss(onDismiss: () -> Unit) {
@@ -1480,14 +1422,13 @@ class CommentPanelState internal constructor(
         replyTarget = null
         hasContent = false
         showDiscardConfirm = false
-        cellTops.clear()
         onDismiss()
     }
 }
 
 @Composable
 private fun rememberCommentPanelState(): CommentPanelState {
-    val scrollState = rememberScrollState()
+    val lazyListState = rememberLazyListState()
     val scope = rememberCoroutineScope()
-    return remember { CommentPanelState(scrollState, scope) }
+    return remember { CommentPanelState(lazyListState, scope) }
 }
