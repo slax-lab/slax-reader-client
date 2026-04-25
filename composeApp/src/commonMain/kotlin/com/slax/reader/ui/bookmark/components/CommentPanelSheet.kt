@@ -48,7 +48,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.Stable
@@ -97,7 +96,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import com.github.panpf.sketch.rememberAsyncImagePainter
@@ -107,7 +105,6 @@ import com.github.panpf.sketch.request.placeholder
 import com.slax.reader.utils.BridgeMarkCommentInfo
 import com.slax.reader.utils.BridgeMarkItemInfo
 import com.slax.reader.utils.i18n
-import com.slax.reader.utils.isIOS
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.global_default_avatar
@@ -194,16 +191,6 @@ fun CommentPanelSheet(
 
     val state = rememberCommentPanelState()
     state.comments = panelComments
-
-    var minSheetHeightPx by remember { mutableIntStateOf(0) }
-
-    LaunchedEffect(visible) {
-        if (!visible) minSheetHeightPx = 0
-    }
-    // 评论数量变化时重置最小高度约束，使面板能根据内容自然收缩
-    LaunchedEffect(panelComments.size) {
-        minSheetHeightPx = 0
-    }
     // 背景遮罩层，带淡入淡出动画
     AnimatedVisibility(
         visible = visible,
@@ -227,8 +214,7 @@ fun CommentPanelSheet(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.BottomCenter
     ) {
-        // 弹窗最大高度 = 可用高度 - 80dp
-        val maxSheetHeight = maxHeight - 80.dp
+        val maxSheetHeight = maxHeight * 0.8f
 
         AnimatedVisibility(
             visible = visible,
@@ -247,22 +233,14 @@ fun CommentPanelSheet(
                 shadowElevation = 8.dp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(
-                        min = with(LocalDensity.current) { minSheetHeightPx.toDp() },
-                        max = maxSheetHeight
-                    )
-                    .onSizeChanged { size ->
-                        if (size.height > minSheetHeightPx) {
-                            minSheetHeightPx = size.height
-                        }
-                    }
+                    .heightIn(max = maxSheetHeight)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) { /* 阻止点击事件穿透 */ }
             ) {
                 Box(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.fillMaxWidth().background(Color(0xFFF5F5F3)).let { if (isIOS()) it.imePadding() else it },) {
+                    Column(modifier = Modifier.fillMaxWidth().background(Color(0xFFF5F5F3)).imePadding()) {
 
                     // 区域1：Header
                     CommentPanelHeader(onDismiss = { state.tryDismiss(onDismiss) })
@@ -1075,8 +1053,8 @@ private fun PostCommentArea(
     val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
 
     // iOS 上键盘显示时，导航栏（home indicator）在键盘后面，不需要为其预留空间
-    val keyboardSpacing = if (imeBottom > 0.dp && !isIOS()) 8.dp else 0.dp
-    val effectiveBottomInset = if (isIOS() && imeBottom > 0.dp) 0.dp else bottomInset
+    val keyboardSpacing = if (imeBottom > 0.dp) 8.dp else 0.dp
+    val effectiveBottomInset = if (imeBottom > 0.dp) 0.dp else bottomInset
 
     // 纯净的用户输入文本（不含前缀），是提交给接口的真实内容
     var realInputText by remember { mutableStateOf("") }
