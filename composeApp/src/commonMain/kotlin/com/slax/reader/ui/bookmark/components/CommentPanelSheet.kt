@@ -624,6 +624,10 @@ private fun CommentListArea(
 ) {
     if (comments.isEmpty()) return
 
+    // 菜单打开时手指可能仍在屏幕上，禁用滚动防止 iOS 将 long press
+    // 后的遗留触点误传给 LazyColumn 导致列表跳变到顶部
+    var isAnyMenuShowing by remember { mutableStateOf(false) }
+
     Column(modifier = modifier.fillMaxWidth()) {
         Box(
             modifier = Modifier
@@ -634,6 +638,7 @@ private fun CommentListArea(
 
         LazyColumn(
             state = lazyListState,
+            userScrollEnabled = !isAnyMenuShowing,
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f, fill = false)
@@ -645,7 +650,8 @@ private fun CommentListArea(
                 CommentCell(
                     comment = comment,
                     onReplyClick = onReplyClick,
-                    onDeleteComment = onDeleteComment
+                    onDeleteComment = onDeleteComment,
+                    onMenuVisibilityChanged = { isAnyMenuShowing = it },
                 )
             }
             item { Spacer(modifier = Modifier.height(52.dp)) }
@@ -659,12 +665,14 @@ private fun CommentListArea(
  * @param comment 评论数据
  * @param onReplyClick 点击回复按钮的回调
  * @param onDeleteComment 删除评论的回调，参数为被删除评论的 markId
+ * @param onMenuVisibilityChanged 菜单显隐变化回调，用于上层控制列表滚动开关
  */
 @Composable
 private fun CommentCell(
     comment: BridgeMarkCommentInfo,
     onReplyClick: (BridgeMarkCommentInfo) -> Unit,
     onDeleteComment: (Long) -> Unit = {},
+    onMenuVisibilityChanged: (Boolean) -> Unit,
 ) {
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
@@ -694,6 +702,7 @@ private fun CommentCell(
                                 longPressOffset = offset
                                 isLongPressed = true
                                 showMenu = true
+                                onMenuVisibilityChanged(true)
                             }
                         }
                     )
@@ -711,7 +720,8 @@ private fun CommentCell(
                         ChildCommentCell(
                             comment = child,
                             onReplyClick = onReplyClick,
-                            onDeleteComment = onDeleteComment
+                            onDeleteComment = onDeleteComment,
+                            onMenuVisibilityChanged = onMenuVisibilityChanged,
                         )
                     }
                 }
@@ -724,17 +734,20 @@ private fun CommentCell(
                 onCopyClick = {
                     showMenu = false
                     isLongPressed = false
+                    onMenuVisibilityChanged(false)
                     scope.launch { clipboard.setPlainText(comment.comment) }
                     showCopyToast = true
                 },
                 onDeleteClick = {
                     showMenu = false
                     isLongPressed = false
+                    onMenuVisibilityChanged(false)
                     onDeleteComment(comment.markId)
                 },
                 onDismiss = {
                     showMenu = false
                     isLongPressed = false
+                    onMenuVisibilityChanged(false)
                 }
             )
         }
@@ -753,12 +766,14 @@ private fun CommentCell(
  * @param comment 子评论数据
  * @param onReplyClick 点击回复按钮的回调
  * @param onDeleteComment 删除评论的回调，参数为被删除评论的 markId
+ * @param onMenuVisibilityChanged 菜单显隐变化回调，用于上层控制列表滚动开关
  */
 @Composable
 private fun ChildCommentCell(
     comment: BridgeMarkCommentInfo,
     onReplyClick: (BridgeMarkCommentInfo) -> Unit,
     onDeleteComment: (Long) -> Unit = {},
+    onMenuVisibilityChanged: (Boolean) -> Unit,
 ) {
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
@@ -785,6 +800,7 @@ private fun ChildCommentCell(
                                 longPressOffset = offset
                                 isLongPressed = true
                                 showMenu = true
+                                onMenuVisibilityChanged(true)
                             }
                         }
                     )
@@ -802,17 +818,20 @@ private fun ChildCommentCell(
                 onCopyClick = {
                     showMenu = false
                     isLongPressed = false
+                    onMenuVisibilityChanged(false)
                     scope.launch { clipboard.setPlainText(comment.comment) }
                     showCopyToast = true
                 },
                 onDeleteClick = {
                     showMenu = false
                     isLongPressed = false
+                    onMenuVisibilityChanged(false)
                     onDeleteComment(comment.markId)
                 },
                 onDismiss = {
                     showMenu = false
                     isLongPressed = false
+                    onMenuVisibilityChanged(false)
                 }
             )
         }
