@@ -335,7 +335,7 @@ class BookmarkDetailViewModel(
                     source = data.toMarkPath(),
                     approx = data.approx_source,
                 )
-                val text = data.approx_source?.raw_text
+                val text = data.text ?: data.approx_source?.raw_text
                     ?: data.approx_source?.exact
                     ?: ""
                 if (text.isNotBlank()) {
