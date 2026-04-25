@@ -49,6 +49,9 @@ class CommentDelegate(
 ) {
     companion object {
         private val json = Json { encodeDefaults = true; ignoreUnknownKeys = true }
+        private val lineTypes = setOf(MarkType.LINE.value, MarkType.ORIGIN_LINE.value)
+        private val rootCommentTypes = setOf(MarkType.COMMENT.value, MarkType.ORIGIN_COMMENT.value)
+        private val commentTypes = rootCommentTypes + MarkType.REPLY.value
     }
 
     private var sub: SyncStreamSubscription? = null
@@ -180,12 +183,20 @@ class CommentDelegate(
     private fun buildProcessed(list: List<BookmarkCommentPO>, markUsers: Map<String, MarkCommentUser>): Processed {
         if (list.isEmpty()) return Processed()
 
+        val visibleCommentIds = buildVisibleCommentIds(list)
         val userMap = mutableMapOf<String, MarkUserInfo>()
         val markList = ArrayList<MarkInfo>(list.size)
         val bySource = HashMap<String, MutableList<BookmarkCommentPO>>()
         val byRootId = HashMap<String, MutableList<BookmarkCommentPO>>()
 
         for (po in list) {
+            val isVisible = when (po.type) {
+                in lineTypes -> po.is_deleted == 0
+                in commentTypes -> po.id in visibleCommentIds
+                else -> po.is_deleted == 0
+            }
+            if (!isVisible) continue
+
             val poUserId = po.metadataObj?.user_id ?: ""
             collectUser(poUserId, into = userMap, markUsers = markUsers)
 
@@ -203,7 +214,7 @@ class CommentDelegate(
             )
 
             when (po.type) {
-                MarkType.COMMENT.value ->
+                in rootCommentTypes ->
                     bySource.getOrPut(po.source) { mutableListOf() }.add(po)
                 MarkType.REPLY.value ->
                     po.metadataObj?.root_id?.let { rootId ->
@@ -221,12 +232,48 @@ class CommentDelegate(
         )
     }
 
+    private fun buildVisibleCommentIds(list: List<BookmarkCommentPO>): Set<String> {
+        val comments = list.filter { it.type in commentTypes }
+        if (comments.isEmpty()) return emptySet()
+
+        val byParentId = comments
+            .filter { it.type == MarkType.REPLY.value }
+            .groupBy { it.metadataObj?.parent_id.orEmpty() }
+        val memo = HashMap<String, Boolean>()
+
+        fun isVisible(po: BookmarkCommentPO, visiting: Set<String> = emptySet()): Boolean {
+            memo[po.id]?.let { return it }
+            if (po.id in visiting) return po.is_deleted == 0
+
+            val visible = po.is_deleted == 0 ||
+                    byParentId[po.id].orEmpty().any { child ->
+                        isVisible(child, visiting + po.id)
+                    }
+            memo[po.id] = visible
+            return visible
+        }
+
+        return comments
+            .filter { isVisible(it) }
+            .mapTo(mutableSetOf()) { it.id }
+    }
+
     private fun buildPanelComments(p: Processed, sourceJson: String): List<BridgeMarkCommentInfo> {
         val rootPOs = p.commentsBySource[sourceJson] ?: return emptyList()
 
         val rootMap = LinkedHashMap<Long, BridgeMarkCommentInfo>(rootPOs.size)
+        val commentMap = LinkedHashMap<Long, BridgeMarkCommentInfo>()
         for (po in rootPOs) {
-            rootMap[po.id.toStableId()] = po.toBridgeComment(p.markUsers)
+            val comment = po.toBridgeComment(p.markUsers)
+            rootMap[comment.markId] = comment
+            commentMap[comment.markId] = comment
+        }
+
+        for (po in rootPOs) {
+            p.repliesByRootId[po.id].orEmpty().forEach { replyPO ->
+                val reply = replyPO.toBridgeComment(p.markUsers)
+                commentMap[reply.markId] = reply
+            }
         }
 
         for (po in rootPOs) {
@@ -235,9 +282,9 @@ class CommentDelegate(
             val root = rootMap[rootId] ?: continue
 
             val children = replies.map { replyPO ->
-                val reply = replyPO.toBridgeComment(p.markUsers)
+                val reply = commentMap[replyPO.id.toStableId()] ?: replyPO.toBridgeComment(p.markUsers)
                 val parentId = replyPO.metadataObj?.parent_id.toStableId()
-                val parent = rootMap[parentId]
+                val parent = commentMap[parentId]
                 if (parent != null) {
                     reply.copy(reply = BridgeMarkReplyInfo(
                         id = parent.markId, username = parent.username,
@@ -250,7 +297,6 @@ class CommentDelegate(
         }
 
         return rootMap.values
-            .map { it.copy(children = it.children.filter { c -> !c.isDeleted }) }
             .filter { !it.isDeleted || it.children.isNotEmpty() }
     }
 
