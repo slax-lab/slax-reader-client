@@ -14,7 +14,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,6 +21,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.layout.layout
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
@@ -211,12 +211,10 @@ fun CommentPanelSheet(
     }
 
     // 底部弹窗主体，从下方滑入
-    BoxWithConstraints(
+    Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.BottomCenter
     ) {
-        val maxSheetHeight = maxHeight * 0.8f
-
         AnimatedVisibility(
             visible = visible,
             enter = slideInVertically(
@@ -234,7 +232,7 @@ fun CommentPanelSheet(
                 shadowElevation = 8.dp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = maxSheetHeight)
+                    .maxHeightFraction(0.8f)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
@@ -1435,4 +1433,13 @@ private fun rememberCommentPanelState(): CommentPanelState {
     val lazyListState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     return remember { CommentPanelState(lazyListState, scope) }
+}
+
+// 限制子组件最大高度为父容器的指定比例，内容不足时允许收缩
+private fun Modifier.maxHeightFraction(fraction: Float): Modifier = layout { measurable, constraints ->
+    val maxH = (constraints.maxHeight * fraction).toInt()
+    val placeable = measurable.measure(constraints.copy(maxHeight = maxH))
+    layout(placeable.width, placeable.height) {
+        placeable.place(0, 0)
+    }
 }
