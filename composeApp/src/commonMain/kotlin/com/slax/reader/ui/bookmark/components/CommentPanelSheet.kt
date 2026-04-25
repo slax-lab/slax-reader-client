@@ -192,6 +192,10 @@ fun CommentPanelSheet(
 
     val state = rememberCommentPanelState()
     state.comments = panelComments
+    // 面板关闭时重置回复状态，避免重新打开时残留"回复XXX："前缀
+    LaunchedEffect(visible) {
+        if (!visible) state.resetReplyState()
+    }
     // 背景遮罩层，带淡入淡出动画
     AnimatedVisibility(
         visible = visible,
@@ -1419,11 +1423,15 @@ class CommentPanelState internal constructor(
         }
     }
 
-    private fun performDismiss(onDismiss: () -> Unit) {
-        scrollJob?.cancel()
+    fun resetReplyState() {
         replyTarget = null
         hasContent = false
         showDiscardConfirm = false
+    }
+
+    private fun performDismiss(onDismiss: () -> Unit) {
+        scrollJob?.cancel()
+        resetReplyState()
         onDismiss()
     }
 }
