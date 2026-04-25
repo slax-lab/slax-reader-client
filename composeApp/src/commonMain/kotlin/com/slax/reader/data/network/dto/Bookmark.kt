@@ -327,6 +327,7 @@ data class StrokeCreateData(
     val source: List<StrokeCreateSource> = emptyList(),
     val select_content: List<StrokeCreateSelectContent> = emptyList(),
     val approx_source: MarkPathApprox? = null,
+    val text: String = "",
 ) {
     companion object {
         private val parseJson = Json { ignoreUnknownKeys = true }

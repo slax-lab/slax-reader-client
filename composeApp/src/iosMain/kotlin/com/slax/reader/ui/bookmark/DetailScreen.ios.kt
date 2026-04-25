@@ -289,7 +289,9 @@ actual fun DetailScreen(
                     markItemInfo = markInfo,
                     comment = comment,
                     replyMarkId = replyTarget?.markId,
-                    onComplete = {}
+                    onComplete = {
+                        webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
+                    }
                 )
             },
             onDeleteComment = { markId ->
