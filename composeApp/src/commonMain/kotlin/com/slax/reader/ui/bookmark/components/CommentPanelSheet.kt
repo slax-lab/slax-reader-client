@@ -87,6 +87,7 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.runtime.rememberCoroutineScope
 import com.slax.reader.utils.setPlainText
 import com.slax.reader.utils.toDateTime
@@ -602,9 +603,15 @@ private fun CommentListArea(
 ) {
     if (comments.isEmpty()) return
 
-    // 菜单打开时手指可能仍在屏幕上，禁用滚动防止 iOS 将 long press
-    // 后的遗留触点误传给 LazyColumn 导致列表跳变到顶部
+    val focusManager = LocalFocusManager.current
     var isAnyMenuShowing by remember { mutableStateOf(false) }
+
+    // 滑动列表时收起键盘
+    LaunchedEffect(lazyListState.isScrollInProgress) {
+        if (lazyListState.isScrollInProgress) {
+            focusManager.clearFocus()
+        }
+    }
 
     Column(modifier = modifier.fillMaxWidth()) {
         Box(
