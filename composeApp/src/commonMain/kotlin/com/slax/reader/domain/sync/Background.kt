@@ -134,11 +134,7 @@ class BackgroundDomain(
                 }
         }
 
-        scope.launch {
-            LifeCycleHelper.lifecycleState
-                .filter { it == AppLifecycleState.ON_RESUME }
-                .collect { apiService.heartbeat() }
-        }
+        scope.launch { apiService.heartbeat() }
     }
 
     suspend fun processTask(task: TaskItem) {
