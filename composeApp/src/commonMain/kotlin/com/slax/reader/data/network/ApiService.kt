@@ -216,7 +216,7 @@ class ApiService(
                 headers {
                     append("X-CLIENT-TYPE", platformType)
                     append("X-ACTION-TYPE", "heartbeat")
-                    append("X-CLIENT-VERSION", SlaxConfig.APP_VERSION_NAME)
+                    append("X-CLIENT-VERSION", "${SlaxConfig.APP_VERSION_NAME} (${SlaxConfig.APP_VERSION_CODE})")
                 }
             }
         }
