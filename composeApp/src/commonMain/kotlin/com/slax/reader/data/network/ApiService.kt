@@ -208,4 +208,18 @@ class ApiService(
     suspend fun sendFeedback(param: FeedbackParams): HttpData<String> = withContext(Dispatchers.IO) {
         return@withContext post("/v1/user/report", body = param)
     }
+
+    suspend fun heartbeat() = withContext(Dispatchers.IO) {
+        val url = buildUrl("/m")
+        runCatching {
+            println("====== heartbeat")
+            httpClient.get(url) {
+                headers {
+                    append("X-CLIENT-TYPE", platformType)
+                    append("X-ACTION-TYPE", "heartbeat")
+                    append("X-CLIENT-VERSION", SlaxConfig.APP_VERSION_NAME)
+                }
+            }
+        }
+    }
 }
