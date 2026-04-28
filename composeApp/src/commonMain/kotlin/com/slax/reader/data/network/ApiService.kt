@@ -212,7 +212,6 @@ class ApiService(
     suspend fun heartbeat() = withContext(Dispatchers.IO) {
         val url = buildUrl("/m")
         runCatching {
-            println("====== heartbeat")
             httpClient.get(url) {
                 headers {
                     append("X-CLIENT-TYPE", platformType)
