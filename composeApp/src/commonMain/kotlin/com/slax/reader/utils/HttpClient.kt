@@ -49,6 +49,7 @@ fun getHttpClient(appPreferences: AppPreferences): HttpClient {
         defaultRequest {
             token.value?.let {
                 bearerAuth(it)
+                userAgent("SlaxReader/${platformName} ${SlaxConfig.APP_VERSION_NAME} (${SlaxConfig.APP_VERSION_CODE})")
             }
         }
         HttpResponseValidator {
