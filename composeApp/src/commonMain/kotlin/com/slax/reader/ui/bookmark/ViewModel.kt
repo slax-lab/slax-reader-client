@@ -20,9 +20,16 @@ import com.slax.reader.ui.bookmark.states.CommentDelegate
 import com.slax.reader.ui.bookmark.states.OutlineDelegate
 import com.slax.reader.ui.bookmark.states.OverlayDelegate
 import com.slax.reader.ui.bookmark.states.OverviewDelegate
+import com.slax.reader.ui.bookmark.states.toStableId
 import com.slax.reader.utils.bookmarkEvent
+import com.slax.reader.data.network.dto.MarkType
+import com.slax.reader.data.network.dto.StrokeCreateData
+import com.slax.reader.utils.AppWebViewState
+import com.slax.reader.utils.BridgeMarkItemInfo
+import com.slax.reader.utils.BridgeMarkStrokeInfo
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlinx.serialization.json.Json
 
 data class FeedbackPageParams(
     val title: String? = null,
@@ -53,6 +60,9 @@ sealed interface BookmarkDetailEffect {
     data class NavigateToFeedback(val params: FeedbackPageParams) : BookmarkDetailEffect
 
     data class ScrollToAnchor(val anchor: String) : BookmarkDetailEffect
+
+    /** 通知 UI 层调用 JS drawMarks，传入序列化后的 MarkDetail JSON */
+    data class DrawMarks(val markDetailJson: String) : BookmarkDetailEffect
 }
 
 data class BookmarkContentState(
@@ -74,6 +84,9 @@ class BookmarkDetailViewModel(
 
     companion object {
         private const val SAVE_DEBOUNCE_MS = 2000L
+
+        /** 用于向 JS Bridge 序列化划线数据，必须保留所有默认值字段 */
+        private val markDetailJson = Json { encodeDefaults = true }
     }
 
     private val _bookmarkId = MutableStateFlow<String?>(null)
@@ -95,12 +108,13 @@ class BookmarkDetailViewModel(
     private var savePositionJob: Job? = null
 
     private var contentJob: Job? = null
+    private var markObserveJob: Job? = null
 
     val userInfo = userDao.watchUserInfo()
     val subscriptionInfo = subscriptionDao.watchSubscriptionInfo()
 
     val overlayDelegate = OverlayDelegate()
-    val commentDelegate = CommentDelegate(database, commentDao, viewModelScope)
+    val commentDelegate = CommentDelegate(database, commentDao, localBookmarkDao, userDao, apiService, viewModelScope)
     val outlineDelegate = OutlineDelegate(localBookmarkDao, apiService, viewModelScope)
     val overviewDelegate = OverviewDelegate(localBookmarkDao, apiService, viewModelScope)
     val bookmarkDelegate = BookmarkDelegate(bookmarkDao, _bookmarkId, viewModelScope)
@@ -115,6 +129,7 @@ class BookmarkDetailViewModel(
         initialReadPosition = null
         currentPosition = -1f
         savePositionJob?.cancel()
+        markObserveJob?.cancel()
 
         overlayDelegate.reset()
         outlineDelegate.reset()
@@ -124,6 +139,7 @@ class BookmarkDetailViewModel(
         // 异步加载保存的阅读位置，不阻塞主流程
         viewModelScope.launch(Dispatchers.IO) {
             loadSavedPosition(bookmarkId)
+            commentDelegate.bind(bookmarkId)
         }
 
         loadOutline()
@@ -272,6 +288,159 @@ class BookmarkDetailViewModel(
         outlineDelegate.loadOutline(id)
     }
 
+    fun startObservingMarks() {
+        markObserveJob?.cancel()
+        markObserveJob = viewModelScope.launch(Dispatchers.IO) {
+            commentDelegate.markDetailFlow.collect { markDetail ->
+                val json = markDetailJson.encodeToString(markDetail)
+                _effects.emit(BookmarkDetailEffect.DrawMarks(json))
+            }
+        }
+    }
+
+    fun strokeHighlight(webViewState: AppWebViewState, onComplete: (() -> Unit)? = null) {
+        webViewState.evaluateJsWithCallback(
+            "window.SlaxWebViewBridge.captureCurrentSelection()"
+        ) { resultJson ->
+            if (resultJson.isNullOrBlank() || resultJson == "null") return@evaluateJsWithCallback
+            viewModelScope.launch(Dispatchers.IO) {
+                runCatching {
+                    val data = StrokeCreateData.fromJsResult(resultJson)
+                    val localId = commentDelegate.addMark(
+                        type = MarkType.LINE,
+                        source = data.toMarkPath(),
+                        approxSource = data.approx_source,
+                        selectContent = data.select_content,
+                    )
+                    withContext(Dispatchers.Main) { onComplete?.invoke() }
+                }.onFailure {
+                    println("[划线] 创建失败: ${it.message}")
+                    withContext(Dispatchers.Main) { onComplete?.invoke() }
+                }
+            }
+        }
+    }
+
+    fun captureSelectionForComment(
+        webViewState: AppWebViewState,
+        onCaptured: (text: String, markInfo: BridgeMarkItemInfo) -> Unit,
+    ) {
+        webViewState.evaluateJsWithCallback(
+            "window.SlaxWebViewBridge.captureCurrentSelection()"
+        ) { resultJson ->
+            if (resultJson.isNullOrBlank() || resultJson == "null") return@evaluateJsWithCallback
+            runCatching {
+                val data = StrokeCreateData.fromJsResult(resultJson)
+                val markInfo = BridgeMarkItemInfo(
+                    source = data.toMarkPath(),
+                    approx = data.approx_source,
+                )
+                val text = data.text ?: data.approx_source?.raw_text
+                    ?: data.approx_source?.exact
+                    ?: ""
+                if (text.isNotBlank()) {
+                    onCaptured(text, markInfo)
+                }
+            }.onFailure { println("[评论] 获取选区数据失败: ${it.message}") }
+        }
+    }
+
+    fun addStrokeToMark(
+        markItemInfo: BridgeMarkItemInfo,
+        onComplete: () -> Unit,
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val localId = commentDelegate.addMark(
+                    type = MarkType.LINE,
+                    source = markItemInfo.source,
+                    approxSource = markItemInfo.approx,
+                    selectContent = markItemInfo.toSelectContent(),
+                )
+
+                withContext(Dispatchers.Main) { onComplete() }
+            }.onFailure {
+                println("[划线] 添加到已有 mark 失败: ${it.message}")
+                withContext(Dispatchers.Main) { onComplete() }
+            }
+        }
+    }
+
+    fun removeStrokeFromMark(
+        markItemInfo: BridgeMarkItemInfo,
+        onComplete: () -> Unit,
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val uid = commentDelegate.currentUserId ?: ""
+                val sourceJson = markDetailJson.encodeToString(markItemInfo.source)
+
+                val recordId = commentDelegate.findCommentId { po ->
+                    po.type == MarkType.LINE.value && po.is_deleted == 0 && po.metadataObj?.user_id == uid && po.source == sourceJson
+                }
+
+                if (recordId != null) commentDelegate.deleteComment(recordId)
+                withContext(Dispatchers.Main) { onComplete() }
+            }.onFailure {
+                println("[划线] 删除失败: ${it.message}")
+                withContext(Dispatchers.Main) { onComplete() }
+            }
+        }
+    }
+
+    fun submitComment(
+        markItemInfo: BridgeMarkItemInfo,
+        comment: String,
+        replyMarkId: Long? = null,
+        onComplete: (() -> Unit)? = null,
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                if (replyMarkId != null) {
+                    val parentPO = commentDelegate.findComment { po ->
+                        po.id.toStableId() == replyMarkId
+                    } ?: return@launch
+                    val rootId = parentPO.metadataObj?.root_id ?: parentPO.id
+
+                    commentDelegate.addMark(
+                        type = MarkType.REPLY,
+                        source = markItemInfo.source,
+                        approxSource = markItemInfo.approx,
+                        selectContent = markItemInfo.toSelectContent(),
+                        comment = comment,
+                        rootId = rootId,
+                        parentId = parentPO.id,
+                    )
+                } else {
+                    commentDelegate.addMark(
+                        type = MarkType.COMMENT,
+                        source = markItemInfo.source,
+                        approxSource = markItemInfo.approx,
+                        selectContent = markItemInfo.toSelectContent(),
+                        comment = comment,
+                    )
+                }
+                withContext(Dispatchers.Main) { onComplete?.invoke() }
+            }.onFailure {
+                println("[评论] 提交失败: ${it.message}")
+                withContext(Dispatchers.Main) { onComplete?.invoke() }
+            }
+        }
+    }
+
+    fun deleteComment(markId: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val recordId = commentDelegate.findCommentId { po ->
+                    po.id.toStableId() == markId
+                } ?: return@launch
+                commentDelegate.deleteComment(recordId)
+            }.onFailure {
+                println("[评论] 删除失败: ${it.message}")
+            }
+        }
+    }
+
     // 加载书签的保存阅读位置
     private suspend fun loadSavedPosition(bookmarkId: String) {
         if (_bookmarkId.value != bookmarkId) return
@@ -318,6 +487,8 @@ class BookmarkDetailViewModel(
 
         contentJob?.cancel()
         contentJob = null
+        markObserveJob?.cancel()
+        markObserveJob = null
         commentDelegate.reset()
         outlineDelegate.reset()
         overviewDelegate.reset()

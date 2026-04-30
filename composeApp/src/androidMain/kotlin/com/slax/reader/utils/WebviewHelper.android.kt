@@ -2,6 +2,9 @@ package com.slax.reader.utils
 
 import android.annotation.SuppressLint
 import android.graphics.Color
+import android.view.ActionMode
+import android.view.Menu
+import android.view.MenuItem
 import android.view.MotionEvent
 import android.webkit.*
 import androidx.browser.customtabs.CustomTabsIntent
@@ -23,7 +26,6 @@ import com.slax.reader.const.JS_BRIDGE_NAME
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.domain.image.ImageDownloadManager
 import com.slax.reader.ui.bookmark.WebViewMessage
-import kotlinx.serialization.json.Json
 import org.koin.compose.koinInject
 import kotlin.math.roundToInt
 
@@ -53,10 +55,6 @@ actual fun AppWebView(
                     )
                     super.onMeasure(widthMeasureSpec, newHeightMeasureSpec)
                 }
-
-                override fun onScrollChanged(l: Int, t: Int, oldl: Int, oldt: Int) {
-                    scrollTo(0, 0)
-                }
             }.apply {
                 webState.webView = this
                 setBackgroundColor(Color.TRANSPARENT)
@@ -82,10 +80,22 @@ actual fun AppWebView(
                     setRenderPriority(WebSettings.RenderPriority.HIGH)
                 }
 
+                var longPressScreenY = 0f
+                val gestureDetector = android.view.GestureDetector(context,
+                    object : android.view.GestureDetector.SimpleOnGestureListener() {
+                        override fun onLongPress(e: MotionEvent) {
+                            longPressScreenY = e.rawY
+                        }
+                    }
+                )
+
                 addJavascriptInterface(object {
                     @JavascriptInterface
                     fun postMessage(message: String) {
-                        runCatching { Json.decodeFromString<WebViewMessage>(message) }
+                        runCatching { bridgeJson.decodeFromString<WebViewMessage>(message) }
+                            .onFailure { e ->
+                                println("[WebView Bridge] 消息解析失败: ${e.message}, 原始消息: $message")
+                            }
                             .onSuccess { msg ->
                                 when (msg.type) {
                                     "imageClick" -> {
@@ -107,15 +117,49 @@ actual fun AppWebView(
                                     "feedback" -> {
                                         webState.dispatchEvent(WebViewEvent.Feedback)
                                     }
+
+                                    "textSelected" -> {
+                                        val markInfo = msg.data?.let { parseSelectionData(it) }
+                                        val text = msg.text ?: markInfo?.approx?.exact
+                                        if (!text.isNullOrBlank()) {
+                                            webState.dispatchEvent(WebViewEvent.TextSelected(text, longPressScreenY, markInfo))
+                                        }
+                                    }
+
+                                    "textDeselected" -> {
+                                        webState.dispatchEvent(WebViewEvent.TextDeselected)
+                                    }
+
+                                    "markClicked" -> {
+                                        val markId = msg.markId
+                                        val text = msg.text
+                                        if (!markId.isNullOrBlank()) {
+                                            val markInfo = msg.data?.let { parseSelectionData(it) }
+                                            webState.dispatchEvent(
+                                                WebViewEvent.MarkClicked(markId, text ?: "", markInfo)
+                                            )
+                                        }
+                                    }
+
+                                    "markItemInfosChanged" -> {
+                                        val markItemInfos = msg.markItemInfos?.let {
+                                            runCatching {
+                                                bridgeJson.decodeFromString<List<BridgeMarkItemInfo>>(it)
+                                            }.getOrNull()
+                                        } ?: emptyList()
+                                        webState.dispatchEvent(
+                                            WebViewEvent.MarkItemInfosChanged(markItemInfos)
+                                        )
+                                    }
                                 }
                             }
                     }
                 }, JS_BRIDGE_NAME)
 
                 setOnTouchListener { _, event ->
+                    gestureDetector.onTouchEvent(event)
                     if (event.action == MotionEvent.ACTION_UP) {
                         webState.dispatchEvent(WebViewEvent.Tap)
-
                     }
                     false
                 }
@@ -374,6 +418,27 @@ actual fun OpenInBrowser(url: String) {
     val builder = CustomTabsIntent.Builder()
     val customTabsIntent = builder.build()
     customTabsIntent.launchUrl(ctx, url.toUri())
+}
+
+private class EmptyMenuActionModeCallback(
+    private val delegate: ActionMode.Callback
+) : ActionMode.Callback {
+    override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
+        return delegate.onCreateActionMode(mode, menu)
+    }
+
+    override fun onPrepareActionMode(mode: ActionMode?, menu: Menu?): Boolean {
+        menu?.clear()
+        return true
+    }
+
+    override fun onActionItemClicked(mode: ActionMode?, item: MenuItem?): Boolean {
+        return delegate.onActionItemClicked(mode, item)
+    }
+
+    override fun onDestroyActionMode(mode: ActionMode?) {
+        delegate.onDestroyActionMode(mode)
+    }
 }
 
 private class CachingInputStream(

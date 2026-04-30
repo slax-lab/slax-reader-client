@@ -115,7 +115,6 @@ class CustomURLSchemeHandler(
             }
         } catch (e: Exception) {
             if (e is CancellationException) throw e
-            println("[SchemeHandler] 代理失败: $url, ${e.message}")
             withContext(Dispatchers.Main) {
                 if (task !in activeTasks) return@withContext
                 task.didFailWithError(

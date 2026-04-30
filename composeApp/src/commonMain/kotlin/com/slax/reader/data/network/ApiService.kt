@@ -126,22 +126,8 @@ class ApiService(
         )
     }
 
-    suspend fun addBookmarkWithContent(
-        url: String,
-        content: String?,
-        title: String?
-    ): HttpData<CollectionBookmarkResult> {
-        return post(
-            "/v1/bookmark/add_url", body = CollectionBookmarkParam(
-                target_url = url, content = content, target_title = title
-            )
-        )
-    }
-
-    suspend fun createIapOrderId(productId: String): HttpData<CreateIapOrderResult> {
-        return post(
-            "/v1/subscription/create_inapp_purchase", body = CreateIapOrderParam(productId, platform = platformType)
-        )
+    suspend fun getMarkUsers(bookmarkUid: String): HttpData<List<MarkCommentUser>> {
+        return get("/v1/mark/users", query = mapOf("bookmark_uid" to bookmarkUid))
     }
 
     suspend fun checkIapResult(param: CheckIapParam) : HttpData<CheckIapResult> {
@@ -221,5 +207,18 @@ class ApiService(
 
     suspend fun sendFeedback(param: FeedbackParams): HttpData<String> = withContext(Dispatchers.IO) {
         return@withContext post("/v1/user/report", body = param)
+    }
+
+    suspend fun heartbeat() = withContext(Dispatchers.IO) {
+        val url = buildUrl("/m")
+        runCatching {
+            httpClient.get(url) {
+                headers {
+                    append("X-CLIENT-TYPE", platformType)
+                    append("X-ACTION-TYPE", "heartbeat")
+                    append("X-CLIENT-VERSION", "${SlaxConfig.APP_VERSION_NAME} (${SlaxConfig.APP_VERSION_CODE})")
+                }
+            }
+        }
     }
 }

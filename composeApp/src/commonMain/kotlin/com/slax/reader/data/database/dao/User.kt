@@ -5,9 +5,6 @@ import com.powersync.db.getString
 import com.powersync.db.getStringOptional
 import com.slax.reader.data.database.model.UserInfo
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.*
 
 class UserDao(
@@ -18,7 +15,7 @@ class UserDao(
         println("[watch][database] _userInfoFlow")
 
         database.watch(
-            """SELECT email, name, picture, given_name, family_name,
+            """SELECT id, email, name, picture, given_name, family_name,
                            lang, ai_lang, timezone, account,
                            last_read_at, invite_code
                 FROM sr_user
@@ -27,6 +24,7 @@ class UserDao(
             parameters = listOf(),
             mapper = { cursor ->
                 UserInfo(
+                    id = cursor.getString("id"),
                     email = cursor.getString("email"),
                     name = cursor.getStringOptional("name") ?: "",
                     picture = cursor.getStringOptional("picture") ?: "",

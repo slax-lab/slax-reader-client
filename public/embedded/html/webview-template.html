@@ -8,6 +8,7 @@
 
     <style>{{RESET-CSS}}</style>
     <style>{{ARTICLE-CSS}}</style>
+    <style>{{MARK-CSS}}</style>
     <style>{{BOTTOM-LINE-CSS}}</style>
 
     <style>
@@ -17,12 +18,16 @@
             padding-left: 20px !important;
             padding-right: 20px !important;
             padding-bottom: 150px !important;
+            /* 禁用系统长按弹出菜单，保留文本可选 */
+            -webkit-touch-callout: none;
         }
     </style>
 </head>
 <body lang="en">
-    <!-- 动态内容占位符 -->
-    {{CONTENT}}
+    <div>
+        <!-- 动态内容占位符 -->
+        {{CONTENT}}
+    </div>
 
     <div class="bottom-seperator-line">
         <div class="seperator-line"></div>
@@ -30,6 +35,19 @@
 
     <script>
         {{WEBVIEW-BRIGDE-JS}}
+    </script>
+    <script>
+        (function() {
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.NativeBridge) {
+                document.body.style.webkitHyphens = 'auto';
+                document.body.style.hyphens = 'auto';
+            }
+            // 阻止系统右键/长按上下文菜单弹出
+            document.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                return false;
+            });
+        })();
     </script>
 </body>
 </html>

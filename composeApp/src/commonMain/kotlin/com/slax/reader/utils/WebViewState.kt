@@ -34,6 +34,7 @@ expect class AppWebViewState(
     val initialCookies: List<WebViewCookie>?
 
     fun evaluateJs(script: String)
+    fun evaluateJsWithCallback(script: String, callback: (String) -> Unit)
     fun scrollToAnchor(anchor: String)
     fun reload()
     fun setCookies(cookies: List<WebViewCookie>, url: String, complateHandler: (() -> Unit)? = null)
@@ -57,6 +58,27 @@ sealed interface WebViewEvent {
     data object RefreshContent: WebViewEvent
 
     data object Feedback: WebViewEvent
+
+    data class TextSelected(
+        val text: String,
+        val selectionY: Float,
+        val markItemInfo: BridgeMarkItemInfo? = null,
+    ) : WebViewEvent
+
+    /** 用户取消了文本选中 */
+    data object TextDeselected : WebViewEvent
+
+    /** 用户点击了已渲染的划线标记 */
+    data class MarkClicked(
+        val markId: String,
+        val text: String,
+        val markItemInfo: BridgeMarkItemInfo? = null,
+    ) : WebViewEvent
+
+    /** JS 端 markItemInfos 列表发生变化 */
+    data class MarkItemInfosChanged(
+        val markItemInfos: List<BridgeMarkItemInfo>,
+    ) : WebViewEvent
 }
 
 @Composable

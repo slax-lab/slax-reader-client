@@ -2,6 +2,8 @@ package com.slax.reader.ui.bookmark
 
 import androidx.compose.runtime.*
 import com.slax.reader.ui.bookmark.components.DetailScreenSkeleton
+import com.slax.reader.ui.bookmark.states.LocalMarkInteraction
+import com.slax.reader.ui.bookmark.states.MarkInteractionState
 import com.slax.reader.ui.bookmark.states.ScrollInfo
 import com.slax.reader.utils.*
 import org.koin.compose.viewmodel.koinViewModel
@@ -23,6 +25,7 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
 
     val toolbarVisible = remember { mutableStateOf(true) }
     val scrollInfo = remember { mutableStateOf(ScrollInfo(0f, false)) }
+    val markInteraction = remember { MarkInteractionState() }
 
     val webViewState = rememberAppWebViewState(coroutineScope)
 
@@ -38,6 +41,11 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
                 }
                 is BookmarkDetailEffect.ScrollToAnchor -> {
                     webViewState.scrollToAnchor(effect.anchor)
+                }
+                is BookmarkDetailEffect.DrawMarks -> {
+                    webViewState.evaluateJs(
+                        "window.SlaxWebViewBridge.drawMarks(`${escapeJsTemplateString(effect.markDetailJson)}`)"
+                    )
                 }
             }
         }
@@ -77,6 +85,25 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
                 is WebViewEvent.Feedback -> {
                     println("feedback")
                 }
+                is WebViewEvent.TextSelected -> {
+                    markInteraction.onTextSelected(event.text, event.selectionY, event.markItemInfo)
+                }
+                is WebViewEvent.TextDeselected -> {
+                    markInteraction.onTextDeselected()
+                }
+                is WebViewEvent.PageLoaded -> {
+                    val userIdLong = viewModel.commentDelegate.currentUserIdLong
+                    webViewState.evaluateJs("window.SlaxWebViewBridge.startSelectionMonitoring('body', $userIdLong)")
+                    viewModel.startObservingMarks()
+                }
+                is WebViewEvent.MarkClicked -> {
+                    val info = event.markItemInfo ?: return@collect
+                    markInteraction.onMarkClicked(event.text, info)
+                    viewModel.commentDelegate.setSelectedMark(info.source)
+                }
+                is WebViewEvent.MarkItemInfosChanged -> {
+                    markInteraction.onMarkItemInfosChanged(event.markItemInfos)
+                }
                 else -> {}
             }
         }
@@ -101,7 +128,10 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
         return
     }
 
-    CompositionLocalProvider(LocalToolbarVisible provides toolbarVisible) {
+    CompositionLocalProvider(
+        LocalToolbarVisible provides toolbarVisible,
+        LocalMarkInteraction provides markInteraction,
+    ) {
         DetailScreen(
             bookmarkId = bookmarkId,
             htmlContent = contentState.htmlContent!!,

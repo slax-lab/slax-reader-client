@@ -14,7 +14,7 @@ import kotlinx.serialization.json.Json
 data class BookmarkMetadata(
     val tags: List<String>,
     val share: ShareSettings?,
-    val bookmark: BookmarkDetails
+    val bookmark: BookmarkDetails,
 )
 
 @Immutable
@@ -67,11 +67,11 @@ data class BookmarkCommentPO(
 @Immutable
 @Serializable
 data class BookmarkCommentMetadata(
-    val root_id: String,
-    val user_id: String,
-    val parent_id: String?,
-    val source_id: String,
-    val bookmark_id: String
+    val root_id: String? = null,
+    val user_id: String? = null,
+    val parent_id: String? = null,
+    val source_id: String? = null,
+    val bookmark_id: String? = null
 )
 
 @Immutable
