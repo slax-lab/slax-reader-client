@@ -56,14 +56,21 @@ private class NoMenuWKWebView(
 ) : WKWebView(frame = frame, configuration = configuration) {
 
     var latestTouchScreenY: Float = 0f
+    var onSelectionDetected: ((Float) -> Unit)? = null
+    private var hasNotifiedSelection: Boolean = false
 
     override fun canPerformAction(action: COpaquePointer?, withSender: Any?): Boolean {
+        if (!hasNotifiedSelection && latestTouchScreenY > 0f) {
+            hasNotifiedSelection = true
+            onSelectionDetected?.invoke(latestTouchScreenY)
+        }
         return false
     }
 
     override fun hitTest(point: CValue<platform.CoreGraphics.CGPoint>, withEvent: UIEvent?): UIView? {
         if (withEvent != null) {
             latestTouchScreenY = convertPoint(point, toView = null).useContents { y }.toFloat()
+            hasNotifiedSelection = false
         }
         return super.hitTest(point, withEvent)
     }

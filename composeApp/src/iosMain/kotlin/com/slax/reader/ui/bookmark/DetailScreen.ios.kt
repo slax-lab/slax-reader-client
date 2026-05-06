@@ -12,8 +12,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.window.Popup
 import com.slax.reader.ui.bookmark.components.*
 import com.slax.reader.ui.bookmark.states.LocalMarkInteraction
 import com.slax.reader.ui.bookmark.states.ScrollInfo
@@ -168,170 +166,25 @@ actual fun DetailScreen(
                 .padding(bottom = 58.dp),
         )
 
-        // 文本选中操作菜单
         val markInteraction = LocalMarkInteraction.current
 
         // 当评论面板显示时，禁用状态栏点击触发的 scrollsToTop 行为，
         // 防止点击状态栏区域导致背后的 WebView 滚动到顶部
-        val panelVisible = markInteraction.panelVisible
-        LaunchedEffect(panelVisible) {
-            webViewState.webView?.scrollView?.scrollsToTop = !panelVisible
-        }
-        val selectionMenuVisible = markInteraction.menuVisible
-        // selectionYPx 是 hitTest 实时获取的屏幕坐标（UIKit points），转为 Compose px
-        val selectionYPx = markInteraction.selectionY
-        val selectionScreenPx = selectionYPx * densityScale
-
-        val minTopPx = (statusBarHeightPx + 20.dp.value * densityScale).toInt()
-        val menuGapPx = with(density) { 32.dp.roundToPx() }
-        val menuHeightPx = with(density) { 44.dp.roundToPx() }
-
-        // 复制成功 Toast 状态
-        var showCopyToast by remember { mutableStateOf(false) }
-
-        val showMenu = selectionMenuVisible && selectionScreenPx > 0f && selectionScreenPx < containerHeightPx
-
-        if (showMenu) {
-            val touchY = selectionScreenPx.toInt()
-            val isTopArea = touchY < (containerHeightPx * 0.2f).toInt()
-            val offsetY = if (isTopArea) {
-                touchY + menuGapPx
-            } else {
-                touchY - menuHeightPx - menuGapPx
-            }.coerceIn(minTopPx, (containerHeightPx - menuHeightPx).toInt())
-
-            Popup(
-                alignment = Alignment.TopCenter,
-                offset = IntOffset(0, offsetY)
-            ) {
-                // 在 Popup 内部读取 capturedSelectionMark，确保状态订阅注册在 Popup 的子 Composition 中
-                val selectionHasStroke = markInteraction.capturedSelectionMark?.stroke?.isNotEmpty() == true
-                SelectionActionBar(
-                    visible = true,
-                    actions = rememberSelectionActions(hasStroke = selectionHasStroke),
-                    onActionClick = { actionId ->
-                        handleSelectionAction(
-                            actionId = actionId,
-                            webViewState = webViewState,
-                            onDismiss = {
-                                markInteraction.dismissMenu()
-                            },
-                            onHighlightRequest = {
-                                val markInfo = markInteraction.capturedSelectionMark
-                                if (markInfo != null) {
-                                    viewModel.addStrokeToMark(
-                                        markItemInfo = markInfo,
-                                        onComplete = {
-                                            webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
-                                        }
-                                    )
-                                } else {
-                                    viewModel.strokeHighlight(webViewState) {
-                                        webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
-                                    }
-                                }
-                            },
-                            onRemoveHighlightRequest = {
-                                val markInfo = markInteraction.capturedSelectionMark ?: return@handleSelectionAction
-                                viewModel.removeStrokeFromMark(
-                                    markItemInfo = markInfo,
-                                    onComplete = {
-                                        webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
-                                    }
-                                )
-                            },
-                            onCommentRequest = {
-                                markInteraction.dismissMenu()
-                                viewModel.captureSelectionForComment(webViewState) { text, markInfo ->
-                                    markInteraction.openPanelForNewComment(text, markInfo)
-                                    viewModel.commentDelegate.setSelectedMark(markInfo.source)
-                                }
-                            }
-                        )
-                        if (actionId == SelectionActionId.COPY) {
-                            showCopyToast = true
-                            webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
-                        }
-                    }
-                )
-            }
+        LaunchedEffect(markInteraction.panelVisible) {
+            webViewState.webView?.scrollView?.scrollsToTop = !markInteraction.panelVisible
         }
 
-        // 复制成功 Toast（独立于 Popup，菜单隐藏后仍可见）
-        CopySuccessToast(
-            visible = showCopyToast,
-            onDismiss = { showCopyToast = false },
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 120.dp)
+        SelectionMenuCommentPanel(
+            markInteraction = markInteraction,
+            webViewState = webViewState,
+            viewModel = viewModel,
+            densityScale = densityScale,
+            containerHeightPx = containerHeightPx,
+            minTopPx = (statusBarHeightPx + 20.dp.value * densityScale).toInt(),
+            onCopyText = { UIPasteboard.generalPasteboard.string = it },
         )
 
         OutlineDialog()
-
-        // 评论面板
-        val selectedText = markInteraction.selectedText
-        val selectedMarkItemInfo = markInteraction.selectedMark
-        val panelComments by viewModel.commentDelegate.panelCommentsFlow.collectAsState()
-        val coroutineScope = rememberCoroutineScope()
-        var highlightLoading by remember { mutableStateOf(false) }
-        CommentPanelSheet(
-            highlightedText = selectedText,
-            markItemInfo = selectedMarkItemInfo,
-            panelComments = panelComments,
-            highlightLoading = highlightLoading,
-            autoFocusInput = markInteraction.shouldAutoFocus,
-            userAvatarUrl = viewModel.userInfo.value?.picture,
-            visible = markInteraction.panelVisible,
-            onDismiss = {
-                markInteraction.dismissPanelAnimated(coroutineScope) { viewModel.commentDelegate.setSelectedMark(null) }
-            },
-            onSubmitComment = { comment, replyTarget ->
-                val markInfo = markInteraction.selectedMark ?: return@CommentPanelSheet
-                viewModel.submitComment(
-                    markItemInfo = markInfo,
-                    comment = comment,
-                    replyMarkId = replyTarget?.markId,
-                    onComplete = {
-                        webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
-                    }
-                )
-            },
-            onDeleteComment = { markId ->
-                viewModel.deleteComment(markId)
-            },
-            onActionClick = { actionId ->
-                when (actionId) {
-                    CommentPanelActionId.COPY -> {
-                        UIPasteboard.generalPasteboard.string = selectedText
-                        showCopyToast = true
-                        markInteraction.dismissPanelAnimated(coroutineScope) { viewModel.commentDelegate.setSelectedMark(null) }
-                        webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
-                    }
-                    CommentPanelActionId.HIGHLIGHT -> {
-                        val markInfo = markInteraction.selectedMark ?: return@CommentPanelSheet
-                        highlightLoading = true
-                        viewModel.addStrokeToMark(
-                            markItemInfo = markInfo,
-                            onComplete = {
-                                highlightLoading = false
-                                markInteraction.dismissPanelAnimated(coroutineScope) { viewModel.commentDelegate.setSelectedMark(null) }
-                                webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
-                            }
-                        )
-                    }
-                    CommentPanelActionId.REMOVE_HIGHLIGHT -> {
-                        val markInfo = markInteraction.selectedMark ?: return@CommentPanelSheet
-                        highlightLoading = true
-                        viewModel.removeStrokeFromMark(
-                            markItemInfo = markInfo,
-                            onComplete = {
-                                highlightLoading = false
-                                markInteraction.dismissPanelAnimated(coroutineScope) { viewModel.commentDelegate.setSelectedMark(null) }
-                                webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
-                            }
-                        )
-                    }
-                }
-            }
-        )
     }
 
     BookmarkDetailOverlays()

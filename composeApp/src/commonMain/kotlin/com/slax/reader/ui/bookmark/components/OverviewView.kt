@@ -86,6 +86,7 @@ fun OverviewView(
                     indication = ripple(color = Color.Black.copy(alpha = 0.08f))
                 ) {
                     viewModel.overlayDelegate.showOverlay(BookmarkOverlay.Overview)
+                    viewModel.overviewDelegate.sendOpenMetrics()
                     bookmarkEvent.action("overview_interact", "open").send()
                 }
                 .padding(12.dp)
