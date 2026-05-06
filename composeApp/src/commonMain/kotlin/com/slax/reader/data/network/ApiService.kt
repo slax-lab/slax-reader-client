@@ -18,6 +18,12 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
+enum class MetricsType(val value: String) {
+    HEARTBEAT("heartbeat"),
+    OVERVIEW("ai_overview"),
+    SUMMARY("ai_summary"),
+}
+
 class ApiService(
     private val httpClient: HttpClient,
 ) {
@@ -209,13 +215,13 @@ class ApiService(
         return@withContext post("/v1/user/report", body = param)
     }
 
-    suspend fun heartbeat() = withContext(Dispatchers.IO) {
+    suspend fun sendMetrics(type: MetricsType) = withContext(Dispatchers.IO) {
         val url = buildUrl("/m")
         runCatching {
             httpClient.get(url) {
                 headers {
                     append("X-CLIENT-TYPE", platformType)
-                    append("X-ACTION-TYPE", "heartbeat")
+                    append("X-ACTION-TYPE", type.value)
                     append("X-CLIENT-VERSION", "${SlaxConfig.APP_VERSION_NAME} (${SlaxConfig.APP_VERSION_CODE})")
                 }
             }

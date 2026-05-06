@@ -12,20 +12,17 @@
     <style>{{BOTTOM-LINE-CSS}}</style>
 
     <style>
-        /* 页面特定样式 */
         body {
             padding-top: 0px !important;
             padding-left: 20px !important;
             padding-right: 20px !important;
             padding-bottom: 150px !important;
-            /* 禁用系统长按弹出菜单，保留文本可选 */
             -webkit-touch-callout: none;
         }
     </style>
 </head>
 <body lang="en">
     <div>
-        <!-- 动态内容占位符 -->
         {{CONTENT}}
     </div>
 
@@ -42,7 +39,6 @@
                 document.body.style.webkitHyphens = 'auto';
                 document.body.style.hyphens = 'auto';
             }
-            // 阻止系统右键/长按上下文菜单弹出
             document.addEventListener('contextmenu', function(e) {
                 e.preventDefault();
                 return false;

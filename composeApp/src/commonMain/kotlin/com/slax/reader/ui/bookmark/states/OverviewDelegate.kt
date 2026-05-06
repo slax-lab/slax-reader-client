@@ -2,6 +2,7 @@ package com.slax.reader.ui.bookmark.states
 
 import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.network.ApiService
+import com.slax.reader.data.network.MetricsType
 import com.slax.reader.data.network.dto.OverviewResponse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -116,6 +117,10 @@ class OverviewDelegate(
                 }
             }
         }
+    }
+
+    fun sendOpenMetrics() {
+        scope.launch { apiService.sendMetrics(MetricsType.OVERVIEW) }
     }
 
     fun updateBounds(bounds: OverviewViewBounds) {

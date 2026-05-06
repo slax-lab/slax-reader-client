@@ -8,16 +8,13 @@ import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.database.model.isDownloaded
 import com.slax.reader.data.file.FileManager
 import com.slax.reader.data.network.ApiService
+import com.slax.reader.data.network.MetricsType
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.domain.image.ImageDownloadManager
-import com.slax.reader.utils.AppLifecycleState
-import com.slax.reader.utils.LifeCycleHelper
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.getAndUpdate
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flow
@@ -134,7 +131,7 @@ class BackgroundDomain(
                 }
         }
 
-        scope.launch { apiService.heartbeat() }
+        scope.launch { apiService.sendMetrics(MetricsType.HEARTBEAT) }
     }
 
     suspend fun processTask(task: TaskItem) {

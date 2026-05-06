@@ -47,6 +47,8 @@ actual fun AppWebView(
     AndroidView(
         modifier = modifier,
         factory = { context ->
+            var longPressScreenY = 0f
+
             object : WebView(context) {
                 override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
                     val newHeightMeasureSpec = MeasureSpec.makeMeasureSpec(
@@ -79,15 +81,6 @@ actual fun AppWebView(
                     @Suppress("DEPRECATION")
                     setRenderPriority(WebSettings.RenderPriority.HIGH)
                 }
-
-                var longPressScreenY = 0f
-                val gestureDetector = android.view.GestureDetector(context,
-                    object : android.view.GestureDetector.SimpleOnGestureListener() {
-                        override fun onLongPress(e: MotionEvent) {
-                            longPressScreenY = e.rawY
-                        }
-                    }
-                )
 
                 addJavascriptInterface(object {
                     @JavascriptInterface
@@ -155,6 +148,14 @@ actual fun AppWebView(
                             }
                     }
                 }, JS_BRIDGE_NAME)
+
+                val gestureDetector = android.view.GestureDetector(context,
+                    object : android.view.GestureDetector.SimpleOnGestureListener() {
+                        override fun onLongPress(e: MotionEvent) {
+                            longPressScreenY = e.rawY
+                        }
+                    }
+                )
 
                 setOnTouchListener { _, event ->
                     gestureDetector.onTouchEvent(event)
@@ -418,27 +419,6 @@ actual fun OpenInBrowser(url: String) {
     val builder = CustomTabsIntent.Builder()
     val customTabsIntent = builder.build()
     customTabsIntent.launchUrl(ctx, url.toUri())
-}
-
-private class EmptyMenuActionModeCallback(
-    private val delegate: ActionMode.Callback
-) : ActionMode.Callback {
-    override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
-        return delegate.onCreateActionMode(mode, menu)
-    }
-
-    override fun onPrepareActionMode(mode: ActionMode?, menu: Menu?): Boolean {
-        menu?.clear()
-        return true
-    }
-
-    override fun onActionItemClicked(mode: ActionMode?, item: MenuItem?): Boolean {
-        return delegate.onActionItemClicked(mode, item)
-    }
-
-    override fun onDestroyActionMode(mode: ActionMode?) {
-        delegate.onDestroyActionMode(mode)
-    }
 }
 
 private class CachingInputStream(
