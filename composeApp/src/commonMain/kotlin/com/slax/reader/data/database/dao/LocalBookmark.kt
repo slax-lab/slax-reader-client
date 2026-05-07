@@ -18,7 +18,8 @@ class LocalBookmarkDao(
             """
             SELECT id,
                 COALESCE(JSON_EXTRACT(data, '$.is_downloaded'), 0) as is_downloaded,
-                JSON_EXTRACT(data, '$.is_auto_cached') as is_auto_cached
+                JSON_EXTRACT(data, '$.is_auto_cached') as is_auto_cached,
+                JSON_EXTRACT(data, '$.cached_version') as cached_version
             FROM ps_data_local__local_bookmark_info
         """.trimIndent(),
             mapper = {
@@ -79,8 +80,16 @@ class LocalBookmarkDao(
     suspend fun updateLocalBookmarkDownloadStatus(
         bookmarkId: String,
         downloadStatus: Int,
-        isAutoCached: Boolean
-    ) = upsertFields(bookmarkId, mapOf("is_downloaded" to downloadStatus, "is_auto_cached" to if (isAutoCached) 1 else 0))
+        isAutoCached: Boolean,
+        cachedVersion: String? = null,
+    ) {
+        val fields = buildMap<String, Any?> {
+            put("is_downloaded", downloadStatus)
+            put("is_auto_cached", if (isAutoCached) 1 else 0)
+            if (cachedVersion != null) put("cached_version", cachedVersion)
+        }
+        upsertFields(bookmarkId, fields)
+    }
 
     suspend fun batchResetDownloadStatus(
         bookmarkIds: List<String>,

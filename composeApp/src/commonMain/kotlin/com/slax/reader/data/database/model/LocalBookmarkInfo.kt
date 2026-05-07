@@ -10,7 +10,8 @@ data class LocalBookmarkInfo(
     val overview: String?,
     val keyTakeaways: String?,
     val downloadStatus: Int,
-    val isAutoCached: Boolean = true
+    val isAutoCached: Boolean = true,
+    val cachedVersion: String? = null,
 )
 
 fun LocalBookmarkInfo.isDownloaded() : Boolean {
@@ -35,6 +36,11 @@ fun mapperToLocalBookmarkInfo(cursor: SqlCursor): LocalBookmarkInfo {
             cursor.getString("is_auto_cached").toIntOrNull() == 1
         } catch (_: Exception) {
             true
-        }
+        },
+        cachedVersion = try {
+            cursor.getString("cached_version").takeIf { it.isNotEmpty() }
+        } catch (_: Exception) {
+            null
+        },
     )
 }

@@ -34,7 +34,7 @@ enum class DownloadStatus {
 
 class TaskItem(
     val bookmarkId: String,
-    val updatedAt: String,
+    val contentVersion: String,
     val type: TaskType
 )
 
@@ -61,6 +61,7 @@ class BackgroundDomain(
 
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     fun startup() {
+        if (workerScope?.isActive == true) return
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         val queue = Channel<TaskItem>(100)
         workerScope = scope
@@ -70,6 +71,7 @@ class BackgroundDomain(
             val localBookmarkState = localBookmarkDao.watchUserLocalBookmarkMap()
             bookmarkDao.watchUserBookmarkList()
                 .collect { bookmarkList ->
+                    println("[CACHE_DEBUG][调度触发] bookmarkList.size=${bookmarkList.size}")
                     val cacheCountSetting = appPreferences.getCacheCount().first()
                     val recentDownloadCount = if (cacheCountSetting == -1) Int.MAX_VALUE else cacheCountSetting
 
@@ -84,22 +86,36 @@ class BackgroundDomain(
                         if (item.metadataStatus != successStatus) continue
 
                         val local = localMap[item.id]
+                        val title = item.metadataTitle ?: item.aliasTitle.ifEmpty { item.id }
 
-                        if (local != null && !local.isAutoCached && local.isDownloaded()) continue
+                        val isDownloaded = local?.isDownloaded() == true
+                        val cachedVersion = local?.cachedVersion
+                        val isStale = isDownloaded && cachedVersion != null && cachedVersion != item.createdAt
+                        // cachedVersion 为 null 表示功能上线前的旧存量数据，需补下载一次以填充版本号
+                        val needsVersionBackfill = isDownloaded && cachedVersion == null
+
+                        // 手动缓存且已是最新版本时跳过，不占缓存窗口
+                        if (local != null && !local.isAutoCached && isDownloaded && !isStale && !needsVersionBackfill) {
+                            println("[CACHE_DEBUG][跳过-手动缓存] id=${item.id} title=$title | cachedVersion=${local.cachedVersion} createdAt=${item.createdAt}")
+                            continue
+                        }
 
                         if (windowCount >= recentDownloadCount) break
                         windowCount++
                         cacheWindowIds.add(item.id)
 
-                        if (item.id !in currentQueue && local?.isDownloaded() != true) {
-                            toDownload.add(TaskItem(item.id, item.updatedAt, TaskType.DOWNLOAD_METADATA))
+                        println("[CACHE_DEBUG][调度] id=${item.id} title=$title | isAutoCached=${local?.isAutoCached} downloadStatus=${local?.downloadStatus} cachedVersion=${local?.cachedVersion} createdAt=${item.createdAt} isStale=$isStale inQueue=${item.id in currentQueue}")
+
+                        if (item.id !in currentQueue && (!isDownloaded || isStale || needsVersionBackfill)) {
+                            println("[CACHE_DEBUG][入队] id=${item.id} title=$title")
+                            toDownload.add(TaskItem(item.id, item.createdAt, TaskType.DOWNLOAD_METADATA))
                         }
                     }
 
                     val toCleanupIds = mutableListOf<String>()
-                    val activeIds = bookmarkList.asSequence().map { it.id }.toHashSet()
                     for ((id, info) in localMap) {
-                        if (id in activeIds && id !in cacheWindowIds && info.isAutoCached && info.downloadStatus == 2) {
+                        // 不在缓存窗口内且不在处理队列中的自动缓存才清理，含超出窗口、已归档、已删除的书签
+                        if (info.isAutoCached && info.downloadStatus == 2 && id !in cacheWindowIds && id !in currentQueue) {
                             toCleanupIds.add(id)
                         }
                     }
@@ -177,7 +193,7 @@ class BackgroundDomain(
                 println("[BackgroundDomain] 图片下载完成")
             }
 
-            updateBookmarkStatus(item.bookmarkId, DownloadStatus.COMPLETED)
+            updateBookmarkStatus(item.bookmarkId, DownloadStatus.COMPLETED, cachedVersion = item.contentVersion)
         } catch (e: Exception) {
             println("下载失败 ${item.bookmarkId}: ${e.message}")
             e.printStackTrace()
@@ -220,7 +236,12 @@ class BackgroundDomain(
         workerScope = null
     }
 
-    private suspend fun updateBookmarkStatus(id: String, status: DownloadStatus, isAutoCached: Boolean = true) {
+    private suspend fun updateBookmarkStatus(
+        id: String,
+        status: DownloadStatus,
+        isAutoCached: Boolean = true,
+        cachedVersion: String? = null,
+    ) {
         val statusCode = when (status) {
             DownloadStatus.NONE -> 0
             DownloadStatus.DOWNLOADING -> 1
@@ -228,7 +249,7 @@ class BackgroundDomain(
             DownloadStatus.FAILED -> 3
         }
         try {
-            localBookmarkDao.updateLocalBookmarkDownloadStatus(id, statusCode, isAutoCached)
+            localBookmarkDao.updateLocalBookmarkDownloadStatus(id, statusCode, isAutoCached, cachedVersion)
         } catch (e: Exception) {
             println("[BackgroundDomain] 更新下载状态到数据库失败: ${e.message}")
         }
@@ -269,25 +290,42 @@ class BackgroundDomain(
             return processContent(htmlContent).html
         }
 
-        inQueue.getAndUpdate { it + id }
+        // 一次原子操作决定所有权：返回值为 true 表示本次调用成功抢占队列槽
+        // 若后台已持有该 id，则本路径不加入 inQueue，也不在 finally 中移除
+        val ownsQueueSlot = inQueue.getAndUpdate { it + id }.let { id !in it }
+        // 异步写协程是否已成功启动；若已启动，inQueue 移除由协程的 finally 负责
+        var asyncWriteLaunched = false
 
         try {
-            withContext(Dispatchers.IO) {
-                updateBookmarkStatus(id, DownloadStatus.DOWNLOADING, isAutoCached = false)
+            if (ownsQueueSlot) {
+                withContext(Dispatchers.IO) {
+                    updateBookmarkStatus(id, DownloadStatus.DOWNLOADING, isAutoCached = false)
+                }
             }
 
             val response = apiService.getBookmarkRawContent(id)
-
             val content = processContent(response)
 
-            workerScope?.launch(Dispatchers.IO) {
-                try {
-                    fileManager.writeDataFile(contentPath, content.html.encodeToByteArray())
-                    updateBookmarkStatus(id, DownloadStatus.COMPLETED, isAutoCached = false)
-                } catch (e: Exception) {
-                    println("后台写入失败 $id: ${e.message}")
-                    updateBookmarkStatus(id, DownloadStatus.FAILED, isAutoCached = false)
-                }
+            if (ownsQueueSlot) {
+                val job = if (workerScope?.isActive == true) workerScope?.launch(Dispatchers.IO) {
+                    try {
+                        fileManager.writeDataFile(contentPath, content.html.encodeToByteArray())
+                        val createdAt = bookmarkDao.getBookmarkCreatedAt(id)
+                        updateBookmarkStatus(
+                            id,
+                            DownloadStatus.COMPLETED,
+                            isAutoCached = false,
+                            cachedVersion = createdAt,
+                        )
+                    } catch (e: Exception) {
+                        println("后台写入失败 $id: ${e.message}")
+                        updateBookmarkStatus(id, DownloadStatus.FAILED, isAutoCached = false)
+                    } finally {
+                        // 写入完成（或失败）后才释放队列槽，防止调度器在窗口期重复入队
+                        inQueue.getAndUpdate { it - id }
+                    }
+                } else null
+                asyncWriteLaunched = job != null
             }
 
             return content.html
@@ -309,7 +347,10 @@ class BackgroundDomain(
                 .replace("{{REASON}}", "<center>${errInfo["title"]!!}</center>")
                 .replace("{{DETAIL}}", "<center>${errInfo["message"]!!}</center>")
         } finally {
-            inQueue.getAndUpdate { it - id }
+            // API 报错或 workerScope 为 null 时，异步写协程未启动，需在此兜底移除
+            if (ownsQueueSlot && !asyncWriteLaunched) {
+                inQueue.getAndUpdate { it - id }
+            }
         }
     }
 
