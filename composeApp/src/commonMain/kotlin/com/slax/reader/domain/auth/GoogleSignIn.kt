@@ -1,5 +1,7 @@
 package com.slax.reader.domain.auth
 
+import androidx.compose.runtime.Composable
+
 data class GoogleSignInResult(
     val idToken: String,
     val email: String? = null,
@@ -9,3 +11,6 @@ data class GoogleSignInResult(
 expect class GoogleSignInProvider() {
     suspend fun signIn(): Result<GoogleSignInResult>
 }
+
+@Composable
+expect fun rememberGoogleSignInProvider(): GoogleSignInProvider
