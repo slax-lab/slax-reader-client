@@ -8,21 +8,23 @@
 
     <style>{{RESET-CSS}}</style>
     <style>{{ARTICLE-CSS}}</style>
+    <style>{{MARK-CSS}}</style>
     <style>{{BOTTOM-LINE-CSS}}</style>
 
     <style>
-        /* 页面特定样式 */
         body {
             padding-top: 0px !important;
             padding-left: 20px !important;
             padding-right: 20px !important;
             padding-bottom: 150px !important;
+            -webkit-touch-callout: none;
         }
     </style>
 </head>
 <body lang="en">
-    <!-- 动态内容占位符 -->
-    {{CONTENT}}
+    <div>
+        {{CONTENT}}
+    </div>
 
     <div class="bottom-seperator-line">
         <div class="seperator-line"></div>
@@ -30,6 +32,18 @@
 
     <script>
         {{WEBVIEW-BRIGDE-JS}}
+    </script>
+    <script>
+        (function() {
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.NativeBridge) {
+                document.body.style.webkitHyphens = 'auto';
+                document.body.style.hyphens = 'auto';
+            }
+            document.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                return false;
+            });
+        })();
     </script>
 </body>
 </html>

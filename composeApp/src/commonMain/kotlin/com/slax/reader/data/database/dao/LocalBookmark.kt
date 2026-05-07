@@ -165,4 +165,10 @@ class LocalBookmarkDao(
 
     suspend fun getLocalBookmarkOutlineScrollPosition(bookmarkId: String): Int? =
         getField(bookmarkId, "outline_read_position")?.toIntOrNull()
+
+    suspend fun updateMarkUsers(bookmarkId: String, markUsersJson: String) =
+        upsertFields(bookmarkId, mapOf("mark_users" to markUsersJson))
+
+    suspend fun getMarkUsers(bookmarkId: String): String? =
+        getField(bookmarkId, "mark_users")
 }

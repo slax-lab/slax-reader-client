@@ -8,15 +8,18 @@ import androidx.compose.ui.FrameRateCategory
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.unit.dp
 import com.slax.reader.ui.bookmark.components.*
+import com.slax.reader.ui.bookmark.states.LocalMarkInteraction
 import com.slax.reader.ui.bookmark.states.ScrollInfo
 import com.slax.reader.utils.*
 import kotlinx.serialization.Serializable
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.max
+import platform.UIKit.UIPasteboard
 
 @Serializable
 data class WebViewMessage(
@@ -24,8 +27,6 @@ data class WebViewMessage(
     val height: Int? = null,
     val src: String? = null,
     val allImages: List<String>? = null,
-    val position: Int? = null,
-    val index: Int? = null,
     val percentage: Double? = null,
 
     val productId: String? = null,
@@ -34,7 +35,13 @@ data class WebViewMessage(
     val keyID: String? = null,
     val nonce: String? = null,
     val signature: String? = null,
-    val timestamp: Long? = null
+    val timestamp: Long? = null,
+
+    val text: String? = null,
+    val selectionY: Float? = null,
+    val markId: String? = null,
+    val markItemInfos: String? = null,
+    val data: String? = null,
 )
 
 @Composable
@@ -100,7 +107,6 @@ actual fun DetailScreen(
                     viewModel.consumeInitialReadPosition()?.let { position ->
                         val totalInsetPx = webViewState.topContentInsetPx + statusBarHeightPx +
                                 16f * density.density
-
                         val positionPoints = (position - totalInsetPx) / densityScale
                         webViewState.evaluateJs("window.scrollTo(0, $positionPoints)")
                     }
@@ -125,10 +131,13 @@ actual fun DetailScreen(
         { height: Float -> headerMeasuredHeightState.floatValue = height }
     }
 
+    var containerHeightPx by remember { mutableFloatStateOf(0f) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFFCFCFC))
+            .onSizeChanged { containerHeightPx = it.height.toFloat() }
     ) {
         key(bookmarkId) {
             AppWebView(
@@ -157,7 +166,43 @@ actual fun DetailScreen(
                 .padding(bottom = 58.dp),
         )
 
+        val markInteraction = LocalMarkInteraction.current
+
+        // 当评论面板显示时，禁用状态栏点击触发的 scrollsToTop 行为，
+        // 防止点击状态栏区域导致背后的 WebView 滚动到顶部
+        LaunchedEffect(markInteraction.panelVisible) {
+            webViewState.webView?.scrollView?.scrollsToTop = !markInteraction.panelVisible
+        }
+
         OutlineDialog()
+
+        SelectionMenuCommentPanel(
+            markInteraction = markInteraction,
+            webViewState = webViewState,
+            viewModel = viewModel,
+            densityScale = densityScale,
+            containerHeightPx = containerHeightPx,
+            minTopPx = (statusBarHeightPx + 20.dp.value * densityScale).toInt(),
+            onCopyText = { UIPasteboard.generalPasteboard.string = it },
+            onHighlightAction = {
+                val markInfo = markInteraction.capturedSelectionMark
+                if (markInfo != null) {
+                    viewModel.addStrokeToMark(
+                        markItemInfo = markInfo,
+                        onComplete = {
+                            webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
+                        }
+                    )
+                } else {
+                    viewModel.strokeHighlight(webViewState) {
+                        webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
+                    }
+                }
+            },
+            onSubmitCommentComplete = {
+                webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
+            },
+        )
     }
 
     BookmarkDetailOverlays()

@@ -546,5 +546,153 @@ val localeString: Map<String, Map<String, String>> = mapOf(
     "subscription_required_btn_ok" to mapOf(
         "zh" to "我知道了",
         "en" to "Got it"
+    ),
+
+    // ========================================
+    // 文本选中操作菜单
+    // ========================================
+    "selection_action_copy" to mapOf(
+        "zh" to "复制",
+        "en" to "Copy"
+    ),
+    "selection_action_highlight" to mapOf(
+        "zh" to "划线",
+        "en" to "Highlight"
+    ),
+    "selection_action_remove_highlight" to mapOf(
+        "zh" to "删除划线",
+        "en" to "Remove"
+    ),
+    "selection_action_comment" to mapOf(
+        "zh" to "评论",
+        "en" to "Comment"
+    ),
+
+    // ========================================
+    // 评论面板（CommentPanelSheet）
+    // ========================================
+    "comment_panel_close" to mapOf(
+        "zh" to "关闭评论面板",
+        "en" to "Close comment panel"
+    ),
+    "comment_panel_copy" to mapOf(
+        "zh" to "复制",
+        "en" to "Copy"
+    ),
+    "comment_panel_highlight" to mapOf(
+        "zh" to "划线",
+        "en" to "Highlight"
+    ),
+    "comment_panel_remove_highlight" to mapOf(
+        "zh" to "删除划线",
+        "en" to "Remove"
+    ),
+    "comment_panel_copy_highlight_desc" to mapOf(
+        "zh" to "复制划线内容",
+        "en" to "Copy highlighted text"
+    ),
+    "comment_panel_add_highlight_desc" to mapOf(
+        "zh" to "添加划线",
+        "en" to "Add highlight"
+    ),
+    "comment_panel_remove_highlight_desc" to mapOf(
+        "zh" to "删除已有划线",
+        "en" to "Remove existing highlight"
+    ),
+    "comment_panel_delete" to mapOf(
+        "zh" to "删除",
+        "en" to "Delete"
+    ),
+    "comment_panel_confirm_delete" to mapOf(
+        "zh" to "确认删除吗？",
+        "en" to "Confirm delete?"
+    ),
+    "comment_panel_send" to mapOf(
+        "zh" to "发送",
+        "en" to "Send"
+    ),
+    "comment_panel_placeholder" to mapOf(
+        "zh" to "发表评论",
+        "en" to "Add a comment"
+    ),
+    "comment_panel_deleted" to mapOf(
+        "zh" to "该评论已删除",
+        "en" to "This comment has been deleted"
+    ),
+    "comment_panel_unknown_user" to mapOf(
+        "zh" to "未知用户",
+        "en" to "Unknown user"
+    ),
+    "comment_panel_reply_prefix" to mapOf(
+        "zh" to "回复 ",
+        "en" to "Reply "
+    ),
+    "comment_panel_user_avatar" to mapOf(
+        "zh" to "用户头像",
+        "en" to "User avatar"
+    ),
+    "comment_panel_current_user_avatar" to mapOf(
+        "zh" to "当前用户头像",
+        "en" to "Current user avatar"
+    ),
+    "comment_panel_copied" to mapOf(
+        "zh" to "已复制",
+        "en" to "Copied"
+    ),
+    "comment_panel_discard_title" to mapOf(
+        "zh" to "放弃评论？",
+        "en" to "Discard comment?"
+    ),
+    "comment_panel_discard_message" to mapOf(
+        "zh" to "你还有未发送的评论内容，关闭后将会丢失。",
+        "en" to "You have an unsent comment. It will be lost if you close now."
+    ),
+    "comment_panel_discard_confirm" to mapOf(
+        "zh" to "放弃",
+        "en" to "Discard"
+    ),
+    "comment_panel_discard_cancel" to mapOf(
+        "zh" to "继续编辑",
+        "en" to "Keep Editing"
+    ),
+
+    // ========================================
+    // 反馈页面
+    // ========================================
+    "feedback_title" to mapOf(
+        "zh" to "反馈",
+        "en" to "Feedback"
+    ),
+    "feedback_submit" to mapOf(
+        "zh" to "提交",
+        "en" to "Submit"
+    ),
+    "feedback_submitting" to mapOf(
+        "zh" to "提交中...",
+        "en" to "Submitting..."
+    ),
+    "feedback_placeholder" to mapOf(
+        "zh" to "请输入您的反馈...",
+        "en" to "Please enter your feedback..."
+    ),
+    "feedback_allow_follow_up" to mapOf(
+        "zh" to "允许通过 {email} 进行跟进",
+        "en" to "Allow follow-up at {email}"
+    ),
+    "feedback_success_title" to mapOf(
+        "zh" to "成功",
+        "en" to "Success"
+    ),
+    "feedback_success_message" to mapOf(
+        "zh" to "反馈已提交，感谢您的反馈！",
+        "en" to "Feedback submitted. Thank you!"
+    ),
+    "feedback_error_title" to mapOf(
+        "zh" to "错误",
+        "en" to "Error"
+    ),
+    "feedback_error_message" to mapOf(
+        "zh" to "提交反馈失败，请稍后重试",
+        "en" to "Failed to submit feedback. Please try again later."
     )
 )

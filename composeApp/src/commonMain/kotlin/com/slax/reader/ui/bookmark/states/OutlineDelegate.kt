@@ -2,6 +2,7 @@ package com.slax.reader.ui.bookmark.states
 
 import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.network.ApiService
+import com.slax.reader.data.network.MetricsType
 import com.slax.reader.data.network.dto.OutlineResponse
 import com.slax.reader.utils.MarkdownHelper
 import com.slax.reader.utils.outlineEvent
@@ -169,6 +170,7 @@ class OutlineDelegate(
 
     fun showDialog() {
         transitionTo(OutlineDialogStatus.EXPANDED)
+        scope.launch { apiService.sendMetrics(MetricsType.SUMMARY) }
     }
 
     fun expandDialog() {

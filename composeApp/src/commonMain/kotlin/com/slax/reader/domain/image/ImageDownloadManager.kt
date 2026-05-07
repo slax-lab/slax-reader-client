@@ -4,6 +4,9 @@ import com.slax.reader.data.file.FileManager
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.statement.readRawBytes
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.sync.Mutex
@@ -24,6 +27,7 @@ class ImageDownloadManager(
     }
 
     fun cacheData(customUrl: String, bookmarkId: String, data: ByteArray) {
+        if (data.isEmpty()) return
         val originalUrl = resolveUrl(customUrl)
         val path = generateCacheFilePath(bookmarkId, originalUrl)
         fileManager.writeDataFile(path, data)
@@ -46,7 +50,21 @@ class ImageDownloadManager(
 
         if (isOwner) {
             try {
-                val data = httpClient.get(originalUrl).readRawBytes()
+                val response = httpClient.get(originalUrl)
+                if (!response.status.isSuccess()) {
+                    deferred.complete(null)
+                    return deferred.await()
+                }
+                val contentType = response.contentType()
+                if (contentType != null && contentType.contentType != ContentType.Image.Any.contentType) {
+                    deferred.complete(null)
+                    return deferred.await()
+                }
+                val data = response.readRawBytes()
+                if (data.isEmpty()) {
+                    deferred.complete(null)
+                    return deferred.await()
+                }
                 fileManager.writeDataFile(path, data)
                 deferred.complete(data)
             } catch (e: CancellationException) {

@@ -17,6 +17,7 @@ import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.slax.reader.ui.bookmark.components.*
+import com.slax.reader.ui.bookmark.states.LocalMarkInteraction
 import com.slax.reader.ui.bookmark.states.ScrollInfo
 import com.slax.reader.utils.AppWebView
 import com.slax.reader.utils.AppWebViewState
@@ -24,6 +25,10 @@ import com.slax.reader.utils.WebViewEvent
 import com.slax.reader.utils.wrapBookmarkDetailHtml
 import kotlinx.serialization.Serializable
 import org.koin.compose.viewmodel.koinViewModel
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.ClipEntry
+import android.content.ClipData
+import kotlinx.coroutines.launch
 
 @Serializable
 data class WebViewMessage(
@@ -31,9 +36,12 @@ data class WebViewMessage(
     val height: Int? = null,
     val src: String? = null,
     val allImages: List<String>? = null,
-    val position: Int? = null,
-    val index: Int? = null,
-    val percentage: Double? = null
+    val percentage: Double? = null,
+    val text: String? = null,
+    val selectionY: Float? = null,
+    val markId: String? = null,
+    val markItemInfos: String? = null,
+    val data: String? = null,
 )
 
 @SuppressLint("UseKtx", "ConfigurationScreenWidthHeight")
@@ -133,7 +141,32 @@ actual fun DetailScreen(
                 .padding(bottom = 58.dp),
         )
 
+        val markInteraction = LocalMarkInteraction.current
+        val clipboard = LocalClipboard.current
+        val coroutineScope = rememberCoroutineScope()
+
         OutlineDialog()
+
+        SelectionMenuCommentPanel(
+            markInteraction = markInteraction,
+            webViewState = webViewState,
+            viewModel = viewModel,
+            densityScale = 1f,
+            containerHeightPx = screenHeightPx,
+            minTopPx = with(LocalDensity.current) { 60.dp.roundToPx() },
+            onCopyText = { text ->
+                val clipData = ClipData.newPlainText("slax_highlight", text)
+                coroutineScope.launch {
+                    clipboard.setClipEntry(ClipEntry(clipData))
+                }
+            },
+            onHighlightAction = {
+                viewModel.strokeHighlight(webViewState) {
+                    webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
+                }
+            },
+            onSubmitCommentComplete = {},
+        )
     }
 
     BookmarkDetailOverlays()

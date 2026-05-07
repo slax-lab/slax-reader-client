@@ -8,6 +8,7 @@ import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.database.model.isDownloaded
 import com.slax.reader.data.file.FileManager
 import com.slax.reader.data.network.ApiService
+import com.slax.reader.data.network.MetricsType
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.domain.image.ImageDownloadManager
 import kotlinx.atomicfu.atomic
@@ -129,6 +130,8 @@ class BackgroundDomain(
                     println("[BackgroundDomain] Task processing completed")
                 }
         }
+
+        scope.launch { apiService.sendMetrics(MetricsType.HEARTBEAT) }
     }
 
     suspend fun processTask(task: TaskItem) {

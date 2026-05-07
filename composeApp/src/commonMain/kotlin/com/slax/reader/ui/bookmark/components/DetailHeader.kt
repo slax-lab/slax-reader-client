@@ -33,16 +33,16 @@ fun HeaderContent(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
+            .onGloballyPositioned { coordinates ->
+                val newHeight = coordinates.size.height.toFloat()
+                onHeightChanged(newHeight)
+            }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 16.dp)
-                .onGloballyPositioned { coordinates ->
-                    val newHeight = coordinates.size.height.toFloat()
-                    onHeightChanged(newHeight)
-                }
         ) {
             Spacer(modifier = Modifier.height(44.dp))
 

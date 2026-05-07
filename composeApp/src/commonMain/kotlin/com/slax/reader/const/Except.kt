@@ -24,4 +24,13 @@ sealed class AppError : Exception() {
         data class ReadError(override val message: String) : StorageException()
         data class WriteError(override val message: String) : StorageException()
     }
+
+    sealed class CommentException : AppError() {
+        data object TooLong : CommentException() {
+            override val message: String = "Comment must not exceed 1500 characters"
+        }
+        data object EmptyComment : CommentException() {
+            override val message: String = "Comment content is required"
+        }
+    }
 }

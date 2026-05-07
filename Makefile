@@ -23,12 +23,3 @@ bridge:
 
 adb-proxy:
 	 ~/Library/Android/sdk/platform-tools/adb reverse tcp:8081 tcp:8081
-
-rn:
-	 ./gradlew :composeApp:generateCodegenArtifactsFromSchema
-	 ./gradlew kspCommonMainKotlinMetadata
-	 mkdir -p build/generated/autolinking && cd react-native && npx react-native config > ../build/generated/autolinking/autolinking.json
-
-rn-bundle:
-	./gradlew :composeApp:bundleAndroidReleaseJs
-	./gradlew :composeApp:bundleIOSReleaseJs

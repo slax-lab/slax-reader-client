@@ -25,10 +25,13 @@ object SubscriptionManagerRoutes
 @Serializable
 object DebugRoutes
 
-interface ReactNativeRoute {
-    val moduleName: String
-}
-
 @Serializable
-data class RNRoute(override val moduleName: String) : ReactNativeRoute
+data class FeedbackRoutes(
+    val title: String? = null,
+    val href: String? = null,
+    val email: String? = null,
+    val bookmarkId: String? = null,
+    val entryPoint: String? = null,
+    val version: String? = null,
+)
 

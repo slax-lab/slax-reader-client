@@ -46,6 +46,36 @@ private class TapHandler(
     }
 }
 
+/**
+ * 禁用系统文本选中菜单的 WKWebView 子类。
+ */
+@OptIn(ExperimentalForeignApi::class)
+private class NoMenuWKWebView(
+    frame: CValue<platform.CoreGraphics.CGRect>,
+    configuration: WKWebViewConfiguration
+) : WKWebView(frame = frame, configuration = configuration) {
+
+    var latestTouchScreenY: Float = 0f
+    var onSelectionDetected: ((Float) -> Unit)? = null
+    private var hasNotifiedSelection: Boolean = false
+
+    override fun canPerformAction(action: COpaquePointer?, withSender: Any?): Boolean {
+        if (!hasNotifiedSelection && latestTouchScreenY > 0f) {
+            hasNotifiedSelection = true
+            onSelectionDetected?.invoke(latestTouchScreenY)
+        }
+        return false
+    }
+
+    override fun hitTest(point: CValue<platform.CoreGraphics.CGPoint>, withEvent: UIEvent?): UIView? {
+        if (withEvent != null) {
+            latestTouchScreenY = convertPoint(point, toView = null).useContents { y }.toFloat()
+            hasNotifiedSelection = false
+        }
+        return super.hitTest(point, withEvent)
+    }
+}
+
 private class SingleTapGestureDelegate : NSObject(), UIGestureRecognizerDelegateProtocol {
     override fun gestureRecognizer(
         gestureRecognizer: UIGestureRecognizer,
@@ -100,7 +130,7 @@ actual fun AppWebView(
 
     val scriptMessageHandler = remember {
         ScriptMessageHandler { message ->
-            runCatching { Json.decodeFromString<WebViewMessage>(message) }
+            runCatching { bridgeJson.decodeFromString<WebViewMessage>(message) }
                 .onSuccess { msg ->
                     when (msg.type) {
                         "domReady" -> {
@@ -128,6 +158,41 @@ actual fun AppWebView(
                         "feedback" -> {
                             webState.dispatchEvent(
                                 WebViewEvent.Feedback
+                            )
+                        }
+
+                        "textSelected" -> {
+                            val markInfo = msg.data?.let { parseSelectionData(it) }
+                            val text = msg.text ?: markInfo?.approx?.exact
+                            if (!text.isNullOrBlank()) {
+                                val touchY = (webState.webView as? NoMenuWKWebView)?.latestTouchScreenY ?: 0f
+                                webState.dispatchEvent(WebViewEvent.TextSelected(text, touchY, markInfo))
+                            }
+                        }
+
+                        "textDeselected" -> {
+                            webState.dispatchEvent(WebViewEvent.TextDeselected)
+                        }
+
+                        "markClicked" -> {
+                            val markId = msg.markId
+                            val text = msg.text
+                            if (!markId.isNullOrBlank()) {
+                                val markInfo = msg.data?.let { parseSelectionData(it) }
+                                webState.dispatchEvent(
+                                    WebViewEvent.MarkClicked(markId, text ?: "", markInfo)
+                                )
+                            }
+                        }
+
+                        "markItemInfosChanged" -> {
+                            val markItemInfos = msg.markItemInfos?.let {
+                                runCatching {
+                                    bridgeJson.decodeFromString<List<BridgeMarkItemInfo>>(it)
+                                }.getOrNull()
+                            } ?: emptyList()
+                            webState.dispatchEvent(
+                                WebViewEvent.MarkItemInfosChanged(markItemInfos)
                             )
                         }
                     }
@@ -251,7 +316,7 @@ actual fun AppWebView(
                 this.userContentController = userContentController
             }
 
-            val view = WKWebView(frame = CGRectMake(0.0, 0.0, 0.0, 0.0), configuration = config)
+            val view = NoMenuWKWebView(frame = CGRectMake(0.0, 0.0, 0.0, 0.0), configuration = config)
             webState.webView = view
 
             if (available("16.4")) {
@@ -300,7 +365,7 @@ actual fun AppWebView(
 
             val color = Color(0xFFFCFCFC).toUIColor()
             view.backgroundColor = color
-            view.tintColor = Color(0x33ffd999).toUIColor()
+            view.tintColor = Color(0x668AD8A8).toUIColor()
             view.opaque = false
             view.loadHTMLString(htmlContent, baseURL = null)
 
@@ -524,7 +589,7 @@ actual fun WebView(
 ) {
     val scriptMessageHandler = remember {
         ScriptMessageHandler { message ->
-            runCatching { Json.decodeFromString<WebViewMessage>(message) }
+            runCatching { bridgeJson.decodeFromString<WebViewMessage>(message) }
                 .onSuccess { msg ->
                     when (msg.type) {
                         "imageClick" -> {
