@@ -158,6 +158,12 @@ actual fun DetailScreen(
                     clipboard.setClipEntry(ClipEntry(clipData))
                 }
             },
+            onHighlightAction = {
+                viewModel.strokeHighlight(webViewState) {
+                    webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
+                }
+            },
+            onSubmitCommentComplete = {},
         )
 
         OutlineDialog()
