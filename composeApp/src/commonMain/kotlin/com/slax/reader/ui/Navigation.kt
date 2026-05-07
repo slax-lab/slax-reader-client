@@ -16,12 +16,11 @@ import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.auth.AuthState
 import com.slax.reader.domain.coordinator.CoordinatorDomain
 import com.slax.reader.domain.sync.BackgroundDomain
-import com.slax.reader.reactnative.navigateToRN
 import com.slax.reader.ui.about.AboutScreen
 import com.slax.reader.ui.bookmark.DetailScreen
 import com.slax.reader.ui.debug.DebugScreen
 import com.slax.reader.ui.bookmark.DetailScreenEvent
-import com.slax.reader.ui.bookmark.toMap
+import com.slax.reader.ui.feedback.FeedbackScreen
 import com.slax.reader.ui.inbox.InboxListScreen
 import com.slax.reader.ui.login.LoginScreen
 import com.slax.reader.ui.setting.DeleteAccountScreen
@@ -121,8 +120,16 @@ fun SlaxNavigation(
                         }
 
                         is DetailScreenEvent.NavigateToFeedback -> {
-                            navCtrl.navigateToRN(
-                                RNRoute("RNFeedbackPage"), params = event.params.toMap()
+                            val p = event.params
+                            navCtrl.navigate(
+                                FeedbackRoutes(
+                                    title = p.title,
+                                    href = p.href,
+                                    email = p.email,
+                                    bookmarkId = p.bookmarkId,
+                                    entryPoint = p.entryPoint,
+                                    version = p.version,
+                                )
                             )
                         }
                     }
@@ -181,6 +188,19 @@ fun SlaxNavigation(
                 navCtrl.popBackStack()
             })
             LaunchedEffect(Unit) { subscriptionEvent.view().send() }
+        }
+        composable<FeedbackRoutes> { backStackEntry ->
+            val params = backStackEntry.toRoute<FeedbackRoutes>()
+            FeedbackScreen(
+                title = params.title,
+                href = params.href,
+                email = params.email,
+                bookmarkId = params.bookmarkId,
+                entryPoint = params.entryPoint,
+                version = params.version,
+                onBackClick = { navCtrl.popBackStack() }
+            )
+            LaunchedEffect(Unit) { feedbackEvent.view().send() }
         }
     }
 }
