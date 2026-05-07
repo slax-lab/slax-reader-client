@@ -38,8 +38,6 @@ class BookmarkDao(
             """.trimIndent()
         ) { cursor ->
             mapperToInboxListBookmarkItem(cursor)
-        }.onEach { list ->
-            println("[CACHE_DEBUG][BookmarkList] raw emit size=${list.size} firstCreatedAt=${list.firstOrNull()?.createdAt}")
         }.catch { e ->
             println("Error watching user bookmarks: ${e.message}")
         }
@@ -102,10 +100,6 @@ class BookmarkDao(
             """.trimIndent(), listOf(bookmarkId)
         ) { cursor ->
             mapperToBookmark(cursor)
-        }.onEach { list ->
-            list.firstOrNull()?.let { b ->
-                println("[CACHE_DEBUG][DetailWatch] id=$bookmarkId createdAt=${b.createdAt} updatedAt=${b.updatedAt}")
-            }
         }.catch { e ->
             println("Error watching user bookmarks: ${e.message}")
         }
