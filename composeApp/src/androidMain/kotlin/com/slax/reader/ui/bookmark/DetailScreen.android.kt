@@ -145,6 +145,8 @@ actual fun DetailScreen(
         val clipboard = LocalClipboard.current
         val coroutineScope = rememberCoroutineScope()
 
+        OutlineDialog()
+
         SelectionMenuCommentPanel(
             markInteraction = markInteraction,
             webViewState = webViewState,
@@ -165,8 +167,6 @@ actual fun DetailScreen(
             },
             onSubmitCommentComplete = {},
         )
-
-        OutlineDialog()
     }
 
     BookmarkDetailOverlays()
