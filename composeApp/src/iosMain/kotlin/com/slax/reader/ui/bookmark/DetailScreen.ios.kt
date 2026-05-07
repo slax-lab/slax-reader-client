@@ -174,6 +174,8 @@ actual fun DetailScreen(
             webViewState.webView?.scrollView?.scrollsToTop = !markInteraction.panelVisible
         }
 
+        OutlineDialog()
+
         SelectionMenuCommentPanel(
             markInteraction = markInteraction,
             webViewState = webViewState,
@@ -182,9 +184,25 @@ actual fun DetailScreen(
             containerHeightPx = containerHeightPx,
             minTopPx = (statusBarHeightPx + 20.dp.value * densityScale).toInt(),
             onCopyText = { UIPasteboard.generalPasteboard.string = it },
+            onHighlightAction = {
+                val markInfo = markInteraction.capturedSelectionMark
+                if (markInfo != null) {
+                    viewModel.addStrokeToMark(
+                        markItemInfo = markInfo,
+                        onComplete = {
+                            webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
+                        }
+                    )
+                } else {
+                    viewModel.strokeHighlight(webViewState) {
+                        webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
+                    }
+                }
+            },
+            onSubmitCommentComplete = {
+                webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
+            },
         )
-
-        OutlineDialog()
     }
 
     BookmarkDetailOverlays()

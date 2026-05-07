@@ -97,6 +97,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import com.github.panpf.sketch.rememberAsyncImagePainter
@@ -106,6 +109,7 @@ import com.github.panpf.sketch.request.placeholder
 import com.slax.reader.utils.BridgeMarkCommentInfo
 import com.slax.reader.utils.BridgeMarkItemInfo
 import com.slax.reader.utils.i18n
+import com.slax.reader.utils.isIOS
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.global_default_avatar

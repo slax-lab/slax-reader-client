@@ -32,7 +32,7 @@ import androidx.navigation.NavHostController
 import app.slax.reader.SlaxConfig
 import com.slax.reader.const.InboxRoutes
 import com.slax.reader.domain.auth.AppleSignInProvider
-import com.slax.reader.domain.auth.GoogleSignInProvider
+import com.slax.reader.domain.auth.rememberGoogleSignInProvider
 import com.slax.reader.utils.WebView
 import com.slax.reader.utils.i18n
 import com.slax.reader.utils.isIOS
@@ -72,7 +72,7 @@ fun LoginScreen(navController: NavHostController) {
         }
     }
 
-    val googleProvider = remember { GoogleSignInProvider() }
+    val googleProvider = rememberGoogleSignInProvider()
 
     val withAgreementCheck: (AgreementType, () -> Unit) -> Unit = { type, action ->
         if (!isAgreed) {

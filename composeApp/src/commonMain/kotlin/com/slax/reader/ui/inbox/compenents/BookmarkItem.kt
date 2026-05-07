@@ -89,6 +89,7 @@ fun BookmarkItemRow(
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
+    val sortType by viewModel.sortType.collectAsState()
 
     var menuTriggerSource by remember { mutableStateOf(MenuTriggerSource.NONE) }
     val showMenu by remember {

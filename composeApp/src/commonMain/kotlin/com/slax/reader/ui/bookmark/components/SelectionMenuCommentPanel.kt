@@ -22,6 +22,8 @@ fun BoxScope.SelectionMenuCommentPanel(
     containerHeightPx: Float,
     minTopPx: Int,
     onCopyText: (String) -> Unit,
+    onHighlightAction: () -> Unit,
+    onSubmitCommentComplete: () -> Unit,
 ) {
     var showCopyToast by remember { mutableStateOf(false) }
     val onCopyToastCallback = remember { { showCopyToast = true } }
@@ -34,6 +36,7 @@ fun BoxScope.SelectionMenuCommentPanel(
         containerHeightPx = containerHeightPx,
         minTopPx = minTopPx,
         onCopyToast = onCopyToastCallback,
+        onHighlightAction = onHighlightAction,
     )
 
     CopySuccessToast(
@@ -48,6 +51,7 @@ fun BoxScope.SelectionMenuCommentPanel(
         viewModel = viewModel,
         onCopyText = onCopyText,
         onCopyToast = onCopyToastCallback,
+        onSubmitCommentComplete = onSubmitCommentComplete,
     )
 }
 
@@ -60,6 +64,7 @@ private fun SelectionPopup(
     containerHeightPx: Float,
     minTopPx: Int,
     onCopyToast: () -> Unit,
+    onHighlightAction: () -> Unit,
 ) {
     val density = LocalDensity.current
     val menuGapPx = with(density) { 32.dp.roundToPx() }
@@ -93,19 +98,7 @@ private fun SelectionPopup(
                             markInteraction.dismissMenu()
                         },
                         onHighlightRequest = {
-                            val markInfo = markInteraction.capturedSelectionMark
-                            if (markInfo != null) {
-                                viewModel.addStrokeToMark(
-                                    markItemInfo = markInfo,
-                                    onComplete = {
-                                        webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
-                                    }
-                                )
-                            } else {
-                                viewModel.strokeHighlight(webViewState) {
-                                    webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
-                                }
-                            }
+                            onHighlightAction()
                         },
                         onRemoveHighlightRequest = {
                             val markInfo = markInteraction.capturedSelectionMark ?: return@handleSelectionAction
@@ -141,6 +134,7 @@ private fun CommentPanelContent(
     viewModel: BookmarkDetailViewModel,
     onCopyText: (String) -> Unit,
     onCopyToast: () -> Unit,
+    onSubmitCommentComplete: () -> Unit,
 ) {
     val selectedText = markInteraction.selectedText
     val selectedMarkItemInfo = markInteraction.selectedMark
@@ -164,9 +158,7 @@ private fun CommentPanelContent(
                 markItemInfo = markInfo,
                 comment = comment,
                 replyMarkId = replyTarget?.markId,
-                onComplete = {
-                    webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
-                }
+                onComplete = onSubmitCommentComplete
             )
         },
         onDeleteComment = { markId ->

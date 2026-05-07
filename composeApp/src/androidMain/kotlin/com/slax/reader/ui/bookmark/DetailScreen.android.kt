@@ -145,6 +145,8 @@ actual fun DetailScreen(
         val clipboard = LocalClipboard.current
         val coroutineScope = rememberCoroutineScope()
 
+        OutlineDialog()
+
         SelectionMenuCommentPanel(
             markInteraction = markInteraction,
             webViewState = webViewState,
@@ -158,9 +160,13 @@ actual fun DetailScreen(
                     clipboard.setClipEntry(ClipEntry(clipData))
                 }
             },
+            onHighlightAction = {
+                viewModel.strokeHighlight(webViewState) {
+                    webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
+                }
+            },
+            onSubmitCommentComplete = {},
         )
-
-        OutlineDialog()
     }
 
     BookmarkDetailOverlays()
