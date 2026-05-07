@@ -280,8 +280,7 @@ class BackgroundDomain(
             return processContent(htmlContent).html
         }
 
-        // 一次原子操作决定所有权：返回值为 true 表示本次调用成功抢占队列槽
-        // 若后台已持有该 id，则本路径不加入 inQueue，也不在 finally 中移除
+        // 若后台已持有该 id，则本路径不加入 inQueue，也不在 finally 中移除（原子操作决定所有权：返回 true 表示本次调用成功抢占队列槽）
         val ownsQueueSlot = inQueue.getAndUpdate { it + id }.let { id !in it }
         // 异步写协程是否已成功启动；若已启动，inQueue 移除由协程的 finally 负责
         var asyncWriteLaunched = false
