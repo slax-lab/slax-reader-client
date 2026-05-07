@@ -1,5 +1,7 @@
 package com.slax.reader.domain.auth
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import app.slax.reader.SlaxConfig
 import com.slax.reader.googlesignin.GoogleSignInBridge
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -38,4 +40,9 @@ actual class GoogleSignInProvider {
             continuation.invokeOnCancellation {
             }
         }
+}
+
+@Composable
+actual fun rememberGoogleSignInProvider(): GoogleSignInProvider {
+    return remember { GoogleSignInProvider() }
 }
