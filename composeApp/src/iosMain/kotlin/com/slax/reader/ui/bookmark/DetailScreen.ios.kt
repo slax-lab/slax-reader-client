@@ -174,6 +174,8 @@ actual fun DetailScreen(
             webViewState.webView?.scrollView?.scrollsToTop = !markInteraction.panelVisible
         }
 
+        OutlineDialog()
+
         SelectionMenuCommentPanel(
             markInteraction = markInteraction,
             webViewState = webViewState,
@@ -201,8 +203,6 @@ actual fun DetailScreen(
                 webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
             },
         )
-
-        OutlineDialog()
     }
 
     BookmarkDetailOverlays()
