@@ -9,7 +9,9 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,14 +36,44 @@ import androidx.navigation.NavController
 import com.slax.reader.const.BookmarkRoutes
 import com.slax.reader.data.database.model.BookmarkSortType
 import com.slax.reader.data.database.model.InboxListBookmarkItem
+import com.slax.reader.domain.sync.BackgroundDomain
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.utils.bookmarkListEvent
 import com.slax.reader.utils.i18n
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
+import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.*
 import kotlin.math.abs
+
+@Composable
+fun rememberBookmarkNavigation(navCtrl: NavController): (String) -> Unit {
+    val backgroundDomain: BackgroundDomain = koinInject()
+    var showAlert by remember { mutableStateOf(false) }
+
+    if (showAlert) {
+        AlertDialog(
+            onDismissRequest = { showAlert = false },
+            containerColor = Color.White,
+            title = { Text("bookmark_downloading_title".i18n()) },
+            text = { Text("bookmark_downloading_message".i18n()) },
+            confirmButton = {
+                TextButton(onClick = { showAlert = false }) {
+                    Text("btn_ok".i18n(), color = Color(0xFF16B998))
+                }
+            }
+        )
+    }
+
+    return { bookmarkId: String ->
+        if (backgroundDomain.isBookmarkDownloading(bookmarkId)) {
+            showAlert = true
+        } else {
+            navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmarkId))
+        }
+    }
+}
 
 data class SwipeActionsConfig(
     val showStarAction: Boolean,
@@ -90,6 +122,7 @@ fun BookmarkItemRow(
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val sortType by viewModel.sortType.collectAsState()
+    val navigateToBookmark = rememberBookmarkNavigation(navCtrl)
 
     var menuTriggerSource by remember { mutableStateOf(MenuTriggerSource.NONE) }
     val showMenu by remember {
@@ -327,7 +360,7 @@ fun BookmarkItemRow(
                                 }
                             } else {
                                 if (bookmark.metadataStatus == "success") {
-                                    navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmark.id))
+                                    navigateToBookmark(bookmark.id)
                                 } else {
                                     bookmark.metadataUrl?.let {
                                         viewModel.emitProcessingUrl(it)
@@ -465,4 +498,3 @@ fun BookmarkItemRow(
         }
     }
 }
-

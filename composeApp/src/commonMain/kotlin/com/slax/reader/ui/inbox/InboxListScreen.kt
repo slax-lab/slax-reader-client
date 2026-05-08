@@ -26,7 +26,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
-import com.slax.reader.const.BookmarkRoutes
 import com.slax.reader.const.component.EditNameDialog
 import com.slax.reader.data.database.model.BookmarkSortType
 import com.slax.reader.data.database.model.InboxListBookmarkItem
@@ -274,6 +273,8 @@ private fun ContentSection(
     inboxViewModel: InboxListViewModel,
     onEditTitle: (bookmark: InboxListBookmarkItem) -> Unit = { _ -> }
 ) {
+    val navigateToBookmark = rememberBookmarkNavigation(navCtrl)
+
     println("[watch][UI] recomposition ContentSection")
 
     Box(
@@ -297,9 +298,7 @@ private fun ContentSection(
         }
 
         ContinueReading(
-            onClick = { bookmarkId ->
-                navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmarkId))
-            },
+            onClick = navigateToBookmark,
             modifier = Modifier.align(Alignment.BottomCenter)
         )
 
