@@ -290,6 +290,14 @@ val localeString: Map<String, Map<String, String>> = mapOf(
         "zh" to "确定要删除吗？",
         "en" to "Are you sure you want to delete?"
     ),
+    "bookmark_downloading_title" to mapOf(
+        "zh" to "正在下载中",
+        "en" to "Downloading"
+    ),
+    "bookmark_downloading_message" to mapOf(
+        "zh" to "该书签内容正在后台下载中，请稍后再试。",
+        "en" to "This bookmark is being downloaded in the background. Please try again later."
+    ),
 
     // ========================================
     // 关于页面

@@ -59,6 +59,8 @@ class BackgroundDomain(
 
     private val isCleaningUp = atomic(false)
 
+    fun isBookmarkDownloading(id: String): Boolean = id in inQueue.value
+
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     fun startup() {
         if (workerScope?.isActive == true) return
@@ -270,50 +272,42 @@ class BackgroundDomain(
     }
 
     suspend fun getBookmarkContent(id: String): String {
-        val bookmarkDir = "bookmark/$id"
-        val contentPath = "$bookmarkDir/content.html"
+        val contentPath = "bookmark/$id/content.html"
 
         val existingContent = fileManager.streamDataFile(contentPath)
-
         if (existingContent != null) {
-            val htmlContent = existingContent.decodeToString()
-            return processContent(htmlContent).html
+            return processContent(existingContent.decodeToString()).html
         }
 
-        // 若后台已持有该 id，则本路径不加入 inQueue，也不在 finally 中移除（原子操作决定所有权：返回 true 表示本次调用成功抢占队列槽）
-        val ownsQueueSlot = inQueue.getAndUpdate { it + id }.let { id !in it }
-        // 异步写协程是否已成功启动；若已启动，inQueue 移除由协程的 finally 负责
-        var asyncWriteLaunched = false
+        inQueue.getAndUpdate { it + id }
 
         try {
-            if (ownsQueueSlot) {
-                withContext(Dispatchers.IO) {
-                    updateBookmarkStatus(id, DownloadStatus.DOWNLOADING, isAutoCached = false)
-                }
+            withContext(Dispatchers.IO) {
+                updateBookmarkStatus(id, DownloadStatus.DOWNLOADING, isAutoCached = false)
             }
 
             val response = apiService.getBookmarkRawContent(id)
             val content = processContent(response)
 
-            if (ownsQueueSlot) {
-                val job = if (workerScope?.isActive == true) workerScope?.launch(Dispatchers.IO) {
-                    try {
-                        fileManager.writeDataFile(contentPath, content.html.encodeToByteArray())
-                        val createdAt = bookmarkDao.getBookmarkCreatedAt(id)
-                        updateBookmarkStatus(
-                            id,
-                            DownloadStatus.COMPLETED,
-                            isAutoCached = false,
-                            downloadedAt = createdAt,
-                        )
-                    } catch (_: Exception) {
-                        updateBookmarkStatus(id, DownloadStatus.FAILED, isAutoCached = false)
-                    } finally {
-                        // 写入完成（或失败）后才释放队列槽，防止调度器在窗口期重复入队
-                        inQueue.getAndUpdate { it - id }
-                    }
-                } else null
-                asyncWriteLaunched = job != null
+            // 写入前再次检查文件是否已存在（后台下载可能在 API 请求期间已完成写入）
+            val alreadyOnDisk = withContext(Dispatchers.IO) { fileManager.streamDataFile(contentPath) }
+            if (alreadyOnDisk != null) {
+                withContext(Dispatchers.IO) {
+                    val createdAt = bookmarkDao.getBookmarkCreatedAt(id)
+                    updateBookmarkStatus(id, DownloadStatus.COMPLETED, isAutoCached = false, downloadedAt = createdAt)
+                }
+                return processContent(alreadyOnDisk.decodeToString()).html
+            }
+
+            workerScope?.launch(Dispatchers.IO) {
+                try {
+                    fileManager.writeDataFile(contentPath, content.html.encodeToByteArray())
+                    val createdAt = bookmarkDao.getBookmarkCreatedAt(id)
+                    updateBookmarkStatus(id, DownloadStatus.COMPLETED, isAutoCached = false, downloadedAt = createdAt)
+                } catch (e: Exception) {
+                    println("后台写入失败 $id: ${e.message}")
+                    updateBookmarkStatus(id, DownloadStatus.FAILED, isAutoCached = false)
+                }
             }
 
             return content.html
@@ -335,10 +329,7 @@ class BackgroundDomain(
                 .replace("{{REASON}}", "<center>${errInfo["title"]!!}</center>")
                 .replace("{{DETAIL}}", "<center>${errInfo["message"]!!}</center>")
         } finally {
-            // API 报错或 workerScope 为 null 时，异步写协程未启动，需在此兜底移除
-            if (ownsQueueSlot && !asyncWriteLaunched) {
-                inQueue.getAndUpdate { it - id }
-            }
+            inQueue.getAndUpdate { it - id }
         }
     }
 
