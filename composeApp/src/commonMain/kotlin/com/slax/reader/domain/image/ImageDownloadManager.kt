@@ -39,10 +39,11 @@ class ImageDownloadManager(
 
         fileManager.streamDataFile(path)?.let { return it }
 
+        val inFlightKey = "$bookmarkId:$originalUrl"
         var isOwner = false
         val deferred = mutex.withLock {
             fileManager.streamDataFile(path)?.let { return it }
-            inFlightRequests.getOrPut(originalUrl) {
+            inFlightRequests.getOrPut(inFlightKey) {
                 isOwner = true
                 CompletableDeferred()
             }
@@ -74,7 +75,7 @@ class ImageDownloadManager(
                 println("[ImageDownloadManager] 下载失败: $originalUrl, ${e.message}")
                 deferred.complete(null)
             } finally {
-                mutex.withLock { inFlightRequests.remove(originalUrl) }
+                mutex.withLock { inFlightRequests.remove(inFlightKey) }
             }
         }
 

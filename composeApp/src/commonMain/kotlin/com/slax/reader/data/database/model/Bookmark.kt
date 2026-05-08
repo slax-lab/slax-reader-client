@@ -99,6 +99,7 @@ enum class BookmarkSortType(val column: String, val whereClause: String) {
 data class InboxListBookmarkItem(
     val id: String,
     val aliasTitle: String,
+    val createdAt: String,
     val updatedAt: String,
 
     val archiveStatus: Int,
@@ -190,6 +191,7 @@ fun mapperToInboxListBookmarkItem(cursor: SqlCursor): InboxListBookmarkItem {
         aliasTitle = cursor.getString("alias_title"),
         archiveStatus = cursor.getString("archive_status").toIntOrNull() ?: 0,
         isStarred = cursor.getString("is_starred").toIntOrNull() ?: 0,
+        createdAt = cursor.getString("created_at"),
         updatedAt = cursor.getString("updated_at"),
         metadataTitle = cursor.getString("metadata_title"),
         metadataUrl = cursor.getString("metadata_url"),

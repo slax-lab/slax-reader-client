@@ -2,6 +2,7 @@ package com.slax.reader.data.file
 
 import com.slax.reader.utils.cacheDirectoryPath
 import com.slax.reader.utils.dataDirectoryPath
+import kotlin.random.Random
 import okio.FileMetadata
 import okio.FileSystem
 import okio.Path
@@ -67,13 +68,11 @@ class FileManager(val fileSystem: FileSystem) {
     }
 
     fun writeDataFile(fileName: String, data: ByteArray) {
-        val path = "$dataPath/$fileName".toPath()
-        path.parent?.let { parentDir ->
-            fileSystem.createDirectories(parentDir)
-        }
-        fileSystem.write(path) {
-            write(data)
-        }
+        val targetPath = "$dataPath/$fileName".toPath()
+        val tempPath = "$dataPath/$fileName.${Random.nextLong()}.tmp".toPath()
+        targetPath.parent?.let { fileSystem.createDirectories(it) }
+        fileSystem.write(tempPath) { write(data) }
+        fileSystem.atomicMove(tempPath, targetPath)
     }
 
     fun deleteDataDirectory(dirName: String): Boolean {

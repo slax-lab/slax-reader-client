@@ -33,11 +33,13 @@ class BookmarkDao(
                 JSON_EXTRACT(metadata, '$.bookmark.title') as metadata_title,
                 JSON_EXTRACT(metadata, '$.bookmark.target_url') as metadata_url,
                 JSON_EXTRACT(metadata, '$.bookmark.status') as metadata_status
-            FROM sr_user_bookmark WHERE archive_status = 0 AND deleted_at IS NULL
+            FROM sr_user_bookmark WHERE deleted_at IS NULL
             ORDER BY created_at DESC
             """.trimIndent()
         ) { cursor ->
             mapperToInboxListBookmarkItem(cursor)
+        }.onEach { list ->
+            println("[CACHE_DEBUG][BookmarkList] raw emit size=${list.size} firstCreatedAt=${list.firstOrNull()?.createdAt}")
         }.catch { e ->
             println("Error watching user bookmarks: ${e.message}")
         }
@@ -60,6 +62,7 @@ class BookmarkDao(
                     id,
                     archive_status,
                     is_starred,
+                    created_at,
                     updated_at,
                     alias_title,
                     JSON_EXTRACT(metadata, '$.bookmark.title') as metadata_title,
@@ -99,6 +102,10 @@ class BookmarkDao(
             """.trimIndent(), listOf(bookmarkId)
         ) { cursor ->
             mapperToBookmark(cursor)
+        }.onEach { list ->
+            list.firstOrNull()?.let { b ->
+                println("[CACHE_DEBUG][DetailWatch] id=$bookmarkId createdAt=${b.createdAt} updatedAt=${b.updatedAt}")
+            }
         }.catch { e ->
             println("Error watching user bookmarks: ${e.message}")
         }
@@ -118,6 +125,14 @@ class BookmarkDao(
     }
 
     fun watchUserTag(): Flow<List<UserTag>> = _userTagListFlow
+
+    suspend fun getBookmarkCreatedAt(bookmarkId: String): String? {
+        return database.getOptional(
+            "SELECT created_at FROM sr_user_bookmark WHERE id = ?",
+            parameters = listOf(bookmarkId),
+            mapper = { cursor -> cursor.getString("created_at") }
+        )
+    }
 
     suspend fun getTagsByIds(tagIds: List<String>): List<UserTag> {
         println("[database] getTagsByIds === ")
