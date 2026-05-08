@@ -89,17 +89,15 @@ class BackgroundDomain(
                         val isDownloaded = local?.isDownloaded() == true
                         val cachedVersion = local?.cachedVersion
                         val isStale = isDownloaded && cachedVersion != null && cachedVersion != item.createdAt
-                        // cachedVersion 为 null 表示功能上线前的旧存量数据，需补下载一次以填充版本号
-                        val needsVersionBackfill = isDownloaded && cachedVersion == null
 
                         // 手动缓存且已是最新版本时跳过，不占缓存窗口
-                        if (local != null && !local.isAutoCached && isDownloaded && !isStale && !needsVersionBackfill) continue
+                        if (local != null && !local.isAutoCached && isDownloaded && !isStale) continue
 
                         if (windowCount >= recentDownloadCount) break
                         windowCount++
                         cacheWindowIds.add(item.id)
 
-                        if (item.id !in currentQueue && (!isDownloaded || isStale || needsVersionBackfill)) {
+                        if (item.id !in currentQueue && (!isDownloaded || isStale)) {
                             toDownload.add(TaskItem(item.id, item.createdAt, TaskType.DOWNLOAD_METADATA))
                         }
                     }
