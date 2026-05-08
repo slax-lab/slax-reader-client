@@ -34,7 +34,7 @@ enum class DownloadStatus {
 
 class TaskItem(
     val bookmarkId: String,
-    val contentVersion: String,
+    val contentCreatedAt: String,
     val type: TaskType
 )
 
@@ -87,8 +87,8 @@ class BackgroundDomain(
                         val local = localMap[item.id]
 
                         val isDownloaded = local?.isDownloaded() == true
-                        val cachedVersion = local?.cachedVersion
-                        val isStale = isDownloaded && cachedVersion != null && cachedVersion != item.createdAt
+                        val downloadedAt = local?.downloadedAt
+                        val isStale = isDownloaded && downloadedAt != null && downloadedAt != item.createdAt
 
                         // 手动缓存且已是最新版本时跳过，不占缓存窗口
                         if (local != null && !local.isAutoCached && isDownloaded && !isStale) continue
@@ -183,7 +183,7 @@ class BackgroundDomain(
                 println("[BackgroundDomain] 图片下载完成")
             }
 
-            updateBookmarkStatus(item.bookmarkId, DownloadStatus.COMPLETED, cachedVersion = item.contentVersion)
+            updateBookmarkStatus(item.bookmarkId, DownloadStatus.COMPLETED, downloadedAt = item.contentCreatedAt)
         } catch (e: Exception) {
             println("下载失败 ${item.bookmarkId}: ${e.message}")
             e.printStackTrace()
@@ -230,7 +230,7 @@ class BackgroundDomain(
         id: String,
         status: DownloadStatus,
         isAutoCached: Boolean = true,
-        cachedVersion: String? = null,
+        downloadedAt: String? = null,
     ) {
         val statusCode = when (status) {
             DownloadStatus.NONE -> 0
@@ -239,7 +239,7 @@ class BackgroundDomain(
             DownloadStatus.FAILED -> 3
         }
         try {
-            localBookmarkDao.updateLocalBookmarkDownloadStatus(id, statusCode, isAutoCached, cachedVersion)
+            localBookmarkDao.updateLocalBookmarkDownloadStatus(id, statusCode, isAutoCached, downloadedAt)
         } catch (e: Exception) {
             println("[BackgroundDomain] 更新下载状态到数据库失败: ${e.message}")
         }
@@ -304,7 +304,7 @@ class BackgroundDomain(
                             id,
                             DownloadStatus.COMPLETED,
                             isAutoCached = false,
-                            cachedVersion = createdAt,
+                            downloadedAt = createdAt,
                         )
                     } catch (_: Exception) {
                         updateBookmarkStatus(id, DownloadStatus.FAILED, isAutoCached = false)
