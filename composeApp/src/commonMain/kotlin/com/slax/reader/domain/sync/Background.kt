@@ -71,7 +71,6 @@ class BackgroundDomain(
             val localBookmarkState = localBookmarkDao.watchUserLocalBookmarkMap()
             bookmarkDao.watchUserBookmarkList()
                 .collect { bookmarkList ->
-                    println("[CACHE_DEBUG][调度触发] bookmarkList.size=${bookmarkList.size}")
                     val cacheCountSetting = appPreferences.getCacheCount().first()
                     val recentDownloadCount = if (cacheCountSetting == -1) Int.MAX_VALUE else cacheCountSetting
 
@@ -86,7 +85,6 @@ class BackgroundDomain(
                         if (item.metadataStatus != successStatus) continue
 
                         val local = localMap[item.id]
-                        val title = item.metadataTitle ?: item.aliasTitle.ifEmpty { item.id }
 
                         val isDownloaded = local?.isDownloaded() == true
                         val cachedVersion = local?.cachedVersion
@@ -95,19 +93,13 @@ class BackgroundDomain(
                         val needsVersionBackfill = isDownloaded && cachedVersion == null
 
                         // 手动缓存且已是最新版本时跳过，不占缓存窗口
-                        if (local != null && !local.isAutoCached && isDownloaded && !isStale && !needsVersionBackfill) {
-                            println("[CACHE_DEBUG][跳过-手动缓存] id=${item.id} title=$title | cachedVersion=${local.cachedVersion} createdAt=${item.createdAt}")
-                            continue
-                        }
+                        if (local != null && !local.isAutoCached && isDownloaded && !isStale && !needsVersionBackfill) continue
 
                         if (windowCount >= recentDownloadCount) break
                         windowCount++
                         cacheWindowIds.add(item.id)
 
-                        println("[CACHE_DEBUG][调度] id=${item.id} title=$title | isAutoCached=${local?.isAutoCached} downloadStatus=${local?.downloadStatus} cachedVersion=${local?.cachedVersion} createdAt=${item.createdAt} isStale=$isStale inQueue=${item.id in currentQueue}")
-
                         if (item.id !in currentQueue && (!isDownloaded || isStale || needsVersionBackfill)) {
-                            println("[CACHE_DEBUG][入队] id=${item.id} title=$title")
                             toDownload.add(TaskItem(item.id, item.createdAt, TaskType.DOWNLOAD_METADATA))
                         }
                     }
@@ -317,8 +309,7 @@ class BackgroundDomain(
                             isAutoCached = false,
                             cachedVersion = createdAt,
                         )
-                    } catch (e: Exception) {
-                        println("后台写入失败 $id: ${e.message}")
+                    } catch (_: Exception) {
                         updateBookmarkStatus(id, DownloadStatus.FAILED, isAutoCached = false)
                     } finally {
                         // 写入完成（或失败）后才释放队列槽，防止调度器在窗口期重复入队
