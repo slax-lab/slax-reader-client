@@ -91,6 +91,13 @@ class LocalBookmarkDao(
         upsertFields(bookmarkId, fields)
     }
 
+    suspend fun updateLocalBookmarkDownloadStatus(
+        bookmarkId: String,
+        downloadStatus: Int,
+    ) {
+        upsertFields(bookmarkId, mapOf("is_downloaded" to downloadStatus))
+    }
+
     suspend fun batchResetDownloadStatus(
         bookmarkIds: List<String>,
         downloadStatus: Int = 0,

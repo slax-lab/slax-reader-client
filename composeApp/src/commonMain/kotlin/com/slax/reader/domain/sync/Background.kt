@@ -25,11 +25,11 @@ enum class TaskType {
     CLEANUP
 }
 
-enum class DownloadStatus {
-    NONE,
-    DOWNLOADING,
-    COMPLETED,
-    FAILED
+enum class DownloadStatus(val code: Int) {
+    NONE(0),
+    DOWNLOADING(1),
+    COMPLETED(2),
+    FAILED(3)
 }
 
 class TaskItem(
@@ -55,11 +55,13 @@ class BackgroundDomain(
 
     private val inQueue = atomic(setOf<String>())
 
+    private val activeDownloads = atomic(setOf<String>())
+
     private var downloadQueue: Channel<TaskItem>? = null
 
     private val isCleaningUp = atomic(false)
 
-    fun isBookmarkDownloading(id: String): Boolean = id in inQueue.value
+    fun isBookmarkDownloading(id: String): Boolean = id in activeDownloads.value
 
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     fun startup() {
@@ -160,6 +162,7 @@ class BackgroundDomain(
     suspend fun downloadBookmarkItem(item: TaskItem) {
         val contentPath = "bookmark/${item.bookmarkId}/content.html"
 
+        activeDownloads.getAndUpdate { it + item.bookmarkId }
         try {
             updateBookmarkStatus(item.bookmarkId, DownloadStatus.DOWNLOADING)
 
@@ -191,6 +194,7 @@ class BackgroundDomain(
             e.printStackTrace()
             updateBookmarkStatus(item.bookmarkId, DownloadStatus.FAILED)
         } finally {
+            activeDownloads.getAndUpdate { it - item.bookmarkId }
             inQueue.getAndUpdate { it - item.bookmarkId }
         }
     }
@@ -234,14 +238,8 @@ class BackgroundDomain(
         isAutoCached: Boolean = true,
         downloadedAt: String? = null,
     ) {
-        val statusCode = when (status) {
-            DownloadStatus.NONE -> 0
-            DownloadStatus.DOWNLOADING -> 1
-            DownloadStatus.COMPLETED -> 2
-            DownloadStatus.FAILED -> 3
-        }
         try {
-            localBookmarkDao.updateLocalBookmarkDownloadStatus(id, statusCode, isAutoCached, downloadedAt)
+            localBookmarkDao.updateLocalBookmarkDownloadStatus(id, status.code, isAutoCached, downloadedAt)
         } catch (e: Exception) {
             println("[BackgroundDomain] 更新下载状态到数据库失败: ${e.message}")
         }
@@ -293,8 +291,8 @@ class BackgroundDomain(
             val alreadyOnDisk = withContext(Dispatchers.IO) { fileManager.streamDataFile(contentPath) }
             if (alreadyOnDisk != null) {
                 withContext(Dispatchers.IO) {
-                    val createdAt = bookmarkDao.getBookmarkCreatedAt(id)
-                    updateBookmarkStatus(id, DownloadStatus.COMPLETED, isAutoCached = false, downloadedAt = createdAt)
+                    // 只收口状态，不覆盖后台已写入的 isAutoCached / downloadedAt
+                    localBookmarkDao.updateLocalBookmarkDownloadStatus(id, DownloadStatus.COMPLETED.code)
                 }
                 return processContent(alreadyOnDisk.decodeToString()).html
             }
