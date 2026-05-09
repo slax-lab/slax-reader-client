@@ -110,7 +110,7 @@ class BackgroundDomain(
 
                     val toCleanupIds = mutableListOf<String>()
                     for ((id, info) in localMap) {
-                        if (info.isAutoCached && info.downloadStatus == 2 && id !in cacheWindowIds && id !in currentQueue) {
+                        if (info.isAutoCached && info.downloadStatus == DownloadStatus.COMPLETED.code && id !in cacheWindowIds && id !in currentQueue) {
                             toCleanupIds.add(id)
                         }
                     }
