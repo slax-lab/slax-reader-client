@@ -79,6 +79,9 @@ sealed interface WebViewEvent {
     data class MarkItemInfosChanged(
         val markItemInfos: List<BridgeMarkItemInfo>,
     ) : WebViewEvent
+
+    /** JS Bridge 请求 InfoPack 数据 */
+    data object RequestInfoPack : WebViewEvent
 }
 
 @Composable

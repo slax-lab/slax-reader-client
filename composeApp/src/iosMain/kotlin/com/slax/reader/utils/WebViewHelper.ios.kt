@@ -195,6 +195,10 @@ actual fun AppWebView(
                                 WebViewEvent.MarkItemInfosChanged(markItemInfos)
                             )
                         }
+
+                        "requestInfoPack" -> {
+                            webState.dispatchEvent(WebViewEvent.RequestInfoPack)
+                        }
                     }
                 }
         }

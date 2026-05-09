@@ -6,7 +6,13 @@ import com.slax.reader.ui.bookmark.states.LocalMarkInteraction
 import com.slax.reader.ui.bookmark.states.MarkInteractionState
 import com.slax.reader.ui.bookmark.states.ScrollInfo
 import com.slax.reader.utils.*
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.koin.compose.viewmodel.koinViewModel
+import kotlin.time.Duration.Companion.seconds
 
 val LocalToolbarVisible = compositionLocalOf<MutableState<Boolean>> {
     error("LocalToolbarVisible not provided")
@@ -103,6 +109,26 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
                 }
                 is WebViewEvent.MarkItemInfosChanged -> {
                     markInteraction.onMarkItemInfosChanged(event.markItemInfos)
+                }
+                is WebViewEvent.RequestInfoPack -> {
+                    val requestBookmarkId = viewModel.bookmarkId.value
+                    coroutineScope.launch {
+                        val state = withTimeoutOrNull(3.seconds) {
+                            viewModel.bookmarkDelegate.bookmarkDetailState
+                                .first { it.displayTitle.isNotEmpty() }
+                        } ?: return@launch
+                        if (viewModel.bookmarkId.value != requestBookmarkId) return@launch
+                        val json = buildJsonObject {
+                            put("isStarred", state.isStarred)
+                            put("isArchived", state.isArchived)
+                            put("displayTitle", state.displayTitle)
+                            put("displayTime", state.displayTime)
+                            put("metadataUrl", state.metadataUrl)
+                        }.toString()
+                        webViewState.evaluateJs(
+                            "window.SlaxWebViewBridge.receiveInfoPack(`${escapeJsTemplateString(json)}`)"
+                        )
+                    }
                 }
                 else -> {}
             }
