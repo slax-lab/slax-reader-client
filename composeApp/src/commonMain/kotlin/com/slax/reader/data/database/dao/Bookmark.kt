@@ -19,7 +19,7 @@ class BookmarkDao(
         .map { status -> status.hasSynced ?: false }
         .stateIn(scope, SharingStarted.WhileSubscribed(5000), false)
 
-    private val _userBookmarkListFlow: StateFlow<List<InboxListBookmarkItem>> by lazy {
+    private val _userBookmarkListFlow: StateFlow<List<InboxListBookmarkItem>?> by lazy {
         println("[watch][database] _userBookmarkListFlow")
         database.watch(
             """
@@ -42,10 +42,10 @@ class BookmarkDao(
             println("Error watching user bookmarks: ${e.message}")
         }
             .distinctUntilChanged()
-            .stateIn(scope, SharingStarted.Eagerly, emptyList())
+            .stateIn(scope, SharingStarted.Eagerly, null)
     }
 
-    fun watchUserBookmarkList(): StateFlow<List<InboxListBookmarkItem>> = _userBookmarkListFlow
+    fun watchUserBookmarkList(): StateFlow<List<InboxListBookmarkItem>?> = _userBookmarkListFlow
 
     private val _userBookmarkPagedFlows = mutableMapOf<BookmarkSortType, StateFlow<List<InboxListBookmarkItem>?>>()
 

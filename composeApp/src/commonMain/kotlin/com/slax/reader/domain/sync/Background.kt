@@ -75,6 +75,8 @@ class BackgroundDomain(
             val localBookmarkState = localBookmarkDao.watchUserLocalBookmarkMap()
             bookmarkDao.watchUserBookmarkList()
                 .collect { bookmarkList ->
+                    if (bookmarkList == null) return@collect
+
                     val cacheCountSetting = appPreferences.getCacheCount().first()
                     val recentDownloadCount = if (cacheCountSetting == -1) Int.MAX_VALUE else cacheCountSetting
 
@@ -108,7 +110,6 @@ class BackgroundDomain(
 
                     val toCleanupIds = mutableListOf<String>()
                     for ((id, info) in localMap) {
-                        // 不在缓存窗口内且不在处理队列中的自动缓存才清理，含超出窗口、已归档、已删除的书签
                         if (info.isAutoCached && info.downloadStatus == 2 && id !in cacheWindowIds && id !in currentQueue) {
                             toCleanupIds.add(id)
                         }
