@@ -218,13 +218,10 @@ git diff "$BASE"...HEAD
 
 #### (B) 同步启动 Codex /review 作为第二意见
 
-Codex CLI **不在默认 PATH**，必须用绝对路径 `/Users/daguang/Library/pnpm/codex`。
-
 用 Bash 工具调用（**和上面的 Agent 调用在同一条消息里**，并行）：
 
 ```bash
-cd . && \
-/Users/daguang/Library/pnpm/codex review \
+codex review \
   --base main \
   "Review this Kotlin Multiplatform Compose PR with focus on: \
    performance (loops with IO, coroutine scopes, Compose recomposition), \
@@ -280,7 +277,7 @@ cd . && \
 
 - **`gh` 没安装** —— 不要尝试 `gh pr view` / `gh pr review`。审查目标用 `git diff` 拿，结果只写本地文件，让用户自己复制到 PR。如果用户后续装了 `gh`，再切换到 `gh pr view` 路径。
 - **`./gradlew` 受限** —— `CLAUDE.local.md` / `AGENTS.md` 明确：除非用户明确授权，只能跑 lint 任务，禁止跑其他 gradle 任务。Review skill **永远不要主动 `./gradlew check` / `assemble` / `test`**。如果需要 lint 信号，先用 `AskUserQuestion` 问用户是否授权跑 `./gradlew :composeApp:lint`。
-- **Codex CLI** —— 绝对路径 `/Users/daguang/Library/pnpm/codex`，子命令是 `review`，关键参数 `--base <branch>` / `--uncommitted` / `--commit <sha>` / 位置参数 PROMPT。
+- **Codex CLI** —— `codex`, 子命令是 `review`，关键参数 `--base <branch>` / `--uncommitted` / `--commit <sha>` / 位置参数 PROMPT。
 - **路径** —— 所有 Read / Write 都用绝对路径，不要用相对路径或 `./...`。
 - **`AskUserQuestion`** —— 不要用 plain text 提问代替它；只要是给用户的选择题，必须用这个工具。
 
