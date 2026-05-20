@@ -7,37 +7,35 @@ androidx-activity = "1.13.0"
 androidx-lifecycle = "2.10.0"
 atomicfu = "0.32.1"
 browser = "1.10.0"
-buildkonfigGradlePlugin = "0.18.0"
-componentsResources = "1.10.3"
-composeHotReload = "1.0.0"
-composeMultiplatform = "1.10.3"
+buildkonfigGradlePlugin = "0.21.1"
+componentsResources = "1.11.0"
+composeHotReload = "1.1.1"
+composeMultiplatform = "1.11.0"
 dotenvKotlin = "6.5.1"
 firebaseAnalyticsKtx = "22.5.0"
 firebaseCrashlyticsKtx = "19.4.4"
-foundation = "1.10.3"
+foundation = "1.11.0"
 androidCredentials = "1.6.0"
 googleid = "1.2.0"
 kotlinGradlePlugin = "2.2.0"
-kotlinxDatetime = "0.7.1"
+kotlinxDatetime = "0.8.0"
 material3 = "1.9.0"
 okio = "3.17.0"
-powerSyncCore = "1.11.2"
-reaktNativeToolkit = "0.22.1-SNAPSHOT"
-runtimeVersion = "1.10.3"
+powerSyncCore = "1.12.0"
+runtimeVersion = "1.11.0"
 sketchHttp = "4.4.0"
 koinCompose = "4.2.1"
-kotlin = "2.3.20"
-ktorClientOkhttp = "3.4.2"
+kotlin = "2.3.21"
+ktorClientOkhttp = "3.5.0"
 navigationCompose = "2.9.2"
 datastore = "1.2.1"
 kotlinx-serialization = "1.11.0"
 googleServices = "4.4.4"
 firebaseCrashlytics = "3.0.7"
 connectivity = "2.4.1"
-markdownRenderer = "0.40.2"
-soloader = "0.12.1"
+markdownRenderer = "0.41.0"
 ttypic = "0.6.4"
-ui = "1.10.3"
+ui = "1.11.0"
 ksoup = "0.2.6"
 
 [libraries]
@@ -46,7 +44,6 @@ atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu"
 components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "componentsResources" }
 firebase-analytics-ktx = { module = "com.google.firebase:firebase-analytics-ktx", version.ref = "firebaseAnalyticsKtx" }
 firebase-crashlytics-ktx = { module = "com.google.firebase:firebase-crashlytics-ktx", version.ref = "firebaseCrashlyticsKtx" }
-hermes-android = { module = "com.facebook.react:hermes-android" }
 foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "foundation" }
 jetbrains-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "runtimeVersion" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
@@ -76,8 +73,6 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 connectivity-core = { module = "dev.jordond.connectivity:connectivity-core", version.ref = "connectivity" }
 connectivity-device = { module = "dev.jordond.connectivity:connectivity-device", version.ref = "connectivity" }
 connectivity-compose-device = { module = "dev.jordond.connectivity:connectivity-compose-device", version.ref = "connectivity" }
-react-android = { module = "com.facebook.react:react-android" }
-reakt-native-toolkit = { module = "de.voize:reakt-native-toolkit", version.ref = "reaktNativeToolkit" }
 sketch-animated-gif = { module = "io.github.panpf.sketch4:sketch-animated-gif", version.ref = "sketchHttp" }
 sketch-animated-gif-koral = { module = "io.github.panpf.sketch4:sketch-animated-gif-koral", version.ref = "sketchHttp" }
 sketch-compose = { module = "io.github.panpf.sketch4:sketch-compose", version.ref = "sketchHttp" }
@@ -89,7 +84,6 @@ markdown-renderer-m3 = { module = "com.mikepenz:multiplatform-markdown-renderer-
 ksoup = { module = "com.fleeksoft.ksoup:ksoup", version.ref = "ksoup" }
 
 ## plugin
-soloader = { module = "com.facebook.soloader:soloader", version.ref = "soloader" }
 ttypic-plugin = { module = "io.github.ttypic:plugin", version.ref = "ttypic" }
 buildkonfig-gradle-plugin = { module = "com.codingfeline.buildkonfig:buildkonfig-gradle-plugin", version.ref = "buildkonfigGradlePlugin" }
 dotenv-kotlin = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenvKotlin" }
