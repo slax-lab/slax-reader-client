@@ -36,3 +36,5 @@ react-native/src/generated/*
 iosApp/iosApp/assets/images/*
 composeApp/src/androidMain/assets/*
 composeApp/src/androidMain/res/drawable-mdpi/*
+.claude/plans
+.claude/review
