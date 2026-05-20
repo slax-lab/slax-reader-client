@@ -267,7 +267,7 @@ cd . && \
 写到文件：
 
 ```
-./.claude/plans/review-<branch>-<YYYYMMDD-HHMMSS>.md
+./.claude/review/review-<branch>-<YYYYMMDD-HHMMSS>.md
 ```
 
 文件名里的 branch 用 `git branch --show-current` 拿（`/` 换成 `-`），时间戳用 `date +%Y%m%d-%H%M%S`。
