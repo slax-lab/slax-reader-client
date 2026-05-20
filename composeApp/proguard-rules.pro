@@ -1,31 +1,29 @@
--keep class com.facebook.react.** { *; }
--keep class com.facebook.hermes.** { *; }
--keep class com.facebook.jni.** { *; }
--keep class com.facebook.soloader.** { *; }
+# ---- Kotlinx Serialization ----
+-keepattributes *Annotation*, InnerClasses
+-dontnote kotlinx.serialization.AnnotationsKt
 
--keep class com.facebook.react.devsupport.** { *; }
--keep class com.facebook.react.modules.** { *; }
--keep class com.facebook.react.bridge.** { *; }
--keep class com.facebook.react.uimanager.** { *; }
--keep class com.facebook.react.common.** { *; }
-
--keep class * implements com.facebook.react.bridge.JavaScriptModule { *; }
--keep class * implements com.facebook.react.bridge.NativeModule { *; }
--keepclassmembers,includedescriptorclasses class * { native <methods>; }
--keepclassmembers class *  { @com.facebook.react.uimanager.annotations.ReactProp <methods>; }
--keepclassmembers class *  { @com.facebook.react.uimanager.annotations.ReactPropGroup <methods>; }
-
--keep,allowobfuscation @interface com.facebook.proguard.annotations.DoNotStrip
--keep,allowobfuscation @interface com.facebook.proguard.annotations.KeepGettersAndSetters
--keep @com.facebook.proguard.annotations.DoNotStrip class *
--keepclassmembers class * {
-    @com.facebook.proguard.annotations.DoNotStrip *;
+-keepclassmembers class kotlinx.serialization.json.** {
+    *** Companion;
+}
+-keepclasseswithmembers class kotlinx.serialization.json.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+-keep,includedescriptorclasses class app.slax.reader.**$$serializer { *; }
+-keepclassmembers class app.slax.reader.** {
+    *** Companion;
+}
+-keepclasseswithmembers class app.slax.reader.** {
+    kotlinx.serialization.KSerializer serializer(...);
 }
 
--keep class com.facebook.hermes.unicode.** { *; }
+# ---- Ktor ----
+-dontwarn io.ktor.**
 
--dontwarn com.facebook.react.**
--dontwarn com.facebook.hermes.**
--dontwarn com.facebook.jni.**
+# ---- PowerSync ----
+-dontwarn com.powersync.**
 
--dontwarn kotlinx.serialization.**
+# ---- Okio ----
+-dontwarn okio.**
+
+# ---- Compose ----
+-dontwarn androidx.compose.**

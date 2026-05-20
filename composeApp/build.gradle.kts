@@ -35,7 +35,7 @@ plugins {
     alias(libs.plugins.google.services)
     alias(libs.plugins.firebase.crashlytics)
     kotlin("native.cocoapods")
-    id("com.codingfeline.buildkonfig") version "0.18.0"
+    id("com.codingfeline.buildkonfig") version "0.21.1"
     id("org.jetbrains.kotlinx.atomicfu") version "0.32.1"
     id("io.github.ttypic.swiftklib") version "0.6.4"
 }
@@ -63,14 +63,9 @@ kotlin {
         xcodeConfigurationToNativeBuildType["Release"] = NativeBuildType.RELEASE
         xcodeConfigurationToNativeBuildType["Debug"] = NativeBuildType.DEBUG
 
-        pod("powersync-sqlite-core") {
-            linkOnly = true
-        }
-
         framework {
             baseName = "ComposeApp"
             isStatic = true
-            export("com.powersync:core")
             binaryOption("bundleId", "com.slax.reader.composeapp")
         }
     }
@@ -181,6 +176,10 @@ kotlin {
             }
         }
     }
+
+    compilerOptions {
+        freeCompilerArgs.add("-Xname-based-destructuring=only-syntax")
+    }
 }
 
 android {
@@ -231,8 +230,28 @@ dependencies {
     debugImplementation(compose.uiTooling)
 }
 
-fun minifyHtml(html: String): String {
-    return html
+val embeddedDir = rootProject.file("public/embedded")
+val embeddedSources = listOf(
+    "css/reset.css", "css/article.css", "css/mark.css", "css/bottom-line.css",
+    "js/webview-bridge.js", "html/webview-template.html", "html/error.html"
+)
+val needsMinify = embeddedSources.any { path ->
+    val src = embeddedDir.resolve(path)
+    val ext = src.extension
+    val min = src.parentFile.resolve("${src.nameWithoutExtension}.min.${ext}")
+    src.exists() && (!min.exists() || src.lastModified() > min.lastModified())
+}
+if (needsMinify) {
+    logger.lifecycle("Minifying embedded assets...")
+    exec {
+        commandLine("bash", rootProject.file("script/minify-embedded.sh").absolutePath)
+    }
+}
+
+fun readEmbedded(path: String): String {
+    val minPath = path.replace(Regex("\\.(css|js|html)$"), ".min.$1")
+    val minFile = file(minPath)
+    return if (minFile.exists()) minFile.readText() else file(path).readText()
 }
 
 @OptIn(ExperimentalEncodingApi::class)
@@ -275,24 +294,18 @@ buildkonfig {
         buildConfigField(
             STRING,
             "WEBVIEW_TEMPLATE",
-            minifyHtml(
-                file("../public/embedded/html/webview-template.html")
-                    .readText()
-                    .replace("{{RESET-CSS}}", file("../public/embedded/css/reset.css").readText())
-                    .replace("{{ARTICLE-CSS}}", file("../public/embedded/css/article.css").readText())
-                    .replace("{{MARK-CSS}}", file("../public/embedded/css/mark.css").readText())
-                    .replace("{{BOTTOM-LINE-CSS}}", file("../public/embedded/css/bottom-line.css").readText())
-                    .replace("{{WEBVIEW-BRIGDE-JS}}", file("../public/embedded/js/webview-bridge.js").readText())
-            )
+            readEmbedded("../public/embedded/html/webview-template.html")
+                .replace("{{RESET-CSS}}", readEmbedded("../public/embedded/css/reset.css"))
+                .replace("{{ARTICLE-CSS}}", readEmbedded("../public/embedded/css/article.css"))
+                .replace("{{MARK-CSS}}", readEmbedded("../public/embedded/css/mark.css"))
+                .replace("{{BOTTOM-LINE-CSS}}", readEmbedded("../public/embedded/css/bottom-line.css"))
+                .replace("{{WEBVIEW-BRIGDE-JS}}", readEmbedded("../public/embedded/js/webview-bridge.js"))
         )
         buildConfigField(
             STRING,
             "DETAIL_ERROR_TEMPLATE",
-            minifyHtml(
-                file("../public/embedded/html/error.html")
-                    .readText()
-                    .replace("{{BACKGROUND}}", base64Image("../public/embedded/image/error.png"))
-            )
+            readEmbedded("../public/embedded/html/error.html")
+                .replace("{{BACKGROUND}}", base64Image("../public/embedded/image/error.png"))
         )
         buildConfigField(
             STRING,
