@@ -29,6 +29,20 @@ description: |
 
 ---
 
+## 支撑文件（references/）
+
+SKILL.md 只是流程骨架。三份支撑文件放在 `./.claude/skills/slax-review/references/` 下，每份都比 SKILL.md 详细，必须按下表在对应阶段实际 `Read` 进来，不要凭印象操作：
+
+| 支撑文件 | 何时 Read | 用途 |
+|---|---|---|
+| `references/research-triggers.md` | 阶段 2 开头 | 项目特定的语法糖与第三方依赖搜索清单（命中即查） |
+| `references/question-patterns.md` | 阶段 3 开头 | `AskUserQuestion` 的典型问题模板与 options 写法 |
+| `references/output-template.md` | 阶段 5 开头 | 最终报告完整骨架（路径命名、各节内容/风格约定） |
+
+各阶段的"**先 Read xxx**"步骤是硬性要求 —— 没有 Read 等于没看模板，自己脑补的格式不算数。
+
+---
+
 ## 主流程
 
 ### 阶段 0 — 上下文与规范确认（前置，必做）
@@ -139,7 +153,7 @@ git diff "$BASE"...HEAD
 **先 Read 项目特定的搜索清单**：
 
 ```
-./.claude/skills/slax-review/research-triggers.md
+./.claude/skills/slax-review/references/research-triggers.md
 ```
 
 **再实时 Read 项目依赖版本**（清单文件里不再写死版本号，每次跑 skill 都要拿最新值）：
@@ -178,7 +192,7 @@ git diff "$BASE"...HEAD
 **先 Read 典型问题模板**：
 
 ```
-./.claude/skills/slax-review/question-patterns.md
+./.claude/skills/slax-review/references/question-patterns.md
 ```
 
 把阶段 1 留下的「意图不明」+ 阶段 2 调研出的「行为存疑」点汇总。
@@ -249,7 +263,7 @@ codex review \
 **先 Read 输出模板**：
 
 ```
-./.claude/skills/slax-review/output-template.md
+./.claude/skills/slax-review/references/output-template.md
 ```
 
 把以下材料融合到一份报告：

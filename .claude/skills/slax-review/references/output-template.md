@@ -114,29 +114,42 @@
 
 ## 🤖 Sub-Agent 报告摘要
 
-按阶段 4 (A) 启动的 sub-agent 列出每个的发现：
+按阶段 4 (A) 实际启动的 sub-agent 各写一节；没启动的维度直接省略。
 
 ### 最小化扫描 (Explore agent)
-- 对照阶段 0.1 拿到的需求描述，本 PR 实现是否最小化
-- 如发现过度工程化：列出哪些抽象/文件超出需求范围、建议如何瘦身
+- 对照阶段 0.1 拿到的需求描述，判断本 PR 实现是否最小化
+- 如发现过度工程化：列出哪些抽象/文件/接口超出需求范围、建议如何瘦身、估算可删减的代码量
 - 如确认最小化：明确写「实现紧贴需求，无 YAGNI 违反」
+- 末尾标注本扫描已升级为哪些 🔴/🟡/🟢（写编号）
 
 ### 复用扫描 (Explore agent)
-- 发现 `xxxFunction` 跟现有 `utils/StringExtension.kt:42` 的 `xxxOther` 高度相似，建议合并
-- 其他无
+- 列出 diff 中新增的函数/类，与既有 `utils/` / `extension/` / `domain/` 实现高度相似的点
+- 每条给出"建议合并到 `<path>:<line>`"或"另起合理，理由是 ……"的判断
+- 给出整体重复率粗估（百分比即可）
+- 末尾标注本扫描已升级为哪些 🔴/🟡/🟢（写编号）
 
 ### 边界扫描 (Explore agent)
-- `BookmarkSync.kt:88` 的 `result.first()` 没有空集合检查
-- `InboxViewModel.kt:120` 的 catch 块吞了所有 Throwable，建议至少 rethrow CancellationException
+- 按风险类别归纳（null 解引用 / 空集合 / 协程取消 / `when` 缺 else / `try` 吞异常 / 可空链滥用 / 数值溢出 / 并发竞争 等）
+- 每类先报命中条目数，再给出最严重的 1–2 条作为代表，必须带 `file:line`
+- 用一句话总结整体风险密度（如「主路径多、边角少」/「集中在 X 模块」）
+- 末尾标注本扫描已升级为哪些 🔴/🟡/🟢（写编号）
 
 ### 平台对照 (Explore agent)
-- expect `getDeviceId()` 的 actual 实现：androidMain 返回 ANDROID_ID，iosMain 返回 IDFV —— 语义不一致（隐私级别不同），需确认是否预期
+- 列出本 PR 命中的 expect/actual 行为差异 / 单端独有逻辑 / 单位或语义对齐脆弱点
+- 每条判断属于：预期差异（可接受） / 需修正 / 待开发者确认
+- 单端改动但应跨端的，必须明确点出"另一端没实现"
+- 末尾标注本扫描已升级为哪些 🔴/🟡/🟢（写编号）
 
 ### Compose 风险 (Explore agent)
-- `BookmarkCard.kt:55` 的 `LaunchedEffect(Unit)` 内访问了 `bookmark.id`，key 不完整
+- 按 API 分类列出误用：`remember` 缺 key / `LaunchedEffect` key 不完整 / `mutableStateOf` 持有位置 / `collectAsState` 缺初值 / `derivedStateOf` 该用没用 / 重组热点
+- 每条说明可能造成的运行时表现（漏重组 / 多余重组 / 状态丢失 / 内存泄漏）
+- 末尾标注本扫描已升级为哪些 🔴/🟡/🟢（写编号）
 
 ### 数据层风险 (Explore agent)
-- PowerSync schema 改动向后兼容，无破坏性
+- 分维度列出：PowerSync 同步语义 / Ktor 客户端配置 / kotlinx-serialization schema 兼容性 / 数据库迁移
+- 每条判断属于：向后兼容 / 破坏性 / 需迁移脚本
+- 涉及 API contract 的，呼应阶段 0.3 的跨仓联动结论
+- 末尾标注本扫描已升级为哪些 🔴/🟡/🟢（写编号）
 
 ---
 
