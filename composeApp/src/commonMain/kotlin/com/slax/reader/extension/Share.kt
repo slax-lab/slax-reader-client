@@ -1,8 +1,10 @@
 package com.slax.reader.extension
 
 import com.slax.reader.data.network.ApiService
+import app.slax.reader.SlaxConfig
 import com.slax.reader.data.preferences.getPreferences
 import com.slax.reader.utils.bookmarkEvent
+import com.slax.reader.utils.platformName
 import io.ktor.client.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -47,6 +49,7 @@ suspend fun collectionShare(content: String, title: String?, body: String?): Str
                     socketTimeoutMillis = 8000
                 }
                 defaultRequest {
+                    userAgent("SlaxReader/${platformName} ${SlaxConfig.APP_VERSION_NAME} (${SlaxConfig.APP_VERSION_CODE})")
                     bearerAuth(token)
                 }
             }
