@@ -27,6 +27,7 @@ import com.github.panpf.sketch.request.placeholder
 import com.github.panpf.sketch.request.error
 import com.slax.reader.domain.coordinator.AppSyncState
 import com.slax.reader.ui.inbox.InboxListViewModel
+import com.slax.reader.utils.AppEnv
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
@@ -93,6 +94,24 @@ fun UserAvatar() {
 
             is AppSyncState.NoNetwork -> {
                 AvatarError(true)
+            }
+        }
+
+        if (AppEnv.isBeta) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .size(10.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFFF6D00)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "β",
+                    color = Color.White,
+                    fontSize = 7.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }

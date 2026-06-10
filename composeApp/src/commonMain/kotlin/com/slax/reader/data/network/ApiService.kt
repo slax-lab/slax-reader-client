@@ -3,6 +3,7 @@ package com.slax.reader.data.network
 import app.slax.reader.SlaxConfig
 import com.slax.reader.const.AppError
 import com.slax.reader.data.network.dto.*
+import com.slax.reader.utils.AppEnv
 import com.slax.reader.utils.platformType
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -30,7 +31,7 @@ class ApiService(
 
     private fun buildUrl(pathName: String, query: Map<String, String>? = emptyMap()): String {
         val builder = URLBuilder()
-        builder.takeFrom(SlaxConfig.API_BASE_URL)
+        builder.takeFrom(AppEnv.apiBaseUrl)
         builder.path(pathName)
         query?.map { (k, v) -> builder.parameters.append(k, v) }
         return builder.toString()
