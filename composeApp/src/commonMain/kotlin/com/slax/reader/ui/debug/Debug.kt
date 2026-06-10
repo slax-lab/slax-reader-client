@@ -1,6 +1,7 @@
 package com.slax.reader.ui.debug
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -8,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -16,9 +18,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import app.slax.reader.SlaxConfig
 import com.powersync.sync.SyncStatusData
 import com.slax.reader.data.database.dao.PowerSyncDao
+import com.slax.reader.data.preferences.AppPreferences
+import com.slax.reader.utils.AppEnv
+import com.slax.reader.utils.AppEnvironment
+import com.slax.reader.utils.ShakeDetector
 import com.slax.reader.utils.i18n
 import io.ktor.client.*
 import io.ktor.client.plugins.*
@@ -192,7 +197,7 @@ class DebugViewModel(
 
         try {
             val duration = measureTime {
-                val response = httpClient.get("${SlaxConfig.API_BASE_URL}/ping") {
+                val response = httpClient.get("${AppEnv.apiBaseUrl}/ping") {
                     timeout {
                         requestTimeoutMillis = 10000
                         connectTimeoutMillis = 5000
@@ -222,7 +227,7 @@ class DebugViewModel(
         updateTestStatus(index, TestStatus.Testing, "Testing...")
 
         try {
-            val domain = SlaxConfig.API_BASE_URL
+            val domain = AppEnv.apiBaseUrl
                 .removePrefix("https://")
                 .removePrefix("http://")
                 .substringBefore("/")
@@ -269,6 +274,38 @@ fun DebugScreen(
 
     val powerSyncStatus by viewModel.powerSyncStatus.collectAsState()
     val isTestingAll by viewModel.isTestingAll
+
+    val appPreferences: AppPreferences = koinInject()
+    val scope = rememberCoroutineScope()
+    var showEnvDialog by remember { mutableStateOf(false) }
+    var showRestartHint by remember { mutableStateOf(false) }
+
+    ShakeDetector { showEnvDialog = true }
+
+    if (showEnvDialog) {
+        EnvSwitchDialog(
+            current = AppEnv.current,
+            onDismiss = { showEnvDialog = false },
+            onSelect = { env ->
+                showEnvDialog = false
+                scope.launch {
+                    appPreferences.setSelectedEnv(env.name)
+                    showRestartHint = true
+                }
+            }
+        )
+    }
+
+    if (showRestartHint) {
+        AlertDialog(
+            onDismissRequest = { showRestartHint = false },
+            confirmButton = {
+                TextButton(onClick = { showRestartHint = false }) { Text("我知道了") }
+            },
+            title = { Text("已切换环境") },
+            text = { Text("请完全关闭并重启 App 后生效。") }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -461,6 +498,61 @@ fun TestResultRow(result: NetworkTestResult) {
                 strokeWidth = 2.dp,
                 color = Color(0xFF0F1419)
             )
+        }
+    }
+}
+
+@Composable
+private fun EnvSwitchDialog(
+    current: AppEnvironment?,
+    onDismiss: () -> Unit,
+    onSelect: (AppEnvironment) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("取消") }
+        },
+        title = { Text("切换环境") },
+        text = {
+            Column {
+                Text(
+                    text = "当前：" + when (current) {
+                        AppEnvironment.PRODUCTION -> "生产"
+                        AppEnvironment.BETA -> "beta"
+                        null -> "默认（编译期）"
+                    },
+                    fontSize = 14.sp,
+                    color = Color(0xFF666666),
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+                EnvOption("生产", current == AppEnvironment.PRODUCTION) {
+                    onSelect(AppEnvironment.PRODUCTION)
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                EnvOption("beta", current == AppEnvironment.BETA) {
+                    onSelect(AppEnvironment.BETA)
+                }
+            }
+        }
+    )
+}
+
+@Composable
+private fun EnvOption(label: String, selected: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
+            .background(if (selected) Color(0xFFE8F5F1) else Color(0xFFF0F0F0))
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(text = label, fontSize = 16.sp, color = Color(0xFF0F1419))
+        if (selected) {
+            Text(text = "✓", fontSize = 16.sp, color = Color(0xFF16B998))
         }
     }
 }

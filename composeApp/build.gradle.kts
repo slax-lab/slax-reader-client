@@ -282,10 +282,12 @@ buildkonfig {
         if (buildFlavor == "release") {
             buildConfigField(STRING, "API_BASE_URL", "https://api-reader.slax.com")
             buildConfigField(STRING, "WEB_BASE_URL", "https://r.slax.com")
+            buildConfigField(STRING,"API_BETA_URL", "https://api-beta-reader.slax.com")
             buildConfigField(STRING, "WEB_DOMAIN", ".slax.com")
             buildConfigField(STRING, "LOG_LEVEL", "ERROR")
         } else {
             buildConfigField(STRING, "API_BASE_URL", "https://reader-api.slax.dev")
+            buildConfigField(STRING, "API_BETA_URL", "https://reader-api.slax.dev")
             buildConfigField(STRING, "WEB_BASE_URL", "https://r.slax.dev")
             buildConfigField(STRING, "WEB_DOMAIN", ".slax.dev")
             buildConfigField(STRING, "LOG_LEVEL", "DEBUG")

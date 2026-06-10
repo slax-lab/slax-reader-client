@@ -5,10 +5,13 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeUIViewController
 import androidx.navigation.compose.rememberNavController
+import com.slax.reader.data.preferences.getPreferences
 import com.slax.reader.di.configureKoin
 import com.slax.reader.ui.SlaxNavigation
+import com.slax.reader.utils.AppEnv
 import com.slax.reader.utils.NavigationHelper
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.coroutines.runBlocking
 import org.koin.core.context.startKoin
 import platform.UIKit.UIColor
 import platform.UIKit.UINavigationController
@@ -20,6 +23,10 @@ fun MainViewController(): UIViewController {
 
     startKoin {
         configureKoin()
+    }
+
+    runBlocking {
+        AppEnv.init(getPreferences().getSelectedEnv())
     }
 
     val composeVC = ComposeUIViewController {

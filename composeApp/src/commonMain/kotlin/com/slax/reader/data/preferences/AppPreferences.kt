@@ -52,6 +52,8 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
 
         private val CACHE_COUNT_KEY = intPreferencesKey("cache_count")
         private val DOWNLOAD_IMAGES_KEY = intPreferencesKey("download_images")
+
+        private val SELECTED_ENV_KEY = stringPreferencesKey("selected_env")
     }
 
     suspend fun getLastRefreshTime(): Long? {
@@ -168,5 +170,16 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
 
     suspend fun setDownloadImages(enabled: Boolean) = withContext(Dispatchers.IO) {
         dataStore.edit { it[DOWNLOAD_IMAGES_KEY] = if (enabled) 1 else 0 }
+    }
+
+    suspend fun getSelectedEnv(): String? = withContext(Dispatchers.IO) {
+        val prefs = dataStore.data.first()
+        return@withContext prefs[SELECTED_ENV_KEY]
+    }
+
+    suspend fun setSelectedEnv(env: String) = withContext(Dispatchers.IO) {
+        dataStore.edit { preferences ->
+            preferences[SELECTED_ENV_KEY] = env
+        }
     }
 }
