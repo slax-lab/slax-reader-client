@@ -12,6 +12,7 @@
 		8A1CC81C2E9A6F9300F7C101 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 8A1CC81B2E9A6F9300F7C101 /* FirebaseAnalytics */; };
 		8A1CC81E2E9A6F9300F7C101 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 8A1CC81D2E9A6F9300F7C101 /* FirebaseCrashlytics */; };
 		8A1E1BAC2EDFF24B004F9F3B /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8A1E1BAB2EDFF24B004F9F3B /* StoreKit.framework */; };
+		8A7124AF2FD96D6900836F26 /* PowerSyncSQLiteCore in Frameworks */ = {isa = PBXBuildFile; productRef = 8A7124AE2FD96D6900836F26 /* PowerSyncSQLiteCore */; };
 		8A9B3B002EA78B4100F25AB6 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 8A9B3AFF2EA78B4100F25AB6 /* FirebaseMessaging */; };
 		8A9B3B022EA78B4900F25AB6 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 8A9B3B012EA78B4900F25AB6 /* FirebaseMessaging */; };
 		8A9D0BAD2E8A989900FFDE17 /* share.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8AD22C002E83ED490035EA6E /* share.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -133,6 +134,7 @@
 				8ACC80432E9CA0E90078F1FF /* GoogleSignIn in Frameworks */,
 				8A1CC81C2E9A6F9300F7C101 /* FirebaseAnalytics in Frameworks */,
 				6CFAFFCB3DD2E2586D8446F4 /* Pods_iosApp.framework in Frameworks */,
+				8A7124AF2FD96D6900836F26 /* PowerSyncSQLiteCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -213,7 +215,6 @@
 			buildConfigurationList = B9DA97BF2DC1472D00A4DA20 /* Build configuration list for PBXNativeTarget "iosApp" */;
 			buildPhases = (
 				5C6A594B031FD26E7C85442A /* [CP] Check Pods Manifest.lock */,
-				8AD9DE5F2E9A3DAE006B8204 /* [CP] Prepare powersync-sqlite-core xcframework */,
 				B9DA97F42DC1497100A4DA20 /* Compile Kotlin Framework */,
 				B9DA97AD2DC1472C00A4DA20 /* Sources */,
 				B9DA97AE2DC1472C00A4DA20 /* Frameworks */,
@@ -265,6 +266,7 @@
 			packageReferences = (
 				8A1CC81A2E9A6F9300F7C101 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				8ACC80412E9CA0E90078F1FF /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				8A7124AD2FD96D6900836F26 /* XCRemoteSwiftPackageReference "powersync-sqlite-core-swift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B9DA97B22DC1472C00A4DA20 /* Products */;
@@ -397,25 +399,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${BUILD_DIR%Build/*}SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\"\n";
-		};
-		8AD9DE5F2E9A3DAE006B8204 /* [CP] Prepare powersync-sqlite-core xcframework */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "[CP] Prepare powersync-sqlite-core xcframework";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/powersync-sqlite-core/powersync-sqlite-core-xcframeworks.sh\"\n";
 		};
 		8AD9DE602E9A3E48006B8204 /* Compile Kotlin Framework */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -855,6 +838,14 @@
 				minimumVersion = 12.4.0;
 			};
 		};
+		8A7124AD2FD96D6900836F26 /* XCRemoteSwiftPackageReference "powersync-sqlite-core-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/powersync-ja/powersync-sqlite-core-swift.git";
+			requirement = {
+				kind = exactVersion;
+				version = 0.4.14;
+			};
+		};
 		8ACC80412E9CA0E90078F1FF /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/google/GoogleSignIn-iOS.git";
@@ -875,6 +866,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8A1CC81A2E9A6F9300F7C101 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseCrashlytics;
+		};
+		8A7124AE2FD96D6900836F26 /* PowerSyncSQLiteCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8A7124AD2FD96D6900836F26 /* XCRemoteSwiftPackageReference "powersync-sqlite-core-swift" */;
+			productName = PowerSyncSQLiteCore;
 		};
 		8A9B3AFF2EA78B4100F25AB6 /* FirebaseMessaging */ = {
 			isa = XCSwiftPackageProductDependency;
