@@ -26,17 +26,85 @@ blockquote {
 /* 表格类 */
 table {
     width: 100% !important;
-    border-collapse: separate;
-    border-spacing: 5px;
+    margin-top: 24px;
+    margin-bottom: 24px;
+    border-collapse: separate; /* separate 模型下圆角才生效 */
+    border-spacing: 0;
     border: 1px solid rgba(51, 51, 51, 0.08);
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    font-size: 13px;
+    line-height: 1.6;
+    overflow: hidden;
 }
 
+table caption {
+    padding-bottom: 8px;
+    color: rgba(51, 51, 51, 0.45);
+    font-size: 12px;
+    text-align: center;
+}
+
+/* 单元格只画下/右内线，外框交给 table，避免双线 */
 th,
-tr,
 td {
     text-align: left;
-    border: 1px solid rgba(51, 51, 51, 0.08);
-    padding: 8px;
+    padding: 11px 16px;
+    border-bottom: 1px solid rgba(51, 51, 51, 0.08);
+    border-right: 1px solid rgba(51, 51, 51, 0.08);
+    color: rgba(51, 51, 51, 0.6);
+    vertical-align: top;
+    font-variant-numeric: tabular-nums;
+}
+
+th:last-child,
+td:last-child {
+    border-right: none;
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+/* 表头：浅底加重，用更实的下边线与正文分隔 */
+th {
+    background: rgba(51, 51, 51, 0.04);
+    border-bottom-width: 2px;
+    color: #333333;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+}
+
+/* 行首列加重，作横向阅读锚点 */
+tbody td:first-child {
+    color: #333333;
+    font-weight: 500;
+}
+
+/* 斑马纹：偶数行淡底，便于逐行扫描 */
+tbody tr:nth-child(even) td {
+    background: rgba(51, 51, 51, 0.03);
+}
+
+/* separate 模型下手动补四角圆角，让底色贴合外框 */
+thead tr:first-child th:first-child,
+tr:first-child td:first-child {
+    border-top-left-radius: 8px;
+}
+
+thead tr:first-child th:last-child,
+tr:first-child td:last-child {
+    border-top-right-radius: 8px;
+}
+
+tr:last-child td:first-child {
+    border-bottom-left-radius: 8px;
+}
+
+tr:last-child td:last-child {
+    border-bottom-right-radius: 8px;
 }
 
 /* 链接类 */
