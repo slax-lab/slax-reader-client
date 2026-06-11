@@ -25,15 +25,19 @@ import com.slax.reader.utils.AppEnv
 import com.slax.reader.utils.AppEnvironment
 import com.slax.reader.utils.ShakeDetector
 import com.slax.reader.utils.i18n
+import com.slax.reader.utils.rememberVibrate
 import io.ktor.client.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
@@ -84,7 +88,8 @@ class DebugViewModel(
                 NetworkTestResult("Slax API", TestStatus.Idle, ""),
                 NetworkTestResult("DNS (System)", TestStatus.Idle, ""),
                 NetworkTestResult("DNS (8.8.8.8)", TestStatus.Idle, ""),
-                NetworkTestResult("DNS (1.1.1.1)", TestStatus.Idle, "")
+                NetworkTestResult("DNS (1.1.1.1)", TestStatus.Idle, ""),
+                NetworkTestResult("PowerSync", TestStatus.Idle, "")
             )
         )
     }
@@ -102,6 +107,7 @@ class DebugViewModel(
             testDnsResolution(4, "System", null)
             testDnsResolution(5, "8.8.8.8", "8.8.8.8")
             testDnsResolution(6, "1.1.1.1", "1.1.1.1")
+            testPowerSyncConnection(7)
 
             _isTestingAll.value = false
         }
@@ -247,6 +253,38 @@ class DebugViewModel(
         }
     }
 
+    private suspend fun testPowerSyncConnection(index: Int) {
+        updateTestStatus(index, TestStatus.Testing, "Testing...")
+
+        try {
+            val duration = measureTime {
+                withTimeout(10000) {
+                    while (true) {
+                        val status = powerSyncDao.currentStatus()
+                        if (status.connected) break
+                        status.anyError?.let { throw Exception(it.toString()) }
+                        delay(200)
+                    }
+                }
+            }
+
+            updateTestStatus(
+                index,
+                TestStatus.Success,
+                "Connected (${duration.inWholeMilliseconds}ms)"
+            )
+        } catch (e: TimeoutCancellationException) {
+            val message = if (powerSyncDao.currentStatus().connecting) {
+                "Still connecting (timeout)"
+            } else {
+                "Not connected (timeout)"
+            }
+            updateTestStatus(index, TestStatus.Failed, message)
+        } catch (e: Exception) {
+            updateTestStatus(index, TestStatus.Failed, e.message ?: "Connection failed")
+        }
+    }
+
     private fun updateTestStatus(index: Int, status: TestStatus, message: String) {
         if (index < _testResults.size) {
             _testResults[index] = _testResults[index].copy(
@@ -277,10 +315,14 @@ fun DebugScreen(
 
     val appPreferences: AppPreferences = koinInject()
     val scope = rememberCoroutineScope()
+    val vibrate = rememberVibrate()
     var showEnvDialog by remember { mutableStateOf(false) }
     var showRestartHint by remember { mutableStateOf(false) }
 
-    ShakeDetector { showEnvDialog = true }
+    ShakeDetector {
+        vibrate()
+        showEnvDialog = true
+    }
 
     if (showEnvDialog) {
         EnvSwitchDialog(

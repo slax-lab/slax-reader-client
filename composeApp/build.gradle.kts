@@ -47,9 +47,9 @@ repositories {
     maven("https://jogamp.org/deployment/maven")
 }
 
-val appVersionCode = project.findProperty("appVersionCode")?.toString()!!
-val appVersionName = project.findProperty("appVersionName")?.toString()!!
-val buildFlavor = project.findProperty("buildkonfig.flavor") as? String ?: "dev"
+val appVersionCode = providers.gradleProperty("appVersionCode").get()
+val appVersionName = providers.gradleProperty("appVersionName").get()
+val buildFlavor = providers.gradleProperty("buildkonfig.flavor").getOrElse("dev")
 
 kotlin {
     cocoapods {
@@ -282,7 +282,7 @@ buildkonfig {
         if (buildFlavor == "release") {
             buildConfigField(STRING, "API_BASE_URL", "https://api-reader.slax.com")
             buildConfigField(STRING, "WEB_BASE_URL", "https://r.slax.com")
-            buildConfigField(STRING,"API_BETA_URL", "https://api-beta-reader.slax.com")
+            buildConfigField(STRING,"API_BETA_URL", "https://api-reader-beta.slax.com")
             buildConfigField(STRING, "WEB_DOMAIN", ".slax.com")
             buildConfigField(STRING, "LOG_LEVEL", "ERROR")
         } else {
@@ -315,6 +315,14 @@ buildkonfig {
             dotenv.get("GOOGLE_AUTH_SERVER_ID")!!
         )
     }
+}
+
+tasks.matching { it.name.startsWith("generateBuildKonfig") }.configureEach {
+    inputs.property("slaxBuildSignature", "$appVersionName-$appVersionCode-$buildFlavor")
+}
+
+tasks.matching { it.name.startsWith("compile") && it.name.contains("Kotlin") }.configureEach {
+    dependsOn("generateBuildKonfig")
 }
 
 val syncXcodeVersionConfig = tasks.register<Exec>("syncXcodeVersionConfig") {

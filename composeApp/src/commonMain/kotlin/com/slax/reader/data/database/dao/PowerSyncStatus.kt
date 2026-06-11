@@ -23,4 +23,6 @@ class PowerSyncDao(
     }
 
     fun watchPowerSyncStatus(): StateFlow<SyncStatusData?> = _syncStatusFlow
+
+    fun currentStatus(): SyncStatusData = database.currentStatus
 }
