@@ -1,1 +1,16 @@
-<!DOCTYPE html><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light"><style></style><style></style><style></style><style></style><style>body{padding-top:0!important;padding-left:20px!important;padding-right:20px!important;padding-bottom:150px!important;-webkit-touch-callout:none}</style><body lang="en"><div>{{CONTENT}}</div><div class="bottom-seperator-line"><div class="seperator-line"></div></div><script>WEBVIEW,BRIGDE,JS</script><script>window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.NativeBridge&&(document.body.style.webkitHyphens="auto",document.body.style.hyphens="auto"),document.addEventListener("contextmenu",function(e){return e.preventDefault(),!1})</script>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light"><style>{{RESET-CSS}}</style><style>{{ARTICLE-CSS}}</style><style>{{MARK-CSS}}</style><style>{{BOTTOM-LINE-CSS}}</style><style>body {
+            padding-top: 0px !important;
+            padding-left: 20px !important;
+            padding-right: 20px !important;
+            padding-bottom: 150px !important;
+            -webkit-touch-callout: none;
+        }</style></head><body lang="en"><div>{{CONTENT}}</div><div class="bottom-seperator-line"><div class="seperator-line"></div></div><script>{{WEBVIEW-BRIGDE-JS}}</script><script>(function() {
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.NativeBridge) {
+                document.body.style.webkitHyphens = 'auto';
+                document.body.style.hyphens = 'auto';
+            }
+            document.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                return false;
+            });
+        })();</script></body></html>
