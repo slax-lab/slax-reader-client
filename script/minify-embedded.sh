@@ -48,24 +48,5 @@ for f in "$EMBEDDED_DIR"/js/*.js; do
     echo -e "${GREEN}JS ${NC}  $basename  ${original}B → ${minified}B  (${YELLOW}-${ratio}%${NC})"
 done
 
-# --- HTML ---
-for f in "$EMBEDDED_DIR"/html/*.html; do
-    [[ "$f" == *.min.html ]] && continue
-    basename=$(basename "$f")
-    out="${f%.html}.min.html"
-    html-minifier-terser \
-        --collapse-whitespace \
-        --remove-comments \
-        --remove-redundant-attributes \
-        --remove-optional-tags \
-        --minify-css true \
-        --minify-js true \
-        -o "$out" "$f"
-    original=$(wc -c < "$f" | tr -d ' ')
-    minified=$(wc -c < "$out" | tr -d ' ')
-    ratio=$((100 - minified * 100 / original))
-    echo -e "${GREEN}HTML${NC} $basename  ${original}B → ${minified}B  (${YELLOW}-${ratio}%${NC})"
-done
-
 echo ""
 echo -e "${GREEN}Done!${NC}"
