@@ -84,6 +84,7 @@ kotlin {
                     create("nskeyvalueobserving")
                     create("firebaseBridge")
                     create("googleSignInBridge")
+                    create("shareBridge")
                 }
             }
         }

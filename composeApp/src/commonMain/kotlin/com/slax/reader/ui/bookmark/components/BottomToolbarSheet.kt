@@ -60,9 +60,9 @@ fun BottomToolbarSheet() {
                     if (detailState.isArchived) Res.drawable.ic_bottom_panel_archieved else Res.drawable.ic_bottom_panel_archieve
                 ),
                 ToolbarIcon("edit_title", "detail_toolbar_edit_title".i18n(), Res.drawable.ic_bottom_panel_edittitle),
+                ToolbarIcon("share", "detail_toolbar_share".i18n(), Res.drawable.ic_bottom_panel_share),
                 ToolbarIcon("feedback", "detail_toolbar_feedback".i18n(), Res.drawable.ic_bottom_panel_feedback),
                 ToolbarIcon("delete", "detail_toolbar_delete".i18n(), Res.drawable.ic_bottom_panel_delete),
-//                ToolbarIcon("share", "detail_toolbar_share".i18n(), Res.drawable.ic_bottom_panel_share),
 //                ToolbarIcon("underline", "detail_toolbar_underline".i18n(), Res.drawable.ic_bottom_panel_underline),
 //                ToolbarIcon("comment", "detail_toolbar_comment".i18n(), Res.drawable.ic_bottom_panel_comment),
             )

@@ -6,11 +6,14 @@ import com.slax.reader.ui.bookmark.states.LocalMarkInteraction
 import com.slax.reader.ui.bookmark.states.MarkInteractionState
 import com.slax.reader.ui.bookmark.states.ScrollInfo
 import com.slax.reader.utils.*
+import kotlinx.coroutines.delay
 import org.koin.compose.viewmodel.koinViewModel
 
 val LocalToolbarVisible = compositionLocalOf<MutableState<Boolean>> {
     error("LocalToolbarVisible not provided")
 }
+
+private const val WEBVIEW_MOUNT_DELAY_MS = 250L
 
 sealed interface DetailScreenEvent {
     data object BackClick : DetailScreenEvent
@@ -123,7 +126,14 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
 
     val contentState by viewModel.contentState.collectAsState()
 
-    if (contentState.htmlContent == null || contentState.isLoading) {
+    var transitionSettled by remember { mutableStateOf(false) }
+    LaunchedEffect(bookmarkId) {
+        transitionSettled = false
+        delay(WEBVIEW_MOUNT_DELAY_MS)
+        transitionSettled = true
+    }
+
+    if (contentState.htmlContent == null || contentState.isLoading || !transitionSettled) {
         DetailScreenSkeleton()
         return
     }

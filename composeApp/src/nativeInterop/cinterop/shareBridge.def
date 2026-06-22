@@ -1,0 +1,17 @@
+language = Objective-C
+package = com.slax.reader.share
+
+---
+
+#import <Foundation/Foundation.h>
+
+@interface ShareBridge : NSObject
+
+@property (class, nonatomic, readonly) ShareBridge * _Nonnull shared;
+
+- (void)shareWithTitle:(NSString * _Nonnull)title
+                  text:(NSString * _Nonnull)text
+             urlString:(NSString * _Nonnull)urlString
+             imageData:(NSData * _Nullable)imageData;
+
+@end
