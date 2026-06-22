@@ -27,9 +27,13 @@ import com.slax.reader.data.network.dto.StrokeCreateData
 import com.slax.reader.utils.AppWebViewState
 import com.slax.reader.utils.BridgeMarkItemInfo
 import com.slax.reader.utils.BridgeMarkStrokeInfo
+import com.slax.reader.utils.pickFirstArticleShareImage
+import com.slax.reader.utils.shareContent
+import io.ktor.client.HttpClient
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.json.Json
+import slax_reader_client.composeapp.generated.resources.Res
 
 data class FeedbackPageParams(
     val title: String? = null,
@@ -67,6 +71,7 @@ class BookmarkDetailViewModel(
     private val apiService: ApiService,
     private val appPreferences: AppPreferences,
     private val database: PowerSyncDatabase,
+    private val httpClient: HttpClient,
 ) : ViewModel() {
 
     companion object {
@@ -235,9 +240,32 @@ class BookmarkDetailViewModel(
                 }
             }
             "feedback" -> overlayDelegate.showOverlay(BookmarkOverlay.FeedbackRequired)
+            "share" -> shareBookmark()
         }
 
         overlayDelegate.dismissOverlay(BookmarkOverlay.Toolbar)
+    }
+
+    fun shareBookmark() {
+        val id = _bookmarkId.value ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            val state = bookmarkDelegate.bookmarkDetailState.value
+            val url = "${SlaxConfig.WEB_BASE_URL}/b/$id"
+            val text = buildString {
+                if (state.displayTitle.isNotBlank()) appendLine(state.displayTitle)
+                append(url)
+            }
+
+            val articleImage = contentState.value.htmlContent
+                ?.let { runCatching { pickFirstArticleShareImage(it, httpClient) }.getOrNull() }
+            val imageBytes = articleImage
+                ?: runCatching { Res.readBytes("files/share_logo.png") }.getOrNull()
+
+            withContext(Dispatchers.Main) {
+                shareContent(title = state.displayTitle, text = text, url = url, imageBytes = imageBytes)
+            }
+            bookmarkEvent.action("share").send()
+        }
     }
 
     fun onStopRecordContinue() {

@@ -19,10 +19,13 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.LocalToolbarVisible
+import com.slax.reader.ui.bookmark.states.BookmarkOverlay
+import com.slax.reader.utils.bookmarkEvent
 import com.slax.reader.utils.i18n
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
 import slax_reader_client.composeapp.generated.resources.Res
+import slax_reader_client.composeapp.generated.resources.ic_floating_panel_more
 import slax_reader_client.composeapp.generated.resources.ic_sm_back
 
 @Composable
@@ -67,6 +70,32 @@ fun NavigatorBar() {
             Icon(
                 painter = painterResource(Res.drawable.ic_sm_back),
                 contentDescription = "btn_back".i18n(),
+                tint = Color.Unspecified,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        // 更多
+        val moreInteractionSource = remember { MutableInteractionSource() }
+        val isMorePressed by moreInteractionSource.collectIsPressedAsState()
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .size(48.dp)
+                .alpha(if (isMorePressed) 0.5f else 1f)
+                .clickable(
+                    interactionSource = moreInteractionSource,
+                    indication = null
+                ) {
+                    viewModel.overlayDelegate.showOverlay(BookmarkOverlay.Toolbar)
+                    bookmarkEvent.action("use_toolbar_menu").send()
+                },
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            Icon(
+                painter = painterResource(Res.drawable.ic_floating_panel_more),
+                contentDescription = "detail_toolbar_share".i18n(),
                 tint = Color.Unspecified,
                 modifier = Modifier.size(24.dp)
             )

@@ -163,7 +163,8 @@ actual fun DetailScreen(
         FloatingActionBar(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 58.dp),
+                .navigationBarsPadding()
+                .padding(bottom = 24.dp),
         )
 
         val markInteraction = LocalMarkInteraction.current

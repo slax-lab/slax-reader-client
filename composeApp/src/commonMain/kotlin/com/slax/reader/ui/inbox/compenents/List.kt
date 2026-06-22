@@ -63,7 +63,10 @@ fun ArticleList(
         LazyColumn(
             modifier = Modifier.fillMaxSize().preferredFrameRate(FrameRateCategory.High),
             verticalArrangement = Arrangement.spacedBy(0.dp),
-            contentPadding = PaddingValues(bottom = 0.dp),
+            contentPadding = PaddingValues(
+                top = 8.dp,
+                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
+            ),
             state = lazyListState
         ) {
             itemsIndexed(
