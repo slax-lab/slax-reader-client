@@ -24,13 +24,12 @@ blockquote {
 }
 
 /* 表格类 */
-/* 表格按内容自适应宽度，超出屏幕时横向滚动（类似代码块），避免被压缩到屏幕宽度导致难以阅读 */
 table {
-    display: block; /* 块级化后自身成为横向滚动容器 */
-    width: max-content; /* 宽度由内容决定，不再强制压缩到屏幕宽度 */
-    max-width: 100%; /* 内容较窄时不超过容器宽度 */
-    overflow-x: auto; /* 超出屏幕宽度时横向滚动；同时 overflow-y 计算为 auto，圆角裁剪仍生效 */
-    -webkit-overflow-scrolling: touch; /* iOS 惯性滚动 */
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     margin-top: 24px;
     margin-bottom: 24px;
     border-collapse: separate; /* separate 模型下圆角才生效 */
@@ -60,8 +59,6 @@ td {
     color: rgba(51, 51, 51, 0.6);
     vertical-align: top;
     font-variant-numeric: tabular-nums;
-    /* 单元格不换行：让列的 min-content 等于单行内容宽度，列就不会被压缩到比内容更窄，
-       从而表格保持完整宽度并触发横向滚动（覆盖 reset.css 的 word-break: break-word） */
     white-space: nowrap;
     word-break: normal;
 }
