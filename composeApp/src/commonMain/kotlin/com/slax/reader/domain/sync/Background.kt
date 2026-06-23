@@ -38,7 +38,7 @@ class TaskItem(
     val type: TaskType
 )
 
-private data class ProcessedContent(val html: String, val imageUrls: List<String>)
+data class ProcessedContent(val html: String, val imageUrls: List<String>)
 
 class BackgroundDomain(
     private val bookmarkDao: BookmarkDao,
@@ -258,7 +258,7 @@ class BackgroundDomain(
         }
     }
 
-    suspend fun getBookmarkContent(id: String): String {
+    suspend fun getBookmarkContent(id: String): ProcessedContent {
         val bookmarkDir = "bookmark/$id"
         val contentPath = "$bookmarkDir/content.html"
 
@@ -266,7 +266,7 @@ class BackgroundDomain(
 
         if (existingContent != null) {
             val htmlContent = existingContent.decodeToString()
-            return processContent(htmlContent).html
+            return processContent(htmlContent)
         }
 
         inQueue.getAndUpdate { it + id }
@@ -290,7 +290,7 @@ class BackgroundDomain(
                 }
             }
 
-            return content.html
+            return content
         } catch (e: Exception) {
             println("API 调用失败 $id: ${e.message}")
             val errInfo = when (e) {
@@ -304,10 +304,11 @@ class BackgroundDomain(
                     "message" to (e.message ?: "Unknown error")
                 )
             }
-            return SlaxConfig.DETAIL_ERROR_TEMPLATE
+            val errorHtml = SlaxConfig.DETAIL_ERROR_TEMPLATE
                 .replace("{{TITLE}}", "<center>Failed to load content</center>")
                 .replace("{{REASON}}", "<center>${errInfo["title"]!!}</center>")
                 .replace("{{DETAIL}}", "<center>${errInfo["message"]!!}</center>")
+            return ProcessedContent(errorHtml, emptyList())
         } finally {
             inQueue.getAndUpdate { it - id }
         }
