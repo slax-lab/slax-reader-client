@@ -13,6 +13,7 @@ import com.slax.reader.data.database.model.checkIsSubscribed
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.data.preferences.ContinueReadingBookmark
+import com.slax.reader.domain.image.ShareImageSelector
 import com.slax.reader.domain.sync.BackgroundDomain
 import com.slax.reader.ui.bookmark.states.BookmarkDelegate
 import com.slax.reader.ui.bookmark.states.BookmarkOverlay
@@ -27,9 +28,8 @@ import com.slax.reader.data.network.dto.StrokeCreateData
 import com.slax.reader.utils.AppWebViewState
 import com.slax.reader.utils.BridgeMarkItemInfo
 import com.slax.reader.utils.BridgeMarkStrokeInfo
-import com.slax.reader.utils.pickFirstArticleShareImage
+import com.slax.reader.utils.isIOS
 import com.slax.reader.utils.shareContent
-import io.ktor.client.HttpClient
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.json.Json
@@ -71,7 +71,7 @@ class BookmarkDetailViewModel(
     private val apiService: ApiService,
     private val appPreferences: AppPreferences,
     private val database: PowerSyncDatabase,
-    private val httpClient: HttpClient,
+    private val shareImageSelector: ShareImageSelector,
 ) : ViewModel() {
 
     companion object {
@@ -92,6 +92,9 @@ class BookmarkDetailViewModel(
 
     private val _contentState = MutableStateFlow(BookmarkContentState(isLoading = false))
     val contentState = _contentState.asStateFlow()
+
+    // 文章图片地址（由 processContent 解析得到，仅供分享挑图用，不参与 UI 渲染）
+    private val articleImageUrls = MutableStateFlow<List<String>>(emptyList())
 
     // 阅读位置：一次性消费，PageLoaded 时读取并清空
     private var initialReadPosition: Float? = null
@@ -152,12 +155,14 @@ class BookmarkDetailViewModel(
 
         contentJob?.cancel()
         _contentState.value = _contentState.value.copy(isLoading = true)
+        articleImageUrls.value = emptyList()
 
         contentJob = viewModelScope.launch {
             runCatching {
                 withContext(Dispatchers.IO) { backgroundDomain.getBookmarkContent(id) }
             }.onSuccess { content ->
-                _contentState.value = BookmarkContentState(htmlContent = content, isLoading = false)
+                _contentState.value = BookmarkContentState(htmlContent = content.html, isLoading = false)
+                articleImageUrls.value = content.imageUrls
             }
         }
     }
@@ -256,8 +261,9 @@ class BookmarkDetailViewModel(
                 append(url)
             }
 
-            val articleImage = contentState.value.htmlContent
-                ?.let { runCatching { pickFirstArticleShareImage(it, httpClient) }.getOrNull() }
+            val articleImage = runCatching {
+                shareImageSelector.pick(articleImageUrls.value, id)
+            }.getOrNull()
             val imageBytes = articleImage
                 ?: runCatching { Res.readBytes("files/share_logo.png") }.getOrNull()
 
