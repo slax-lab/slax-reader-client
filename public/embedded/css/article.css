@@ -38,7 +38,7 @@ table {
     border-radius: 8px;
     background: #ffffff;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-    font-size: 13px;
+    font-size: 16px;
     line-height: 1.6;
 }
 
@@ -78,6 +78,7 @@ th {
     border-bottom-width: 2px;
     color: #333333;
     letter-spacing: 0.01em;
+    font-weight: normal;
 }
 
 /* 行首列加重，作横向阅读锚点 */
