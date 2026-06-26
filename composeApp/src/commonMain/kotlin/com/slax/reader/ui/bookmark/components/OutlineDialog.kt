@@ -76,6 +76,8 @@ fun OutlineDialog() {
         val screenHeightPx = with(density) { screenHeight.toPx() }
         val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
         val dialogHeight = screenHeight - statusBarHeight - 36.dp
+        val navBarBottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        val collapsedBottomPadding = navBarBottomPadding + 24.dp
 
         if (anim.bgAlpha > 0f) {
             Box(
@@ -95,7 +97,8 @@ fun OutlineDialog() {
                 morphAlpha = anim.morphAlpha,
                 morphProgress = anim.morphProgress,
                 screenWidth = screenWidth,
-                dialogHeight = dialogHeight
+                dialogHeight = dialogHeight,
+                collapsedBottomPadding = collapsedBottomPadding
             )
         }
 
@@ -119,7 +122,7 @@ fun OutlineDialog() {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = 58.dp)
+                    .padding(bottom = collapsedBottomPadding)
                     .offset(x = (-87).dp)
                     .graphicsLayer { translationY = collapsedTranslationY.value },
                 contentAlignment = Alignment.BottomCenter
@@ -160,14 +163,15 @@ private fun MorphOverlay(
     morphAlpha: Float,
     morphProgress: Float,
     screenWidth: androidx.compose.ui.unit.Dp,
-    dialogHeight: androidx.compose.ui.unit.Dp
+    dialogHeight: androidx.compose.ui.unit.Dp,
+    collapsedBottomPadding: androidx.compose.ui.unit.Dp
 ) {
     val width = lerpDp(50.dp, screenWidth, morphProgress)
     val height = lerpDp(50.dp, dialogHeight, morphProgress)
     val topCorner = lerpDp(25.dp, 20.dp, morphProgress)
     val bottomCorner = lerpDp(25.dp, 0.dp, morphProgress)
     val offsetX = lerpDp((-87).dp, 0.dp, morphProgress)
-    val bottomPadding = lerpDp(58.dp, 0.dp, morphProgress)
+    val bottomPadding = lerpDp(collapsedBottomPadding, 0.dp, morphProgress)
 
     Box(
         modifier = Modifier
