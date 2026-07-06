@@ -50,6 +50,17 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
                         "window.SlaxWebViewBridge.drawMarks(`${escapeJsTemplateString(effect.markDetailJson)}`)"
                     )
                 }
+                is BookmarkDetailEffect.SeekYoutube -> {
+                    webViewState.evaluateJs("window.__slaxSeekYoutube && window.__slaxSeekYoutube(${effect.seconds})")
+                }
+                BookmarkDetailEffect.QueryYoutubeTime -> {
+                    // 查询当前播放秒数，回填给字幕面板用于定位当前行
+                    webViewState.evaluateJsWithCallback("window.__slaxGetYoutubeTime ? window.__slaxGetYoutubeTime() : -1") { result ->
+                        // 不同平台可能返回 "12" / "12.0" / "\"12\""，做容错解析
+                        val seconds = result.trim().trim('"').substringBefore('.').toIntOrNull() ?: -1
+                        viewModel.setYoutubeCurrentTime(seconds)
+                    }
+                }
             }
         }
     }

@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
+import app.slax.reader.SlaxConfig
 import com.slax.reader.const.JS_BRIDGE_NAME
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.domain.image.ImageDownloadManager
@@ -103,6 +104,10 @@ actual fun AppWebView(
                                         )
                                     }
 
+                                    "scrollToTop" -> {
+                                        webState.dispatchEvent(WebViewEvent.ScrollToTop)
+                                    }
+
                                     "refreshContent" -> {
                                         webState.dispatchEvent(WebViewEvent.RefreshContent)
                                     }
@@ -168,6 +173,9 @@ actual fun AppWebView(
                 webChromeClient = WebChromeClient()
                 webViewClient = object : WebViewClient() {
                     override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                        if (request?.isForMainFrame == false) {
+                            return false
+                        }
                         val url = request?.url?.toString() ?: "null"
                         if (url.startsWith("http://") || url.startsWith("https://")) {
                             externalUrl = url
@@ -213,7 +221,8 @@ actual fun AppWebView(
                     }
                 }
 
-                loadDataWithBaseURL(null, htmlContent, "text/html", "utf-8", null)
+                val baseUrl = if (htmlContent.contains("youtube-player")) SlaxConfig.WEB_BASE_URL else null
+                loadDataWithBaseURL(baseUrl, htmlContent, "text/html", "utf-8", null)
             }
         }
     )

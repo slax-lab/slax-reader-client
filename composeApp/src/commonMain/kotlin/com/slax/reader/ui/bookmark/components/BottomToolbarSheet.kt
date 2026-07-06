@@ -44,11 +44,13 @@ fun BottomToolbarSheet() {
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val detailState by viewModel.bookmarkDelegate.bookmarkDetailState.collectAsState()
     val showDeleteConfirm by viewModel.deleteConfirmVisible.collectAsState()
+    val isYoutube by viewModel.isYoutube.collectAsState()
 
-    val toolbarPages = remember(detailState.isStarred, detailState.isArchived) {
+    val toolbarPages = remember(detailState.isStarred, detailState.isArchived, isYoutube) {
         listOf(
-            listOf(
+            listOfNotNull(
                 ToolbarIcon("summary", "detail_toolbar_summary".i18n(), Res.drawable.ic_bottom_panel_summary, proFeature = true),
+                if (isYoutube) ToolbarIcon("transcript", "detail_toolbar_transcript".i18n(), Res.drawable.ic_bottom_panel_transcript) else null,
                 ToolbarIcon(
                     "star",
                     (if (detailState.isStarred) "detail_toolbar_unstar" else "detail_toolbar_star").i18n(),
