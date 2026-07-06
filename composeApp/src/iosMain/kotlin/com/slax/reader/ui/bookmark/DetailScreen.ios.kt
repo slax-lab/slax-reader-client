@@ -122,6 +122,9 @@ actual fun DetailScreen(
                     println(totalInsetPx / densityScale)
                     webViewState.evaluateJs("window.scrollTo(0, Math.max(0,document.body.scrollHeight * ${event.percentage} - ${totalInsetPx / densityScale}))")
                 }
+                is WebViewEvent.ScrollToTop -> {
+                    webViewState.evaluateJs("window.scrollTo({ top: 0, behavior: 'smooth' })")
+                }
                 else -> {}
             }
         }
@@ -176,6 +179,8 @@ actual fun DetailScreen(
         }
 
         OutlineDialog()
+
+        TranscriptDialog()
 
         SelectionMenuCommentPanel(
             markInteraction = markInteraction,

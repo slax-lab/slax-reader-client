@@ -307,6 +307,18 @@ val localeString: Map<String, Map<String, String>> = mapOf(
         "zh" to "提纲",
         "en" to "Outline"
     ),
+    "detail_toolbar_transcript" to mapOf(
+        "zh" to "字幕",
+        "en" to "Transcript"
+    ),
+    "transcript_dialog_title" to mapOf(
+        "zh" to "字幕",
+        "en" to "Transcript"
+    ),
+    "transcript_dialog_empty" to mapOf(
+        "zh" to "暂无字幕",
+        "en" to "No transcript available"
+    ),
     "detail_toolbar_star" to mapOf(
         "zh" to "加星",
         "en" to "Star"
