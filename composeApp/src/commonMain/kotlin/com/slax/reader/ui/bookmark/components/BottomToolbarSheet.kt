@@ -45,8 +45,9 @@ fun BottomToolbarSheet() {
     val detailState by viewModel.bookmarkDelegate.bookmarkDetailState.collectAsState()
     val isCollectionBookmark by viewModel.isCollectionBookmark.collectAsState()
     val showDeleteConfirm by viewModel.deleteConfirmVisible.collectAsState()
+    val isYoutube by viewModel.isYoutube.collectAsState()
 
-    val toolbarPages = remember(detailState.isStarred, detailState.isArchived, isCollectionBookmark) {
+    val toolbarPages = remember(detailState.isStarred, detailState.isArchived, isCollectionBookmark, isYoutube) {
         val ownerActions = if (isCollectionBookmark) {
             emptyList()
         } else {
@@ -67,6 +68,7 @@ fun BottomToolbarSheet() {
         listOf(
             buildList {
                 add(ToolbarIcon("summary", "detail_toolbar_summary".i18n(), Res.drawable.ic_bottom_panel_summary, proFeature = true))
+                if (isYoutube) add(ToolbarIcon("transcript", "detail_toolbar_transcript".i18n(), Res.drawable.ic_bottom_panel_transcript))
                 addAll(ownerActions)
                 add(ToolbarIcon("share", "detail_toolbar_share".i18n(), Res.drawable.ic_bottom_panel_share))
                 add(ToolbarIcon("feedback", "detail_toolbar_feedback".i18n(), Res.drawable.ic_bottom_panel_feedback))

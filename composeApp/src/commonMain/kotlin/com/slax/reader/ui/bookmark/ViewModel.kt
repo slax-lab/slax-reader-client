@@ -39,6 +39,7 @@ import com.slax.reader.utils.shareContent
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import slax_reader_client.composeapp.generated.resources.Res
 
@@ -61,7 +62,16 @@ sealed interface BookmarkDetailEffect {
 
     /** 通知 UI 层调用 JS drawMarks，传入序列化后的 MarkDetail JSON */
     data class DrawMarks(val markDetailJson: String) : BookmarkDetailEffect
+
+    /** 通知 UI 层让 WebView 内的 YouTube 播放器跳转到指定秒数并播放 */
+    data class SeekYoutube(val seconds: Int) : BookmarkDetailEffect
+
+    /** 请求 UI 层向 WebView 查询当前播放秒数（结果回填到 youtubeCurrentTime） */
+    data object QueryYoutubeTime : BookmarkDetailEffect
 }
+
+@Serializable
+data class YoutubeCue(val t: Int, val text: String)
 
 data class BookmarkContentState(
     val htmlContent: String? = null,
@@ -90,6 +100,28 @@ class BookmarkDetailViewModel(
 
         /** 用于向 JS Bridge 序列化划线数据，必须保留所有默认值字段 */
         private val markDetailJson = Json { encodeDefaults = true }
+
+        /** 解析 YouTube 字幕用 */
+        private val cuesJson = Json { ignoreUnknownKeys = true }
+
+        private val CUES_RE = Regex("""<youtube-player[^>]*\bdata-cues="([^"]*)"""", RegexOption.IGNORE_CASE)
+
+        private fun unescapeHtmlAttr(s: String): String = s
+            .replace("&quot;", "\"")
+            .replace("&#39;", "'")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .replace("&amp;", "&") // 必须最后，避免二次解码
+
+        private fun parseYoutubeCues(html: String?): List<YoutubeCue> {
+            if (html.isNullOrEmpty()) return emptyList()
+            val raw = CUES_RE.find(html)?.groupValues?.getOrNull(1) ?: return emptyList()
+            return try {
+                cuesJson.decodeFromString<List<YoutubeCue>>(unescapeHtmlAttr(raw))
+            } catch (e: Exception) {
+                emptyList()
+            }
+        }
     }
 
     private val _bookmarkId = MutableStateFlow<String?>(null)
@@ -117,6 +149,24 @@ class BookmarkDetailViewModel(
 
     // 文章图片地址（由 processContent 解析得到，仅供分享挑图用，不参与 UI 渲染）
     private val articleImageUrls = MutableStateFlow<List<String>>(emptyList())
+
+    // YouTube 字幕：从正文 <youtube-player data-cues> 解析（content 变化时重算）
+    val youtubeCues: StateFlow<List<YoutubeCue>> = _contentState
+        .map { parseYoutubeCues(it.htmlContent) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    // 是否 YouTube 书签（决定工具栏是否展示「字幕」入口）
+    val isYoutube: StateFlow<Boolean> = _contentState
+        .map { it.htmlContent?.contains("<youtube-player") == true }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    // 字幕弹窗可见性
+    private val _transcriptVisible = MutableStateFlow(false)
+    val transcriptVisible: StateFlow<Boolean> = _transcriptVisible.asStateFlow()
+
+    // 字幕面板打开时查询到的当前播放秒数（用于定位当前行）；-1 表示未知
+    private val _youtubeCurrentTime = MutableStateFlow(-1)
+    val youtubeCurrentTime: StateFlow<Int> = _youtubeCurrentTime.asStateFlow()
 
     // 阅读位置：一次性消费，PageLoaded 时读取并清空
     private var initialReadPosition: Float? = null
@@ -285,6 +335,30 @@ class BookmarkDetailViewModel(
         outlineDelegate.collapseDialog()
     }
 
+    fun hideTranscript() {
+        _transcriptVisible.value = false
+    }
+
+    /** 字幕面板打开时调用，向 WebView 查询当前播放进度 */
+    fun requestYoutubeCurrentTime() {
+        _youtubeCurrentTime.value = -1
+        viewModelScope.launch {
+            _effects.emit(BookmarkDetailEffect.QueryYoutubeTime)
+        }
+    }
+
+    /** UI 层把 WebView 查询到的当前秒数回填进来 */
+    fun setYoutubeCurrentTime(seconds: Int) {
+        _youtubeCurrentTime.value = seconds
+    }
+
+    /** 字幕面板点击某句：让 WebView 内的播放器跳转到该秒数 */
+    fun requestSeekYoutube(seconds: Int) {
+        viewModelScope.launch {
+            _effects.emit(BookmarkDetailEffect.SeekYoutube(seconds))
+        }
+    }
+
     fun requestNavigateBack() {
         viewModelScope.launch { _effects.emit(BookmarkDetailEffect.NavigateBack) }
     }
@@ -359,6 +433,7 @@ class BookmarkDetailViewModel(
             }
             "feedback" -> overlayDelegate.showOverlay(BookmarkOverlay.FeedbackRequired)
             "share" -> shareBookmark()
+            "transcript" -> _transcriptVisible.value = true
         }
 
         overlayDelegate.dismissOverlay(BookmarkOverlay.Toolbar)
