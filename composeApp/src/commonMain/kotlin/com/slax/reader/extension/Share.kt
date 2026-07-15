@@ -35,9 +35,7 @@ suspend fun collectionShare(content: String, title: String?, body: String?): Str
             val url = match.value
 
             val preferences = getPreferences()
-            // iOS 分享扩展是独立进程，需按环境初始化
-            // 仅未初始化时补齐，避免影响 Android 主进程
-            if (AppEnv.current == null) {
+            if (AppEnv.current == null){
                 AppEnv.init(preferences.getSelectedEnv())
             }
             val token = preferences.getAuthInfoSuspend()
