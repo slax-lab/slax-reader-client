@@ -3,6 +3,7 @@ package com.slax.reader.extension
 import com.slax.reader.data.network.ApiService
 import app.slax.reader.SlaxConfig
 import com.slax.reader.data.preferences.getPreferences
+import com.slax.reader.utils.AppEnv
 import com.slax.reader.utils.bookmarkEvent
 import com.slax.reader.utils.platformName
 import io.ktor.client.*
@@ -34,6 +35,9 @@ suspend fun collectionShare(content: String, title: String?, body: String?): Str
             val url = match.value
 
             val preferences = getPreferences()
+            if (AppEnv.current == null){
+                AppEnv.init(preferences.getSelectedEnv())
+            }
             val token = preferences.getAuthInfoSuspend()
             if (token.isNullOrEmpty()) return "Not have auth info, please login first."
 
