@@ -37,7 +37,7 @@ class Connector(
         if (authInfo != null) {
             val refreshTime = Instant.fromEpochMilliseconds(authInfo.refreshTime)
             val current = kotlin.time.Clock.System.now()
-            if (current - refreshTime > 1.hours) return PowerSyncCredentials(
+            if (current - refreshTime < 1.hours) return PowerSyncCredentials(
                 endpoint = authInfo.connectUrl,
                 token = authInfo.token
             )
