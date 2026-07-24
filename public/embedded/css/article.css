@@ -12,7 +12,48 @@ figure,
 :not(li) > ul,
 :not(li) > ol {
     margin-top: 24px !important;
+}
+
+/* 块级间距规范化（对齐 dweb，scope 正文容器）*/
+
+/* 首元素去上边距，消除正文顶部空隙 */
+body > div:first-child :first-child,
+body > div:first-child :first-child:empty + * {
+    margin-top: 0 !important;
+}
+
+/* 首个可见元素去上边距（跳过隐藏空白块）*/
+body
+    > div:first-child
+    :not(:has(> .oc-blank-flag)):not(:empty):not(img):not(
+        :not(:has(> .oc-blank-flag)):not(:empty):not(img) ~ *
+    ) {
+    margin-top: 0 !important;
+}
+
+/* 文本后的 div 补上间距 */
+body > div:first-child :is(span, strong, em, b, i, a, code, h1, h2, h3, h4, h5, h6, p) + div {
+    margin-top: 24px !important;
+}
+
+/* div 后接内联文本补下间距 */
+body > div:first-child div:has(+ :is(span, strong, em, b, i, a, code)) {
+    margin-bottom: 24px !important;
+}
+
+/* 相邻非空 div 补间距 */
+body > div:first-child div:not(:has(> .oc-blank-flag)):not(:empty) + div {
+    margin-top: 24px !important;
+}
+
+/* 仅标记过的多行 <p> 保留换行 */
+p:has(> .oc-preline-flag) {
     white-space: pre-line;
+}
+
+/* 隐藏纯空白容器（marker 驱动）*/
+:has(> .oc-blank-flag) {
+    display: none !important;
 }
 
 /* 引用类 */
@@ -133,6 +174,8 @@ img {
     height: auto;
     object-fit: contain;
     border-radius: 12px;
+    /* 图片上下留白 + 非满宽居中（对齐 dweb）*/
+    margin: 24px auto;
 }
 
 img + img {
