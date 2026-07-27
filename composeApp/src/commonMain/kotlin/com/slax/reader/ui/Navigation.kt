@@ -16,6 +16,7 @@ import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.auth.AuthState
 import com.slax.reader.domain.coordinator.CoordinatorDomain
 import com.slax.reader.domain.sync.BackgroundDomain
+import com.slax.reader.domain.sync.CollectionBackgroundDomain
 import com.slax.reader.ui.about.AboutScreen
 import com.slax.reader.ui.bookmark.DetailScreen
 import com.slax.reader.ui.debug.DebugScreen
@@ -53,6 +54,7 @@ fun SlaxNavigation(
 ) {
     val authDomain: AuthDomain = auth ?: koinInject()
     val backgroundDomain: BackgroundDomain = background ?: koinInject()
+    val collectionBackgroundDomain: CollectionBackgroundDomain = koinInject()
     val coordinator: CoordinatorDomain = syncCoordinator ?: koinInject()
     val appLifecycle: AppLifecycle = lifecycle ?: koinInject()
     val firstPartyEvents: FirstPartyEventReporter = koinInject()
@@ -72,6 +74,7 @@ fun SlaxNavigation(
                 launch(Dispatchers.IO) {
                     authDomain.refreshToken()
                     backgroundDomain.startup()
+                    collectionBackgroundDomain.startup()
                     coordinator.startup()
                 }
                 FirebaseHelper.setUserId((authState as AuthState.Authenticated).userId)
@@ -81,6 +84,7 @@ fun SlaxNavigation(
             AuthState.Unauthenticated -> {
                 launch(Dispatchers.IO) {
                     backgroundDomain.cleanup()
+                    collectionBackgroundDomain.cleanup()
                     coordinator.cleanup(true)
                 }
             }
@@ -118,6 +122,8 @@ fun SlaxNavigation(
             val params = backStackEntry.toRoute<BookmarkRoutes>()
             DetailScreen(
                 bookmarkId = params.bookmarkId,
+                collectionOwnerId = params.collectionOwnerId,
+                collectionId = params.collectionId,
                 onEvent = { event ->
                     when (event) {
                         DetailScreenEvent.BackClick -> {
@@ -169,6 +175,7 @@ fun SlaxNavigation(
             DisposableEffect(Unit) {
                 onDispose {
                     backgroundDomain.restart()
+                    collectionBackgroundDomain.restart()
                 }
             }
             SettingScreen(

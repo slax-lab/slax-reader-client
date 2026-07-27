@@ -6,6 +6,7 @@ import app.slax.reader.SlaxConfig
 import com.powersync.PowerSyncDatabase
 import com.slax.reader.data.database.dao.BookmarkCommentDao
 import com.slax.reader.data.database.dao.BookmarkDao
+import com.slax.reader.data.database.dao.CollectionDao
 import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.database.dao.SubscriptionDao
 import com.slax.reader.data.database.dao.UserDao
@@ -16,7 +17,9 @@ import com.slax.reader.data.preferences.ContinueReadingBookmark
 import com.slax.reader.domain.image.ShareImageSelector
 import com.slax.reader.domain.coordinator.CoordinatorDomain
 import com.slax.reader.domain.sync.BackgroundDomain
+import com.slax.reader.domain.sync.CollectionBackgroundDomain
 import com.slax.reader.ui.bookmark.states.BookmarkDelegate
+import com.slax.reader.ui.bookmark.states.BookmarkDetailBinding
 import com.slax.reader.ui.bookmark.states.BookmarkOverlay
 import com.slax.reader.ui.bookmark.states.CommentDelegate
 import com.slax.reader.ui.bookmark.states.OutlineDelegate
@@ -61,16 +64,19 @@ sealed interface BookmarkDetailEffect {
 data class BookmarkContentState(
     val htmlContent: String? = null,
     val isLoading: Boolean = false,
+    val cacheKey: String = "",
 )
 
 class BookmarkDetailViewModel(
     private val bookmarkDao: BookmarkDao,
+    private val collectionDao: CollectionDao,
     private val subscriptionDao: SubscriptionDao,
     private val localBookmarkDao: LocalBookmarkDao,
     private val commentDao: BookmarkCommentDao,
     private val userDao: UserDao,
     private val backgroundDomain: BackgroundDomain,
     private val coordinatorDomain: CoordinatorDomain,
+    private val collectionBackgroundDomain: CollectionBackgroundDomain,
     private val apiService: ApiService,
     private val appPreferences: AppPreferences,
     private val database: PowerSyncDatabase,
@@ -87,6 +93,10 @@ class BookmarkDetailViewModel(
 
     private val _bookmarkId = MutableStateFlow<String?>(null)
     val bookmarkId = _bookmarkId.asStateFlow()
+    private val _bookmarkBinding = MutableStateFlow<BookmarkDetailBinding?>(null)
+    val isCollectionBookmark: StateFlow<Boolean> = _bookmarkBinding
+        .map { it?.collectionOwnerId != null }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private val _effects = MutableSharedFlow<BookmarkDetailEffect>(extraBufferCapacity = 8)
     val effects: SharedFlow<BookmarkDetailEffect> = _effects.asSharedFlow()
@@ -116,11 +126,18 @@ class BookmarkDetailViewModel(
     val commentDelegate = CommentDelegate(database, commentDao, localBookmarkDao, userDao, apiService, viewModelScope)
     val outlineDelegate = OutlineDelegate(localBookmarkDao, apiService, viewModelScope)
     val overviewDelegate = OverviewDelegate(localBookmarkDao, apiService, viewModelScope)
-    val bookmarkDelegate = BookmarkDelegate(bookmarkDao, _bookmarkId, viewModelScope)
+    val bookmarkDelegate = BookmarkDelegate(
+        bookmarkDao,
+        collectionDao,
+        _bookmarkBinding,
+        viewModelScope,
+    )
 
-    fun bind(bookmarkId: String) {
-        if (_bookmarkId.value == bookmarkId) return
+    fun bind(bookmarkId: String, collectionOwnerId: String? = null, collectionId: String? = null) {
+        val binding = BookmarkDetailBinding(bookmarkId, collectionOwnerId, collectionId)
+        if (_bookmarkBinding.value == binding) return
 
+        _bookmarkBinding.value = binding
         _bookmarkId.value = bookmarkId
         _contentState.value = BookmarkContentState(isLoading = true)
 
@@ -156,9 +173,17 @@ class BookmarkDetailViewModel(
 
     fun refreshContent() {
         val id = _bookmarkId.value ?: return
+        val isCollection = _bookmarkBinding.value?.collectionOwnerId != null
+        val collectionId = _bookmarkBinding.value?.collectionId
+            ?: _bookmarkBinding.value?.collectionOwnerId
+        val cacheKey = if (isCollection && collectionId != null) {
+            CollectionBackgroundDomain.cacheKey(collectionId, id)
+        } else {
+            id
+        }
 
         contentJob?.cancel()
-        _contentState.value = _contentState.value.copy(isLoading = true)
+        _contentState.value = _contentState.value.copy(isLoading = true, cacheKey = cacheKey)
         articleImageUrls.value = emptyList()
 
         contentJob = viewModelScope.launch {
@@ -168,11 +193,26 @@ class BookmarkDetailViewModel(
                 // Connecting while the device is already offline.
                 val networkAvailable = coordinatorDomain.isNetworkAvailable()
                 withContext(Dispatchers.IO) {
-                    backgroundDomain.getBookmarkContent(id, networkAvailable)
+                    if (isCollection && collectionId != null) {
+                        collectionBackgroundDomain.getBookmarkContent(id, collectionId)
+                    } else {
+                        backgroundDomain.getBookmarkContent(id, networkAvailable)
+                    }
                 }
             }.onSuccess { content ->
-                _contentState.value = BookmarkContentState(htmlContent = content.html, isLoading = false)
+                _contentState.value = BookmarkContentState(
+                    htmlContent = content.html,
+                    isLoading = false,
+                    cacheKey = cacheKey,
+                )
                 articleImageUrls.value = content.imageUrls
+            }.onFailure { error ->
+                println("Failed to load bookmark content $id: ${error.message}")
+                _contentState.value = BookmarkContentState(
+                    htmlContent = null,
+                    isLoading = false,
+                    cacheKey = cacheKey,
+                )
             }
         }
     }
@@ -211,6 +251,7 @@ class BookmarkDetailViewModel(
     }
 
     fun requestDeleteBookmark() {
+        if (isCollectionBookmark.value) return
         _deleteConfirmVisible.value = true
     }
 
@@ -235,6 +276,7 @@ class BookmarkDetailViewModel(
     }
 
     fun onToolbarIconClick(pageId: String) {
+        if (isCollectionBookmark.value && pageId in setOf("star", "archive", "edit_title")) return
         val current = bookmarkDelegate.bookmarkDetailState.value
 
         when (pageId) {
@@ -316,7 +358,9 @@ class BookmarkDetailViewModel(
             appPreferences.setContinueReadingBookmark(
                 ContinueReadingBookmark(
                     bookmarkId = id,
-                    title = state.displayTitle
+                    title = state.displayTitle,
+                    collectionOwnerId = _bookmarkBinding.value?.collectionOwnerId,
+                    collectionId = _bookmarkBinding.value?.collectionId,
                 )
             )
         }

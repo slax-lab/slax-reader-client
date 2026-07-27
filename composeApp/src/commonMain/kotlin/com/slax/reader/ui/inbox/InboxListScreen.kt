@@ -57,6 +57,7 @@ fun InboxListScreen(
     var showAddLinkDialog by remember { mutableStateOf(false) }
     var editingBookmark by remember { mutableStateOf<InboxListBookmarkItem?>(null) }
     val currentSortType by inboxViewModel.sortType.collectAsState()
+    val activeCollection by inboxViewModel.activeCollection.collectAsState()
 
     LaunchedEffect(currentSortType) {
         val listMode = when (currentSortType) {
@@ -104,6 +105,7 @@ fun InboxListScreen(
                                 showAddLinkDialog = true
                             },
                             currentSortType = currentSortType,
+                            collectionTitle = activeCollection?.name,
                             onSortTypeChanged = { type ->
                                 firstPartyEvents.track("element_clicked", mapOf("element_id" to "inbox_sort_control", "screen_name" to "bookmarks"))
                                 inboxViewModel.setSortType(type)
@@ -169,6 +171,7 @@ private fun NavigationBar(
     onAvatarClick: () -> Unit = {},
     onAddLinkClick: () -> Unit = {},
     currentSortType: BookmarkSortType = BookmarkSortType.UPDATED,
+    collectionTitle: String? = null,
     onSortTypeChanged: (BookmarkSortType) -> Unit = {}
 ) {
     println("[watch][UI] recomposition NavigationBar")
@@ -224,6 +227,7 @@ private fun NavigationBar(
                     .padding(vertical = 5.dp, horizontal = 20.dp)
                     .alpha(if (isTitlePressed) 0.5f else 1f)
                     .clickable(
+                        enabled = collectionTitle == null,
                         interactionSource = titleInteractionSource,
                         indication = null
                     ) {
@@ -233,7 +237,7 @@ private fun NavigationBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = currentSortType.labelKey().i18n(),
+                    text = collectionTitle ?: currentSortType.labelKey().i18n(),
                     style = TextStyle(
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Medium,
@@ -243,17 +247,19 @@ private fun NavigationBar(
                     )
                 )
 
-                Image(
-                    painter = painterResource(Res.drawable.inbox_more),
-                    contentDescription = "Switch List",
-                    modifier = Modifier.size(10.dp),
-                    contentScale = ContentScale.Fit
-                )
+                if (collectionTitle == null) {
+                    Image(
+                        painter = painterResource(Res.drawable.inbox_more),
+                        contentDescription = "Switch List",
+                        modifier = Modifier.size(10.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
             }
         }
 
         InboxDropdownMenu(
-            expanded = expanded,
+            expanded = expanded && collectionTitle == null,
             onDismissRequest = { expanded = false },
             yOffset = menuYOffset
         ) {
@@ -298,6 +304,12 @@ private fun ContentSection(
 ) {
     println("[watch][UI] recomposition ContentSection")
 
+    val collections by inboxViewModel.subscribedCollections.collectAsState()
+    val activeOwnerId by inboxViewModel.activeCollectionOwnerId.collectAsState()
+    val activeCollection by inboxViewModel.activeCollection.collectAsState()
+    val collectionBookmarks by inboxViewModel.collectionBookmarks.collectAsState()
+    val userInfo by inboxViewModel.userInfo.collectAsState()
+
     Box(
         modifier = Modifier.fillMaxSize().padding(top = 8.dp).clipToBounds()
     ) {
@@ -311,19 +323,50 @@ private fun ContentSection(
         ) {
             Spacer(modifier = Modifier.height(4.dp))
 
-            ArticleList(
-                navCtrl = navCtrl,
-                viewModel = inboxViewModel,
-                onEditTitle = onEditTitle,
-            )
+            val collectionFeedSwitcher: @Composable () -> Unit = {
+                if (collections.isNotEmpty()) {
+                    CollectionFeedSwitcher(
+                        ownAvatar = userInfo?.picture.orEmpty(),
+                        collections = collections,
+                        activeOwnerId = activeOwnerId,
+                        onSelect = inboxViewModel::selectCollection,
+                    )
+                }
+            }
+
+            if (activeOwnerId == null) {
+                ArticleList(
+                    navCtrl = navCtrl,
+                    viewModel = inboxViewModel,
+                    onEditTitle = onEditTitle,
+                    headerContent = collectionFeedSwitcher,
+                )
+            } else {
+                CollectionFeedContent(
+                    navCtrl = navCtrl,
+                    viewModel = inboxViewModel,
+                    collection = activeCollection,
+                    bookmarks = collectionBookmarks,
+                    headerContent = collectionFeedSwitcher,
+                )
+            }
         }
 
-        ContinueReading(
-            onClick = { bookmarkId ->
-                navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmarkId, openedFrom = "bookmarks"))
-            },
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
+        if (activeOwnerId == null) {
+            ContinueReading(
+                onClick = { bookmark ->
+                    navCtrl.navigate(
+                        BookmarkRoutes(
+                            bookmarkId = bookmark.bookmarkId,
+                            openedFrom = "bookmarks",
+                            collectionOwnerId = bookmark.collectionOwnerId,
+                            collectionId = bookmark.collectionId,
+                        )
+                    )
+                },
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
 
     }
 }

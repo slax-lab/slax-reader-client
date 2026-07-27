@@ -25,6 +25,8 @@ sealed interface DetailScreenEvent {
 @Composable
 fun DetailScreen(
     bookmarkId: String,
+    collectionOwnerId: String? = null,
+    collectionId: String? = null,
     onEvent: (DetailScreenEvent) -> Unit,
     viewModel: BookmarkDetailViewModel? = null,
     lifecycle: AppLifecycle = LifeCycleHelper,
@@ -39,8 +41,8 @@ fun DetailScreen(
 
     val webViewState = rememberAppWebViewState(coroutineScope)
 
-    LaunchedEffect(bookmarkId) {
-        resolvedViewModel.bind(bookmarkId)
+    LaunchedEffect(bookmarkId, collectionOwnerId, collectionId) {
+        resolvedViewModel.bind(bookmarkId, collectionOwnerId, collectionId)
 
         resolvedViewModel.effects.collect { effect ->
             when (effect) {
@@ -150,7 +152,7 @@ fun DetailScreen(
         LocalMarkInteraction provides markInteraction,
     ) {
         DetailScreen(
-            bookmarkId = bookmarkId,
+            bookmarkId = contentState.cacheKey,
             htmlContent = contentState.htmlContent!!,
             webViewState = webViewState,
             onScrollInfoChanged = { scrollInfo.value = it },

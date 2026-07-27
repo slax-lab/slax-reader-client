@@ -4,7 +4,6 @@ import com.powersync.ExperimentalPowerSyncAPI
 import com.powersync.PowerSyncDatabase
 import com.powersync.connectors.PowerSyncBackendConnector
 import com.powersync.connectors.PowerSyncCredentials
-import com.powersync.db.crud.CrudEntry
 import com.powersync.db.crud.CrudTransaction
 import com.powersync.db.crud.SqliteRow
 import com.powersync.sync.SyncOptions
@@ -15,6 +14,7 @@ import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.network.dto.ChangesItem
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.data.preferences.PowerSyncAuthInfo
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.take
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.hours
@@ -25,6 +25,12 @@ val ConnectParams = mapOf("schema_version" to JsonParam.String("1"))
 
 @OptIn(ExperimentalPowerSyncAPI::class)
 val ConnectOptions = SyncOptions(newClientImplementation = true)
+
+/** 每次上传请求最多携带的 CRUD 操作数量,小批量多次请求,避免一次性把大量变更打到服务器。 */
+private const val UPLOAD_CHUNK_SIZE = 20
+
+/** 相邻两次上传请求之间的间隔(毫秒),给服务器一点喘息时间。 */
+private const val UPLOAD_CHUNK_DELAY_MS = 200L
 
 class Connector(
     private val apiService: ApiService,
@@ -148,19 +154,24 @@ class Connector(
 
     override suspend fun uploadData(database: PowerSyncDatabase) {
         val transactions = mutableListOf<CrudTransaction>()
-        val batch = mutableListOf<CrudEntry>()
 
         database.getCrudTransactions()
             .take(100)
             .collect { tx ->
-                batch.addAll(tx.crud)
                 transactions.add(tx)
             }
 
-        if (batch.isEmpty()) return
+        if (transactions.isEmpty()) return
 
-        try {
-            val postData = batch.map { entry ->
+        // 把事务按 CRUD 操作数量攒成小批次:单个事务不拆分(保证原子性),
+        // 按顺序逐批上传并逐批 complete —— 这样即使某一批失败,已成功的批次也不会在重试时重复上传。
+        val pendingBatch = mutableListOf<CrudTransaction>()
+        var pendingOps = 0
+
+        suspend fun flush() {
+            if (pendingBatch.isEmpty()) return
+
+            val postData = pendingBatch.flatMap { tx -> tx.crud }.map { entry ->
                 val (changes, preChanges) = diffChanges(entry.opData, entry.previousValues)
                 ChangesItem(
                     table = entry.table,
@@ -172,13 +183,29 @@ class Connector(
             }
 
             apiService.uploadChanges(changes = postData)
+            pendingBatch.forEach { it.complete(null) }
 
-            transactions.forEach { it.complete(null) }
+            println("Successfully uploaded ${pendingBatch.size} transactions with ${postData.size} operations")
 
-            println("Successfully uploaded ${transactions.size} transactions with ${batch.size} operations")
+            pendingBatch.clear()
+            pendingOps = 0
+        }
 
-        } catch (e: Exception) {
-            throw e
+        var isFirstBatch = true
+        for (tx in transactions) {
+            // 当前批次已有内容,且再加入这个事务会超过阈值时,先把已攒的批次发出去。
+            if (pendingOps > 0 && pendingOps + tx.crud.size > UPLOAD_CHUNK_SIZE) {
+                if (!isFirstBatch) delay(UPLOAD_CHUNK_DELAY_MS)
+                flush()
+                isFirstBatch = false
+            }
+            pendingBatch.add(tx)
+            pendingOps += tx.crud.size
+        }
+
+        if (pendingBatch.isNotEmpty()) {
+            if (!isFirstBatch) delay(UPLOAD_CHUNK_DELAY_MS)
+            flush()
         }
     }
 }

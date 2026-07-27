@@ -48,8 +48,11 @@ fun getHttpClient(appPreferences: AppPreferences): HttpClient {
         }
     }
 
+    val apiHost by lazy { Url(AppEnv.apiBaseUrl).host }
     client.plugin(HttpSend).intercept { request ->
-        appPreferences.getAuthInfoSuspend()?.let { request.bearerAuth(it) }
+        if (request.url.host == apiHost) {
+            appPreferences.getAuthInfoSuspend()?.let { request.bearerAuth(it) }
+        }
         execute(request)
     }
 

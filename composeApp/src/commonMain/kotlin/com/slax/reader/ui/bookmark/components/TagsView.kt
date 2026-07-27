@@ -29,7 +29,10 @@ fun TagsView(
 ) {
     println("[watch][UI] recomposition TagsView")
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
+    val isCollectionBookmark by viewModel.isCollectionBookmark.collectAsState()
     val currentTags by viewModel.bookmarkDelegate.selectedTagList.collectAsState()
+
+    if (isCollectionBookmark) return
 
     FlowRow(
         modifier = modifier,
