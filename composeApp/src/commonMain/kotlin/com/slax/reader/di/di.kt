@@ -4,6 +4,7 @@ import com.powersync.PowerSyncDatabase
 import com.slax.reader.data.database.AppSchema
 import com.slax.reader.data.database.dao.BookmarkCommentDao
 import com.slax.reader.data.database.dao.BookmarkDao
+import com.slax.reader.data.database.dao.CollectionDao
 import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.database.dao.PowerSyncDao
 import com.slax.reader.data.database.dao.SubscriptionDao
@@ -17,6 +18,7 @@ import com.slax.reader.domain.coordinator.CoordinatorDomain
 import com.slax.reader.domain.image.ImageDownloadManager
 import com.slax.reader.domain.image.ShareImageSelector
 import com.slax.reader.domain.sync.BackgroundDomain
+import com.slax.reader.domain.sync.CollectionBackgroundDomain
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.ui.login.LoginViewModel
@@ -55,6 +57,7 @@ val powerSyncModule = module {
 val repositoryModule = module {
     single(named("daoScope")) { CoroutineScope(SupervisorJob() + Dispatchers.IO) }
     single { BookmarkDao(get(named("daoScope")), get()) }
+    single { CollectionDao(get(named("daoScope")), get()) }
     single { UserDao(get(named("daoScope")), get()) }
     single { LocalBookmarkDao(get(named("daoScope")), get()) }
     single { SubscriptionDao(get(named("daoScope")), get()) }
@@ -74,6 +77,7 @@ val viewModelModule = module {
 val domainModule = module {
     single { AuthDomain(get(), get(), get()) }
     single { BackgroundDomain(get(), get(), get(), get(), get(), get()) }
+    single { CollectionBackgroundDomain(get(), get(), get(), get(), get(), get()) }
     single { CoordinatorDomain(get(), get(), get()) }
     single { ImageDownloadManager(get(), get()) }
     single { ShareImageSelector(get()) }

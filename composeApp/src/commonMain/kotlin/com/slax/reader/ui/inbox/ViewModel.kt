@@ -3,10 +3,13 @@ package com.slax.reader.ui.inbox
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.slax.reader.data.database.dao.BookmarkDao
+import com.slax.reader.data.database.dao.CollectionDao
 import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.database.dao.UserDao
 import com.slax.reader.data.database.model.BookmarkSortType
+import com.slax.reader.data.database.model.CollectionBookmarkItem
 import com.slax.reader.data.database.model.InboxListBookmarkItem
+import com.slax.reader.data.database.model.SubscribedCollection
 import com.slax.reader.domain.coordinator.CoordinatorDomain
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -19,18 +22,42 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class InboxListViewModel(
     private val userDao: UserDao,
     private val bookmarkDao: BookmarkDao,
+    private val collectionDao: CollectionDao,
     private val localBookmarkDao: LocalBookmarkDao,
     private val coordinatorDomain: CoordinatorDomain
 ) : ViewModel() {
     val userInfo = userDao.watchUserInfo()
     val syncState = coordinatorDomain.syncState
+
+    val subscribedCollections: StateFlow<List<SubscribedCollection>> =
+        collectionDao.watchSubscribedCollections()
+
+    private val _activeCollectionOwnerId = MutableStateFlow<String?>(null)
+    val activeCollectionOwnerId: StateFlow<String?> = _activeCollectionOwnerId.asStateFlow()
+
+    val activeCollection: StateFlow<SubscribedCollection?> = combine(
+        subscribedCollections,
+        _activeCollectionOwnerId,
+    ) { collections, ownerId ->
+        collections.firstOrNull { it.ownerId == ownerId }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val collectionBookmarks: StateFlow<List<CollectionBookmarkItem>> = _activeCollectionOwnerId
+        .flatMapLatest { ownerId ->
+            if (ownerId.isNullOrBlank()) flowOf(emptyList())
+            else collectionDao.watchCollectionBookmarks(ownerId)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _sortType = MutableStateFlow(BookmarkSortType.UPDATED)
     val sortType: StateFlow<BookmarkSortType> = _sortType.asStateFlow()
@@ -59,6 +86,22 @@ class InboxListViewModel(
 
     fun setSortType(type: BookmarkSortType) {
         _sortType.value = type
+    }
+
+    fun selectCollection(ownerId: String?) {
+        if (_activeCollectionOwnerId.value == ownerId) return
+        _activeCollectionOwnerId.value = ownerId
+        scrollToTop()
+        if (ownerId != null) {
+            viewModelScope.launch(Dispatchers.IO) {
+                val collectionId = subscribedCollections.value
+                    .firstOrNull { it.ownerId == ownerId }
+                    ?.id
+                    ?: return@launch
+                runCatching { collectionDao.setLastRead(collectionId) }
+                    .onFailure { error -> println("Failed to update collection last-read time: ${error.message}") }
+            }
+        }
     }
     val hasSynced = bookmarkDao.hasSynced
 

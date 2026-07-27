@@ -61,6 +61,8 @@ class BackgroundDomain(
 
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     fun startup() {
+        if (workerScope != null) return
+
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         val queue = Channel<TaskItem>(100)
         workerScope = scope
@@ -68,55 +70,51 @@ class BackgroundDomain(
 
         scope.launch {
             val localBookmarkState = localBookmarkDao.watchUserLocalBookmarkMap()
-            bookmarkDao.watchUserBookmarkList()
-                .collect { bookmarkList ->
-                    val cacheCountSetting = appPreferences.getCacheCount().first()
-                    val recentDownloadCount = if (cacheCountSetting == -1) Int.MAX_VALUE else cacheCountSetting
+            bookmarkDao.watchUserBookmarkList().collect { bookmarkList ->
+                val cacheCountSetting = appPreferences.getCacheCount().first()
+                val recentDownloadCount = if (cacheCountSetting == -1) {
+                    Int.MAX_VALUE
+                } else {
+                    cacheCountSetting.coerceAtLeast(0)
+                }
+                val localMap = localBookmarkState.value
+                val currentQueue = inQueue.value
+                val cacheWindowIds = mutableSetOf<String>()
+                val toDownload = mutableListOf<TaskItem>()
+                var windowCount = 0
 
-                    val localMap = localBookmarkState.value
-                    val currentQueue = inQueue.value
+                for (item in bookmarkList) {
+                    if (item.metadataStatus != successStatus) continue
+                    val local = localMap[item.id]
+                    if (local != null && !local.isAutoCached && local.isDownloaded()) continue
+                    if (windowCount >= recentDownloadCount) break
 
-                    val cacheWindowIds = mutableSetOf<String>()
-                    val toDownload = mutableListOf<TaskItem>()
-                    var windowCount = 0
-
-                    for (item in bookmarkList) {
-                        if (item.metadataStatus != successStatus) continue
-
-                        val local = localMap[item.id]
-
-                        if (local != null && !local.isAutoCached && local.isDownloaded()) continue
-
-                        if (windowCount >= recentDownloadCount) break
-                        windowCount++
-                        cacheWindowIds.add(item.id)
-
-                        if (item.id !in currentQueue && local?.isDownloaded() != true) {
-                            toDownload.add(TaskItem(item.id, item.updatedAt, TaskType.DOWNLOAD_METADATA))
-                        }
-                    }
-
-                    val toCleanupIds = mutableListOf<String>()
-                    val activeIds = bookmarkList.asSequence().map { it.id }.toHashSet()
-                    for ((id, info) in localMap) {
-                        if (id in activeIds && id !in cacheWindowIds && info.isAutoCached && info.downloadStatus == 2) {
-                            toCleanupIds.add(id)
-                        }
-                    }
-
-                    println("[BackgroundDomain] window=$windowCount, toDownload=${toDownload.size}, toCleanup=${toCleanupIds.size}")
-
-                    if (toCleanupIds.isNotEmpty()) {
-                        cleanupOldCache(toCleanupIds)
-                    }
-
-                    for (task in toDownload) {
-                        val added = inQueue.getAndUpdate { it + task.bookmarkId }.let { task.bookmarkId !in it }
-                        if (added) {
-                            queue.send(task)
-                        }
+                    windowCount++
+                    cacheWindowIds.add(item.id)
+                    if (item.id !in currentQueue && local?.isDownloaded() != true) {
+                        toDownload.add(TaskItem(item.id, item.updatedAt, TaskType.DOWNLOAD_METADATA))
                     }
                 }
+
+                val activeIds = bookmarkList.asSequence().map { it.id }.toHashSet()
+                val toCleanupIds = localMap.mapNotNull { (id, info) ->
+                    id.takeIf {
+                        it in activeIds &&
+                            it !in cacheWindowIds &&
+                            info.isAutoCached &&
+                            info.downloadStatus == 2
+                    }
+                }
+
+                println("[BackgroundDomain] window=$windowCount, toDownload=${toDownload.size}, toCleanup=${toCleanupIds.size}")
+
+                if (toCleanupIds.isNotEmpty()) cleanupOldCache(toCleanupIds)
+
+                for (task in toDownload) {
+                    val added = inQueue.getAndUpdate { it + task.bookmarkId }.let { task.bookmarkId !in it }
+                    if (added) queue.send(task)
+                }
+            }
         }
 
         scope.launch {
@@ -218,6 +216,7 @@ class BackgroundDomain(
         downloadQueue = null
         workerScope?.cancel()
         workerScope = null
+        inQueue.value = emptySet()
     }
 
     private suspend fun updateBookmarkStatus(id: String, status: DownloadStatus, isAutoCached: Boolean = true) {

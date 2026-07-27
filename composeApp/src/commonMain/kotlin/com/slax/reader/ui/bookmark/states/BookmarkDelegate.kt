@@ -1,6 +1,7 @@
 package com.slax.reader.ui.bookmark.states
 
 import com.slax.reader.data.database.dao.BookmarkDao
+import com.slax.reader.data.database.dao.CollectionDao
 import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.data.database.model.UserTag
 import com.slax.reader.utils.bookmarkEvent
@@ -15,6 +16,12 @@ import kotlinx.serialization.json.Json
 
 data class ScrollInfo(val scrollY: Float, val isNearBottom: Boolean)
 
+data class BookmarkDetailBinding(
+    val bookmarkId: String,
+    val collectionOwnerId: String?,
+    val collectionId: String?,
+)
+
 data class BookmarkDetailState(
     val isStarred: Boolean = false,
     val isArchived: Boolean = false,
@@ -25,13 +32,20 @@ data class BookmarkDetailState(
 
 class BookmarkDelegate(
     private val bookmarkDao: BookmarkDao,
-    private val bookmarkIdFlow: StateFlow<String?>,
+    private val collectionDao: CollectionDao,
+    private val bindingFlow: StateFlow<BookmarkDetailBinding?>,
     private val scope: CoroutineScope
 ) {
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val bookmarkFlow: StateFlow<List<UserBookmark>> = bookmarkIdFlow
+    private val bookmarkFlow: StateFlow<List<UserBookmark>> = bindingFlow
         .filterNotNull()
-        .flatMapLatest { bookmarkDao.watchBookmarkDetail(it) }
+        .flatMapLatest { binding ->
+            if (binding.collectionOwnerId == null) {
+                bookmarkDao.watchBookmarkDetail(binding.bookmarkId)
+            } else {
+                collectionDao.watchCollectionBookmarkDetail(binding.bookmarkId, binding.collectionOwnerId)
+            }
+        }
         .distinctUntilChanged()
         .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -66,6 +80,7 @@ class BookmarkDelegate(
         .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptySet())
 
     fun onToggleStar(isStar: Boolean) {
+        if (isCollectionBookmark()) return
         scope.launch {
             runCatching { toggleStar(isStar) }
             bookmarkEvent
@@ -77,6 +92,7 @@ class BookmarkDelegate(
     }
 
     fun onToggleArchive(isArchive: Boolean) {
+        if (isCollectionBookmark()) return
         scope.launch {
             runCatching { toggleArchive(isArchive) }
             bookmarkEvent
@@ -87,19 +103,22 @@ class BookmarkDelegate(
     }
 
     fun onUpdateBookmarkTags(bookmarkId: String, newTagIds: List<String>) {
+        if (isCollectionBookmark()) return
         scope.launch {
             runCatching { updateBookmarkTags(bookmarkId, newTagIds) }
         }
     }
 
     fun onUpdateBookmarkTitle(newTitle: String) {
+        if (isCollectionBookmark()) return
         scope.launch {
             runCatching { updateBookmarkTitle(newTitle) }
         }
     }
 
     suspend fun deleteBookmark(): Unit = withContext(Dispatchers.IO) {
-        bookmarkIdFlow.value?.let { id ->
+        if (isCollectionBookmark()) return@withContext
+        bindingFlow.value?.bookmarkId?.let { id ->
             bookmarkDao.deleteBookmark(id)
         }
     }
@@ -113,24 +132,30 @@ class BookmarkDelegate(
     }
 
     suspend fun toggleStar(isStar: Boolean) = withContext(Dispatchers.IO) {
-        bookmarkIdFlow.value?.let { id ->
+        if (isCollectionBookmark()) return@withContext
+        bindingFlow.value?.bookmarkId?.let { id ->
             return@withContext bookmarkDao.updateBookmarkStar(id, if (isStar) 1 else 0)
         }
     }
 
     suspend fun toggleArchive(isArchive: Boolean) = withContext(Dispatchers.IO) {
-        bookmarkIdFlow.value?.let { id ->
+        if (isCollectionBookmark()) return@withContext
+        bindingFlow.value?.bookmarkId?.let { id ->
             return@withContext bookmarkDao.updateBookmarkArchive(id, if (isArchive) 1 else 0)
         }
     }
 
     suspend fun updateBookmarkTags(bookmarkId: String, newTagIds: List<String>) = withContext(Dispatchers.IO) {
+        if (isCollectionBookmark()) return@withContext
         return@withContext bookmarkDao.updateMetadataField(bookmarkId, "tags", Json.encodeToString(newTagIds))
     }
 
     suspend fun updateBookmarkTitle(newTitle: String) = withContext(Dispatchers.IO) {
-        bookmarkIdFlow.value?.let { id ->
+        if (isCollectionBookmark()) return@withContext
+        bindingFlow.value?.bookmarkId?.let { id ->
             return@withContext bookmarkDao.updateBookmarkAliasTitle(id, newTitle)
         }
     }
+
+    private fun isCollectionBookmark(): Boolean = bindingFlow.value?.collectionOwnerId != null
 }

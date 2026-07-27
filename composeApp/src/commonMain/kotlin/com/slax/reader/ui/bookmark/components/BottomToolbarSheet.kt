@@ -43,12 +43,14 @@ data class ToolbarIcon(
 fun BottomToolbarSheet() {
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val detailState by viewModel.bookmarkDelegate.bookmarkDetailState.collectAsState()
+    val isCollectionBookmark by viewModel.isCollectionBookmark.collectAsState()
     val showDeleteConfirm by viewModel.deleteConfirmVisible.collectAsState()
 
-    val toolbarPages = remember(detailState.isStarred, detailState.isArchived) {
-        listOf(
+    val toolbarPages = remember(detailState.isStarred, detailState.isArchived, isCollectionBookmark) {
+        val ownerActions = if (isCollectionBookmark) {
+            emptyList()
+        } else {
             listOf(
-                ToolbarIcon("summary", "detail_toolbar_summary".i18n(), Res.drawable.ic_bottom_panel_summary, proFeature = true),
                 ToolbarIcon(
                     "star",
                     (if (detailState.isStarred) "detail_toolbar_unstar" else "detail_toolbar_star").i18n(),
@@ -60,12 +62,20 @@ fun BottomToolbarSheet() {
                     if (detailState.isArchived) Res.drawable.ic_bottom_panel_archieved else Res.drawable.ic_bottom_panel_archieve
                 ),
                 ToolbarIcon("edit_title", "detail_toolbar_edit_title".i18n(), Res.drawable.ic_bottom_panel_edittitle),
-                ToolbarIcon("share", "detail_toolbar_share".i18n(), Res.drawable.ic_bottom_panel_share),
-                ToolbarIcon("feedback", "detail_toolbar_feedback".i18n(), Res.drawable.ic_bottom_panel_feedback),
-                ToolbarIcon("delete", "detail_toolbar_delete".i18n(), Res.drawable.ic_bottom_panel_delete),
+            )
+        }
+        listOf(
+            buildList {
+                add(ToolbarIcon("summary", "detail_toolbar_summary".i18n(), Res.drawable.ic_bottom_panel_summary, proFeature = true))
+                addAll(ownerActions)
+                add(ToolbarIcon("share", "detail_toolbar_share".i18n(), Res.drawable.ic_bottom_panel_share))
+                add(ToolbarIcon("feedback", "detail_toolbar_feedback".i18n(), Res.drawable.ic_bottom_panel_feedback))
+                if (!isCollectionBookmark) {
+                    add(ToolbarIcon("delete", "detail_toolbar_delete".i18n(), Res.drawable.ic_bottom_panel_delete))
+                }
 //                ToolbarIcon("underline", "detail_toolbar_underline".i18n(), Res.drawable.ic_bottom_panel_underline),
 //                ToolbarIcon("comment", "detail_toolbar_comment".i18n(), Res.drawable.ic_bottom_panel_comment),
-            )
+            }
 //            listOf(
 //            )
         )

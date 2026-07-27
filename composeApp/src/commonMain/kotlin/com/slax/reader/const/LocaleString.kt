@@ -102,6 +102,30 @@ val localeString: Map<String, Map<String, String>> = mapOf(
         "zh" to "已读",
         "en" to "Archive"
     ),
+    "collection_my_inbox" to mapOf(
+        "zh" to "我的收件箱",
+        "en" to "My Inbox"
+    ),
+    "collection_closed_message" to mapOf(
+        "zh" to "订阅的「{0}」合集已关闭",
+        "en" to "The {0} collection has been closed"
+    ),
+    "collection_expired_message" to mapOf(
+        "zh" to "订阅的「{0}」合集已到期，请在合集主页续订后继续阅读",
+        "en" to "Your subscription to {0} has expired. Renew it on the collection page to continue reading."
+    ),
+    "collection_highlight_count" to mapOf(
+        "zh" to "{0} 条划线",
+        "en" to "{0} highlights"
+    ),
+    "collection_empty" to mapOf(
+        "zh" to "这个合集还没有内容",
+        "en" to "This collection has no content yet"
+    ),
+    "collection_unavailable" to mapOf(
+        "zh" to "合集信息暂时不可用",
+        "en" to "Collection information is temporarily unavailable"
+    ),
 
     // 添加链接对话框
     "add_link_dialog_title" to mapOf(

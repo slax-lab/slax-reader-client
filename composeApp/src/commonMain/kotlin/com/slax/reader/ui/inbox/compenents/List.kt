@@ -29,6 +29,7 @@ fun ArticleList(
     navCtrl: NavController,
     viewModel: InboxListViewModel,
     onEditTitle: (InboxListBookmarkItem) -> Unit,
+    headerContent: (@Composable () -> Unit)? = null,
 ) {
     println("[watch][UI] recomposition ArticleList")
 
@@ -49,10 +50,11 @@ fun ArticleList(
 
     if (bookmarks.isEmpty()) {
         val hasSynced by viewModel.hasSynced.collectAsState()
-        Box(
-            Modifier.fillMaxSize()
-        ) {
-            EmptyOrLoadingView(hasSynced = hasSynced)
+        Column(modifier = Modifier.fillMaxSize()) {
+            headerContent?.invoke()
+            Box(modifier = Modifier.weight(1f)) {
+                EmptyOrLoadingView(hasSynced = hasSynced)
+            }
         }
         return
     }
@@ -69,6 +71,12 @@ fun ArticleList(
             ),
             state = lazyListState
         ) {
+            if (headerContent != null) {
+                item(key = "collection-feed-switcher", contentType = "collection-feed-switcher") {
+                    headerContent()
+                }
+            }
+
             itemsIndexed(
                 items = bookmarks,
                 key = { _, bookmark -> bookmark.id },

@@ -105,6 +105,18 @@ class LocalBookmarkDao(
         }
     }
 
+    suspend fun deleteLocalBookmarkInfo(bookmarkIds: List<String>) = withContext(Dispatchers.IO) {
+        if (bookmarkIds.isEmpty()) return@withContext
+        database.writeTransaction { tx ->
+            bookmarkIds.forEach { bookmarkId ->
+                tx.execute(
+                    "DELETE FROM ps_data_local__local_bookmark_info WHERE id = ?",
+                    parameters = listOf(bookmarkId),
+                )
+            }
+        }
+    }
+
     suspend fun updateLocalBookmarkOverview(
         bookmarkId: String,
         overview: String,

@@ -34,7 +34,7 @@ import slax_reader_client.composeapp.generated.resources.ic_continue_reading_ico
 
 @Composable
 fun ContinueReading(
-    onClick: ((bookmarkId: String) -> Unit)? = null,
+    onClick: ((bookmark: ContinueReadingBookmark) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val appPreferences: AppPreferences = koinInject()
@@ -149,7 +149,7 @@ fun ContinueReading(
                         indication = null,
                         enabled = onClick != null
                     ) {
-                        showContinueData?.let { onClick?.invoke(it.bookmarkId) }
+                        showContinueData?.let { onClick?.invoke(it) }
                     }
                     .padding(16.dp)
             ) {
