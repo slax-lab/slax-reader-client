@@ -5,6 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.network.dto.DeleteAccountReason
 import com.slax.reader.data.preferences.AppPreferences
+import com.slax.reader.domain.cache.CacheCategory
+import com.slax.reader.domain.cache.CacheManager
+import com.slax.reader.domain.cache.CacheUsage
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,18 +26,61 @@ sealed class DeleteAccountState {
     data class Error(val message: String) : DeleteAccountState()
 }
 
+sealed class ClearCacheState {
+    data object Idle : ClearCacheState()
+
+    data object Clearing : ClearCacheState()
+
+    data class Done(val freedBytes: Long) : ClearCacheState()
+}
+
 class SettingViewModel(
     private val apiService: ApiService,
-    private val appPreferences: AppPreferences
+    private val appPreferences: AppPreferences,
+    private val cacheManager: CacheManager
 ) : ViewModel() {
     private val _deleteAccountState = MutableStateFlow<DeleteAccountState>(DeleteAccountState.Idle)
     val deleteAccountState: StateFlow<DeleteAccountState> = _deleteAccountState.asStateFlow()
+
+    private val _cacheUsage = MutableStateFlow(CacheUsage())
+    val cacheUsage: StateFlow<CacheUsage> = _cacheUsage.asStateFlow()
+
+    private val _clearCacheState = MutableStateFlow<ClearCacheState>(ClearCacheState.Idle)
+    val clearCacheState: StateFlow<ClearCacheState> = _clearCacheState.asStateFlow()
+    private var cacheRefreshJob: Job? = null
 
     val cacheCount: StateFlow<Int> = appPreferences.getCacheCount()
         .stateIn(viewModelScope, SharingStarted.Eagerly, 50)
 
     val downloadImages: StateFlow<Boolean> = appPreferences.getDownloadImages()
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    init {
+        refreshCacheSize()
+    }
+
+    fun refreshCacheSize() {
+        cacheRefreshJob?.cancel()
+        cacheRefreshJob = viewModelScope.launch {
+            _cacheUsage.value = cacheManager.clearableCacheUsage()
+        }
+    }
+
+    fun clearCache(categories: Set<CacheCategory>) {
+        if (categories.isEmpty()) return
+        if (_clearCacheState.value is ClearCacheState.Clearing) return
+        cacheRefreshJob?.cancel()
+        _clearCacheState.value = ClearCacheState.Clearing
+        viewModelScope.launch {
+            val freed = cacheManager.clearCache(categories)
+            _cacheUsage.value = cacheManager.clearableCacheUsage()
+            _clearCacheState.value = ClearCacheState.Done(freed)
+        }
+    }
+
+    fun acknowledgeClearCache() {
+        _clearCacheState.value = ClearCacheState.Idle
+    }
 
     fun updateCacheCount(count: Int) {
         viewModelScope.launch {
