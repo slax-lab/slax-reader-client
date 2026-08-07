@@ -28,6 +28,7 @@ class FileManager(val fileSystem: FileSystem) {
     fun deleteDataFile(fileName: String): Boolean {
         return try {
             val path = "$dataPath/$fileName".toPath()
+            if (!fileSystem.exists(path)) return true
             fileSystem.delete(path)
             true
         } catch (e: Exception) {
@@ -66,6 +67,11 @@ class FileManager(val fileSystem: FileSystem) {
         }
     }
 
+    fun getDataFileSize(fileName: String): Long {
+        val path = "$dataPath/$fileName".toPath()
+        return fileSystem.metadataOrNull(path)?.takeUnless { it.isDirectory }?.size ?: 0L
+    }
+
     fun writeDataFile(fileName: String, data: ByteArray) {
         val path = "$dataPath/$fileName".toPath()
         path.parent?.let { parentDir ->
@@ -79,6 +85,7 @@ class FileManager(val fileSystem: FileSystem) {
     fun deleteDataDirectory(dirName: String): Boolean {
         return try {
             val path = "$dataPath/$dirName".toPath()
+            if (!fileSystem.exists(path)) return true
             deleteRecursively(path)
             true
         } catch (e: Exception) {
@@ -121,6 +128,10 @@ class FileManager(val fileSystem: FileSystem) {
         var fileCount = 0
         var dirCount = 0
 
+        if (!fileSystem.exists(dirPath.toPath())) {
+            return DirectorySize(0L, 0, 0, formatBytes(0L))
+        }
+
         fun calculate(path: Path) {
             try {
                 fileSystem.list(path).forEach { childPath ->
@@ -149,6 +160,9 @@ class FileManager(val fileSystem: FileSystem) {
             formatted = formatBytes(totalSize)
         )
     }
+
+    fun calculateDataDirectorySize(dirName: String): DirectorySize =
+        calculateDirectorySize("$dataPath/$dirName")
 
     fun clearCache(): Boolean {
         return try {

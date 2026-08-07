@@ -103,8 +103,8 @@ val localeString: Map<String, Map<String, String>> = mapOf(
         "en" to "Archive"
     ),
     "collection_my_inbox" to mapOf(
-        "zh" to "我的收件箱",
-        "en" to "My Inbox"
+        "zh" to "我的",
+        "en" to "My"
     ),
     "collection_closed_message" to mapOf(
         "zh" to "订阅的「{0}」合集已关闭",
@@ -114,10 +114,6 @@ val localeString: Map<String, Map<String, String>> = mapOf(
         "zh" to "订阅的「{0}」合集已到期，请在合集主页续订后继续阅读",
         "en" to "Your subscription to {0} has expired. Renew it on the collection page to continue reading."
     ),
-    "collection_highlight_count" to mapOf(
-        "zh" to "{0} 条划线",
-        "en" to "{0} highlights"
-    ),
     "collection_empty" to mapOf(
         "zh" to "这个合集还没有内容",
         "en" to "This collection has no content yet"
@@ -125,6 +121,67 @@ val localeString: Map<String, Map<String, String>> = mapOf(
     "collection_unavailable" to mapOf(
         "zh" to "合集信息暂时不可用",
         "en" to "Collection information is temporarily unavailable"
+    ),
+    "collection_owner_feed_title" to mapOf(
+        "zh" to "{0}",
+        "en" to "{0}"
+    ),
+
+    "setting_clear_cache" to mapOf(
+        "zh" to "清理缓存",
+        "en" to "Clear cache"
+    ),
+    "setting_clear_cache_desc" to mapOf(
+        "zh" to "管理非离线缓存的本地数据",
+        "en" to "Manage non-offline cached local data"
+    ),
+    "setting_clear_cache_done_desc" to mapOf(
+        "zh" to "已释放 {0} 空间",
+        "en" to "Freed {0} of storage"
+    ),
+    "setting_cache_sheet_title" to mapOf(
+        "zh" to "清理缓存",
+        "en" to "Clear Cache"
+    ),
+    "setting_cache_used" to mapOf(
+        "zh" to "缓存占用",
+        "en" to "Cache used"
+    ),
+    "setting_cache_articles" to mapOf(
+        "zh" to "文章",
+        "en" to "Articles"
+    ),
+    "setting_cache_articles_desc" to mapOf(
+        "zh" to "离线文章正文",
+        "en" to "Offline article content"
+    ),
+    "setting_cache_images" to mapOf(
+        "zh" to "图片",
+        "en" to "Images"
+    ),
+    "setting_cache_images_desc" to mapOf(
+        "zh" to "文章中的本地图片",
+        "en" to "Images stored for articles"
+    ),
+    "setting_cache_other" to mapOf(
+        "zh" to "其他",
+        "en" to "Other"
+    ),
+    "setting_cache_other_desc" to mapOf(
+        "zh" to "AI 摘要、大纲与阅读进度",
+        "en" to "AI summaries, outlines and reading progress"
+    ),
+    "setting_cache_sheet_notice" to mapOf(
+        "zh" to "自动缓存的正文与图片不受影响",
+        "en" to "Auto-cached articles and images are unaffected"
+    ),
+    "setting_cache_clear_amount" to mapOf(
+        "zh" to "清理 {0}",
+        "en" to "Clear {0}"
+    ),
+    "setting_cache_nothing_to_clear" to mapOf(
+        "zh" to "暂无可清理内容",
+        "en" to "Nothing to clear"
     ),
 
     // 添加链接对话框
@@ -211,8 +268,8 @@ val localeString: Map<String, Map<String, String>> = mapOf(
         "en" to "Download Images"
     ),
     "setting_download_images_desc" to mapOf(
-        "zh" to "勾选后将离线缓存图片，取消勾选可节省存储空间。仅对新增文章生效。",
-        "en" to "Check to cache images for offline reading. Uncheck to save storage space. Only applies to future downloads."
+        "zh" to "勾选后将离线缓存图片，取消勾选可节省存储空间。",
+        "en" to "Check to cache images for offline reading. Uncheck to save storage space."
     ),
 
     // ========================================
