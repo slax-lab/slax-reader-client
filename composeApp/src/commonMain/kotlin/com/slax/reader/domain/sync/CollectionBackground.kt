@@ -14,13 +14,15 @@ import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.domain.image.ImageDownloadManager
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.getAndUpdate
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.combine
@@ -29,6 +31,8 @@ import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 private data class CollectionCacheSnapshot(
@@ -54,13 +58,15 @@ class CollectionBackgroundDomain(
     private val maxDownloadConcurrent = 3
     private val inQueue = atomic(setOf<String>())
     private val failedInSession = atomic(setOf<String>())
+    private val foregroundAccessCounts = atomic(emptyMap<String, Int>())
     private val isCleaningUp = atomic(false)
+    private val lifecycleMutex = Mutex()
     private var workerScope: CoroutineScope? = null
     private var downloadQueue: Channel<CollectionTaskItem>? = null
 
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
-    fun startup() {
-        if (workerScope != null) return
+    suspend fun startup() = lifecycleMutex.withLock {
+        if (workerScope != null) return@withLock
 
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         val queue = Channel<CollectionTaskItem>(100)
@@ -99,37 +105,44 @@ class CollectionBackgroundDomain(
         } else {
             snapshot.cacheCount.coerceAtLeast(0)
         }
-        val collectionCounts = mutableMapOf<String, Int>()
+        val ownerCounts = mutableMapOf<String, Int>()
         val cacheWindowKeys = mutableSetOf<String>()
         val toDownload = linkedMapOf<String, CollectionTaskItem>()
 
         for (item in snapshot.bookmarks) {
-            if (item.collectionId.isBlank() || item.metadataStatus != successStatus) continue
+            if (item.ownerId.isBlank() || item.metadataStatus != successStatus) continue
 
-            val cacheKey = cacheKey(item.collectionId, item.id)
+            val cacheKey = cacheKey(item.ownerId, item.id)
             val local = snapshot.localBookmarks[cacheKey]
             if (local != null && !local.isAutoCached && local.isDownloaded()) continue
 
-            val collectionCount = collectionCounts[item.collectionId] ?: 0
-            if (collectionCount >= cacheLimit) continue
+            val ownerCount = ownerCounts[item.ownerId] ?: 0
+            if (ownerCount >= cacheLimit) continue
 
-            collectionCounts[item.collectionId] = collectionCount + 1
+            ownerCounts[item.ownerId] = ownerCount + 1
             cacheWindowKeys.add(cacheKey)
-            if (local?.isDownloaded() != true && cacheKey !in failedInSession.value) {
+            if (
+                local?.isDownloaded() != true &&
+                cacheKey !in failedInSession.value &&
+                cacheKey !in foregroundAccessCounts.value
+            ) {
                 toDownload[cacheKey] = CollectionTaskItem(item.id, cacheKey)
             }
         }
 
-        val toCleanupKeys = snapshot.localBookmarks.mapNotNull { (key, _) ->
+        val toCleanupKeys = snapshot.localBookmarks.mapNotNull { (key, info) ->
             key.takeIf {
                 key.startsWith(CACHE_KEY_PREFIX) &&
-                    key !in cacheWindowKeys
+                    key !in cacheWindowKeys &&
+                    info.isAutoCached &&
+                    info.isDownloaded() &&
+                    key !in inQueue.value &&
+                    key !in foregroundAccessCounts.value
             }
         }
 
         println(
-            "[CollectionBackgroundDomain] collections=${collectionCounts.size}, " +
-                "window=${collectionCounts.values.sum()}, " +
+            "[CollectionBackgroundDomain] owners=${ownerCounts.size}, window=${ownerCounts.values.sum()}, " +
                 "toDownload=${toDownload.size}, toCleanup=${toCleanupKeys.size}"
         )
 
@@ -152,10 +165,13 @@ class CollectionBackgroundDomain(
                 coroutineScope {
                     launch {
                         content.imageUrls.forEach { url ->
-                            runCatching { imageDownloadManager.ensureCached(url, task.cacheKey) }
-                                .onFailure { error ->
-                                    println("[CollectionBackgroundDomain] image cache failed: $url, ${error.message}")
-                                }
+                            try {
+                                imageDownloadManager.ensureCached(url, task.cacheKey)
+                            } catch (error: CancellationException) {
+                                throw error
+                            } catch (error: Exception) {
+                                println("[CollectionBackgroundDomain] image cache failed: $url, ${error.message}")
+                            }
                         }
                     }
                 }
@@ -163,10 +179,18 @@ class CollectionBackgroundDomain(
 
             updateBookmarkStatus(task.cacheKey, DownloadStatus.COMPLETED)
             failedInSession.getAndUpdate { it - task.cacheKey }
+        } catch (error: CancellationException) {
+            throw error
         } catch (error: Exception) {
             println("[CollectionBackgroundDomain] download failed ${task.bookmarkId}: ${error.message}")
             failedInSession.getAndUpdate { it + task.cacheKey }
-            updateBookmarkStatus(task.cacheKey, DownloadStatus.FAILED)
+            try {
+                updateBookmarkStatus(task.cacheKey, DownloadStatus.FAILED)
+            } catch (statusError: CancellationException) {
+                throw statusError
+            } catch (statusError: Exception) {
+                println("[CollectionBackgroundDomain] failed to persist FAILED status: ${statusError.message}")
+            }
         } finally {
             inQueue.getAndUpdate { it - task.cacheKey }
         }
@@ -175,72 +199,127 @@ class CollectionBackgroundDomain(
     private suspend fun cleanupOldCache(ids: List<String>) {
         if (!isCleaningUp.compareAndSet(expect = false, update = true)) return
         try {
+            val deletedIds = mutableListOf<String>()
             ids.forEach { id ->
-                runCatching { fileManager.deleteDataDirectory("bookmark/$id") }
-                    .onFailure { error ->
-                        println("[CollectionBackgroundDomain] cleanup failed $id: ${error.message}")
-                    }
-            }
-            runCatching { localBookmarkDao.deleteLocalBookmarkInfo(ids) }
-                .onFailure { error ->
-                    println("[CollectionBackgroundDomain] failed to delete cache state: ${error.message}")
+                val isManual = try {
+                    localBookmarkDao.isManuallyCached(id)
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    println("[CollectionBackgroundDomain] failed to verify cache ownership $id: ${error.message}")
+                    true
                 }
+                if (
+                    id in inQueue.value ||
+                    id in foregroundAccessCounts.value ||
+                    isManual
+                ) return@forEach
+                try {
+                    if (fileManager.deleteDataDirectory("bookmark/$id")) {
+                        deletedIds.add(id)
+                    } else {
+                        println("[CollectionBackgroundDomain] cleanup failed $id")
+                    }
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    println("[CollectionBackgroundDomain] cleanup failed $id: ${error.message}")
+                }
+            }
+            try {
+                localBookmarkDao.deleteLocalBookmarkInfo(deletedIds)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                println("[CollectionBackgroundDomain] failed to delete cache state: ${error.message}")
+            }
         } finally {
             isCleaningUp.value = false
         }
     }
 
-    private suspend fun updateBookmarkStatus(id: String, status: DownloadStatus) {
+    private suspend fun updateBookmarkStatus(
+        id: String,
+        status: DownloadStatus,
+        isAutoCached: Boolean = true,
+    ) {
         val statusCode = when (status) {
             DownloadStatus.NONE -> 0
             DownloadStatus.DOWNLOADING -> 1
             DownloadStatus.COMPLETED -> 2
             DownloadStatus.FAILED -> 3
         }
-        localBookmarkDao.updateLocalBookmarkDownloadStatus(id, statusCode, isAutoCached = true)
+        if (isAutoCached) {
+            localBookmarkDao.updateAutoCachedDownloadStatus(id, statusCode)
+        } else {
+            localBookmarkDao.updateLocalBookmarkDownloadStatus(id, statusCode, isAutoCached = false)
+        }
     }
 
-    suspend fun getBookmarkContent(id: String, collectionId: String): ProcessedContent {
-        val cacheKey = cacheKey(collectionId, id)
+    suspend fun getBookmarkContent(id: String, ownerId: String): ProcessedContent {
+        val cacheKey = cacheKey(ownerId, id)
         val contentPath = "bookmark/$cacheKey/content.html"
-        fileManager.streamDataFile(contentPath)?.let { cached ->
-            return processContent(cached.decodeToString())
+        foregroundAccessCounts.getAndUpdate { counts ->
+            counts + (cacheKey to ((counts[cacheKey] ?: 0) + 1))
         }
+        try {
+            fileManager.streamDataFile(contentPath)?.let { cached ->
+                // Reading an auto-cached article must not pin it as a manual cache entry.
+                failedInSession.getAndUpdate { it - cacheKey }
+                return processContent(cached.decodeToString())
+            }
 
-        inQueue.getAndUpdate { it + cacheKey }
-        return try {
-            withContext(Dispatchers.IO) {
-                updateBookmarkStatus(cacheKey, DownloadStatus.DOWNLOADING)
-            }
-            val content = processContent(apiService.getBookmarkRawContent(id))
-            workerScope?.launch(Dispatchers.IO) {
-                runCatching {
-                    fileManager.writeDataFile(contentPath, content.html.encodeToByteArray())
-                    updateBookmarkStatus(cacheKey, DownloadStatus.COMPLETED)
-                    failedInSession.getAndUpdate { it - cacheKey }
-                }.onFailure { error ->
-                    println("[CollectionBackgroundDomain] background write failed $id: ${error.message}")
-                    failedInSession.getAndUpdate { it + cacheKey }
-                    updateBookmarkStatus(cacheKey, DownloadStatus.FAILED)
+            updateForegroundStatus(cacheKey, DownloadStatus.DOWNLOADING)
+            val content = try {
+                processContent(apiService.getBookmarkRawContent(id))
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                println("[CollectionBackgroundDomain] API request failed $id: ${error.message}")
+                failedInSession.getAndUpdate { it + cacheKey }
+                updateForegroundStatus(cacheKey, DownloadStatus.FAILED)
+                val errorInfo = when (error) {
+                    is AppError.ApiException.HttpError -> "Error code: ${error.code}" to error.message
+                    else -> "Network error" to (error.message ?: "Unknown error")
                 }
+                return ProcessedContent(
+                    SlaxConfig.DETAIL_ERROR_TEMPLATE
+                        .replace("{{TITLE}}", "<center>Failed to load content</center>")
+                        .replace("{{REASON}}", "<center>${errorInfo.first}</center>")
+                        .replace("{{DETAIL}}", "<center>${errorInfo.second}</center>"),
+                    emptyList(),
+                )
             }
-            content
-        } catch (error: Exception) {
-            println("[CollectionBackgroundDomain] API request failed $id: ${error.message}")
-            failedInSession.getAndUpdate { it + cacheKey }
-            val errorInfo = when (error) {
-                is AppError.ApiException.HttpError -> "Error code: ${error.code}" to error.message
-                else -> "Network error" to (error.message ?: "Unknown error")
+
+            try {
+                withContext(Dispatchers.IO) {
+                    fileManager.writeDataFile(contentPath, content.html.encodeToByteArray())
+                    updateBookmarkStatus(cacheKey, DownloadStatus.COMPLETED, isAutoCached = false)
+                }
+                failedInSession.getAndUpdate { it - cacheKey }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                println("[CollectionBackgroundDomain] cache write failed $id: ${error.message}")
+                failedInSession.getAndUpdate { it + cacheKey }
+                updateForegroundStatus(cacheKey, DownloadStatus.FAILED)
             }
-            ProcessedContent(
-                SlaxConfig.DETAIL_ERROR_TEMPLATE
-                    .replace("{{TITLE}}", "<center>Failed to load content</center>")
-                    .replace("{{REASON}}", "<center>${errorInfo.first}</center>")
-                    .replace("{{DETAIL}}", "<center>${errorInfo.second}</center>"),
-                emptyList(),
-            )
+            return content
         } finally {
-            inQueue.getAndUpdate { it - cacheKey }
+            foregroundAccessCounts.getAndUpdate { counts ->
+                val remaining = (counts[cacheKey] ?: 1) - 1
+                if (remaining <= 0) counts - cacheKey else counts + (cacheKey to remaining)
+            }
+        }
+    }
+
+    private suspend fun updateForegroundStatus(cacheKey: String, status: DownloadStatus) {
+        try {
+            updateBookmarkStatus(cacheKey, status, isAutoCached = false)
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            println("[CollectionBackgroundDomain] failed to persist $status status: ${error.message}")
         }
     }
 
@@ -266,18 +345,21 @@ class CollectionBackgroundDomain(
         }
     }
 
-    fun restart() {
-        cleanup()
-        startup()
-    }
-
-    fun cleanup() {
-        downloadQueue?.cancel()
-        downloadQueue = null
-        workerScope?.cancel()
-        workerScope = null
-        inQueue.value = emptySet()
-        failedInSession.value = emptySet()
+    suspend fun cleanup() {
+        lifecycleMutex.lock()
+        try {
+            val scope = workerScope
+            downloadQueue?.cancel()
+            downloadQueue = null
+            workerScope = null
+            scope?.coroutineContext?.get(Job)?.cancelAndJoin()
+            inQueue.value = emptySet()
+            failedInSession.value = emptySet()
+            foregroundAccessCounts.value = emptyMap()
+            isCleaningUp.value = false
+        } finally {
+            lifecycleMutex.unlock()
+        }
     }
 
     companion object {
@@ -285,7 +367,9 @@ class CollectionBackgroundDomain(
         private val HTTPS_REGEX = Regex("^https://")
         private val HTTP_REGEX = Regex("^http://")
 
-        fun cacheKey(collectionId: String, bookmarkId: String): String =
-            "$CACHE_KEY_PREFIX$collectionId-$bookmarkId"
+        fun cacheKey(ownerId: String, bookmarkId: String): String =
+            "$CACHE_KEY_PREFIX$ownerId-$bookmarkId"
+
+        fun isCollectionCacheKey(key: String): Boolean = key.startsWith(CACHE_KEY_PREFIX)
     }
 }

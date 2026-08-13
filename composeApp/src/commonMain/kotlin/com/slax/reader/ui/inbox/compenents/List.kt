@@ -20,6 +20,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.slax.reader.const.BookmarkRoutes
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.utils.i18n
@@ -31,8 +32,6 @@ fun ArticleList(
     onEditTitle: (InboxListBookmarkItem) -> Unit,
     headerContent: (@Composable () -> Unit)? = null,
 ) {
-    println("[watch][UI] recomposition ArticleList")
-
     val bookmarks by viewModel.bookmarks.collectAsState()
     val sortType by viewModel.sortType.collectAsState()
     val swipeConfig = remember(sortType) { sortType.toSwipeConfig() }
@@ -50,9 +49,9 @@ fun ArticleList(
 
     if (bookmarks.isEmpty()) {
         val hasSynced by viewModel.hasSynced.collectAsState()
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize()) {
             headerContent?.invoke()
-            Box(modifier = Modifier.weight(1f)) {
+            Box(Modifier.weight(1f)) {
                 EmptyOrLoadingView(hasSynced = hasSynced)
             }
         }
@@ -66,12 +65,16 @@ fun ArticleList(
             modifier = Modifier.fillMaxSize().preferredFrameRate(FrameRateCategory.High),
             verticalArrangement = Arrangement.spacedBy(0.dp),
             contentPadding = PaddingValues(
-                top = 8.dp,
+                // 有头像条时它自带 top padding；没有时补回原来的 8.dp，
+                // 否则首条会紧贴白卡的圆角上沿
+                top = if (headerContent == null) 8.dp else 0.dp,
                 bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
             ),
             state = lazyListState
         ) {
             if (headerContent != null) {
+                // 头像条作为第一个 item 跟随列表滚动：不需要 nestedScroll、
+                // 不需要每帧写 state、不改变 LazyColumn 的高度约束。
                 item(key = "collection-feed-switcher", contentType = "collection-feed-switcher") {
                     headerContent()
                 }
@@ -83,11 +86,20 @@ fun ArticleList(
                 contentType = { _, _ -> "bookmark" }
             ) { index, bookmark ->
                 BookmarkItemRow(
-                    navCtrl = navCtrl,
+                    item = bookmark,
+                    onClick = {
+                        if (bookmark.metadataStatus == "success") {
+                            navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmark.id))
+                        } else {
+                            bookmark.metadataUrl?.let { viewModel.emitProcessingUrl(it) }
+                        }
+                    },
                     viewModel = viewModel,
-                    bookmark = bookmark,
-                    swipeConfig = swipeConfig,
-                    onEditTitle = onEditTitle,
+                    ownerActions = BookmarkRowOwnerActions(
+                        bookmark = bookmark,
+                        swipeConfig = swipeConfig,
+                        onEditTitle = onEditTitle,
+                    ),
                 )
 
                 dividerLine()
@@ -121,7 +133,6 @@ fun ArticleList(
 
 @Composable
 fun EmptyOrLoadingView(hasSynced: Boolean) {
-    println("[watch][UI] recomposition EmptyOrLoadingView, hasSynced=$hasSynced")
     Box(modifier = Modifier.fillMaxSize()) {
         EmptyView()
 

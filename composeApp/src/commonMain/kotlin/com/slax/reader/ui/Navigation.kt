@@ -39,7 +39,9 @@ import com.slax.reader.utils.subscriptionEvent
 import com.slax.reader.utils.userEvent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalPowerSyncAPI::class)
@@ -52,6 +54,7 @@ fun SlaxNavigation(
     val collectionBackgroundDomain: CollectionBackgroundDomain = koinInject()
     val coordinator: CoordinatorDomain = koinInject()
     val authState by authDomain.authState.collectAsState()
+    var readyUserId by remember { mutableStateOf<String?>(null) }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -61,21 +64,46 @@ fun SlaxNavigation(
         }
     }
 
-    LaunchedEffect(authState) {
-        when (authState) {
+    // 只按 userId 作为 key：token 刷新会产生新的 Authenticated 实例，
+    // 若用整个 authState 当 key，刷新会把正在执行的本效果取消再重跑一遍。
+    val authKey = when (val state = authState) {
+        is AuthState.Authenticated -> state.userId
+        AuthState.Unauthenticated -> "unauthenticated"
+        AuthState.Loading -> "loading"
+    }
+
+    LaunchedEffect(authKey) {
+        when (val state = authState) {
             is AuthState.Authenticated -> {
+                val previousReadyUserId = readyUserId
+                val isUserSwitch = previousReadyUserId != null && previousReadyUserId != state.userId
+
+                // 换用户时必须先把上一个用户的本地数据清干净再渲染，这一步同步等待。
+                // 它是纯本地操作，不含网络请求。
+                if (isUserSwitch) {
+                    withContext(NonCancellable + Dispatchers.IO) {
+                        backgroundDomain.cleanup()
+                        collectionBackgroundDomain.cleanup()
+                        coordinator.cleanup(true)
+                    }
+                }
+
+                // 首屏不等网络：先放行渲染，token 刷新与各 domain 启动都在后台进行。
+                readyUserId = state.userId
+                FirebaseHelper.setUserId(state.userId)
+                FirebaseHelper.setCrashlyticsUserId(state.userId)
+
                 launch(Dispatchers.IO) {
                     authDomain.refreshToken()
+                    coordinator.startup()
                     backgroundDomain.startup()
                     collectionBackgroundDomain.startup()
-                    coordinator.startup()
                 }
-                FirebaseHelper.setUserId((authState as AuthState.Authenticated).userId)
-                FirebaseHelper.setCrashlyticsUserId((authState as AuthState.Authenticated).userId)
             }
 
             AuthState.Unauthenticated -> {
-                launch(Dispatchers.IO) {
+                readyUserId = null
+                withContext(NonCancellable + Dispatchers.IO) {
                     backgroundDomain.cleanup()
                     collectionBackgroundDomain.cleanup()
                     coordinator.cleanup(true)
@@ -86,6 +114,9 @@ fun SlaxNavigation(
             }
         }
     }
+
+    val authenticatedUserId = (authState as? AuthState.Authenticated)?.userId
+    if (authenticatedUserId != null && readyUserId != authenticatedUserId) return
 
     val startDestination = when (authState) {
         is AuthState.Authenticated -> InboxRoutes
@@ -154,12 +185,6 @@ fun SlaxNavigation(
             LaunchedEffect(Unit) { bookmarkListEvent.view().send() }
         }
         composable<SettingsRoutes> {
-            DisposableEffect(Unit) {
-                onDispose {
-                    backgroundDomain.restart()
-                    collectionBackgroundDomain.restart()
-                }
-            }
             SettingScreen(
                 onBackClick = {
                     navCtrl.popBackStack()

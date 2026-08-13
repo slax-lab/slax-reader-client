@@ -10,6 +10,7 @@ import com.powersync.sync.SyncOptions
 import com.powersync.utils.JsonParam
 import com.slax.reader.data.database.model.BookmarkMetadata
 import com.slax.reader.data.database.model.ShareSettings
+import com.slax.reader.const.AppError
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.network.dto.ChangesItem
 import com.slax.reader.data.preferences.AppPreferences
@@ -21,16 +22,48 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
-val ConnectParams = mapOf("schema_version" to JsonParam.String("1"))
+val ConnectParams = mapOf("schema_version" to JsonParam.String("2"))
 
 @OptIn(ExperimentalPowerSyncAPI::class)
 val ConnectOptions = SyncOptions(newClientImplementation = true)
 
-/** 每次上传请求最多携带的 CRUD 操作数量,小批量多次请求,避免一次性把大量变更打到服务器。 */
+private val bookmarkMetadataJson = Json { ignoreUnknownKeys = true }
+
 private const val UPLOAD_CHUNK_SIZE = 20
 
-/** 相邻两次上传请求之间的间隔(毫秒),给服务器一点喘息时间。 */
 private const val UPLOAD_CHUNK_DELAY_MS = 200L
+
+internal suspend fun uploadTransactionBatch(
+    batch: List<CrudTransaction>,
+    changesFor: (List<CrudTransaction>) -> List<ChangesItem>,
+    upload: suspend (List<ChangesItem>) -> Unit
+) {
+    val postData = changesFor(batch)
+    try {
+        upload(postData)
+        batch.forEach { it.complete(null) }
+        println("Successfully uploaded ${batch.size} transactions with ${postData.size} operations")
+    } catch (error: AppError.ApiException.HttpError) {
+        if (error.code != 400) throw error
+
+        println("Sync batch rejected with 400; isolating ${batch.size} transactions")
+        for (transaction in batch) {
+            val transactionChanges = changesFor(listOf(transaction))
+            try {
+                upload(transactionChanges)
+                transaction.complete(null)
+                println("Successfully uploaded isolated transaction ${transaction.transactionId}")
+            } catch (isolatedError: AppError.ApiException.HttpError) {
+                if (isolatedError.code != 400) throw isolatedError
+                transaction.complete(null)
+                println(
+                    "Discarded transaction ${transaction.transactionId} with " +
+                        "${transaction.crud.size} operations after repeated HTTP 400"
+                )
+            }
+        }
+    }
+}
 
 class Connector(
     private val apiService: ApiService,
@@ -76,8 +109,8 @@ class Connector(
             if (value != oldValue) {
                 if (key == "metadata") {
                     try {
-                        val newMetadataObj = Json.decodeFromString<BookmarkMetadata>(value ?: "")
-                        val oldMetadataObj = Json.decodeFromString<BookmarkMetadata>(oldValue ?: "")
+                        val newMetadataObj = bookmarkMetadataJson.decodeFromString<BookmarkMetadata>(value ?: "")
+                        val oldMetadataObj = bookmarkMetadataJson.decodeFromString<BookmarkMetadata>(oldValue ?: "")
 
                         if (newMetadataObj.tags != oldMetadataObj.tags) {
                             changes["metadata.tags"] = Json.encodeToString(newMetadataObj.tags)
@@ -126,17 +159,9 @@ class Connector(
             changes["metadata.share.show_line"] = newShare.show_line.toString()
             preChanges["metadata.share.show_line"] = oldShare.show_line.toString()
         }
-        if (newShare.allow_line != oldShare.allow_line) {
-            changes["metadata.share.allow_line"] = newShare.allow_line.toString()
-            preChanges["metadata.share.allow_line"] = oldShare.allow_line.toString()
-        }
         if (newShare.show_comment != oldShare.show_comment) {
             changes["metadata.share.show_comment"] = newShare.show_comment.toString()
             preChanges["metadata.share.show_comment"] = oldShare.show_comment.toString()
-        }
-        if (newShare.allow_comment != oldShare.allow_comment) {
-            changes["metadata.share.allow_comment"] = newShare.allow_comment.toString()
-            preChanges["metadata.share.allow_comment"] = oldShare.allow_comment.toString()
         }
         if (newShare.show_userinfo != oldShare.show_userinfo) {
             changes["metadata.share.show_userinfo"] = newShare.show_userinfo.toString()
@@ -171,7 +196,7 @@ class Connector(
         suspend fun flush() {
             if (pendingBatch.isEmpty()) return
 
-            val postData = pendingBatch.flatMap { tx -> tx.crud }.map { entry ->
+            fun changesFor(batch: List<CrudTransaction>) = batch.flatMap { tx -> tx.crud }.map { entry ->
                 val (changes, preChanges) = diffChanges(entry.opData, entry.previousValues)
                 ChangesItem(
                     table = entry.table,
@@ -182,10 +207,10 @@ class Connector(
                 )
             }
 
-            apiService.uploadChanges(changes = postData)
-            pendingBatch.forEach { it.complete(null) }
-
-            println("Successfully uploaded ${pendingBatch.size} transactions with ${postData.size} operations")
+            val batch = pendingBatch.toList()
+            uploadTransactionBatch(batch, ::changesFor) { changes ->
+                apiService.uploadChanges(changes = changes)
+            }
 
             pendingBatch.clear()
             pendingOps = 0

@@ -4,6 +4,7 @@ import com.slax.reader.data.database.dao.BookmarkDao
 import com.slax.reader.data.database.dao.CollectionDao
 import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.data.database.model.UserTag
+import com.slax.reader.domain.sync.CollectionBackgroundDomain
 import com.slax.reader.utils.bookmarkEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,7 +21,17 @@ data class BookmarkDetailBinding(
     val bookmarkId: String,
     val collectionOwnerId: String?,
     val collectionId: String?,
-)
+) {
+    val isCollection: Boolean
+        get() = collectionOwnerId != null || collectionId != null
+
+    val validCollectionOwnerId: String?
+        get() = collectionOwnerId?.takeIf { it.isNotBlank() }
+
+    fun resolveCacheKey(): String = validCollectionOwnerId
+        ?.let { CollectionBackgroundDomain.cacheKey(it, bookmarkId) }
+        ?: bookmarkId
+}
 
 data class BookmarkDetailState(
     val isStarred: Boolean = false,
@@ -36,18 +47,44 @@ class BookmarkDelegate(
     private val bindingFlow: StateFlow<BookmarkDetailBinding?>,
     private val scope: CoroutineScope
 ) {
+    private data class BoundBookmarks(
+        val binding: BookmarkDetailBinding,
+        val bookmarks: List<UserBookmark>,
+    )
+
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val bookmarkFlow: StateFlow<List<UserBookmark>> = bindingFlow
+    private val boundBookmarks: StateFlow<BoundBookmarks?> = bindingFlow
         .filterNotNull()
         .flatMapLatest { binding ->
-            if (binding.collectionOwnerId == null) {
-                bookmarkDao.watchBookmarkDetail(binding.bookmarkId)
-            } else {
-                collectionDao.watchCollectionBookmarkDetail(binding.bookmarkId, binding.collectionOwnerId)
+            val collectionOwnerId = binding.validCollectionOwnerId
+            val bookmarks = when {
+                !binding.isCollection -> bookmarkDao.watchBookmarkDetail(binding.bookmarkId)
+                collectionOwnerId != null -> collectionDao.watchCollectionBookmarkDetail(
+                    binding.bookmarkId,
+                    collectionOwnerId,
+                )
+                else -> flowOf(emptyList())
             }
+            bookmarks.map { BoundBookmarks(binding, it) }
         }
         .distinctUntilChanged()
-        .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(scope, SharingStarted.WhileSubscribed(5000), null)
+
+    private val currentBoundBookmarks: Flow<BoundBookmarks?> = combine(
+        bindingFlow,
+        boundBookmarks,
+    ) { currentBinding, bound ->
+        bound?.takeIf { it.binding == currentBinding }
+    }.distinctUntilChanged()
+
+    private val bookmarkFlow: Flow<List<UserBookmark>> = currentBoundBookmarks
+        .map { it?.bookmarks.orEmpty() }
+        .distinctUntilChanged()
+
+    val currentBookmark: Flow<UserBookmark> = currentBoundBookmarks
+        .filterNotNull()
+        .mapNotNull { bound -> bound.bookmarks.firstOrNull { it.id == bound.binding.bookmarkId } }
+        .distinctUntilChanged()
 
     val bookmarkDetailState: StateFlow<BookmarkDetailState> = bookmarkFlow
         .map { list ->
@@ -157,5 +194,5 @@ class BookmarkDelegate(
         }
     }
 
-    private fun isCollectionBookmark(): Boolean = bindingFlow.value?.collectionOwnerId != null
+    private fun isCollectionBookmark(): Boolean = bindingFlow.value?.isCollection == true
 }

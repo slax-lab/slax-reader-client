@@ -4,16 +4,18 @@ import androidx.compose.runtime.Immutable
 import com.powersync.db.SqlCursor
 import com.powersync.db.getString
 import com.powersync.db.getStringOptional
-import com.slax.reader.utils.toDateTime
+import com.slax.reader.utils.toDateTimeOrNull
 import com.slax.reader.utils.toISODateFormat
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+
+private val bookmarkMetadataJson = Json { ignoreUnknownKeys = true }
 
 @Immutable
 @Serializable
 data class BookmarkMetadata(
     val tags: List<String>,
-    val share: ShareSettings?,
+    val share: ShareSettings? = null,
     val bookmark: BookmarkDetails
 )
 
@@ -23,11 +25,11 @@ data class ShareSettings(
     val uuid: String,
     val is_enable: Boolean,
     val show_line: Boolean,
-    val allow_line: Boolean,
+    val allow_line: Boolean = false,
     val created_at: String,
     val share_code: String,
     val show_comment: Boolean,
-    val allow_comment: Boolean,
+    val allow_comment: Boolean = false,
     val show_userinfo: Boolean
 )
 
@@ -70,6 +72,7 @@ data class BookmarkCommentMetadata(
     val root_id: String? = null,
     val user_id: String? = null,
     val parent_id: String? = null,
+    val source_type: String? = null,
     val source_id: String? = null,
     val bookmark_id: String? = null
 )
@@ -84,7 +87,7 @@ data class UserTag(
 )
 
 enum class BookmarkSortType(val column: String, val whereClause: String) {
-    UPDATED("updated_at", "archive_status = 0 AND deleted_at IS NULL"),
+    UPDATED("created_at", "archive_status = 0 AND deleted_at IS NULL"),
     STARRED("starred_at", "is_starred = 1 AND deleted_at IS NULL"),
     ARCHIVED("archived_at", "archive_status = 1 AND deleted_at IS NULL");
 
@@ -95,9 +98,15 @@ enum class BookmarkSortType(val column: String, val whereClause: String) {
     }
 }
 
+interface ListRowBookmark {
+    val id: String
+    val downloadStatus: Int
+    fun displayTitle(): String
+}
+
 @Immutable
 data class InboxListBookmarkItem(
-    val id: String,
+    override val id: String,
     val aliasTitle: String,
     val updatedAt: String,
 
@@ -107,10 +116,10 @@ data class InboxListBookmarkItem(
     val metadataTitle: String?,
     val metadataUrl: String?,
 
-    val downloadStatus: Int = 0,
+    override val downloadStatus: Int = 0,
     val isAutoCached: Boolean = false
-) {
-    fun displayTitle(): String {
+) : ListRowBookmark {
+    override fun displayTitle(): String {
         return when {
             aliasTitle.isNotEmpty() -> aliasTitle
             !metadataTitle.isNullOrEmpty() -> metadataTitle
@@ -137,7 +146,7 @@ data class UserBookmark(
     var metadataUrl: String?
 ) {
     val metadataObj: BookmarkMetadata? by lazy {
-        metadata?.let { Json.decodeFromString<BookmarkMetadata>(it) }
+        metadata?.let { bookmarkMetadataJson.decodeFromString<BookmarkMetadata>(it) }
     }
 
     val displayTitle: String by lazy {
@@ -150,7 +159,7 @@ data class UserBookmark(
     }
 
     val displayTime: String
-        get() = createdAt.toDateTime().toISODateFormat().take(16)
+        get() = createdAt.toDateTimeOrNull()?.toISODateFormat()?.take(16).orEmpty()
 }
 
 

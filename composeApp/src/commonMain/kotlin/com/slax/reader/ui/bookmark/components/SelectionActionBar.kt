@@ -66,17 +66,29 @@ object SelectionActionId {
  * @param hasStroke 当前选区是否已有当前用户的划线，为 true 时显示"删除划线"
  */
 @Composable
-fun rememberSelectionActions(hasStroke: Boolean = false): List<SelectionAction> {
-    return remember(hasStroke) {
-        listOf(
-            SelectionAction(SelectionActionId.COPY, "selection_action_copy".i18n(), Res.drawable.ic_menu_action_copy),
+fun rememberSelectionActions(
+    hasStroke: Boolean = false,
+    allowLine: Boolean = true,
+    allowComment: Boolean = true,
+): List<SelectionAction> {
+    return remember(hasStroke, allowLine, allowComment) {
+        buildList {
+            add(
+                SelectionAction(SelectionActionId.COPY, "selection_action_copy".i18n(), Res.drawable.ic_menu_action_copy),
+            )
             if (hasStroke) {
-                SelectionAction(SelectionActionId.REMOVE_HIGHLIGHT, "selection_action_remove_highlight".i18n(), Res.drawable.ic_menu_action_highlight)
-            } else {
-                SelectionAction(SelectionActionId.HIGHLIGHT, "selection_action_highlight".i18n(), Res.drawable.ic_menu_action_highlight)
-            },
-            SelectionAction(SelectionActionId.COMMENT, "selection_action_comment".i18n(), Res.drawable.ic_menu_action_comment),
-        )
+                add(
+                    SelectionAction(SelectionActionId.REMOVE_HIGHLIGHT, "selection_action_remove_highlight".i18n(), Res.drawable.ic_menu_action_highlight)
+                )
+            } else if (allowLine) {
+                add(
+                    SelectionAction(SelectionActionId.HIGHLIGHT, "selection_action_highlight".i18n(), Res.drawable.ic_menu_action_highlight)
+                )
+            }
+            if (allowComment) {
+                add(SelectionAction(SelectionActionId.COMMENT, "selection_action_comment".i18n(), Res.drawable.ic_menu_action_comment))
+            }
+        }
     }
 }
 

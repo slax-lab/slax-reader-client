@@ -53,7 +53,6 @@ fun InboxListScreen(navCtrl: NavController) {
     val currentSortType by inboxViewModel.sortType.collectAsState()
     val activeCollection by inboxViewModel.activeCollection.collectAsState()
 
-    println("[watch][UI] recomposition InboxListScreen")
 
     Sidebar(
         drawerState = drawerState,
@@ -84,7 +83,6 @@ fun InboxListScreen(navCtrl: NavController) {
                                 showAddLinkDialog = true
                             },
                             currentSortType = currentSortType,
-                            collectionTitle = activeCollection?.name,
                             onSortTypeChanged = { type ->
                                 inboxViewModel.setSortType(type)
                             }
@@ -149,10 +147,8 @@ private fun NavigationBar(
     onAvatarClick: () -> Unit = {},
     onAddLinkClick: () -> Unit = {},
     currentSortType: BookmarkSortType = BookmarkSortType.UPDATED,
-    collectionTitle: String? = null,
     onSortTypeChanged: (BookmarkSortType) -> Unit = {}
 ) {
-    println("[watch][UI] recomposition NavigationBar")
     val tabInteractionSource = remember { MutableInteractionSource() }
     val isTabPressed by tabInteractionSource.collectIsPressedAsState()
 
@@ -205,7 +201,6 @@ private fun NavigationBar(
                     .padding(vertical = 5.dp, horizontal = 20.dp)
                     .alpha(if (isTitlePressed) 0.5f else 1f)
                     .clickable(
-                        enabled = collectionTitle == null,
                         interactionSource = titleInteractionSource,
                         indication = null
                     ) {
@@ -215,7 +210,7 @@ private fun NavigationBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = collectionTitle ?: currentSortType.labelKey().i18n(),
+                    text = currentSortType.labelKey().i18n(),
                     style = TextStyle(
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Medium,
@@ -225,19 +220,17 @@ private fun NavigationBar(
                     )
                 )
 
-                if (collectionTitle == null) {
-                    Image(
-                        painter = painterResource(Res.drawable.inbox_more),
-                        contentDescription = "Switch List",
-                        modifier = Modifier.size(10.dp),
-                        contentScale = ContentScale.Fit
-                    )
-                }
+                Image(
+                    painter = painterResource(Res.drawable.inbox_more),
+                    contentDescription = "Switch List",
+                    modifier = Modifier.size(10.dp),
+                    contentScale = ContentScale.Fit
+                )
             }
         }
 
         InboxDropdownMenu(
-            expanded = expanded && collectionTitle == null,
+            expanded = expanded,
             onDismissRequest = { expanded = false },
             yOffset = menuYOffset
         ) {
@@ -280,16 +273,28 @@ private fun ContentSection(
     inboxViewModel: InboxListViewModel,
     onEditTitle: (bookmark: InboxListBookmarkItem) -> Unit = { _ -> }
 ) {
-    println("[watch][UI] recomposition ContentSection")
 
     val collections by inboxViewModel.subscribedCollections.collectAsState()
-    val activeOwnerId by inboxViewModel.activeCollectionOwnerId.collectAsState()
+    val activeCollectionId by inboxViewModel.activeCollectionId.collectAsState()
     val activeCollection by inboxViewModel.activeCollection.collectAsState()
     val collectionBookmarks by inboxViewModel.collectionBookmarks.collectAsState()
     val userInfo by inboxViewModel.userInfo.collectAsState()
 
+    val collectionFeedSwitcher: (@Composable () -> Unit)? = if (collections.isEmpty()) {
+        null
+    } else {
+        {
+            CollectionFeedSwitcher(
+                ownAvatar = userInfo?.picture.orEmpty(),
+                collections = collections,
+                activeCollectionId = activeCollectionId,
+                onSelect = inboxViewModel::selectCollection,
+            )
+        }
+    }
+
     Box(
-        modifier = Modifier.fillMaxSize().padding(top = 8.dp).clipToBounds()
+        modifier = Modifier.fillMaxSize().clipToBounds()
     ) {
         Column(
             modifier = Modifier
@@ -299,20 +304,7 @@ private fun ContentSection(
                     shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
                 )
         ) {
-            Spacer(modifier = Modifier.height(4.dp))
-
-            val collectionFeedSwitcher: @Composable () -> Unit = {
-                if (collections.isNotEmpty()) {
-                    CollectionFeedSwitcher(
-                        ownAvatar = userInfo?.picture.orEmpty(),
-                        collections = collections,
-                        activeOwnerId = activeOwnerId,
-                        onSelect = inboxViewModel::selectCollection,
-                    )
-                }
-            }
-
-            if (activeOwnerId == null) {
+            if (activeCollectionId == null) {
                 ArticleList(
                     navCtrl = navCtrl,
                     viewModel = inboxViewModel,
@@ -330,7 +322,7 @@ private fun ContentSection(
             }
         }
 
-        if (activeOwnerId == null) {
+        if (activeCollectionId == null) {
             ContinueReading(
                 onClick = { bookmark ->
                     navCtrl.navigate(
@@ -344,6 +336,5 @@ private fun ContentSection(
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
-
     }
 }

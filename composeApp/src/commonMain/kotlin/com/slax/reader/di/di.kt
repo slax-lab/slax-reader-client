@@ -17,6 +17,7 @@ import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.domain.coordinator.CoordinatorDomain
 import com.slax.reader.domain.image.ImageDownloadManager
 import com.slax.reader.domain.image.ShareImageSelector
+import com.slax.reader.domain.cache.CacheManager
 import com.slax.reader.domain.sync.BackgroundDomain
 import com.slax.reader.domain.sync.CollectionBackgroundDomain
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
@@ -55,6 +56,7 @@ val powerSyncModule = module {
 }
 
 val repositoryModule = module {
+    single { CoroutineScope(SupervisorJob() + Dispatchers.IO) }
     single(named("daoScope")) { CoroutineScope(SupervisorJob() + Dispatchers.IO) }
     single { BookmarkDao(get(named("daoScope")), get()) }
     single { CollectionDao(get(named("daoScope")), get()) }
@@ -79,6 +81,7 @@ val domainModule = module {
     single { BackgroundDomain(get(), get(), get(), get(), get(), get()) }
     single { CollectionBackgroundDomain(get(), get(), get(), get(), get(), get()) }
     single { CoordinatorDomain(get(), get(), get()) }
+    single { CacheManager(get(), get()) }
     single { ImageDownloadManager(get(), get()) }
     single { ShareImageSelector(get()) }
 }

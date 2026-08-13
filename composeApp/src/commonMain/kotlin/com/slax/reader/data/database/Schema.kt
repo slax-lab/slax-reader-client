@@ -125,6 +125,15 @@ val srUserCollectionTable = Table(
     )
 )
 
+val srSharerSettingTable = Table(
+    name = "sr_sharer_setting",
+    columns = listOf(
+        Column.integer("allow_highlight"),
+        Column.integer("show_highlight"),
+        Column.integer("allow_access"),
+    )
+)
+
 val srCollectionBookmarkTable = Table(
     name = "sr_collection_bookmark",
     columns = listOf(
@@ -183,6 +192,7 @@ val AppSchema = Schema(
         srUserSubscriptionTable,
         srUserCollectionSubscriberTable,
         srUserCollectionTable,
+        srSharerSettingTable,
         srCollectionBookmarkTable,
         srUserBookmarkStatsTable,
         srBookmarkComment,

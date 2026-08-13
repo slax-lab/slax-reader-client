@@ -10,7 +10,10 @@ import com.slax.reader.data.database.dao.CollectionDao
 import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.database.dao.SubscriptionDao
 import com.slax.reader.data.database.dao.UserDao
+import com.slax.reader.data.database.model.CollectionMarkPolicy
+import com.slax.reader.data.database.model.canCreateMark
 import com.slax.reader.data.database.model.checkIsSubscribed
+import com.slax.reader.data.database.model.collectionMarkPolicy
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.data.preferences.ContinueReadingBookmark
@@ -34,6 +37,7 @@ import com.slax.reader.utils.BridgeMarkStrokeInfo
 import com.slax.reader.utils.isIOS
 import com.slax.reader.utils.shareContent
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.json.Json
 import slax_reader_client.composeapp.generated.resources.Res
@@ -78,6 +82,7 @@ class BookmarkDetailViewModel(
     private val appPreferences: AppPreferences,
     private val database: PowerSyncDatabase,
     private val shareImageSelector: ShareImageSelector,
+    private val applicationScope: CoroutineScope,
 ) : ViewModel() {
 
     companion object {
@@ -91,8 +96,15 @@ class BookmarkDetailViewModel(
     val bookmarkId = _bookmarkId.asStateFlow()
     private val _bookmarkBinding = MutableStateFlow<BookmarkDetailBinding?>(null)
     val isCollectionBookmark: StateFlow<Boolean> = _bookmarkBinding
-        .map { it?.collectionOwnerId != null }
+        .map { it?.isCollection == true }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    private fun currentCacheKey(): String =
+        _bookmarkBinding.value?.resolveCacheKey().orEmpty()
+
+    val cacheKey: StateFlow<String> = _bookmarkBinding
+        .map { binding -> binding?.resolveCacheKey().orEmpty() }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "")
 
     private val _effects = MutableSharedFlow<BookmarkDetailEffect>(extraBufferCapacity = 8)
     val effects: SharedFlow<BookmarkDetailEffect> = _effects.asSharedFlow()
@@ -111,12 +123,39 @@ class BookmarkDetailViewModel(
 
     private var currentPosition: Float = -1f
     private var savePositionJob: Job? = null
+    private val readPositionSaves = Channel<ReadPositionSnapshot>(Channel.UNLIMITED)
 
     private var contentJob: Job? = null
     private var markObserveJob: Job? = null
+    private var markPolicyJob: Job? = null
+
+    private val _markPolicy = MutableStateFlow(CollectionMarkPolicy.Personal)
+    val allowLineActions = _markPolicy
+        .map { it.canCreateMark(MarkType.LINE) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val allowCommentActions = _markPolicy
+        .map { it.canCreateMark(MarkType.COMMENT) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
     val userInfo = userDao.watchUserInfo()
     val subscriptionInfo = subscriptionDao.watchSubscriptionInfo()
+
+    init {
+        applicationScope.launch {
+            var lastSavedReadPosition: ReadPositionSnapshot? = null
+            for (snapshot in readPositionSaves) {
+                if (snapshot == lastSavedReadPosition) continue
+                try {
+                    localBookmarkDao.updateLocalBookmarkReadPosition(snapshot.bookmarkId, snapshot.position)
+                    lastSavedReadPosition = snapshot
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    println("Failed to save read position for ${snapshot.bookmarkId}: ${error.message}")
+                }
+            }
+        }
+    }
 
     val overlayDelegate = OverlayDelegate()
     val commentDelegate = CommentDelegate(database, commentDao, localBookmarkDao, userDao, apiService, viewModelScope)
@@ -133,6 +172,8 @@ class BookmarkDetailViewModel(
         val binding = BookmarkDetailBinding(bookmarkId, collectionOwnerId, collectionId)
         if (_bookmarkBinding.value == binding) return
 
+        flushReadPosition()
+
         _bookmarkBinding.value = binding
         _bookmarkId.value = bookmarkId
         _contentState.value = BookmarkContentState(isLoading = true)
@@ -142,16 +183,39 @@ class BookmarkDetailViewModel(
         currentPosition = -1f
         savePositionJob?.cancel()
         markObserveJob?.cancel()
+        markPolicyJob?.cancel()
 
         overlayDelegate.reset()
         outlineDelegate.reset()
         overviewDelegate.reset()
         commentDelegate.reset()
 
-        // 异步加载保存的阅读位置，不阻塞主流程
-        viewModelScope.launch(Dispatchers.IO) {
+        val initialPolicy = if (!binding.isCollection) {
+            CollectionMarkPolicy.Personal
+        } else {
+            CollectionMarkPolicy.CollectionPending
+        }
+        _markPolicy.value = initialPolicy
+
+        markPolicyJob = viewModelScope.launch(Dispatchers.IO) {
             loadSavedPosition(bookmarkId)
-            commentDelegate.bind(bookmarkId)
+            commentDelegate.bind(bookmarkId, initialPolicy, binding.validCollectionOwnerId)
+            if (binding.isCollection && binding.validCollectionOwnerId != null) {
+                combine(
+                    bookmarkDelegate.currentBookmark,
+                    collectionDao.watchCollectionMarkSettings(binding.validCollectionOwnerId!!),
+                ) { bookmark, collectionSettings ->
+                    bookmark to collectionSettings
+                }.collect { (bookmark, collectionSettings) ->
+                    if (_bookmarkBinding.value != binding) return@collect
+                    val policy = runCatching {
+                        collectionMarkPolicy(bookmark.metadataObj?.share, collectionSettings)
+                    }
+                        .getOrDefault(CollectionMarkPolicy.CollectionPending)
+                    _markPolicy.value = policy
+                    commentDelegate.bind(bookmarkId, policy, binding.validCollectionOwnerId)
+                }
+            }
         }
 
         loadOutline()
@@ -169,45 +233,46 @@ class BookmarkDetailViewModel(
 
     fun refreshContent() {
         val id = _bookmarkId.value ?: return
-        val isCollection = _bookmarkBinding.value?.collectionOwnerId != null
-        val collectionId = _bookmarkBinding.value?.collectionId
-            ?: _bookmarkBinding.value?.collectionOwnerId
-        val cacheKey = if (isCollection && collectionId != null) {
-            CollectionBackgroundDomain.cacheKey(collectionId, id)
-        } else {
-            id
+        val binding = _bookmarkBinding.value ?: return
+        val collectionOwnerId = binding.validCollectionOwnerId
+        if (binding.isCollection && collectionOwnerId == null) {
+            contentJob?.cancel()
+            _contentState.value = BookmarkContentState(isLoading = false)
+            articleImageUrls.value = emptyList()
+            return
         }
+        // 与 ImageViewer / shareBookmark 共用同一个 key，避免三处各算一遍算出不一样的结果
+        val resolvedCacheKey = currentCacheKey().ifEmpty { id }
 
         contentJob?.cancel()
-        _contentState.value = _contentState.value.copy(isLoading = true, cacheKey = cacheKey)
+        _contentState.value = _contentState.value.copy(isLoading = true, cacheKey = resolvedCacheKey)
         articleImageUrls.value = emptyList()
 
         contentJob = viewModelScope.launch {
-            runCatching {
-                withContext(Dispatchers.IO) {
-                    if (isCollection) {
-                        if (collectionId == null) {
-                            backgroundDomain.getBookmarkContent(id)
-                        } else {
-                            collectionBackgroundDomain.getBookmarkContent(id, collectionId)
-                        }
+            try {
+                val content = withContext(Dispatchers.IO) {
+                    if (binding.isCollection && collectionOwnerId != null) {
+                        collectionBackgroundDomain.getBookmarkContent(id, collectionOwnerId)
                     } else {
                         backgroundDomain.getBookmarkContent(id)
                     }
                 }
-            }.onSuccess { content ->
+                if (_bookmarkBinding.value != binding) return@launch
                 _contentState.value = BookmarkContentState(
                     htmlContent = content.html,
                     isLoading = false,
-                    cacheKey = cacheKey,
+                    cacheKey = resolvedCacheKey,
                 )
                 articleImageUrls.value = content.imageUrls
-            }.onFailure { error ->
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
                 println("Failed to load bookmark content $id: ${error.message}")
+                if (_bookmarkBinding.value != binding) return@launch
                 _contentState.value = BookmarkContentState(
                     htmlContent = null,
                     isLoading = false,
-                    cacheKey = cacheKey,
+                    cacheKey = resolvedCacheKey,
                 )
             }
         }
@@ -310,7 +375,8 @@ class BookmarkDetailViewModel(
             }
 
             val articleImage = runCatching {
-                shareImageSelector.pick(articleImageUrls.value, id)
+                // 挑图要落到与预缓存一致的目录，否则会在 bookmark/<裸id>/images 下留一份无人回收的副本
+                shareImageSelector.pick(articleImageUrls.value, currentCacheKey().ifEmpty { id })
             }.getOrNull()
             val imageBytes = articleImage
                 ?: runCatching { Res.readBytes("files/share_logo.png") }.getOrNull()
@@ -370,6 +436,10 @@ class BookmarkDetailViewModel(
     }
 
     fun strokeHighlight(webViewState: AppWebViewState, onComplete: (() -> Unit)? = null) {
+        if (!_markPolicy.value.canCreateMark(MarkType.LINE)) {
+            onComplete?.invoke()
+            return
+        }
         webViewState.evaluateJsWithCallback(
             "window.SlaxWebViewBridge.captureCurrentSelection()"
         ) { resultJson ->
@@ -396,6 +466,7 @@ class BookmarkDetailViewModel(
         webViewState: AppWebViewState,
         onCaptured: (text: String, markInfo: BridgeMarkItemInfo) -> Unit,
     ) {
+        if (!_markPolicy.value.canCreateMark(MarkType.COMMENT)) return
         webViewState.evaluateJsWithCallback(
             "window.SlaxWebViewBridge.captureCurrentSelection()"
         ) { resultJson ->
@@ -420,6 +491,10 @@ class BookmarkDetailViewModel(
         markItemInfo: BridgeMarkItemInfo,
         onComplete: () -> Unit,
     ) {
+        if (!_markPolicy.value.canCreateMark(MarkType.LINE)) {
+            onComplete()
+            return
+        }
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
                 val localId = commentDelegate.addMark(
@@ -465,6 +540,10 @@ class BookmarkDetailViewModel(
         replyMarkId: Long? = null,
         onComplete: (() -> Unit)? = null,
     ) {
+        if (!_markPolicy.value.canCreateMark(MarkType.COMMENT)) {
+            onComplete?.invoke()
+            return
+        }
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
                 if (replyMarkId != null) {
@@ -512,6 +591,11 @@ class BookmarkDetailViewModel(
         }
     }
 
+    fun canDeleteComment(markId: Long): Boolean {
+        val recordId = commentDelegate.findCommentId { po -> po.id.toStableId() == markId } ?: return false
+        return commentDelegate.canDeleteComment(recordId)
+    }
+
     // 加载书签的保存阅读位置
     private suspend fun loadSavedPosition(bookmarkId: String) {
         if (_bookmarkId.value != bookmarkId) return
@@ -531,19 +615,22 @@ class BookmarkDetailViewModel(
         savePositionJob = viewModelScope.launch {
             delay(SAVE_DEBOUNCE_MS)
             val id = _bookmarkId.value ?: return@launch
-            withContext(Dispatchers.IO) {
-                localBookmarkDao.updateLocalBookmarkReadPosition(id, scrollY)
-            }
+            enqueueReadPositionSave(ReadPositionSnapshot(id, currentPosition))
         }
     }
 
     fun flushReadPosition() {
         savePositionJob?.cancel()
+        savePositionJob = null
         val id = _bookmarkId.value ?: return
         val position = currentPosition
         if (position < 0f) return
-        viewModelScope.launch(Dispatchers.IO) {
-            localBookmarkDao.updateLocalBookmarkReadPosition(id, position)
+        enqueueReadPositionSave(ReadPositionSnapshot(id, position))
+    }
+
+    private fun enqueueReadPositionSave(snapshot: ReadPositionSnapshot) {
+        if (!readPositionSaves.trySend(snapshot).isSuccess) {
+            println("Failed to enqueue read position for ${snapshot.bookmarkId}")
         }
     }
 
@@ -555,6 +642,7 @@ class BookmarkDetailViewModel(
         super.onCleared()
 
         flushReadPosition()
+        readPositionSaves.close()
 
         contentJob?.cancel()
         contentJob = null
@@ -566,3 +654,8 @@ class BookmarkDetailViewModel(
         overlayDelegate.reset()
     }
 }
+
+private data class ReadPositionSnapshot(
+    val bookmarkId: String,
+    val position: Float,
+)
