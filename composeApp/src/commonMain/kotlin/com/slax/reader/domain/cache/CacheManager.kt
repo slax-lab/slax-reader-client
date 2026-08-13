@@ -4,7 +4,6 @@ import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.file.FileManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 
 enum class CacheCategory {
@@ -43,11 +42,7 @@ class CacheManager(
     }
 
     suspend fun clearableCacheUsage(): CacheUsage = withContext(Dispatchers.IO) {
-        val ids = runCatching { localBookmarkDao.getManuallyCachedIds() }
-            .getOrElse { error ->
-                println("[CacheManager] failed to list manual cache: ${error.message}")
-                emptyList()
-            }
+        val ids = localBookmarkDao.getManuallyCachedIds()
         measureCacheUsage(ids)
     }
 
@@ -59,35 +54,24 @@ class CacheManager(
             imageBytes += fileManager.calculateDataDirectorySize("$BOOKMARK_DIR/$id/images").totalBytes
         }
 
-        val otherBytes = runCatching { localBookmarkDao.getCacheOtherBytes() }
-            .getOrElse { error ->
-                println("[CacheManager] failed to measure other cache: ${error.message}")
-                0L
-            }
+        val otherBytes = localBookmarkDao.getCacheOtherBytes()
 
         return CacheUsage(articleBytes, imageBytes, otherBytes)
     }
 
     suspend fun clearCache(categories: Set<CacheCategory>): Long =
-        withContext(NonCancellable + Dispatchers.IO) {
+        withContext(Dispatchers.IO) {
             val selected = categories.intersect(CacheCategory.entries.toSet())
             if (selected.isEmpty()) return@withContext 0L
 
-            val ids = runCatching { localBookmarkDao.getManuallyCachedIds() }
-                .getOrElse { error ->
-                    println("[CacheManager] failed to list manual cache: ${error.message}")
-                    emptyList()
-                }
+            val ids = localBookmarkDao.getManuallyCachedIds()
             val before = measureCacheUsage(ids)
 
             if (CacheCategory.ARTICLE in selected) {
                 val clearedArticleIds = ids.filter { id ->
                     fileManager.deleteDataFile("$BOOKMARK_DIR/$id/content.html")
                 }
-                runCatching { localBookmarkDao.resetManualCacheArticleStatus(clearedArticleIds) }
-                    .onFailure { error ->
-                        println("[CacheManager] failed to reset article cache state: ${error.message}")
-                    }
+                localBookmarkDao.resetManualCacheArticleStatus(clearedArticleIds)
             }
             if (CacheCategory.IMAGES in selected) {
                 ids.forEach { id ->
@@ -96,20 +80,14 @@ class CacheManager(
             }
 
             if (CacheCategory.OTHER in selected) {
-                runCatching { localBookmarkDao.clearCacheOtherFields() }
-                    .onFailure { error ->
-                        println("[CacheManager] failed to clear other cache fields: ${error.message}")
-                    }
+                localBookmarkDao.clearCacheOtherFields()
             }
 
             val emptyIds = ids.filter { id ->
                 fileManager.getDataFileSize("$BOOKMARK_DIR/$id/content.html") == 0L &&
                     fileManager.calculateDataDirectorySize("$BOOKMARK_DIR/$id/images").totalBytes == 0L
             }
-            runCatching { localBookmarkDao.deleteEmptyManualCacheInfo(emptyIds) }
-                .onFailure { error ->
-                    println("[CacheManager] failed to remove empty cache state: ${error.message}")
-                }
+            localBookmarkDao.deleteEmptyManualCacheInfo(emptyIds)
 
             val after = measureCacheUsage(ids)
             (before.bytes(selected) - after.bytes(selected)).coerceAtLeast(0L)

@@ -1,6 +1,7 @@
 package com.slax.reader.ui.inbox.compenents
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -25,8 +26,6 @@ import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.data.preferences.ContinueReadingBookmark
 import com.slax.reader.utils.i18n
 import com.slax.reader.utils.FirstPartyEventReporter
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
@@ -40,33 +39,27 @@ fun ContinueReading(
 ) {
     val appPreferences: AppPreferences = koinInject()
     val firstPartyEvents: FirstPartyEventReporter = koinInject()
-    val coroutineScope = rememberCoroutineScope()
     var showContinueData by remember { mutableStateOf<ContinueReadingBookmark?>(null) }
-    var visible by remember { mutableStateOf(false) }
+    var dismissed by remember { mutableStateOf(false) }
+    val visibilityState = remember { MutableTransitionState(false) }
 
     LaunchedEffect(Unit) {
-        coroutineScope.launch {
-            val bookmark = appPreferences.getContinueReadingBookmark() ?: return@launch
-
-            showContinueData = bookmark
-            appPreferences.clearContinueReadingBookmark()
-
-            delay(300)
-            visible = true
-        }
+        val bookmark = appPreferences.getContinueReadingBookmark() ?: return@LaunchedEffect
+        showContinueData = bookmark
+        appPreferences.clearContinueReadingBookmark()
+        dismissed = false
+        visibilityState.targetState = true
     }
 
-    if (!visible) return
-
-    LaunchedEffect(visible) {
-        if (!visible) {
-            delay(300)
+    LaunchedEffect(dismissed, visibilityState.isIdle, visibilityState.currentState) {
+        if (dismissed && visibilityState.isIdle && !visibilityState.currentState) {
             showContinueData = null
         }
     }
 
+    val continueData = showContinueData ?: return
     AnimatedVisibility(
-        visible = visible,
+        visibleState = visibilityState,
         enter = fadeIn(animationSpec = tween(300)) +
                 slideInVertically(
                     initialOffsetY = { it / 2 },
@@ -151,10 +144,8 @@ fun ContinueReading(
                         indication = null,
                         enabled = onClick != null
                     ) {
-                        showContinueData?.let {
-                            firstPartyEvents.track("element_clicked", mapOf("element_id" to "continue_reading_button", "screen_name" to "bookmarks"))
-                            onClick?.invoke(it)
-                        }
+                        firstPartyEvents.track("element_clicked", mapOf("element_id" to "continue_reading_button", "screen_name" to "bookmarks"))
+                        onClick?.invoke(continueData)
                     }
                     .padding(16.dp)
             ) {
@@ -173,7 +164,7 @@ fun ContinueReading(
                     Spacer(modifier = Modifier.width(6.dp))
 
                     Text(
-                        text = showContinueData!!.title,
+                        text = continueData.title,
                         style = TextStyle(
                             fontSize = 15.sp,
                             color = Color(0xFF4d4d4d),
@@ -204,7 +195,8 @@ fun ContinueReading(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
                             ) {
-                                visible = false
+                                dismissed = true
+                                visibilityState.targetState = false
                             },
                         contentScale = ContentScale.Fit
                     )

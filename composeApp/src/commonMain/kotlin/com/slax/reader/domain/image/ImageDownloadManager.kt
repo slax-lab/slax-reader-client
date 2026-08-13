@@ -51,22 +51,16 @@ class ImageDownloadManager(
         if (isOwner) {
             try {
                 val response = httpClient.get(originalUrl)
+                val contentType = response.contentType()
                 if (!response.status.isSuccess()) {
                     deferred.complete(null)
-                    return deferred.await()
-                }
-                val contentType = response.contentType()
-                if (contentType != null && contentType.contentType != ContentType.Image.Any.contentType) {
+                } else if (contentType != null &&
+                    contentType.contentType != ContentType.Image.Any.contentType
+                ) {
                     deferred.complete(null)
-                    return deferred.await()
+                } else {
+                    deferred.complete(response.readRawBytes().takeIf { it.isNotEmpty() })
                 }
-                val data = response.readRawBytes()
-                if (data.isEmpty()) {
-                    deferred.complete(null)
-                    return deferred.await()
-                }
-                fileManager.writeDataFile(path, data)
-                deferred.complete(data)
             } catch (e: CancellationException) {
                 deferred.cancel(e)
                 throw e
@@ -74,11 +68,17 @@ class ImageDownloadManager(
                 println("[ImageDownloadManager] 下载失败: $originalUrl, ${e.message}")
                 deferred.complete(null)
             } finally {
-                mutex.withLock { inFlightRequests.remove(originalUrl) }
+                mutex.withLock {
+                    if (inFlightRequests[originalUrl] === deferred) {
+                        inFlightRequests.remove(originalUrl)
+                    }
+                }
             }
         }
 
-        return deferred.await()
+        return deferred.await()?.also { data ->
+            fileManager.writeDataFile(path, data)
+        }
     }
 
     fun resolveUrl(customUrl: String): String {

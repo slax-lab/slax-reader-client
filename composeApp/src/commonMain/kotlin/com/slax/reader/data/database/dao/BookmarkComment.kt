@@ -3,7 +3,10 @@ package com.slax.reader.data.database.dao
 import com.powersync.PowerSyncDatabase
 import com.slax.reader.data.database.model.BookmarkCommentMetadata
 import com.slax.reader.data.database.model.BookmarkCommentPO
+import com.slax.reader.data.database.model.CollectionMarkPolicy
+import com.slax.reader.data.database.model.canCreateMark
 import com.slax.reader.data.database.model.mappingToBookmarkComment
+import com.slax.reader.const.AppError
 import com.slax.reader.data.network.dto.MarkPathApprox
 import com.slax.reader.data.network.dto.MarkPathItem
 import com.slax.reader.data.network.dto.MarkType
@@ -55,15 +58,20 @@ class BookmarkCommentDao(
         comment: String = "",
         rootId: String? = null,
         parentId: String? = null,
+        markPolicy: CollectionMarkPolicy,
     ): String {
+        if (!markPolicy.canCreateMark(type)) {
+            throw AppError.CommentException.MarkNotAllowed
+        }
         val id = Uuid.random().toString()
         val now = Clock.System.now().toString()
         val metadata = BookmarkCommentMetadata(
             root_id = rootId,
             user_id = userId,
             parent_id = parentId,
-            source_id = null,
-            bookmark_id = null
+            source_type = if (markPolicy.isCollection) "collection" else null,
+            source_id = if (markPolicy.isCollection) bookmarkId else null,
+            bookmark_id = bookmarkId,
         )
 
         database.writeTransaction { tx ->

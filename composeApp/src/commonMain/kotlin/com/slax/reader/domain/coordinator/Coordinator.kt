@@ -10,6 +10,7 @@ import dev.jordond.connectivity.Connectivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +18,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 sealed class AppSyncState {
     data object NoNetwork : AppSyncState()
@@ -39,6 +43,8 @@ class CoordinatorDomain(
 
     private var isConnected = false
     private val connectivity = Connectivity()
+    private val lifecycleMutex = Mutex()
+    private val connectionMutex = Mutex()
 
     private val _syncState = MutableStateFlow<AppSyncState>(AppSyncState.Connecting)
     override val syncState: StateFlow<AppSyncState> = _syncState.asStateFlow()
@@ -60,99 +66,119 @@ class CoordinatorDomain(
         }
     }
 
-    fun startup() {
-        workerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    suspend fun startup() {
+        lifecycleMutex.withLock {
+            if (workerScope != null) return@withLock
 
-        workerScope!!.launch {
-            connect()
-            connectivity.start()
-        }
+            val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+            workerScope = scope
 
-        workerScope!!.launch {
-            connectivity.statusUpdates.collect { status ->
-                if (status is Connectivity.Status.Connected) {
-                    reconnect()
-                } else {
-                    disconnect()
-                }
+            scope.launch {
+                connect()
+                connectivity.start()
             }
-        }
 
-        workerScope!!.launch {
-            combine(
-                powerSyncDao.watchPowerSyncStatus(),
-                connectivity.statusUpdates
-            ) { syncStatus, networkStatus ->
-                val hasNetwork = hasNetworkConnection(networkStatus)
-
-                when {
-                    !hasNetwork -> AppSyncState.NoNetwork
-                    syncStatus == null -> AppSyncState.Connecting
-                    syncStatus.connected -> AppSyncState.Connected
-                    syncStatus.downloading -> AppSyncState.Downloading(
-                        syncStatus.downloadProgress?.let { progress ->
-                            if (progress.totalOperations > 0) {
-                                (progress.downloadedOperations.toFloat() / progress.totalOperations.toFloat()).coerceIn(
-                                    0f,
-                                    1f
-                                )
-                            } else {
-                                0f
-                            }
-                        } ?: 0f
-                    )
-
-                    syncStatus.uploading -> AppSyncState.Uploading
-                    syncStatus.connecting -> AppSyncState.Connecting
-                    syncStatus.anyError != null -> {
-                        if (isNetworkException(syncStatus.anyError!!)) {
-                            AppSyncState.NoNetwork
-                        } else {
-                            println(syncStatus.anyError.toString())
-                            AppSyncState.Error(syncStatus.anyError.toString())
-                        }
+            scope.launch {
+                connectivity.statusUpdates.collect { status ->
+                    if (hasNetworkConnection(status)) {
+                        connect()
+                    } else {
+                        disconnect()
                     }
-
-                    else -> AppSyncState.Connecting
                 }
-            }.collect { state ->
-                _syncState.value = state
+            }
+
+            scope.launch {
+                combine(
+                    powerSyncDao.watchPowerSyncStatus(),
+                    connectivity.statusUpdates
+                ) { syncStatus, networkStatus ->
+                    val hasNetwork = hasNetworkConnection(networkStatus)
+
+                    when {
+                        !hasNetwork -> AppSyncState.NoNetwork
+                        syncStatus == null -> AppSyncState.Connecting
+                        syncStatus.connected -> AppSyncState.Connected
+                        syncStatus.downloading -> AppSyncState.Downloading(
+                            syncStatus.downloadProgress?.let { progress ->
+                                if (progress.totalOperations > 0) {
+                                    (progress.downloadedOperations.toFloat() / progress.totalOperations.toFloat()).coerceIn(
+                                        0f,
+                                        1f
+                                    )
+                                } else {
+                                    0f
+                                }
+                            } ?: 0f
+                        )
+
+                        syncStatus.uploading -> AppSyncState.Uploading
+                        syncStatus.connecting -> AppSyncState.Connecting
+                        syncStatus.anyError != null -> {
+                            if (isNetworkException(syncStatus.anyError!!)) {
+                                AppSyncState.NoNetwork
+                            } else {
+                                println(syncStatus.anyError.toString())
+                                AppSyncState.Error(syncStatus.anyError.toString())
+                            }
+                        }
+
+                        else -> AppSyncState.Connecting
+                    }
+                }.collect { state ->
+                    _syncState.value = state
+                }
             }
         }
-    }
-
-    private suspend fun reconnect() {
-        disconnect()
-        connect()
     }
 
     private suspend fun connect() {
-        if (isConnected) return
-        try {
-            database.connect(connector, params = ConnectParams, options = ConnectOptions)
-            isConnected = true
-        } catch (e: Exception) {
-            println("PowerSync connect failed: ${e.message}")
+        connectionMutex.withLock {
+            if (isConnected) return@withLock
+            try {
+                database.connect(connector, params = ConnectParams, options = ConnectOptions)
+                isConnected = true
+            } catch (error: CancellationException) {
+                throw error
+            } catch (e: Exception) {
+                println("PowerSync connect failed: ${e.message}")
+            }
         }
     }
 
     private suspend fun disconnect() {
-        if (!isConnected) return
-        try {
-            database.disconnect()
-            isConnected = false
-        } catch (e: Exception) {
-            println("PowerSync disconnect failed: ${e.message}")
+        connectionMutex.withLock {
+            if (!isConnected) return@withLock
+            try {
+                database.disconnect()
+                isConnected = false
+            } catch (error: CancellationException) {
+                throw error
+            } catch (e: Exception) {
+                println("PowerSync disconnect failed: ${e.message}")
+            }
         }
     }
 
-    suspend fun cleanup(clear: Boolean) {
-        workerScope?.cancel()
-        workerScope = null
-        if (isConnected) {
-            connectivity.stop()
-            database.disconnectAndClear(clearLocal = clear, soft = true)
-            isConnected = false
+    suspend fun cleanup(clear: Boolean) = withContext(NonCancellable) {
+        lifecycleMutex.withLock {
+            workerScope?.cancel()
+            workerScope = null
+            runCatching { connectivity.stop() }
+                .onFailure { error -> println("Connectivity cleanup failed: ${error.message}") }
+            connectionMutex.withLock {
+                try {
+                    if (clear) {
+                        database.disconnectAndClear(clearLocal = true, soft = true)
+                    } else if (isConnected) {
+                        database.disconnect()
+                    }
+                } catch (e: Exception) {
+                    println("PowerSync cleanup failed: ${e.message}")
+                } finally {
+                    isConnected = false
+                }
+            }
         }
     }
 }
