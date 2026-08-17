@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import com.powersync.db.SqlCursor
 import com.powersync.db.getString
 import com.powersync.db.getStringOptional
+import com.slax.reader.utils.collapseWhitespace
 import com.slax.reader.utils.toDateTimeOrNull
 import com.slax.reader.utils.toISODateFormat
 import kotlinx.serialization.Serializable
@@ -121,11 +122,11 @@ data class InboxListBookmarkItem(
 ) : ListRowBookmark {
     override fun displayTitle(): String {
         return when {
-            aliasTitle.isNotEmpty() -> aliasTitle
-            !metadataTitle.isNullOrEmpty() -> metadataTitle
+            aliasTitle.isNotBlank() -> aliasTitle
+            !metadataTitle.isNullOrBlank() -> metadataTitle
             !metadataUrl.isNullOrEmpty() -> metadataUrl
             else -> id.take(5)
-        }
+        }.collapseWhitespace()
     }
 }
 
