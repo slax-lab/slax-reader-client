@@ -41,112 +41,6 @@ var SlaxReaderWebBridgeExports = (function (exports) {
     }
 
     /**
-     * 获取图片元素的 URL
-     */
-    function getImageUrl(element) {
-        const tagName = element.tagName.toLowerCase();
-        if (tagName === 'img') {
-            const img = element;
-            return img.currentSrc || img.src || '';
-        }
-        if (tagName === 'image') {
-            const svgImage = element;
-            return svgImage.href?.baseVal ||
-                element.getAttribute('href') ||
-                element.getAttribute('xlink:href') ||
-                '';
-        }
-        return '';
-    }
-    /**
-     * 处理图片加载和样式
-     */
-    function handleImageLoading(imgs) {
-        const loadingKey = 'slax-image-loading';
-        imgs.forEach(img => {
-            img.srcset = '';
-            img.onload = () => {
-                img.classList.remove(loadingKey);
-                if (img.naturalWidth < 5 || img.naturalHeight < 5) {
-                    img.setAttribute('style', 'display: none;');
-                    return;
-                }
-                else if (img.naturalWidth < 200) {
-                    img.setAttribute('style', `width: ${img.naturalWidth}px !important;`);
-                    return;
-                }
-                ['padding: 0 !important', 'height: auto !important;'].forEach(style => {
-                    img.setAttribute('style', style);
-                });
-            };
-            img.referrerPolicy = '';
-            img.onerror = () => {
-                img.classList.remove(loadingKey);
-                img.style.display = 'none';
-            };
-            img.classList.add(loadingKey);
-            const parentElement = img.parentElement;
-            const parentChilds = parentElement ? Array.from(parentElement.childNodes) : [];
-            const isOnlyImages = parentChilds.every(child => {
-                if (child.nodeType === Node.ELEMENT_NODE) {
-                    const element = child;
-                    return element.tagName.toLowerCase() === 'img';
-                }
-                return true;
-            });
-            if (isOnlyImages) {
-                img.style.cssFloat = 'none';
-            }
-        });
-    }
-    /**
-     * 如果是 tweet 内容，移除包裹 img 的 a 标签（保留子内容）
-     */
-    function unwrapImgAnchorsInTweet() {
-        const firstDiv = document.body?.querySelector(':scope > div');
-        if (!firstDiv?.classList.contains('tweet'))
-            return;
-        document.querySelectorAll('a img').forEach(img => {
-            const anchor = img.closest('a');
-            if (!anchor)
-                return;
-            const parent = anchor.parentNode;
-            if (!parent)
-                return;
-            while (anchor.firstChild) {
-                parent.insertBefore(anchor.firstChild, anchor);
-            }
-            parent.removeChild(anchor);
-        });
-    }
-    /**
-     * 初始化图片点击处理程序
-     */
-    function initImageClickHandlers() {
-        unwrapImgAnchorsInTweet();
-        const images = document.querySelectorAll('img, image');
-        const htmlImages = Array.from(images).filter(img => img.tagName.toLowerCase() === 'img');
-        handleImageLoading(htmlImages);
-        images.forEach(img => {
-            img.addEventListener('click', (event) => {
-                const validSchemes = ['https://', 'http://', 'slaxstatics://', 'slaxstatic://'];
-                const allImageUrls = Array.from(images)
-                    .map(getImageUrl)
-                    .filter(url => url && validSchemes.some(scheme => url.startsWith(scheme)));
-                const currentTarget = event.currentTarget;
-                const clickedImageUrl = getImageUrl(currentTarget);
-                postToNativeBridge({
-                    type: 'imageClick',
-                    src: clickedImageUrl,
-                    allImages: allImageUrls,
-                    index: allImageUrls.indexOf(clickedImageUrl)
-                });
-            });
-        });
-        console.log(`[WebView Bridge] Initialized ${images.length} image click handlers`);
-    }
-
-    /**
      * 高亮目标元素
      */
     function highlightElement(target) {
@@ -422,9 +316,9 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                 }
                 score[y] =
                     score[y - 1] +
-                    maxBlockScore -
-                    carry +
-                    advanceBlock(ctx, charPeq, y, carry);
+                        maxBlockScore -
+                        carry +
+                        advanceBlock(ctx, charPeq, y, carry);
             }
             else {
                 // Error count for bottom block exceeds threshold, reduce the number of
@@ -471,128 +365,128 @@ var SlaxReaderWebBridgeExports = (function (exports) {
     var hasRequiredLib$1;
 
     function requireLib$1 () {
-        if (hasRequiredLib$1) return lib;
-        hasRequiredLib$1 = 1;
-        (function (exports$1) {
+    	if (hasRequiredLib$1) return lib;
+    	hasRequiredLib$1 = 1;
+    	(function (exports$1) {
 
-            Object.defineProperty(exports$1, "__esModule", {
-                value: true
-            });
-            exports$1["default"] = seek;
-            var E_END = 'Iterator exhausted before seek ended.';
-            var E_SHOW = 'Argument 1 of seek must use filter NodeFilter.SHOW_TEXT.';
-            var E_WHERE = 'Argument 2 of seek must be an integer or a Text Node.';
-            var DOCUMENT_POSITION_PRECEDING = 2;
-            var SHOW_TEXT = 4;
-            var TEXT_NODE = 3;
+    		Object.defineProperty(exports$1, "__esModule", {
+    		  value: true
+    		});
+    		exports$1["default"] = seek;
+    		var E_END = 'Iterator exhausted before seek ended.';
+    		var E_SHOW = 'Argument 1 of seek must use filter NodeFilter.SHOW_TEXT.';
+    		var E_WHERE = 'Argument 2 of seek must be an integer or a Text Node.';
+    		var DOCUMENT_POSITION_PRECEDING = 2;
+    		var SHOW_TEXT = 4;
+    		var TEXT_NODE = 3;
 
-            function seek(iter, where) {
-                if (iter.whatToShow !== SHOW_TEXT) {
-                    var error; // istanbul ignore next
+    		function seek(iter, where) {
+    		  if (iter.whatToShow !== SHOW_TEXT) {
+    		    var error; // istanbul ignore next
 
-                    try {
-                        error = new DOMException(E_SHOW, 'InvalidStateError');
-                    } catch (_unused) {
-                        error = new Error(E_SHOW);
-                        error.code = 11;
-                        error.name = 'InvalidStateError';
+    		    try {
+    		      error = new DOMException(E_SHOW, 'InvalidStateError');
+    		    } catch (_unused) {
+    		      error = new Error(E_SHOW);
+    		      error.code = 11;
+    		      error.name = 'InvalidStateError';
 
-                        error.toString = function () {
-                            return "InvalidStateError: ".concat(E_SHOW);
-                        };
-                    }
+    		      error.toString = function () {
+    		        return "InvalidStateError: ".concat(E_SHOW);
+    		      };
+    		    }
 
-                    throw error;
-                }
+    		    throw error;
+    		  }
 
-                var count = 0;
-                var node = iter.referenceNode;
-                var predicates = null;
+    		  var count = 0;
+    		  var node = iter.referenceNode;
+    		  var predicates = null;
 
-                if (isInteger(where)) {
-                    predicates = {
-                        forward: function forward() {
-                            return count < where;
-                        },
-                        backward: function backward() {
-                            return count > where || !iter.pointerBeforeReferenceNode;
-                        }
-                    };
-                } else if (isText(where)) {
-                    var forward = before(node, where) ? function () {
-                        return false;
-                    } : function () {
-                        return node !== where;
-                    };
+    		  if (isInteger(where)) {
+    		    predicates = {
+    		      forward: function forward() {
+    		        return count < where;
+    		      },
+    		      backward: function backward() {
+    		        return count > where || !iter.pointerBeforeReferenceNode;
+    		      }
+    		    };
+    		  } else if (isText(where)) {
+    		    var forward = before(node, where) ? function () {
+    		      return false;
+    		    } : function () {
+    		      return node !== where;
+    		    };
 
-                    var backward = function backward() {
-                        return node !== where || !iter.pointerBeforeReferenceNode;
-                    };
+    		    var backward = function backward() {
+    		      return node !== where || !iter.pointerBeforeReferenceNode;
+    		    };
 
-                    predicates = {
-                        forward: forward,
-                        backward: backward
-                    };
-                } else {
-                    throw new TypeError(E_WHERE);
-                }
+    		    predicates = {
+    		      forward: forward,
+    		      backward: backward
+    		    };
+    		  } else {
+    		    throw new TypeError(E_WHERE);
+    		  }
 
-                while (predicates.forward()) {
-                    node = iter.nextNode();
+    		  while (predicates.forward()) {
+    		    node = iter.nextNode();
 
-                    if (node === null) {
-                        throw new RangeError(E_END);
-                    }
+    		    if (node === null) {
+    		      throw new RangeError(E_END);
+    		    }
 
-                    count += node.nodeValue.length;
-                }
+    		    count += node.nodeValue.length;
+    		  }
 
-                if (iter.nextNode()) {
-                    node = iter.previousNode();
-                }
+    		  if (iter.nextNode()) {
+    		    node = iter.previousNode();
+    		  }
 
-                while (predicates.backward()) {
-                    node = iter.previousNode();
+    		  while (predicates.backward()) {
+    		    node = iter.previousNode();
 
-                    if (node === null) {
-                        throw new RangeError(E_END);
-                    }
+    		    if (node === null) {
+    		      throw new RangeError(E_END);
+    		    }
 
-                    count -= node.nodeValue.length;
-                }
+    		    count -= node.nodeValue.length;
+    		  }
 
-                if (!isText(iter.referenceNode)) {
-                    throw new RangeError(E_END);
-                }
+    		  if (!isText(iter.referenceNode)) {
+    		    throw new RangeError(E_END);
+    		  }
 
-                return count;
-            }
+    		  return count;
+    		}
 
-            function isInteger(n) {
-                if (typeof n !== 'number') return false;
-                return isFinite(n) && Math.floor(n) === n;
-            }
+    		function isInteger(n) {
+    		  if (typeof n !== 'number') return false;
+    		  return isFinite(n) && Math.floor(n) === n;
+    		}
 
-            function isText(node) {
-                return node.nodeType === TEXT_NODE;
-            }
+    		function isText(node) {
+    		  return node.nodeType === TEXT_NODE;
+    		}
 
-            function before(ref, node) {
-                return ref.compareDocumentPosition(node) & DOCUMENT_POSITION_PRECEDING;
-            }
-
-        } (lib));
-        return lib;
+    		function before(ref, node) {
+    		  return ref.compareDocumentPosition(node) & DOCUMENT_POSITION_PRECEDING;
+    		}
+    		
+    	} (lib));
+    	return lib;
     }
 
     var domSeek;
     var hasRequiredDomSeek;
 
     function requireDomSeek () {
-        if (hasRequiredDomSeek) return domSeek;
-        hasRequiredDomSeek = 1;
-        domSeek = requireLib$1()['default'];
-        return domSeek;
+    	if (hasRequiredDomSeek) return domSeek;
+    	hasRequiredDomSeek = 1;
+    	domSeek = requireLib$1()['default'];
+    	return domSeek;
     }
 
     var rangeToString = {};
@@ -600,172 +494,172 @@ var SlaxReaderWebBridgeExports = (function (exports) {
     var hasRequiredRangeToString;
 
     function requireRangeToString () {
-        if (hasRequiredRangeToString) return rangeToString;
-        hasRequiredRangeToString = 1;
-        (function (exports$1) {
+    	if (hasRequiredRangeToString) return rangeToString;
+    	hasRequiredRangeToString = 1;
+    	(function (exports$1) {
 
-            Object.defineProperty(exports$1, "__esModule", {
-                value: true
-            });
-            exports$1["default"] = rangeToString;
+    		Object.defineProperty(exports$1, "__esModule", {
+    		  value: true
+    		});
+    		exports$1["default"] = rangeToString;
 
-            /**
-             * Return the next node after `node` in a tree order traversal of the document.
-             */
-            function nextNode(node, skipChildren) {
-                if (!skipChildren && node.firstChild) {
-                    return node.firstChild;
-                }
+    		/**
+    		 * Return the next node after `node` in a tree order traversal of the document.
+    		 */
+    		function nextNode(node, skipChildren) {
+    		  if (!skipChildren && node.firstChild) {
+    		    return node.firstChild;
+    		  }
 
-                do {
-                    if (node.nextSibling) {
-                        return node.nextSibling;
-                    }
+    		  do {
+    		    if (node.nextSibling) {
+    		      return node.nextSibling;
+    		    }
 
-                    node = node.parentNode;
-                } while (node);
-                /* istanbul ignore next */
-
-
-                return node;
-            }
-
-            function firstNode(range) {
-                if (range.startContainer.nodeType === Node.ELEMENT_NODE) {
-                    var node = range.startContainer.childNodes[range.startOffset];
-                    return node || nextNode(range.startContainer, true
-                        /* skip children */
-                    );
-                }
-
-                return range.startContainer;
-            }
-
-            function firstNodeAfter(range) {
-                if (range.endContainer.nodeType === Node.ELEMENT_NODE) {
-                    var node = range.endContainer.childNodes[range.endOffset];
-                    return node || nextNode(range.endContainer, true
-                        /* skip children */
-                    );
-                }
-
-                return nextNode(range.endContainer);
-            }
-
-            function forEachNodeInRange(range, cb) {
-                var node = firstNode(range);
-                var pastEnd = firstNodeAfter(range);
-
-                while (node !== pastEnd) {
-                    cb(node);
-                    node = nextNode(node);
-                }
-            }
-            /**
-             * A ponyfill for Range.toString().
-             * Spec: https://dom.spec.whatwg.org/#dom-range-stringifier
-             *
-             * Works around the buggy Range.toString() implementation in IE and Edge.
-             * See https://github.com/tilgovi/dom-anchor-text-position/issues/4
-             */
+    		    node = node.parentNode;
+    		  } while (node);
+    		  /* istanbul ignore next */
 
 
-            function rangeToString(range) {
-                // This is a fairly direct translation of the Range.toString() implementation
-                // in Blink.
-                var text = '';
-                forEachNodeInRange(range, function (node) {
-                    if (node.nodeType !== Node.TEXT_NODE) {
-                        return;
-                    }
+    		  return node;
+    		}
 
-                    var start = node === range.startContainer ? range.startOffset : 0;
-                    var end = node === range.endContainer ? range.endOffset : node.textContent.length;
-                    text += node.textContent.slice(start, end);
-                });
-                return text;
-            }
+    		function firstNode(range) {
+    		  if (range.startContainer.nodeType === Node.ELEMENT_NODE) {
+    		    var node = range.startContainer.childNodes[range.startOffset];
+    		    return node || nextNode(range.startContainer, true
+    		    /* skip children */
+    		    );
+    		  }
 
-        } (rangeToString));
-        return rangeToString;
+    		  return range.startContainer;
+    		}
+
+    		function firstNodeAfter(range) {
+    		  if (range.endContainer.nodeType === Node.ELEMENT_NODE) {
+    		    var node = range.endContainer.childNodes[range.endOffset];
+    		    return node || nextNode(range.endContainer, true
+    		    /* skip children */
+    		    );
+    		  }
+
+    		  return nextNode(range.endContainer);
+    		}
+
+    		function forEachNodeInRange(range, cb) {
+    		  var node = firstNode(range);
+    		  var pastEnd = firstNodeAfter(range);
+
+    		  while (node !== pastEnd) {
+    		    cb(node);
+    		    node = nextNode(node);
+    		  }
+    		}
+    		/**
+    		 * A ponyfill for Range.toString().
+    		 * Spec: https://dom.spec.whatwg.org/#dom-range-stringifier
+    		 *
+    		 * Works around the buggy Range.toString() implementation in IE and Edge.
+    		 * See https://github.com/tilgovi/dom-anchor-text-position/issues/4
+    		 */
+
+
+    		function rangeToString(range) {
+    		  // This is a fairly direct translation of the Range.toString() implementation
+    		  // in Blink.
+    		  var text = '';
+    		  forEachNodeInRange(range, function (node) {
+    		    if (node.nodeType !== Node.TEXT_NODE) {
+    		      return;
+    		    }
+
+    		    var start = node === range.startContainer ? range.startOffset : 0;
+    		    var end = node === range.endContainer ? range.endOffset : node.textContent.length;
+    		    text += node.textContent.slice(start, end);
+    		  });
+    		  return text;
+    		}
+    		
+    	} (rangeToString));
+    	return rangeToString;
     }
 
     var hasRequiredLib;
 
     function requireLib () {
-        if (hasRequiredLib) return lib$1;
-        hasRequiredLib = 1;
+    	if (hasRequiredLib) return lib$1;
+    	hasRequiredLib = 1;
 
-        Object.defineProperty(lib$1, "__esModule", {
-            value: true
-        });
-        lib$1.fromRange = fromRange;
-        lib$1.toRange = toRange;
+    	Object.defineProperty(lib$1, "__esModule", {
+    	  value: true
+    	});
+    	lib$1.fromRange = fromRange;
+    	lib$1.toRange = toRange;
 
-        var _domSeek = _interopRequireDefault(requireDomSeek());
+    	var _domSeek = _interopRequireDefault(requireDomSeek());
 
-        var _rangeToString = _interopRequireDefault(requireRangeToString());
+    	var _rangeToString = _interopRequireDefault(requireRangeToString());
 
-        function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+    	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 
-        var SHOW_TEXT = 4;
+    	var SHOW_TEXT = 4;
 
-        function fromRange(root, range) {
-            if (root === undefined) {
-                throw new Error('missing required parameter "root"');
-            }
+    	function fromRange(root, range) {
+    	  if (root === undefined) {
+    	    throw new Error('missing required parameter "root"');
+    	  }
 
-            if (range === undefined) {
-                throw new Error('missing required parameter "range"');
-            }
+    	  if (range === undefined) {
+    	    throw new Error('missing required parameter "range"');
+    	  }
 
-            var document = root.ownerDocument;
-            var prefix = document.createRange();
-            var startNode = range.startContainer;
-            var startOffset = range.startOffset;
-            prefix.setStart(root, 0);
-            prefix.setEnd(startNode, startOffset);
-            var start = (0, _rangeToString["default"])(prefix).length;
-            var end = start + (0, _rangeToString["default"])(range).length;
-            return {
-                start: start,
-                end: end
-            };
-        }
+    	  var document = root.ownerDocument;
+    	  var prefix = document.createRange();
+    	  var startNode = range.startContainer;
+    	  var startOffset = range.startOffset;
+    	  prefix.setStart(root, 0);
+    	  prefix.setEnd(startNode, startOffset);
+    	  var start = (0, _rangeToString["default"])(prefix).length;
+    	  var end = start + (0, _rangeToString["default"])(range).length;
+    	  return {
+    	    start: start,
+    	    end: end
+    	  };
+    	}
 
-        function toRange(root) {
-            var selector = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    	function toRange(root) {
+    	  var selector = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
-            if (root === undefined) {
-                throw new Error('missing required parameter "root"');
-            }
+    	  if (root === undefined) {
+    	    throw new Error('missing required parameter "root"');
+    	  }
 
-            var document = root.ownerDocument;
-            var range = document.createRange();
-            var iter = document.createNodeIterator(root, SHOW_TEXT);
-            var start = selector.start || 0;
-            var end = selector.end || start;
-            var startOffset = start - (0, _domSeek["default"])(iter, start);
-            var startNode = iter.referenceNode;
-            var remainder = end - start + startOffset;
-            var endOffset = remainder - (0, _domSeek["default"])(iter, remainder);
-            var endNode = iter.referenceNode;
-            range.setStart(startNode, startOffset);
-            range.setEnd(endNode, endOffset);
-            return range;
-        }
-
-        return lib$1;
+    	  var document = root.ownerDocument;
+    	  var range = document.createRange();
+    	  var iter = document.createNodeIterator(root, SHOW_TEXT);
+    	  var start = selector.start || 0;
+    	  var end = selector.end || start;
+    	  var startOffset = start - (0, _domSeek["default"])(iter, start);
+    	  var startNode = iter.referenceNode;
+    	  var remainder = end - start + startOffset;
+    	  var endOffset = remainder - (0, _domSeek["default"])(iter, remainder);
+    	  var endNode = iter.referenceNode;
+    	  range.setStart(startNode, startOffset);
+    	  range.setEnd(endNode, endOffset);
+    	  return range;
+    	}
+    	
+    	return lib$1;
     }
 
     var domAnchorTextPosition;
     var hasRequiredDomAnchorTextPosition;
 
     function requireDomAnchorTextPosition () {
-        if (hasRequiredDomAnchorTextPosition) return domAnchorTextPosition;
-        hasRequiredDomAnchorTextPosition = 1;
-        domAnchorTextPosition = requireLib();
-        return domAnchorTextPosition;
+    	if (hasRequiredDomAnchorTextPosition) return domAnchorTextPosition;
+    	hasRequiredDomAnchorTextPosition = 1;
+    	domAnchorTextPosition = requireLib();
+    	return domAnchorTextPosition;
     }
 
     var domAnchorTextPositionExports = requireDomAnchorTextPosition();
@@ -929,39 +823,6 @@ var SlaxReaderWebBridgeExports = (function (exports) {
     }
 
     /**
-     * 初始化书签未找到页面的按钮点击处理程序
-     */
-    function initBookmarkNotFoundHandlers() {
-        const container = document.querySelector('body > .slax-reader-notfound-container > .slax-reader-notfound-btn-container');
-        if (!container) {
-            console.log('[WebView Bridge] Bookmark not found container not present');
-            return;
-        }
-        // 获取重试按钮和反馈按钮
-        const retryBtn = container.querySelector('.retry-btn');
-        const feedbackBtn = container.querySelector('.feedback-btn');
-        // 为重试按钮添加点击事件
-        if (retryBtn) {
-            retryBtn.addEventListener('click', () => {
-                postToNativeBridge({
-                    type: 'refreshContent'
-                });
-                console.log('[WebView Bridge] Bookmark retry button clicked');
-            });
-        }
-        // 为反馈按钮添加点击事件
-        if (feedbackBtn) {
-            feedbackBtn.addEventListener('click', () => {
-                postToNativeBridge({
-                    type: 'feedback'
-                });
-                console.log('[WebView Bridge] Bookmark feedback button clicked');
-            });
-        }
-        console.log('[WebView Bridge] Initialized bookmark not found handlers');
-    }
-
-    /**
      * 应用必要的 Polyfills 确保兼容性
      */
     function applyPolyfills() {
@@ -984,8 +845,8 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                         continue;
                     }
                     if (
-                        // 如果字符是 [0-9A-Za-z_-]
-                        (codeUnit >= 0x0030 && codeUnit <= 0x0039) ||
+                    // 如果字符是 [0-9A-Za-z_-]
+                    (codeUnit >= 0x0030 && codeUnit <= 0x0039) ||
                         (codeUnit >= 0x0041 && codeUnit <= 0x005A) ||
                         (codeUnit >= 0x0061 && codeUnit <= 0x007A) ||
                         codeUnit === 0x005F ||
@@ -1403,7 +1264,7 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             };
             processNode(range.commonAncestorContainer);
             return selectedInfo.length > 0 &&
-            !selectedInfo.every((item) => item.type === 'text' && item.text.trim().length === 0)
+                !selectedInfo.every((item) => item.type === 'text' && item.text.trim().length === 0)
                 ? selectedInfo
                 : [];
         }
@@ -2558,8 +2419,417 @@ var SlaxReaderWebBridgeExports = (function (exports) {
         }
     }
 
+    class DOMPipeline {
+        constructor() {
+            this.processors = [];
+        }
+        register(...processors) {
+            this.processors.push(...processors);
+            return this;
+        }
+        async run(context) {
+            for (const processor of this.processors) {
+                try {
+                    if (processor.match(context)) {
+                        await processor.process(context);
+                        console.log(`[DOMPipeline] ${processor.name} executed`);
+                    }
+                }
+                catch (error) {
+                    console.error(`[DOMPipeline] ${processor.name} failed:`, error);
+                }
+            }
+        }
+    }
+
+    function getImageUrl(element) {
+        const tagName = element.tagName.toLowerCase();
+        if (tagName === 'img') {
+            const img = element;
+            return img.currentSrc || img.src || '';
+        }
+        if (tagName === 'image') {
+            const svgImage = element;
+            return svgImage.href?.baseVal ||
+                element.getAttribute('href') ||
+                element.getAttribute('xlink:href') ||
+                '';
+        }
+        return '';
+    }
+    function handleImageLoading(imgs) {
+        const loadingKey = 'slax-image-loading';
+        imgs.forEach(img => {
+            img.srcset = '';
+            img.onload = () => {
+                img.classList.remove(loadingKey);
+                if (img.naturalWidth < 5 || img.naturalHeight < 5) {
+                    img.setAttribute('style', 'display: none;');
+                    return;
+                }
+                else if (img.naturalWidth < 200) {
+                    img.setAttribute('style', `width: ${img.naturalWidth}px !important;`);
+                    return;
+                }
+                ['padding: 0 !important', 'height: auto !important;'].forEach(style => {
+                    img.setAttribute('style', style);
+                });
+            };
+            img.referrerPolicy = '';
+            img.onerror = () => {
+                img.classList.remove(loadingKey);
+                img.style.display = 'none';
+            };
+            img.classList.add(loadingKey);
+            const parentElement = img.parentElement;
+            const parentChilds = parentElement ? Array.from(parentElement.childNodes) : [];
+            const isOnlyImages = parentChilds.every(child => {
+                if (child.nodeType === Node.ELEMENT_NODE) {
+                    const element = child;
+                    return element.tagName.toLowerCase() === 'img';
+                }
+                return true;
+            });
+            if (isOnlyImages) {
+                img.style.cssFloat = 'none';
+            }
+        });
+    }
+    function unwrapImgAnchorsInTweet(doc) {
+        const firstDiv = doc.body?.querySelector(':scope > div');
+        if (!firstDiv?.classList.contains('tweet'))
+            return;
+        doc.querySelectorAll('a img').forEach(img => {
+            const anchor = img.closest('a');
+            if (!anchor)
+                return;
+            const parent = anchor.parentNode;
+            if (!parent)
+                return;
+            while (anchor.firstChild) {
+                parent.insertBefore(anchor.firstChild, anchor);
+            }
+            parent.removeChild(anchor);
+        });
+    }
+    class ImageClickProcessor {
+        constructor() {
+            this.name = 'ImageClickProcessor';
+        }
+        match(context) {
+            return context.document.querySelectorAll('img, image').length > 0;
+        }
+        process(context) {
+            const doc = context.document;
+            unwrapImgAnchorsInTweet(doc);
+            const allImages = doc.querySelectorAll('img, image');
+            const images = [];
+            allImages.forEach(img => {
+                const url = getImageUrl(img);
+                if (!url) {
+                    if (img.tagName.toLowerCase() === 'img') {
+                        img.style.display = 'none';
+                    }
+                    return;
+                }
+                images.push(img);
+            });
+            const htmlImages = images.filter(img => img.tagName.toLowerCase() === 'img');
+            handleImageLoading(htmlImages);
+            images.forEach(img => {
+                img.addEventListener('click', (event) => {
+                    const validSchemes = ['https://', 'http://', 'slaxstatics://', 'slaxstatic://'];
+                    const allImageUrls = images
+                        .map(getImageUrl)
+                        .filter(url => url && validSchemes.some(scheme => url.startsWith(scheme)));
+                    const currentTarget = event.currentTarget;
+                    const clickedImageUrl = getImageUrl(currentTarget);
+                    postToNativeBridge({
+                        type: 'imageClick',
+                        src: clickedImageUrl,
+                        allImages: allImageUrls,
+                        index: allImageUrls.indexOf(clickedImageUrl)
+                    });
+                });
+            });
+            console.log(`[ImageClickProcessor] Initialized ${images.length} image click handlers`);
+        }
+    }
+
+    class BookmarkNotFoundProcessor {
+        constructor() {
+            this.name = 'BookmarkNotFoundProcessor';
+        }
+        match(context) {
+            return !!context.document.querySelector('body > .slax-reader-notfound-container > .slax-reader-notfound-btn-container');
+        }
+        process(context) {
+            const container = context.document.querySelector('body > .slax-reader-notfound-container > .slax-reader-notfound-btn-container');
+            const retryBtn = container.querySelector('.retry-btn');
+            const feedbackBtn = container.querySelector('.feedback-btn');
+            if (retryBtn) {
+                retryBtn.addEventListener('click', () => {
+                    postToNativeBridge({ type: 'refreshContent' });
+                    console.log('[BookmarkNotFoundProcessor] Retry button clicked');
+                });
+            }
+            if (feedbackBtn) {
+                feedbackBtn.addEventListener('click', () => {
+                    postToNativeBridge({ type: 'feedback' });
+                    console.log('[BookmarkNotFoundProcessor] Feedback button clicked');
+                });
+            }
+            console.log('[BookmarkNotFoundProcessor] Initialized bookmark not found handlers');
+        }
+    }
+
+    class SpanProcessor {
+        constructor() {
+            this.name = 'SpanProcessor';
+        }
+        match(context) {
+            return context.document.querySelectorAll('span').length > 0;
+        }
+        process(context) {
+            const spans = context.document.querySelectorAll('span');
+            spans.forEach(span => {
+                const el = span;
+                if (el.textContent?.replace(/ /g, '').trim().length === 0 &&
+                    !el.querySelector('img[src], video[src], picture:has(source[srcset]), svg, canvas')) {
+                    el.style.display = 'none';
+                }
+            });
+            console.log(`[SpanProcessor] Processed ${spans.length} span elements`);
+        }
+    }
+
+    class ListProcessor {
+        constructor() {
+            this.name = 'ListProcessor';
+        }
+        match(context) {
+            return context.document.querySelectorAll('ul').length > 0;
+        }
+        process(context) {
+            const uls = context.document.querySelectorAll('ul');
+            uls.forEach(ul => {
+                if (ul.querySelector('li')) {
+                    ul.classList.add('has-li');
+                }
+            });
+            console.log(`[ListProcessor] Processed ${uls.length} ul elements`);
+        }
+    }
+
+    class SvgProcessor {
+        constructor() {
+            this.name = 'SvgProcessor';
+        }
+        match(context) {
+            return context.document.querySelectorAll('svg').length > 0;
+        }
+        process(context) {
+            const svgs = context.document.querySelectorAll('svg');
+            svgs.forEach(svg => {
+                const el = svg;
+                const paths = el.getElementsByTagName('path');
+                if (paths.length < 10) {
+                    el.setAttribute('style', 'display: none;');
+                    return;
+                }
+                const viewBox = el.viewBox;
+                if (!viewBox)
+                    return;
+                const { width, height } = viewBox.baseVal;
+                if (width < 5 || height < 5) {
+                    el.setAttribute('style', 'display: none;');
+                }
+                else {
+                    el.setAttribute('style', `width: ${width}px !important; height: ${height}px !important;`);
+                }
+            });
+            console.log(`[SvgProcessor] Processed ${svgs.length} svg elements`);
+        }
+    }
+
+    // 标记纯空白容器，CSS :has(>.oc-blank-flag) 隐藏
+    // 移植自 dweb BlankMarkProcessor（去 SSR）
+    const CANDIDATE_SELECTOR = 'section, p, figure, h1, h2, h3, h4, div';
+    // 含这些视觉元素则不算空白
+    const VISUAL_SELECTOR = 'img, video, svg, iframe, picture, canvas, audio, object, embed, table';
+    const BLANK_FLAG_CLASS = 'oc-blank-flag';
+    function isBlankText(text) {
+        return text.trim().length === 0;
+    }
+    // 内联 display:none 也当空白
+    function isStyleHidden(styleAttr) {
+        return /display\s*:\s*none\b/i.test(styleAttr ?? '');
+    }
+    class BlankMarkProcessor {
+        constructor() {
+            this.name = 'BlankMarkProcessor';
+        }
+        match() {
+            return true;
+        }
+        process(context) {
+            // 只处理正文容器 body>div
+            const root = context.document.body?.querySelector(':scope > div');
+            if (!root)
+                return;
+            const markBlank = (el) => {
+                const marker = context.document.createElement('template');
+                marker.className = BLANK_FLAG_CLASS;
+                el.appendChild(marker);
+            };
+            const candidates = Array.from(root.querySelectorAll(CANDIDATE_SELECTOR));
+            for (const el of candidates) {
+                // 幂等
+                if (el.querySelector(`:scope > .${BLANK_FLAG_CLASS}`))
+                    continue;
+                // 内联隐藏直接当空白
+                if (isStyleHidden(el.getAttribute('style'))) {
+                    markBlank(el);
+                    continue;
+                }
+                if (el.querySelector(VISUAL_SELECTOR))
+                    continue;
+                if (!isBlankText(el.textContent ?? ''))
+                    continue;
+                markBlank(el);
+            }
+            console.log(`[BlankMarkProcessor] Processed ${candidates.length} candidate elements`);
+        }
+    }
+
+    // 给多行 <p> 落 marker，CSS 转 pre-line
+    // 移植自 dweb PreLineProcessor（去 SSR）
+    // 只匹配换行控制符，不匹配文字 \n
+    const LINE_BREAK_RE = /\r\n|[\n\r\v\f\x85\u2028\u2029]/;
+    const PRELINE_FLAG_CLASS = 'oc-preline-flag';
+    // 有内容的行 ≥ 2 才算多行
+    function isMultiLine(text) {
+        return (text
+            .split(LINE_BREAK_RE)
+            .map(line => line.trim())
+            .filter(Boolean).length >= 2);
+    }
+    class PreLineProcessor {
+        constructor() {
+            this.name = 'PreLineProcessor';
+        }
+        match() {
+            return true;
+        }
+        process(context) {
+            // 只处理正文容器 body>div
+            const root = context.document.body?.querySelector(':scope > div');
+            if (!root)
+                return;
+            const paragraphs = Array.from(root.querySelectorAll('p'));
+            for (const el of paragraphs) {
+                // 幂等
+                if (el.querySelector(`:scope > .${PRELINE_FLAG_CLASS}`))
+                    continue;
+                if (!isMultiLine(el.textContent ?? ''))
+                    continue;
+                const marker = context.document.createElement('template');
+                marker.className = PRELINE_FLAG_CLASS;
+                el.appendChild(marker);
+            }
+            console.log(`[PreLineProcessor] Processed ${paragraphs.length} p elements`);
+        }
+    }
+
+    // 含 <summary> 的 <details> 自动展开（移植自 dweb）
+    class DetailsProcessor {
+        constructor() {
+            this.name = 'DetailsProcessor';
+        }
+        match() {
+            return true;
+        }
+        process(context) {
+            const details = Array.from(context.document.querySelectorAll('details'));
+            details.forEach(detail => {
+                if (detail.querySelector('summary')) {
+                    detail.open = true;
+                }
+            });
+            console.log(`[DetailsProcessor] Processed ${details.length} details elements`);
+        }
+    }
+
+    class DefaultDOMHandler {
+        constructor() {
+            this.pipeline = new DOMPipeline();
+            this.pipeline.register(new ImageClickProcessor(), new BookmarkNotFoundProcessor(), new SvgProcessor(), new SpanProcessor(), new ListProcessor(), new BlankMarkProcessor(), new PreLineProcessor(), new DetailsProcessor());
+        }
+        async run() {
+            await this.pipeline.run({ document });
+        }
+    }
+
+    class WechatHeaderProcessor {
+        constructor() {
+            this.name = 'WechatHeaderProcessor';
+        }
+        match(context) {
+            if (!context.infoPack)
+                return false;
+            const metadataUrl = String(context.infoPack.metadataUrl ?? '');
+            return metadataUrl.startsWith('https://mp.weixin.qq.com');
+        }
+        process(context) {
+            const doc = context.document;
+            const isFirstElementChain = (el) => {
+                let current = el;
+                while (current) {
+                    const parent = current.parentElement;
+                    if (!parent)
+                        return false;
+                    const isContainer = parent.tagName.toLowerCase() === 'body' || (parent.tagName.toLowerCase() === 'div' && parent.classList.contains('html-text'));
+                    if (isContainer) {
+                        return parent.firstElementChild === current;
+                    }
+                    if (parent.firstElementChild !== current)
+                        return false;
+                    current = parent;
+                }
+                return false;
+            };
+            const hideP = (anchor) => {
+                const p = anchor.closest('p');
+                if (p && isFirstElementChain(p)) {
+                    p.style.display = 'none';
+                }
+            };
+            const metaSpan = doc.querySelector('span#meta_content_hide_info');
+            if (metaSpan) {
+                hideP(metaSpan);
+                return;
+            }
+            const fallback = doc.querySelector('span#profileBt') || doc.querySelector('span#copyright_logo');
+            if (fallback) {
+                hideP(fallback);
+            }
+        }
+    }
+
+    class InfoPackDOMHandler {
+        constructor() {
+            this.pipeline = new DOMPipeline();
+            this.pipeline.register(new WechatHeaderProcessor());
+        }
+        async run(infoPack) {
+            await this.pipeline.run({ document, infoPack });
+        }
+    }
+
+    const BRIDGE_VERSION = '1.0.0';
     class SlaxWebViewBridge {
         constructor() {
+            this.infoPackReceived = false;
             // selection 相关状态
             this.selectionMonitor = null;
             this.markManager = null;
@@ -2573,7 +2843,12 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             this.highlightElement = highlightElement;
             this.findMatchingElement = findMatchingElement;
             this.scrollToElement = scrollToElement;
+            this.defaultHandler = new DefaultDOMHandler();
+            this.infoPackHandler = new InfoPackDOMHandler();
             this.init();
+        }
+        getVersion() {
+            return BRIDGE_VERSION;
         }
         init() {
             applyPolyfills();
@@ -2587,14 +2862,31 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             }
             console.log('[WebView Bridge] Bridge initialized successfully');
         }
-        onDOMReady() {
-            initImageClickHandlers();
-            initBookmarkNotFoundHandlers();
-            // 通知 native bridge DOM 已加载完成
+        async onDOMReady() {
+            await this.defaultHandler.run();
             postToNativeBridge({
                 type: 'domReady'
             });
+            this.requestInfoPack();
+            setTimeout(() => {
+                if (!this.infoPackReceived) {
+                    console.warn('[WebView Bridge] InfoPack response timeout, skipping infoPack processors');
+                }
+            }, 5000);
             console.log('[WebView Bridge] DOM ready event sent to native bridge');
+        }
+        requestInfoPack() {
+            postToNativeBridge({ type: 'requestInfoPack' });
+        }
+        receiveInfoPack(infoPackJson) {
+            this.infoPackReceived = true;
+            try {
+                const infoPack = JSON.parse(infoPackJson);
+                this.infoPackHandler.run(infoPack);
+            }
+            catch (error) {
+                console.error('[WebView Bridge] Failed to parse info pack:', error);
+            }
         }
         // ==================== 划线选择功能 ====================
         /**
