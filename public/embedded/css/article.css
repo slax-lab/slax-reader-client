@@ -202,16 +202,17 @@ pre {
     background-color: #e5e7eb;
     border-radius: 4px;
     text-align: left;
-    white-space: pre-wrap;
+    white-space: pre;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     font-family: 'Courier New', Courier, monospace !important;
 }
 
 pre code {
-    max-width: 100%;
+    max-width: unset;
     display: block;
     white-space: pre;
     font-family: 'Courier New', Courier, monospace !important;
-    overflow-x: auto;
 }
 
 pre code * {
