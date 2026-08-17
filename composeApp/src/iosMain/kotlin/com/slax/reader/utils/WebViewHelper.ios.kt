@@ -149,6 +149,10 @@ actual fun AppWebView(
                             )
                         }
 
+                        "scrollToTop" -> {
+                            webState.dispatchEvent(WebViewEvent.ScrollToTop)
+                        }
+
                         "refreshContent" -> {
                             webState.dispatchEvent(
                                 WebViewEvent.RefreshContent
@@ -250,7 +254,8 @@ actual fun AppWebView(
             override fun webViewWebContentProcessDidTerminate(
                 webView: WKWebView
             ) {
-                webView.loadHTMLString(htmlContent, baseURL = null)
+                val baseUrl = if (htmlContent.contains("youtube-player")) NSURL(string = SlaxConfig.WEB_BASE_URL) else null
+                webView.loadHTMLString(htmlContent, baseURL = baseUrl)
             }
 
             override fun webView(webView: WKWebView, didFinishNavigation: WKNavigation?) {
@@ -367,7 +372,9 @@ actual fun AppWebView(
             view.backgroundColor = color
             view.tintColor = Color(0x668AD8A8).toUIColor()
             view.opaque = false
-            view.loadHTMLString(htmlContent, baseURL = null)
+
+            val baseUrl = if (htmlContent.contains("youtube-player")) NSURL(string = SlaxConfig.WEB_BASE_URL) else null
+            view.loadHTMLString(htmlContent, baseURL = baseUrl)
 
             view as UIView
         },

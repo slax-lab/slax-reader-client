@@ -101,6 +101,9 @@ actual fun DetailScreen(
                     val target = (headerHeightState.floatValue + targetInWebView - screenHeightPx / 4).toInt()
                     scrollState.animateScrollTo(target.coerceAtLeast(0))
                 }
+                is WebViewEvent.ScrollToTop -> {
+                    scrollState.animateScrollTo(0)
+                }
                 else -> {}
             }
         }
@@ -151,6 +154,8 @@ actual fun DetailScreen(
         val coroutineScope = rememberCoroutineScope()
 
         OutlineDialog()
+
+        TranscriptDialog()
 
         SelectionMenuCommentPanel(
             markInteraction = markInteraction,

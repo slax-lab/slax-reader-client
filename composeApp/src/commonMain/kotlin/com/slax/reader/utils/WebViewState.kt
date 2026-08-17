@@ -48,6 +48,9 @@ sealed interface WebViewCommand {
 sealed interface WebViewEvent {
     data class ImageClick(val src: String, val allImages: List<String>) : WebViewEvent
     data class ScrollToPosition(val percentage: Double) : WebViewEvent
+
+    /** 请求把外层滚动容器滚到顶部（YouTube 跳转后露出视频） */
+    data object ScrollToTop : WebViewEvent
     data class ScrollChange(val scrollY: Float, val contentHeight: Float, val visibleHeight: Float) : WebViewEvent
     data object Tap : WebViewEvent
     data object PageLoaded : WebViewEvent
