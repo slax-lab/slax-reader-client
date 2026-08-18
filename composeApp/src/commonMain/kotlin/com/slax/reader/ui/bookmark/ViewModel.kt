@@ -34,6 +34,7 @@ import com.slax.reader.data.network.dto.StrokeCreateData
 import com.slax.reader.utils.AppWebViewState
 import com.slax.reader.utils.BridgeMarkItemInfo
 import com.slax.reader.utils.BridgeMarkStrokeInfo
+import com.slax.reader.utils.collapseWhitespace
 import com.slax.reader.utils.isIOS
 import com.slax.reader.utils.shareContent
 import kotlinx.coroutines.*
@@ -474,11 +475,12 @@ class BookmarkDetailViewModel(
     private suspend fun recordContinueBookmark() = withContext(Dispatchers.IO) {
         _bookmarkId.value?.let { id ->
             val state = bookmarkDelegate.bookmarkDetailState.value
-            if (state.displayTitle.isEmpty()) return@withContext
+            val title = state.displayTitle.collapseWhitespace()
+            if (title.isBlank()) return@withContext
             appPreferences.setContinueReadingBookmark(
                 ContinueReadingBookmark(
                     bookmarkId = id,
-                    title = state.displayTitle,
+                    title = title,
                     collectionOwnerId = _bookmarkBinding.value?.collectionOwnerId,
                     collectionId = _bookmarkBinding.value?.collectionId,
                 )

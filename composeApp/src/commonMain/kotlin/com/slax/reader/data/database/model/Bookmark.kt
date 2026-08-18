@@ -152,11 +152,11 @@ data class UserBookmark(
 
     val displayTitle: String by lazy {
         when {
-            aliasTitle.isNotEmpty() -> aliasTitle
-            !metadataTitle.isNullOrEmpty() -> metadataTitle!!
-            !metadataUrl.isNullOrEmpty() -> metadataUrl!!
+            aliasTitle.isNotBlank() -> aliasTitle
+            !metadataTitle.isNullOrBlank() -> metadataTitle!!
+            !metadataUrl.isNullOrBlank() -> metadataUrl!!
             else -> id.take(5)
-        }
+        }.collapseWhitespace()
     }
 
     val displayTime: String

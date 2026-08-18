@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.data.preferences.ContinueReadingBookmark
+import com.slax.reader.utils.collapseWhitespace
 import com.slax.reader.utils.i18n
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
@@ -43,8 +44,10 @@ fun ContinueReading(
 
     LaunchedEffect(Unit) {
         val bookmark = appPreferences.getContinueReadingBookmark() ?: return@LaunchedEffect
-        showContinueData = bookmark
         appPreferences.clearContinueReadingBookmark()
+        val normalizedTitle = bookmark.title.collapseWhitespace()
+        if (normalizedTitle.isBlank()) return@LaunchedEffect
+        showContinueData = bookmark.copy(title = normalizedTitle)
         dismissed = false
         visibilityState.targetState = true
     }
