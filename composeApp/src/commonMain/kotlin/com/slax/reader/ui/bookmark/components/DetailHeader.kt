@@ -44,7 +44,7 @@ fun HeaderContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
-                .padding(bottom = 16.dp)
+                .padding(bottom = 24.dp)
         ) {
             Spacer(modifier = Modifier.height(44.dp))
 

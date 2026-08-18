@@ -123,8 +123,8 @@ val localeString: Map<String, Map<String, String>> = mapOf(
         "en" to "Collection information is temporarily unavailable"
     ),
     "collection_owner_feed_title" to mapOf(
-        "zh" to "{0}",
-        "en" to "{0}"
+        "zh" to "{0}：",
+        "en" to "{0}:"
     ),
 
     "setting_clear_cache" to mapOf(

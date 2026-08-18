@@ -14,8 +14,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -294,14 +295,20 @@ private fun ContentSection(
     }
 
     Box(
-        modifier = Modifier.fillMaxSize().clipToBounds()
+        modifier = Modifier
+            .fillMaxSize()
+            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     color = Color(0xFFFCFCFC),
-                    shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+                    shape = if (collections.isEmpty()) {
+                        RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+                    } else {
+                        RectangleShape
+                    }
                 )
         ) {
             if (activeCollectionId == null) {

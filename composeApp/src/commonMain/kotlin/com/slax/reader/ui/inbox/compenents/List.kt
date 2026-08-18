@@ -51,8 +51,14 @@ fun ArticleList(
         val hasSynced by viewModel.hasSynced.collectAsState()
         Column(Modifier.fillMaxSize()) {
             headerContent?.invoke()
-            Box(Modifier.weight(1f)) {
-                EmptyOrLoadingView(hasSynced = hasSynced)
+            if (headerContent == null) {
+                Box(Modifier.weight(1f)) {
+                    EmptyOrLoadingView(hasSynced = hasSynced)
+                }
+            } else {
+                RoundedFeedListStart(modifier = Modifier.weight(1f)) {
+                    EmptyOrLoadingView(hasSynced = hasSynced)
+                }
             }
         }
         return
@@ -65,42 +71,47 @@ fun ArticleList(
             modifier = Modifier.fillMaxSize().preferredFrameRate(FrameRateCategory.High),
             verticalArrangement = Arrangement.spacedBy(0.dp),
             contentPadding = PaddingValues(
-                // 有头像条时它自带 top padding；没有时补回原来的 8.dp，
-                // 否则首条会紧贴白卡的圆角上沿
                 top = if (headerContent == null) 8.dp else 0.dp,
                 bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
             ),
             state = lazyListState
         ) {
             if (headerContent != null) {
-                // 头像条作为第一个 item 跟随列表滚动：不需要 nestedScroll、
-                // 不需要每帧写 state、不改变 LazyColumn 的高度约束。
                 item(key = "collection-feed-switcher", contentType = "collection-feed-switcher") {
                     headerContent()
                 }
             }
-
             itemsIndexed(
                 items = bookmarks,
                 key = { _, bookmark -> bookmark.id },
-                contentType = { _, _ -> "bookmark" }
+                contentType = { index, _ ->
+                    if (index == 0 && headerContent != null) "rounded-bookmark" else "bookmark"
+                }
             ) { index, bookmark ->
-                BookmarkItemRow(
-                    item = bookmark,
-                    onClick = {
-                        if (bookmark.metadataStatus == "success") {
-                            navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmark.id))
-                        } else {
-                            bookmark.metadataUrl?.let { viewModel.emitProcessingUrl(it) }
-                        }
-                    },
-                    viewModel = viewModel,
-                    ownerActions = BookmarkRowOwnerActions(
-                        bookmark = bookmark,
-                        swipeConfig = swipeConfig,
-                        onEditTitle = onEditTitle,
-                    ),
-                )
+                val bookmarkRow = @Composable {
+                    BookmarkItemRow(
+                        item = bookmark,
+                        onClick = {
+                            if (bookmark.metadataStatus == "success") {
+                                navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmark.id))
+                            } else {
+                                bookmark.metadataUrl?.let { viewModel.emitProcessingUrl(it) }
+                            }
+                        },
+                        viewModel = viewModel,
+                        ownerActions = BookmarkRowOwnerActions(
+                            bookmark = bookmark,
+                            swipeConfig = swipeConfig,
+                            onEditTitle = onEditTitle,
+                        ),
+                    )
+                }
+
+                if (index == 0 && headerContent != null) {
+                    RoundedFeedListStart(content = bookmarkRow)
+                } else {
+                    bookmarkRow()
+                }
 
                 dividerLine()
             }

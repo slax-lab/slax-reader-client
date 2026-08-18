@@ -47,7 +47,8 @@ fun SettingScreen(
                 title = {
                     Text(
                         text = "setting_title".i18n(),
-                        fontSize = 20.sp,
+                        fontSize = 17.sp,
+                        lineHeight = 24.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color(0xFF0F1419)
                     )
