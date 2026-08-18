@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -76,9 +77,10 @@ fun CollectionFeedSwitcher(
     LazyRow(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = 4.dp, bottom = 10.dp),
-        contentPadding = PaddingValues(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+            .height(78.dp)
+            .background(Color(0xFFF5F5F3)),
+        contentPadding = PaddingValues(start = 24.dp, top = 12.dp, end = 24.dp, bottom = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(24.dp),
         verticalAlignment = Alignment.Top,
     ) {
         item(key = "own-inbox") {
@@ -103,6 +105,50 @@ fun CollectionFeedSwitcher(
 }
 
 @Composable
+fun RoundedFeedListStart(
+    modifier: Modifier = Modifier,
+    ownerName: String? = null,
+    content: @Composable () -> Unit,
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(Color(0xFFF5F5F3)),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                .background(Color(0xFFFCFCFC))
+                .padding(top = if (ownerName == null) 4.dp else 12.dp),
+        ) {
+            if (ownerName != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(16.5.dp)
+                        .padding(horizontal = 24.dp),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    Text(
+                        text = "collection_owner_feed_title".i18n(ownerName),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = TextStyle(
+                            fontSize = 12.sp,
+                            lineHeight = 16.5.sp,
+                            color = Color(0xFF999999),
+                        ),
+                    )
+                }
+            }
+
+            content()
+        }
+    }
+}
+
+@Composable
 private fun FeedSource(
     imageUrl: String,
     label: String,
@@ -120,7 +166,7 @@ private fun FeedSource(
 
     Column(
         modifier = Modifier
-            .width(52.dp)
+            .width(40.dp)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -128,12 +174,12 @@ private fun FeedSource(
             ),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(modifier = Modifier.size(46.dp)) {
+        Box(modifier = Modifier.size(32.dp)) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(CircleShape)
-                    .border(1.5.dp, borderColor, CircleShape)
+                    .border(0.5.dp, borderColor, CircleShape)
                     .padding(3.dp),
             ) {
                 Image(
@@ -165,7 +211,7 @@ private fun FeedSource(
             overflow = TextOverflow.MiddleEllipsis,
             style = TextStyle(
                 fontSize = 11.sp,
-                lineHeight = 15.sp,
+                lineHeight = 14.sp,
                 fontWeight = if (active) FontWeight.Medium else FontWeight.Normal,
                 color = if (active) Color(0xFF0F1419) else Color(0xFF999999),
                 textAlign = TextAlign.Center,
@@ -186,8 +232,15 @@ fun CollectionFeedContent(
     if (collection == null) {
         Column(modifier = Modifier.fillMaxSize()) {
             headerContent?.invoke()
-            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                Text("collection_unavailable".i18n(), color = Color(0xFF999999), fontSize = 14.sp)
+            val unavailableContent = @Composable {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("collection_unavailable".i18n(), color = Color(0xFF999999), fontSize = 14.sp)
+                }
+            }
+            if (headerContent == null) {
+                Box(modifier = Modifier.weight(1f)) { unavailableContent() }
+            } else {
+                RoundedFeedListStart(modifier = Modifier.weight(1f), content = unavailableContent)
             }
         }
         return
@@ -218,24 +271,38 @@ fun CollectionFeedContent(
     if (closed || expired) {
         Column(modifier = Modifier.fillMaxSize()) {
             headerContent?.invoke()
-            Box(
-                modifier = Modifier.weight(1f).padding(32.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = if (closed) "collection_closed_message".i18n(collection.name)
-                    else "collection_expired_message".i18n(collection.name),
-                    color = Color(0xFF777777),
-                    fontSize = 14.sp,
-                    lineHeight = 22.sp,
-                )
+            val unavailableContent = @Composable {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(32.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = if (closed) "collection_closed_message".i18n(collection.name)
+                        else "collection_expired_message".i18n(collection.name),
+                        color = Color(0xFF777777),
+                        fontSize = 14.sp,
+                        lineHeight = 22.sp,
+                    )
+                }
+            }
+            if (headerContent == null) {
+                Box(modifier = Modifier.weight(1f)) { unavailableContent() }
+            } else {
+                RoundedFeedListStart(modifier = Modifier.weight(1f), content = unavailableContent)
             }
         }
     } else if (bookmarks.isEmpty()) {
         Column(modifier = Modifier.fillMaxSize()) {
             headerContent?.invoke()
-            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                Text("collection_empty".i18n(), color = Color(0xFF999999), fontSize = 14.sp)
+            val emptyContent = @Composable {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("collection_empty".i18n(), color = Color(0xFF999999), fontSize = 14.sp)
+                }
+            }
+            if (headerContent == null) {
+                Box(modifier = Modifier.weight(1f)) { emptyContent() }
+            } else {
+                RoundedFeedListStart(modifier = Modifier.weight(1f), content = emptyContent)
             }
         }
     } else {
@@ -258,33 +325,35 @@ fun CollectionFeedContent(
                 }
             }
 
-            item(key = "collection-owner-title", contentType = "collection-owner-title") {
-                Text(
-                    text = "collection_owner_feed_title".i18n(collection.name),
-                    modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 18.dp, top = 16.dp, bottom = 8.dp),
-                    style = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, color = Color(0xFF999999)),
-                )
-            }
-
             itemsIndexed(
                 items = bookmarks,
                 key = { _, item -> item.id },
-                contentType = { _, _ -> "collection-bookmark" },
-            ) { _, item ->
-                BookmarkItemRow(
-                    item = item,
-                    onClick = {
-                        navCtrl.navigate(
-                            BookmarkRoutes(
-                                bookmarkId = item.id,
-                                collectionOwnerId = item.ownerId,
-                                collectionId = collection.id,
+                contentType = { index, _ ->
+                    if (index == 0) "rounded-collection-bookmark" else "collection-bookmark"
+                },
+            ) { index, item ->
+                val bookmarkRow = @Composable {
+                    BookmarkItemRow(
+                        item = item,
+                        onClick = {
+                            navCtrl.navigate(
+                                BookmarkRoutes(
+                                    bookmarkId = item.id,
+                                    collectionOwnerId = item.ownerId,
+                                    collectionId = collection.id,
+                                )
                             )
-                        )
-                    },
-                    viewModel = viewModel,
-                    ownerActions = null,
-                )
+                        },
+                        viewModel = viewModel,
+                        ownerActions = null,
+                    )
+                }
+
+                if (index == 0) {
+                    RoundedFeedListStart(ownerName = collection.name, content = bookmarkRow)
+                } else {
+                    bookmarkRow()
+                }
                 DividerLine()
             }
 
