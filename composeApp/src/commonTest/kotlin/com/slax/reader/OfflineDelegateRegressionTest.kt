@@ -143,7 +143,7 @@ class OfflineDelegateRegressionTest {
     @Test
     fun bookmark_actions_without_selected_id_do_not_mutate_repository() = runTest {
         val repository = FakeBookmarkRepository()
-        val delegate = BookmarkDelegate(repository, MutableStateFlow(null), backgroundScope)
+        val delegate = BookmarkDelegate(repository, FakeCollectionRepository(), MutableStateFlow(null), backgroundScope)
         delegate.toggleStar(true)
         delegate.toggleArchive(true)
         delegate.updateBookmarkTitle("orphan")

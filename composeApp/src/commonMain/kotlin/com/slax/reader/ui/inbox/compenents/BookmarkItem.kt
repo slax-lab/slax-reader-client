@@ -337,7 +337,7 @@ fun BookmarkItemRow(
                                     offsetXAnimatable.animateTo(0f, animationSpec = tween(200))
                                 }
                             } else {
-                                if (item.metadataStatus == "success") {
+                                if (ownerActions?.bookmark?.metadataStatus == "success") {
                                     firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_list_row", "screen_name" to "bookmarks"))
                                 }
                                 onClick()

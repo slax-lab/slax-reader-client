@@ -36,6 +36,7 @@ import slax_reader_client.composeapp.generated.resources.*
 @Composable
 fun FloatingActionBar(
     modifier: Modifier = Modifier,
+    onClearSelection: () -> Unit = {},
 ) {
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val firstPartyEvents: FirstPartyEventReporter = org.koin.compose.koinInject()
@@ -106,6 +107,7 @@ fun FloatingActionBar(
                     StarButton(
                         isStarred = isStarred,
                         onClick = {
+                            onClearSelection()
                             firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_star_button", "screen_name" to "detail"))
                             viewModel.bookmarkDelegate.onToggleStar(!isStarred)
                         }
@@ -114,6 +116,7 @@ fun FloatingActionBar(
                     ArchiveButton(
                         isArchived = isArchived,
                         onClick = {
+                            onClearSelection()
                             firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_archive_button", "screen_name" to "detail"))
                             viewModel.bookmarkDelegate.onToggleArchive(!isArchived)
                         }
@@ -125,6 +128,7 @@ fun FloatingActionBar(
             }
 
             MoreButton(onClick = {
+                onClearSelection()
                 firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_toolbar_open", "screen_name" to "detail"))
                 viewModel.overlayDelegate.showOverlay(BookmarkOverlay.Toolbar)
                 bookmarkEvent.action("use_toolbar_menu").send()

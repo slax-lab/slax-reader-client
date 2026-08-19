@@ -57,7 +57,7 @@ class ViewModelTest {
                 "bookmark-1", null, null, 2, true
             )
         )
-        val viewModel = InboxListViewModel(user, bookmarks, local, coordinator)
+        val viewModel = InboxListViewModel(user, bookmarks, FakeCollectionRepository(), local, coordinator)
 
         val merged = viewModel.bookmarks.first { it.isNotEmpty() }
         assertEquals(2, merged.single().downloadStatus)
@@ -81,7 +81,7 @@ class ViewModelTest {
     fun inboxViewModel_delegates_mutations_to_bookmark_repository() = runTest {
         val bookmarks = FakeBookmarkRepository()
         val viewModel = InboxListViewModel(
-            FakeUserRepository(), bookmarks, FakeLocalBookmarkRepository(), FakeNetworkCoordinator()
+            FakeUserRepository(), bookmarks, FakeCollectionRepository(), FakeLocalBookmarkRepository(), FakeNetworkCoordinator()
         )
         viewModel.confirmEditTitle("id", "new")
         viewModel.toggleStar("id", true)

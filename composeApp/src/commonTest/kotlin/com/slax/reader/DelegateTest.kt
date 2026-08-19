@@ -97,9 +97,11 @@ class DelegateTest {
 
     @Test
     fun bookmarkDelegate_writes_star_archive_title_and_tags() = runTest {
-        val id = MutableStateFlow<String?>("bookmark-id")
+        val binding = MutableStateFlow<com.slax.reader.ui.bookmark.states.BookmarkDetailBinding?>(
+            com.slax.reader.ui.bookmark.states.BookmarkDetailBinding("bookmark-id", null, null)
+        )
         val bookmarks = FakeBookmarkRepository()
-        val delegate = BookmarkDelegate(bookmarks, id, backgroundScope)
+        val delegate = BookmarkDelegate(bookmarks, FakeCollectionRepository(), binding, backgroundScope)
 
         delegate.toggleStar(true)
         delegate.toggleArchive(false)

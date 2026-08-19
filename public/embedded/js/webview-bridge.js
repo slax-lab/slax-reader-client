@@ -807,11 +807,12 @@ var SlaxReaderWebBridgeExports = (function (exports) {
     /**
      * 滚动到锚点文本对应的内容
      */
-    function scrollToAnchor(anchorText) {
+    function scrollToAnchor(anchorText, beforeHighlight) {
         console.log(`[WebView Bridge] Start finding anchor: ${anchorText}`);
         const decodedAnchor = decodeURIComponent(anchorText);
         const match = findMatchingElement(decodedAnchor);
         if (match) {
+            beforeHighlight?.();
             highlightElement(match);
             scrollToElement(match);
             return true;
@@ -1050,6 +1051,8 @@ var SlaxReaderWebBridgeExports = (function (exports) {
         constructor(container) {
             this.isMonitoring = false;
             this.lastSelectionText = '';
+            /** 程序创建且无需通知 Native 的选区 */
+            this.suppressedSelectionRange = null;
             /** 用户手指/鼠标是否正在按下 */
             this.isPointerDown = false;
             /** 手指按下期间是否产生了待处理的选区变化 */
@@ -1060,6 +1063,7 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             this.handlePointerDown = () => {
                 this.isPointerDown = true;
                 this.hasPendingSelection = false;
+                this.suppressedSelectionRange = null;
             };
             /**
              * 手指/鼠标松开，如果有待处理的选区则立即触发回调
@@ -1140,6 +1144,7 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             this.lastSelectionText = '';
             this.isPointerDown = false;
             this.hasPendingSelection = false;
+            this.suppressedSelectionRange = null;
             this.onSelectionCallback = undefined;
             this.onSelectionClearedCallback = undefined;
         }
@@ -1149,14 +1154,21 @@ var SlaxReaderWebBridgeExports = (function (exports) {
         processSelection() {
             const selection = window.getSelection();
             if (!selection || selection.rangeCount === 0) {
+                this.suppressedSelectionRange = null;
                 this.clearLastSelection();
                 return;
             }
             const range = selection.getRangeAt(0);
             if (range.collapsed) {
+                this.suppressedSelectionRange = null;
                 this.clearLastSelection();
                 return;
             }
+            if (this.isSuppressedSelection(range)) {
+                this.lastSelectionText = '';
+                return;
+            }
+            this.suppressedSelectionRange = null;
             if (!this.container.contains(range.commonAncestorContainer)) {
                 return;
             }
@@ -1181,6 +1193,35 @@ var SlaxReaderWebBridgeExports = (function (exports) {
                 this.lastSelectionText = '';
                 this.onSelectionClearedCallback?.();
             }
+        }
+        /**
+         * 在程序替换当前选区前，结束已上报的用户选区状态。
+         */
+        prepareForProgrammaticSelection() {
+            if (this.selectionChangeTimeout) {
+                clearTimeout(this.selectionChangeTimeout);
+                this.selectionChangeTimeout = undefined;
+            }
+            this.hasPendingSelection = false;
+            this.suppressedSelectionRange = null;
+            this.clearLastSelection();
+        }
+        /**
+         * 记录程序创建的当前选区，使本次 selectionchange 不通知 Native。
+         */
+        suppressCurrentSelection() {
+            const selection = window.getSelection();
+            this.suppressedSelectionRange = selection && selection.rangeCount > 0
+                ? selection.getRangeAt(0).cloneRange()
+                : null;
+        }
+        isSuppressedSelection(range) {
+            const suppressed = this.suppressedSelectionRange;
+            return suppressed !== null &&
+                range.startContainer === suppressed.startContainer &&
+                range.startOffset === suppressed.startOffset &&
+                range.endContainer === suppressed.endContainer &&
+                range.endOffset === suppressed.endOffset;
         }
         /**
          * 从 range 解析选择（不需要事件对象）
@@ -1343,6 +1384,7 @@ var SlaxReaderWebBridgeExports = (function (exports) {
          * 清除选择
          */
         clearSelection() {
+            this.suppressedSelectionRange = null;
             const selection = window.getSelection();
             if (selection) {
                 selection.removeAllRanges();
@@ -2839,7 +2881,15 @@ var SlaxReaderWebBridgeExports = (function (exports) {
             this.onMarkItemInfosChange = null;
             this.postMessage = postToNativeBridge;
             this.getContentHeight = getContentHeight;
-            this.scrollToAnchor = scrollToAnchor;
+            this.scrollToAnchor = (anchorText) => {
+                const didScroll = scrollToAnchor(anchorText, () => {
+                    this.selectionMonitor?.prepareForProgrammaticSelection();
+                });
+                if (didScroll) {
+                    this.selectionMonitor?.suppressCurrentSelection();
+                }
+                return didScroll;
+            };
             this.highlightElement = highlightElement;
             this.findMatchingElement = findMatchingElement;
             this.scrollToElement = scrollToElement;

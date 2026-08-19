@@ -117,6 +117,14 @@ actual fun DetailScreen(
         { size -> webViewHeightState.floatValue = size.height.toFloat() }
     }
 
+    val markInteraction = LocalMarkInteraction.current
+    val clearSelection = remember(webViewState, markInteraction) {
+        {
+            markInteraction.onTextDeselected()
+            webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -140,20 +148,20 @@ actual fun DetailScreen(
             )
         }
 
-        NavigatorBar()
+        NavigatorBar(onClearSelection = clearSelection)
 
         FloatingActionBar(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
                 .padding(bottom = 24.dp),
+            onClearSelection = clearSelection,
         )
 
-        val markInteraction = LocalMarkInteraction.current
         val clipboard = LocalClipboard.current
         val coroutineScope = rememberCoroutineScope()
 
-        OutlineDialog()
+        OutlineDialog(onClearSelection = clearSelection)
 
         TranscriptDialog()
 

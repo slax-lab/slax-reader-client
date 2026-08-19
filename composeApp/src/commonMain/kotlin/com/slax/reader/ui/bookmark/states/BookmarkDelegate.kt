@@ -1,7 +1,7 @@
 package com.slax.reader.ui.bookmark.states
 
 import com.slax.reader.data.database.dao.BookmarkRepository
-import com.slax.reader.data.database.dao.CollectionDao
+import com.slax.reader.data.database.dao.CollectionRepository
 import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.data.database.model.UserTag
 import com.slax.reader.domain.sync.CollectionBackgroundDomain
@@ -43,7 +43,7 @@ data class BookmarkDetailState(
 
 class BookmarkDelegate(
     private val bookmarkDao: BookmarkRepository,
-    private val collectionDao: CollectionDao,
+    private val collectionDao: CollectionRepository,
     private val bindingFlow: StateFlow<BookmarkDetailBinding?>,
     private val scope: CoroutineScope
 ) {

@@ -3,7 +3,7 @@ package com.slax.reader.ui.inbox
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.slax.reader.data.database.dao.BookmarkRepository
-import com.slax.reader.data.database.dao.CollectionDao
+import com.slax.reader.data.database.dao.CollectionRepository
 import com.slax.reader.data.database.dao.LocalBookmarkRepository
 import com.slax.reader.data.database.dao.UserRepository
 import com.slax.reader.data.database.model.BookmarkSortType
@@ -35,7 +35,7 @@ import kotlinx.coroutines.withContext
 class InboxListViewModel(
     private val userDao: UserRepository,
     private val bookmarkDao: BookmarkRepository,
-    private val collectionDao: CollectionDao,
+    private val collectionDao: CollectionRepository,
     private val localBookmarkDao: LocalBookmarkRepository,
     private val coordinatorDomain: NetworkCoordinator,
 ) : ViewModel() {

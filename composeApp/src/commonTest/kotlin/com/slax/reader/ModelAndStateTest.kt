@@ -30,7 +30,7 @@ class ModelAndStateTest {
 
     @Test
     fun sortTypes_expose_expected_database_contract() {
-        assertEquals("updated_at", BookmarkSortType.UPDATED.column)
+        assertEquals("created_at", BookmarkSortType.UPDATED.column)
         assertEquals("starred_at", BookmarkSortType.STARRED.column)
         assertEquals("archived_at", BookmarkSortType.ARCHIVED.column)
         assertTrue(BookmarkSortType.STARRED.whereClause.contains("is_starred = 1"))

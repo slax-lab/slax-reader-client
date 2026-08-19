@@ -90,6 +90,7 @@ val repositoryModule = module {
     single { SubscriptionDao(get(named("daoScope")), get()) }
     single<UserRepository> { get<UserDao>() }
     single<BookmarkRepository> { get<BookmarkDao>() }
+    single<com.slax.reader.data.database.dao.CollectionRepository> { get<CollectionDao>() }
     single<LocalBookmarkRepository> { get<LocalBookmarkDao>() }
     single<SubscriptionRepository> { get<SubscriptionDao>() }
     single { PowerSyncDao(get()) }

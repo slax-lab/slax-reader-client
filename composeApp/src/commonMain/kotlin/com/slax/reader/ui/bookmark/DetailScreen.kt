@@ -67,7 +67,7 @@ fun DetailScreen(
                     webViewState.evaluateJsWithCallback("window.__slaxGetYoutubeTime ? window.__slaxGetYoutubeTime() : -1") { result ->
                         // 不同平台可能返回 "12" / "12.0" / "\"12\""，做容错解析
                         val seconds = result.trim().trim('"').substringBefore('.').toIntOrNull() ?: -1
-                        viewModel.setYoutubeCurrentTime(seconds)
+                        resolvedViewModel.setYoutubeCurrentTime(seconds)
                     }
                 }
             }

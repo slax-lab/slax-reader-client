@@ -30,7 +30,7 @@ import slax_reader_client.composeapp.generated.resources.ic_floating_panel_more
 import slax_reader_client.composeapp.generated.resources.ic_sm_back
 
 @Composable
-fun NavigatorBar() {
+fun NavigatorBar(onClearSelection: () -> Unit = {}) {
     println("[watch][UI] recomposition NavigatorBar")
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val firstPartyEvents: FirstPartyEventReporter = org.koin.compose.koinInject()
@@ -65,6 +65,7 @@ fun NavigatorBar() {
                     interactionSource = interactionSource,
                     indication = null
                 ) {
+                    onClearSelection()
                     firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_back_button", "screen_name" to "detail"))
                     viewModel.requestNavigateBack()
                 },
@@ -91,6 +92,7 @@ fun NavigatorBar() {
                     interactionSource = moreInteractionSource,
                     indication = null
                 ) {
+                    onClearSelection()
                     firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_toolbar_open", "screen_name" to "detail"))
                     viewModel.overlayDelegate.showOverlay(BookmarkOverlay.Toolbar)
                     bookmarkEvent.action("use_toolbar_menu").send()

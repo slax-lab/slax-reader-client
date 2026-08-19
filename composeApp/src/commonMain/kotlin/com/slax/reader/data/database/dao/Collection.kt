@@ -27,7 +27,7 @@ import kotlin.time.ExperimentalTime
 class CollectionDao(
     private val scope: CoroutineScope,
     private val database: PowerSyncDatabase,
-) {
+) : CollectionRepository {
     private fun <T> Flow<T>.retryThenLog(label: String): Flow<T> = this
         .retryWhen { cause, attempt ->
             if (cause is CancellationException || attempt >= MAX_WATCH_RETRIES) {
@@ -96,7 +96,7 @@ class CollectionDao(
             .stateIn(scope, SharingStarted.WhileSubscribed(5_000), emptyList())
     }
 
-    fun watchSubscribedCollections(): StateFlow<List<SubscribedCollection>> = subscribedCollections
+    override fun watchSubscribedCollections(): StateFlow<List<SubscribedCollection>> = subscribedCollections
 
     fun watchCollectionMarkSettings(ownerId: String): Flow<CollectionMarkSettings?> = database.watch(
         """
@@ -140,7 +140,7 @@ class CollectionDao(
         .retryThenLog("collection cache candidates")
         .distinctUntilChanged()
 
-    fun watchCollectionBookmarkDetail(bookmarkId: String, ownerId: String) = database.watch(
+    override fun watchCollectionBookmarkDetail(bookmarkId: String, ownerId: String) = database.watch(
         """
         SELECT
             cb.id,
@@ -166,7 +166,7 @@ class CollectionDao(
         .retryThenLog("collection bookmark detail")
         .distinctUntilChanged()
 
-    fun watchCollectionBookmarks(ownerId: String) = database.watch(
+    override fun watchCollectionBookmarks(ownerId: String) = database.watch(
         """
         SELECT
             cb.id,
@@ -192,7 +192,7 @@ class CollectionDao(
         .distinctUntilChanged()
 
     @OptIn(ExperimentalTime::class)
-    suspend fun setLastRead(collectionId: String) {
+    override suspend fun setLastRead(collectionId: String) {
         database.writeTransaction { transaction ->
             transaction.execute(
                 """

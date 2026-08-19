@@ -34,6 +34,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.serialization.json.Json
 
+class FakeCollectionRepository : com.slax.reader.data.database.dao.CollectionRepository {
+    val collections = MutableStateFlow<List<com.slax.reader.data.database.model.SubscribedCollection>>(emptyList())
+    val bookmarks = MutableStateFlow<List<com.slax.reader.data.database.model.CollectionBookmarkItem>>(emptyList())
+    val detail = MutableStateFlow<List<UserBookmark>>(emptyList())
+    val lastRead = mutableListOf<String>()
+    override fun watchSubscribedCollections() = collections.asStateFlow()
+    override fun watchCollectionBookmarks(ownerId: String) = bookmarks.asStateFlow()
+    override fun watchCollectionBookmarkDetail(bookmarkId: String, ownerId: String) = detail.asStateFlow()
+    override suspend fun setLastRead(collectionId: String) { lastRead += collectionId }
+}
+
 class FakeUserRepository : UserRepository {
     val user = MutableStateFlow<UserInfo?>(null)
     override fun watchUserInfo(): StateFlow<UserInfo?> = user.asStateFlow()
