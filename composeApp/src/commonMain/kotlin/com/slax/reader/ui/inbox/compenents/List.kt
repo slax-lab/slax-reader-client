@@ -20,6 +20,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.slax.reader.const.BookmarkRoutes
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.utils.i18n
@@ -29,9 +30,8 @@ fun ArticleList(
     navCtrl: NavController,
     viewModel: InboxListViewModel,
     onEditTitle: (InboxListBookmarkItem) -> Unit,
+    headerContent: (@Composable () -> Unit)? = null,
 ) {
-    println("[watch][UI] recomposition ArticleList")
-
     val bookmarks by viewModel.bookmarks.collectAsState()
     val sortType by viewModel.sortType.collectAsState()
     val swipeConfig = remember(sortType) { sortType.toSwipeConfig() }
@@ -49,10 +49,17 @@ fun ArticleList(
 
     if (bookmarks.isEmpty()) {
         val hasSynced by viewModel.hasSynced.collectAsState()
-        Box(
-            Modifier.fillMaxSize()
-        ) {
-            EmptyOrLoadingView(hasSynced = hasSynced)
+        Column(Modifier.fillMaxSize()) {
+            headerContent?.invoke()
+            if (headerContent == null) {
+                Box(Modifier.weight(1f)) {
+                    EmptyOrLoadingView(hasSynced = hasSynced)
+                }
+            } else {
+                RoundedFeedListStart(modifier = Modifier.weight(1f)) {
+                    EmptyOrLoadingView(hasSynced = hasSynced)
+                }
+            }
         }
         return
     }
@@ -64,23 +71,47 @@ fun ArticleList(
             modifier = Modifier.fillMaxSize().preferredFrameRate(FrameRateCategory.High),
             verticalArrangement = Arrangement.spacedBy(0.dp),
             contentPadding = PaddingValues(
-                top = 8.dp,
+                top = if (headerContent == null) 8.dp else 0.dp,
                 bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
             ),
             state = lazyListState
         ) {
+            if (headerContent != null) {
+                item(key = "collection-feed-switcher", contentType = "collection-feed-switcher") {
+                    headerContent()
+                }
+            }
             itemsIndexed(
                 items = bookmarks,
                 key = { _, bookmark -> bookmark.id },
-                contentType = { _, _ -> "bookmark" }
+                contentType = { index, _ ->
+                    if (index == 0 && headerContent != null) "rounded-bookmark" else "bookmark"
+                }
             ) { index, bookmark ->
-                BookmarkItemRow(
-                    navCtrl = navCtrl,
-                    viewModel = viewModel,
-                    bookmark = bookmark,
-                    swipeConfig = swipeConfig,
-                    onEditTitle = onEditTitle,
-                )
+                val bookmarkRow = @Composable {
+                    BookmarkItemRow(
+                        item = bookmark,
+                        onClick = {
+                            if (bookmark.metadataStatus == "success") {
+                                navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmark.id))
+                            } else {
+                                bookmark.metadataUrl?.let { viewModel.emitProcessingUrl(it) }
+                            }
+                        },
+                        viewModel = viewModel,
+                        ownerActions = BookmarkRowOwnerActions(
+                            bookmark = bookmark,
+                            swipeConfig = swipeConfig,
+                            onEditTitle = onEditTitle,
+                        ),
+                    )
+                }
+
+                if (index == 0 && headerContent != null) {
+                    RoundedFeedListStart(content = bookmarkRow)
+                } else {
+                    bookmarkRow()
+                }
 
                 dividerLine()
             }
@@ -113,7 +144,6 @@ fun ArticleList(
 
 @Composable
 fun EmptyOrLoadingView(hasSynced: Boolean) {
-    println("[watch][UI] recomposition EmptyOrLoadingView, hasSynced=$hasSynced")
     Box(modifier = Modifier.fillMaxSize()) {
         EmptyView()
 

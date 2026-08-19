@@ -41,7 +41,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 
 @Composable
-fun OutlineDialog() {
+fun OutlineDialog(onClearSelection: () -> Unit = {}) {
     println("[watch][UI] recomposition OutlineDialog")
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
 
@@ -87,7 +87,10 @@ fun OutlineDialog() {
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
-                        onClick = { viewModel.outlineDelegate.hideDialog() }
+                        onClick = {
+                            onClearSelection()
+                            viewModel.outlineDelegate.hideDialog()
+                        }
                     )
             )
         }
@@ -115,7 +118,10 @@ fun OutlineDialog() {
                 },
             contentAlignment = Alignment.BottomCenter
         ) {
-            ExpandedOutlineDialog(animationSettled = transitionState.isIdle)
+            ExpandedOutlineDialog(
+                animationSettled = transitionState.isIdle,
+                onClearSelection = onClearSelection,
+            )
         }
 
         if (collapsedVisible) {
@@ -147,7 +153,7 @@ fun OutlineDialog() {
                     Box(modifier = Modifier.graphicsLayer { alpha = anim.collapsedAlpha },
                         contentAlignment = Alignment.Center
                     ) {
-                        CollapsedOutlineButton()
+                        CollapsedOutlineButton(onClearSelection = onClearSelection)
                     }
                 }
             }
@@ -199,7 +205,10 @@ private fun MorphOverlay(
  * 全屏展开状态的弹窗
  */
 @Composable
-private fun ExpandedOutlineDialog(animationSettled: Boolean = false) {
+private fun ExpandedOutlineDialog(
+    animationSettled: Boolean = false,
+    onClearSelection: () -> Unit = {},
+) {
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val outlineState by viewModel.outlineDelegate.outlineState.collectAsState()
 
@@ -318,7 +327,10 @@ private fun ExpandedOutlineDialog(animationSettled: Boolean = false) {
                         .clickable(
                             interactionSource = collapseInteractionSource,
                             indication = null,
-                            onClick = { viewModel.outlineDelegate.collapseDialog() }
+                            onClick = {
+                                onClearSelection()
+                                viewModel.outlineDelegate.collapseDialog()
+                            }
                         ),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)
@@ -355,7 +367,10 @@ private fun ExpandedOutlineDialog(animationSettled: Boolean = false) {
                         .clickable(
                             interactionSource = closeInteractionSource,
                             indication = null,
-                            onClick = { viewModel.outlineDelegate.hideDialog() }
+                            onClick = {
+                                onClearSelection()
+                                viewModel.outlineDelegate.hideDialog()
+                            }
                         ),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)
@@ -382,13 +397,16 @@ private fun ExpandedOutlineDialog(animationSettled: Boolean = false) {
  * 收缩态圆形按钮
  */
 @Composable
-private fun CollapsedOutlineButton() {
+private fun CollapsedOutlineButton(onClearSelection: () -> Unit = {}) {
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val outlineState by viewModel.outlineDelegate.outlineState.collectAsState()
     val isLoading = outlineState.isLoading
 
     Surface(
-        onClick = { viewModel.outlineDelegate.expandDialog() },
+        onClick = {
+            onClearSelection()
+            viewModel.outlineDelegate.expandDialog()
+        },
         modifier = Modifier.size(50.dp),
         color = Color(0xFFFFFFFF),
         shape = RoundedCornerShape(25.dp),

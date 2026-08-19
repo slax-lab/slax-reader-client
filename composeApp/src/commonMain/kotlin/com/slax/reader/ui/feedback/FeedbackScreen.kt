@@ -58,12 +58,12 @@ fun FeedbackScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
                     Text(
                         text = "feedback_title".i18n(),
                         fontSize = 17.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Medium,
                         lineHeight = 24.sp,
                         color = Color(0xFF0F1419)
                     )

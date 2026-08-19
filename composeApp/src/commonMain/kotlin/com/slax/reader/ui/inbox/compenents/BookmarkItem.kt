@@ -30,10 +30,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import androidx.navigation.NavController
-import com.slax.reader.const.BookmarkRoutes
 import com.slax.reader.data.database.model.BookmarkSortType
 import com.slax.reader.data.database.model.InboxListBookmarkItem
+import com.slax.reader.data.database.model.ListRowBookmark
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.utils.bookmarkListEvent
 import com.slax.reader.utils.i18n
@@ -78,18 +77,23 @@ enum class MenuTriggerSource {
     MORE_ICON       // 点击更多触发
 }
 
+data class BookmarkRowOwnerActions(
+    val bookmark: InboxListBookmarkItem,
+    val swipeConfig: SwipeActionsConfig,
+    val onEditTitle: (InboxListBookmarkItem) -> Unit,
+)
+
 @Composable
 fun BookmarkItemRow(
-    navCtrl: NavController,
+    item: ListRowBookmark,
+    onClick: () -> Unit,
     viewModel: InboxListViewModel,
-    bookmark: InboxListBookmarkItem,
-    swipeConfig: SwipeActionsConfig,
-    onEditTitle: (InboxListBookmarkItem) -> Unit,
+    ownerActions: BookmarkRowOwnerActions? = null,
 ) {
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
-    val sortType by viewModel.sortType.collectAsState()
+    val swipeConfig = ownerActions?.swipeConfig
 
     var menuTriggerSource by remember { mutableStateOf(MenuTriggerSource.NONE) }
     val showMenu by remember {
@@ -100,14 +104,14 @@ fun BookmarkItemRow(
     val flashAlpha = remember { Animatable(0f) }
     var currentTitle by remember { mutableStateOf("") }
 
-    LaunchedEffect(bookmark.displayTitle()) {
-        if (currentTitle.isEmpty()) currentTitle = bookmark.displayTitle()
-        if (flashAlpha.value == 0f && currentTitle != bookmark.displayTitle()) {
+    LaunchedEffect(item.displayTitle()) {
+        if (currentTitle.isEmpty()) currentTitle = item.displayTitle()
+        if (flashAlpha.value == 0f && currentTitle != item.displayTitle()) {
             repeat(3) {
                 flashAlpha.animateTo(0.05f, tween(180))
                 flashAlpha.animateTo(0f, tween(180))
             }
-            currentTitle = bookmark.displayTitle()
+            currentTitle = item.displayTitle()
         }
     }
 
@@ -138,7 +142,9 @@ fun BookmarkItemRow(
         )
     )
 
-    val maxSwipeLeft = remember(density, swipeConfig.maxSwipeWidthDp) { -with(density) { swipeConfig.maxSwipeWidthDp.toPx() } }
+    val maxSwipeLeft = remember(density, swipeConfig?.maxSwipeWidthDp) {
+        swipeConfig?.let { -with(density) { it.maxSwipeWidthDp.toPx() } } ?: 0f
+    }
     val maxSwipeRight = 0f
     val clickDragTolerancePx = remember(density) { with(density) { 8.dp.toPx() } }
 
@@ -152,7 +158,7 @@ fun BookmarkItemRow(
     val menuAlpha by remember(maxSwipeLeft) {
         derivedStateOf {
             val offset = offsetXAnimatable.value
-            if (offset < 0f) {
+            if (offset < 0f && maxSwipeLeft != 0f) {
                 (abs(offset) / abs(maxSwipeLeft)).coerceIn(0f, 1f)
             } else 0f
         }
@@ -171,7 +177,8 @@ fun BookmarkItemRow(
                 boxSize = size
             }
     ) {
-        if (showSwipeActions) {
+        if (showSwipeActions && ownerActions != null) {
+            val bookmark = ownerActions.bookmark
             Row(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
@@ -181,7 +188,7 @@ fun BookmarkItemRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (swipeConfig.showStarAction) {
+                if (swipeConfig != null && swipeConfig.showStarAction) {
                     // 加星按钮
                     Surface(
                         modifier = Modifier
@@ -215,7 +222,7 @@ fun BookmarkItemRow(
                     }
                 }
 
-                if (swipeConfig.showArchiveAction) {
+                if (swipeConfig != null && swipeConfig.showArchiveAction) {
                     // 归档按钮
                     Surface(
                         modifier = Modifier
@@ -251,6 +258,58 @@ fun BookmarkItemRow(
             }
         }
 
+        val swipeModifier = if (ownerActions != null) {
+            Modifier.pointerInput(maxSwipeLeft, maxSwipeRight) {
+                detectHorizontalDragGestures(
+                    onDragStart = {
+                        isDragging = true
+                        totalDragDistance = 0f
+                        dragStartOffset = offsetXAnimatable.value
+                        scope.launch { offsetXAnimatable.stop() }
+                    },
+                    onDragEnd = {
+                        val currentOffset = offsetXAnimatable.value
+                        val isDraggingToClose = currentOffset > dragStartOffset
+                        val threshold = if (isDraggingToClose) {
+                            abs(maxSwipeLeft) * 0.8f
+                        } else {
+                            abs(maxSwipeLeft) * 0.4f
+                        }
+                        val shouldOpen = abs(currentOffset) >= threshold
+                        scope.launch {
+                            offsetXAnimatable.animateTo(
+                                if (shouldOpen) maxSwipeLeft else 0f,
+                                animationSpec = tween(200)
+                            )
+                            delay(50)
+                            isDragging = false
+                            totalDragDistance = 0f
+                        }
+                    },
+                    onDragCancel = {
+                        scope.launch {
+                            offsetXAnimatable.animateTo(
+                                targetValue = 0f,
+                                animationSpec = tween(durationMillis = 200)
+                            )
+                            delay(50)
+                            isDragging = false
+                            totalDragDistance = 0f
+                        }
+                    },
+                    onHorizontalDrag = { change, dragAmount ->
+                        change.consume()
+                        totalDragDistance += abs(dragAmount)
+                        val newOffset = (offsetXAnimatable.value + dragAmount)
+                            .coerceIn(maxSwipeLeft, maxSwipeRight)
+                        scope.launch { offsetXAnimatable.snapTo(newOffset) }
+                    }
+                )
+            }
+        } else {
+            Modifier
+        }
+
         Surface(
             modifier = Modifier
                 .fillMaxSize()
@@ -260,59 +319,7 @@ fun BookmarkItemRow(
                     scaleY = scale
                     shadowElevation = elevation
                 }
-                .pointerInput(maxSwipeLeft, maxSwipeRight) {
-                    detectHorizontalDragGestures(
-                        onDragStart = {
-                            isDragging = true
-                            totalDragDistance = 0f
-                            dragStartOffset = offsetXAnimatable.value
-                            scope.launch { offsetXAnimatable.stop() }
-                        },
-                        onDragEnd = {
-                            val currentOffset = offsetXAnimatable.value
-                            val isDraggingToClose = currentOffset > dragStartOffset // 从左向右，值变大（负数绝对值变小）
-
-                            val threshold = if (isDraggingToClose) {
-                                // 关闭方向
-                                abs(maxSwipeLeft) * 0.8f
-                            } else {
-                                // 打开方向
-                                abs(maxSwipeLeft) * 0.4f
-                            }
-
-                            val shouldOpen = abs(currentOffset) >= threshold
-                            scope.launch {
-                                offsetXAnimatable.animateTo(
-                                    if (shouldOpen) maxSwipeLeft else 0f,
-                                    animationSpec = tween(200)
-                                )
-                                delay(50)
-                                isDragging = false
-                                totalDragDistance = 0f
-                            }
-                        },
-                        onDragCancel = {
-                            scope.launch {
-                                // 取消拖动时也回弹
-                                offsetXAnimatable.animateTo(
-                                    targetValue = 0f,
-                                    animationSpec = tween(durationMillis = 200)
-                                )
-                                delay(50)
-                                isDragging = false
-                                totalDragDistance = 0f
-                            }
-                        },
-                        onHorizontalDrag = { change, dragAmount ->
-                            change.consume()
-                            totalDragDistance += abs(dragAmount)
-                            val newOffset = (offsetXAnimatable.value + dragAmount).coerceIn(maxSwipeLeft, maxSwipeRight)
-                            scope.launch {
-                                offsetXAnimatable.snapTo(newOffset)
-                            }
-                        }
-                    )
-                }
+                .then(swipeModifier)
                 .combinedClickable(
                     interactionSource = interactionSource,
                     indication = null,
@@ -326,22 +333,17 @@ fun BookmarkItemRow(
                                     offsetXAnimatable.animateTo(0f, animationSpec = tween(200))
                                 }
                             } else {
-                                if (bookmark.metadataStatus == "success") {
-                                    navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmark.id))
-                                } else {
-                                    bookmark.metadataUrl?.let {
-                                        viewModel.emitProcessingUrl(it)
-                                    }
-                                }
+                                onClick()
                             }
                         }
                     },
-                    onLongClick = {
-                        // 只有在未拖动时才触发长按
-                        if (!isDragging && totalDragDistance < clickDragTolerancePx) {
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            isLongPressed = true
-                            menuTriggerSource = MenuTriggerSource.LONG_PRESS
+                    onLongClick = if (ownerActions == null) null else {
+                        {
+                            if (!isDragging && totalDragDistance < clickDragTolerancePx) {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                isLongPressed = true
+                                menuTriggerSource = MenuTriggerSource.LONG_PRESS
+                            }
                         }
                     }
                 ),
@@ -361,10 +363,13 @@ fun BookmarkItemRow(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        ItemStatus(bookmark.downloadStatus, swipeConfig.sortType)
+                        ItemStatus(
+                            item.downloadStatus,
+                            swipeConfig?.sortType ?: BookmarkSortType.UPDATED,
+                        )
 
                         Text(
-                            text = bookmark.displayTitle(),
+                            text = item.displayTitle(),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f),
@@ -401,7 +406,8 @@ fun BookmarkItemRow(
             )
         }
 
-        if (showMenu) {
+        if (showMenu && ownerActions != null) {
+            val bookmark = ownerActions.bookmark
             Menu(
                 expanded = showMenu,
                 onDismissRequest = {
@@ -444,7 +450,7 @@ fun BookmarkItemRow(
                     onClick = {
                         menuTriggerSource = MenuTriggerSource.NONE
                         isLongPressed = false
-                        onEditTitle(bookmark)
+                        ownerActions.onEditTitle(bookmark)
                     }
                 )
 
@@ -465,4 +471,3 @@ fun BookmarkItemRow(
         }
     }
 }
-

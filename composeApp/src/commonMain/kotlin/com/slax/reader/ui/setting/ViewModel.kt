@@ -24,7 +24,7 @@ sealed class DeleteAccountState {
 
 class SettingViewModel(
     private val apiService: ApiService,
-    private val appPreferences: AppPreferences
+    private val appPreferences: AppPreferences,
 ) : ViewModel() {
     private val _deleteAccountState = MutableStateFlow<DeleteAccountState>(DeleteAccountState.Idle)
     val deleteAccountState: StateFlow<DeleteAccountState> = _deleteAccountState.asStateFlow()

@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
 import java.util.*
 import io.github.ttypic.swiftklib.*
+import io.github.ttypic.swiftklib.gradle.task.CompileSwiftTask
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
@@ -35,8 +36,8 @@ plugins {
     alias(libs.plugins.google.services)
     alias(libs.plugins.firebase.crashlytics)
     kotlin("native.cocoapods")
-    id("com.codingfeline.buildkonfig") version "0.21.1"
-    id("org.jetbrains.kotlinx.atomicfu") version "0.32.1"
+    id("com.codingfeline.buildkonfig") version "0.22.0"
+    id("org.jetbrains.kotlinx.atomicfu") version "0.33.0"
     id("io.github.ttypic.swiftklib") version "0.6.4"
 }
 
@@ -347,5 +348,24 @@ swiftklib {
         path = file("src/nativeInterop/storekit")
         packageName("app.slax.reader.storekit")
         minIos = 14
+    }
+}
+
+tasks.withType<CompileSwiftTask>().configureEach {
+    val def = defFile
+    doLast {
+        val content = def.readText()
+        val match = Regex("-I\"([^\"]*)\"").find(content) ?: return@doLast
+        val modulePath = File(match.groupValues[1])
+
+        if (modulePath.resolve("module.modulemap").exists()) return@doLast
+        if (!modulePath.resolve("include/module.modulemap").exists()) return@doLast
+
+        def.writeText(
+            content.replaceRange(
+                match.groups[1]!!.range,
+                modulePath.resolve("include").absolutePath
+            )
+        )
     }
 }

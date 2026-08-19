@@ -10,6 +10,7 @@ import androidx.compose.ui.text.font.FontWeight
 import com.slax.reader.const.component.EditNameDialog
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.states.BookmarkOverlay
+import com.slax.reader.utils.collapseWhitespace
 import com.slax.reader.utils.i18n
 import com.slax.reader.utils.isAndroid
 import com.slax.reader.utils.isIOS
@@ -37,7 +38,8 @@ fun BookmarkDetailOverlays() {
         }
         BookmarkOverlay.EditTitle -> {
             EditNameDialog(
-                initialTitle = viewModel.bookmarkDelegate.bookmarkDetailState.value.displayTitle,
+                // 编辑态也折叠换行（对齐 dweb）
+                initialTitle = viewModel.bookmarkDelegate.bookmarkDetailState.value.displayTitle.collapseWhitespace(),
                 onConfirm = { title ->
                     viewModel.bookmarkDelegate.onUpdateBookmarkTitle(title)
                     viewModel.overlayDelegate.dismissOverlay(BookmarkOverlay.EditTitle)

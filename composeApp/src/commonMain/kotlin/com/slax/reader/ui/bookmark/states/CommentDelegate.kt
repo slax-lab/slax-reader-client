@@ -9,6 +9,9 @@ import com.slax.reader.data.database.dao.BookmarkCommentDao
 import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.database.dao.UserDao
 import com.slax.reader.data.database.model.BookmarkCommentPO
+import com.slax.reader.data.database.model.CollectionMarkPolicy
+import com.slax.reader.data.database.model.canDeleteMark
+import com.slax.reader.data.database.model.canCreateMark
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.network.dto.MarkCommentUser
 import com.slax.reader.data.network.dto.MarkDetail
@@ -21,6 +24,7 @@ import com.slax.reader.data.network.dto.StrokeCreateSelectContent
 import com.slax.reader.utils.BridgeMarkCommentInfo
 import com.slax.reader.utils.BridgeMarkReplyInfo
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.IO
@@ -55,17 +59,26 @@ class CommentDelegate(
     }
 
     private var sub: SyncStreamSubscription? = null
+    private var subStreamName: String? = null
+    private var subOwnerId: String? = null
     private var markUsersJob: Job? = null
     private val _bookmarkId = MutableStateFlow<String?>(null)
+    private val _marksVisible = MutableStateFlow(true)
     private val _markUsers = MutableStateFlow<Map<String, MarkCommentUser>>(emptyMap())
+    private val _markPolicy = MutableStateFlow(CollectionMarkPolicy.Personal)
     private val userInfo = userDao.watchUserInfo()
+    private val markPolicy: CollectionMarkPolicy
+        get() = _markPolicy.value
 
     val currentUserId: String? get() = userInfo.value?.id
     val currentUserIdLong: Long get() = currentUserId.toStableId()
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val comments: StateFlow<List<BookmarkCommentPO>> = _bookmarkId
-        .flatMapLatest { id -> id?.let { commentDao.watchComments(it) } ?: flowOf(emptyList()) }
+    private val comments: StateFlow<List<BookmarkCommentPO>> = combine(_bookmarkId, _marksVisible) { id, visible ->
+        id to visible
+    }.flatMapLatest { (id, visible) ->
+        if (id != null && visible) commentDao.watchComments(id) else flowOf(emptyList())
+    }
         .stateIn(scope, SharingStarted.Eagerly, emptyList())
 
     private data class Processed(
@@ -74,11 +87,16 @@ class CommentDelegate(
         val repliesByRootId: Map<String, List<BookmarkCommentPO>> = emptyMap(),
         val raw: List<BookmarkCommentPO> = emptyList(),
         val markUsers: Map<String, MarkCommentUser> = emptyMap(),
+        val showProfile: Boolean = true,
     )
 
     private val processed: StateFlow<Processed> = comments
         .onEach { refreshMarkUsersIfNeeded(it) }
-        .combine(_markUsers) { list, markUsers -> buildProcessed(list, markUsers) }
+        .combine(_markUsers) { list, markUsers -> list to markUsers }
+        .combine(_markPolicy) { (list, markUsers), policy ->
+            if (policy.showMarks) buildProcessed(list, markUsers, policy.showProfile)
+            else Processed(showProfile = policy.showProfile)
+        }
         .distinctUntilChanged()
         .stateIn(scope, SharingStarted.Eagerly, Processed())
 
@@ -100,23 +118,68 @@ class CommentDelegate(
     }
 
     @OptIn(ExperimentalPowerSyncAPI::class)
-    suspend fun bind(bookmarkId: String) {
-        val streamParams = mapOf(
-            "bookmark_uuid" to JsonParam.String(bookmarkId)
-        )
-        sub = database.syncStream("bookmark_comment", streamParams).subscribe(ttl = 5.days)
+    suspend fun bind(bookmarkId: String, policy: CollectionMarkPolicy, collectionOwnerId: String? = null) {
+        val validCollectionOwner = collectionOwnerId?.takeIf { it.isNotBlank() }
+        val effectivePolicy = if (policy.isCollection && validCollectionOwner == null) {
+            CollectionMarkPolicy.CollectionPending
+        } else {
+            policy
+        }
+        val bookmarkChanged = _bookmarkId.value != bookmarkId
+        val streamName = if (effectivePolicy.isCollection) "collection_bookmark_comment" else "bookmark_comment"
+        val ownerChanged = subOwnerId != validCollectionOwner.takeIf { effectivePolicy.isCollection }
+        val streamChanged = subStreamName != null && subStreamName != streamName
+        val currentSub = sub.takeIf {
+            !effectivePolicy.showMarks || bookmarkChanged || streamChanged || ownerChanged
+        }
+        if (currentSub != null) {
+            sub = null
+            subStreamName = null
+            subOwnerId = null
+        }
+
+        _markPolicy.value = effectivePolicy
         _bookmarkId.value = bookmarkId
+        _marksVisible.value = effectivePolicy.showMarks
+
+        if (!effectivePolicy.showMarks || !effectivePolicy.showProfile) {
+            markUsersJob?.cancel()
+            markUsersJob = null
+            _markUsers.value = emptyMap()
+        } else {
+            refreshMarkUsersIfNeeded(comments.value)
+        }
+
+        currentSub?.unsubscribe()
+
+        if (effectivePolicy.showMarks && sub == null) {
+            val streamParams = if (effectivePolicy.isCollection) {
+                mapOf(
+                    "bookmark_uuid" to JsonParam.String(bookmarkId),
+                    "owner_id" to JsonParam.String(validCollectionOwner.orEmpty())
+                )
+            } else {
+                mapOf("bookmark_uuid" to JsonParam.String(bookmarkId))
+            }
+            sub = database.syncStream(streamName, streamParams).subscribe(ttl = 5.days)
+            subStreamName = streamName
+            subOwnerId = validCollectionOwner.takeIf { effectivePolicy.isCollection }
+        }
     }
 
     fun reset() {
         val currentSub = sub
         sub = null
+        subStreamName = null
+        subOwnerId = null
         markUsersJob?.cancel()
         markUsersJob = null
         scope.launch(Dispatchers.IO) { currentSub?.unsubscribe() }
         _markUsers.value = emptyMap()
         _bookmarkId.value = null
+        _marksVisible.value = false
         _selectedSourceJson.value = null
+        _markPolicy.value = CollectionMarkPolicy.Personal
     }
 
     suspend fun addMark(
@@ -129,6 +192,11 @@ class CommentDelegate(
         parentId: String? = null,
     ): String {
         val bookmarkId = _bookmarkId.value ?: error("CommentDelegate not bound")
+        val userId = currentUserId ?: throw AppError.CommentException.MarkNotAllowed
+
+        if (!markPolicy.canCreateMark(type)) {
+            throw AppError.CommentException.MarkNotAllowed
+        }
 
         if (comment.isNotEmpty() && comment.length > 1500) throw AppError.CommentException.TooLong
         if (type == MarkType.LINE && comment.isNotBlank()) throw AppError.CommentException.EmptyComment
@@ -136,7 +204,7 @@ class CommentDelegate(
 
         return commentDao.addMark(
             bookmarkId = bookmarkId,
-            userId = userInfo.value?.id ?: "",
+            userId = userId,
             type = type,
             source = source,
             approxSource = approxSource,
@@ -144,10 +212,24 @@ class CommentDelegate(
             comment = comment,
             rootId = rootId,
             parentId = parentId,
+            markPolicy = markPolicy,
         )
     }
 
-    suspend fun deleteComment(commentId: String) = commentDao.deleteComment(commentId)
+    suspend fun deleteComment(commentId: String) {
+        if (!canDeleteComment(commentId)) throw AppError.CommentException.MarkNotAllowed
+        commentDao.deleteComment(commentId)
+    }
+
+    fun canDeleteComment(commentId: String): Boolean {
+        val currentUserId = currentUserId
+        val bookmarkId = _bookmarkId.value ?: return false
+        val comment = processed.value.raw.firstOrNull { item ->
+            item.id == commentId && item.userBookmarkUuid == bookmarkId
+        } ?: return false
+
+        return markPolicy.canDeleteMark(currentUserId, comment.metadataObj?.user_id)
+    }
 
     fun findCommentId(predicate: (BookmarkCommentPO) -> Boolean): String? =
         processed.value.raw.find(predicate)?.id
@@ -156,6 +238,7 @@ class CommentDelegate(
         processed.value.raw.find(predicate)
 
     private fun refreshMarkUsersIfNeeded(comments: List<BookmarkCommentPO>) {
+        if (!markPolicy.showMarks || !markPolicy.showProfile) return
         val bookmarkId = _bookmarkId.value ?: return
         val userIds = comments.mapNotNullTo(mutableSetOf()) { it.metadataObj?.user_id }
         if (userIds.isEmpty()) return
@@ -164,7 +247,7 @@ class CommentDelegate(
         if (markUsersJob?.isActive == true) return
 
         markUsersJob = scope.launch(Dispatchers.IO) {
-            runCatching {
+            try {
                 val cached = localBookmarkDao.getMarkUsers(bookmarkId)
                 if (!cached.isNullOrBlank()) {
                     val users = json.decodeFromString<List<MarkCommentUser>>(cached).associateBy { it.uuid }
@@ -176,12 +259,20 @@ class CommentDelegate(
                 val users = apiService.getMarkUsers(bookmarkId).data ?: return@launch
                 localBookmarkDao.updateMarkUsers(bookmarkId, json.encodeToString(users))
                 _markUsers.value = users.associateBy { it.uuid }
-            }.onFailure { println("[CommentDelegate] loadMarkUsers failed: ${it.message}") }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                println("[CommentDelegate] loadMarkUsers failed: ${error.message}")
+            }
         }
     }
 
-    private fun buildProcessed(list: List<BookmarkCommentPO>, markUsers: Map<String, MarkCommentUser>): Processed {
-        if (list.isEmpty()) return Processed()
+    private fun buildProcessed(
+        list: List<BookmarkCommentPO>,
+        markUsers: Map<String, MarkCommentUser>,
+        showProfile: Boolean,
+    ): Processed {
+        if (list.isEmpty()) return Processed(showProfile = showProfile)
 
         val visibleCommentIds = buildVisibleCommentIds(list)
         val userMap = mutableMapOf<String, MarkUserInfo>()
@@ -198,7 +289,7 @@ class CommentDelegate(
             if (!isVisible) continue
 
             val poUserId = po.metadataObj?.user_id ?: ""
-            collectUser(poUserId, into = userMap, markUsers = markUsers)
+            collectUser(poUserId, into = userMap, markUsers = markUsers, showProfile = showProfile)
 
             markList += MarkInfo(
                 id = po.id.toStableId(),
@@ -229,6 +320,7 @@ class CommentDelegate(
             repliesByRootId = byRootId,
             raw = list,
             markUsers = markUsers,
+            showProfile = showProfile,
         )
     }
 
@@ -264,14 +356,14 @@ class CommentDelegate(
         val rootMap = LinkedHashMap<Long, BridgeMarkCommentInfo>(rootPOs.size)
         val commentMap = LinkedHashMap<Long, BridgeMarkCommentInfo>()
         for (po in rootPOs) {
-            val comment = po.toBridgeComment(p.markUsers)
+            val comment = po.toBridgeComment(p.markUsers, p.showProfile)
             rootMap[comment.markId] = comment
             commentMap[comment.markId] = comment
         }
 
         for (po in rootPOs) {
             p.repliesByRootId[po.id].orEmpty().forEach { replyPO ->
-                val reply = replyPO.toBridgeComment(p.markUsers)
+                val reply = replyPO.toBridgeComment(p.markUsers, p.showProfile)
                 commentMap[reply.markId] = reply
             }
         }
@@ -282,7 +374,8 @@ class CommentDelegate(
             val root = rootMap[rootId] ?: continue
 
             val children = replies.map { replyPO ->
-                val reply = commentMap[replyPO.id.toStableId()] ?: replyPO.toBridgeComment(p.markUsers)
+                val reply = commentMap[replyPO.id.toStableId()]
+                    ?: replyPO.toBridgeComment(p.markUsers, p.showProfile)
                 val parentId = replyPO.metadataObj?.parent_id.toStableId()
                 val parent = commentMap[parentId]
                 if (parent != null) {
@@ -300,9 +393,12 @@ class CommentDelegate(
             .filter { !it.isDeleted || it.children.isNotEmpty() }
     }
 
-    private fun BookmarkCommentPO.toBridgeComment(markUsers: Map<String, MarkCommentUser>): BridgeMarkCommentInfo {
+    private fun BookmarkCommentPO.toBridgeComment(
+        markUsers: Map<String, MarkCommentUser>,
+        showProfile: Boolean,
+    ): BridgeMarkCommentInfo {
         val poUserId = metadataObj?.user_id ?: ""
-        val (name, avatar) = resolveUserInfo(poUserId, markUsers)
+        val (name, avatar) = resolveUserInfo(poUserId, markUsers, showProfile)
         return BridgeMarkCommentInfo(
             markId = id.toStableId(),
             comment = comment,
@@ -315,17 +411,27 @@ class CommentDelegate(
         )
     }
 
-    private fun resolveUserInfo(userId: String, markUsers: Map<String, MarkCommentUser>): Pair<String, String> {
+    private fun resolveUserInfo(
+        userId: String,
+        markUsers: Map<String, MarkCommentUser>,
+        showProfile: Boolean,
+    ): Pair<String, String> {
+        if (!showProfile) return "" to ""
         val user = userInfo.value
         if (userId == user?.id) return (user.name) to (user.picture)
         val cached = markUsers[userId]
         return (cached?.nick_name ?: "") to (cached?.avatar ?: "")
     }
 
-    private fun collectUser(userId: String, into: MutableMap<String, MarkUserInfo>, markUsers: Map<String, MarkCommentUser>) {
+    private fun collectUser(
+        userId: String,
+        into: MutableMap<String, MarkUserInfo>,
+        markUsers: Map<String, MarkCommentUser>,
+        showProfile: Boolean,
+    ) {
         if (userId.isBlank() || userId in into) return
         val numId = userId.toStableId()
-        val (name, avatar) = resolveUserInfo(userId, markUsers)
+        val (name, avatar) = resolveUserInfo(userId, markUsers, showProfile)
         into[numId.toString()] = MarkUserInfo(id = numId, username = name, avatar = avatar)
     }
 }

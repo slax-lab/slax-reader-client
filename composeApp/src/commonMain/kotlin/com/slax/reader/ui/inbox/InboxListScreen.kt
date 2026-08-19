@@ -14,8 +14,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -51,8 +52,8 @@ fun InboxListScreen(navCtrl: NavController) {
     var showAddLinkDialog by remember { mutableStateOf(false) }
     var editingBookmark by remember { mutableStateOf<InboxListBookmarkItem?>(null) }
     val currentSortType by inboxViewModel.sortType.collectAsState()
+    val activeCollection by inboxViewModel.activeCollection.collectAsState()
 
-    println("[watch][UI] recomposition InboxListScreen")
 
     Sidebar(
         drawerState = drawerState,
@@ -149,7 +150,6 @@ private fun NavigationBar(
     currentSortType: BookmarkSortType = BookmarkSortType.UPDATED,
     onSortTypeChanged: (BookmarkSortType) -> Unit = {}
 ) {
-    println("[watch][UI] recomposition NavigationBar")
     val tabInteractionSource = remember { MutableInteractionSource() }
     val isTabPressed by tabInteractionSource.collectIsPressedAsState()
 
@@ -274,34 +274,74 @@ private fun ContentSection(
     inboxViewModel: InboxListViewModel,
     onEditTitle: (bookmark: InboxListBookmarkItem) -> Unit = { _ -> }
 ) {
-    println("[watch][UI] recomposition ContentSection")
+
+    val collections by inboxViewModel.subscribedCollections.collectAsState()
+    val activeCollectionId by inboxViewModel.activeCollectionId.collectAsState()
+    val activeCollection by inboxViewModel.activeCollection.collectAsState()
+    val collectionBookmarks by inboxViewModel.collectionBookmarks.collectAsState()
+    val userInfo by inboxViewModel.userInfo.collectAsState()
+
+    val collectionFeedSwitcher: (@Composable () -> Unit)? = if (collections.isEmpty()) {
+        null
+    } else {
+        {
+            CollectionFeedSwitcher(
+                ownAvatar = userInfo?.picture.orEmpty(),
+                collections = collections,
+                activeCollectionId = activeCollectionId,
+                onSelect = inboxViewModel::selectCollection,
+            )
+        }
+    }
 
     Box(
-        modifier = Modifier.fillMaxSize().padding(top = 8.dp).clipToBounds()
+        modifier = Modifier
+            .fillMaxSize()
+            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     color = Color(0xFFFCFCFC),
-                    shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+                    shape = if (collections.isEmpty()) {
+                        RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+                    } else {
+                        RectangleShape
+                    }
                 )
         ) {
-            Spacer(modifier = Modifier.height(4.dp))
-
-            ArticleList(
-                navCtrl = navCtrl,
-                viewModel = inboxViewModel,
-                onEditTitle = onEditTitle,
-            )
+            if (activeCollectionId == null) {
+                ArticleList(
+                    navCtrl = navCtrl,
+                    viewModel = inboxViewModel,
+                    onEditTitle = onEditTitle,
+                    headerContent = collectionFeedSwitcher,
+                )
+            } else {
+                CollectionFeedContent(
+                    navCtrl = navCtrl,
+                    viewModel = inboxViewModel,
+                    collection = activeCollection,
+                    bookmarks = collectionBookmarks,
+                    headerContent = collectionFeedSwitcher,
+                )
+            }
         }
 
-        ContinueReading(
-            onClick = { bookmarkId ->
-                navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmarkId))
-            },
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
-
+        if (activeCollectionId == null) {
+            ContinueReading(
+                onClick = { bookmark ->
+                    navCtrl.navigate(
+                        BookmarkRoutes(
+                            bookmarkId = bookmark.bookmarkId,
+                            collectionOwnerId = bookmark.collectionOwnerId,
+                            collectionId = bookmark.collectionId,
+                        )
+                    )
+                },
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
     }
 }

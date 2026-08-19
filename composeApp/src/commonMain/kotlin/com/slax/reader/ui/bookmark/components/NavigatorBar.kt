@@ -29,7 +29,7 @@ import slax_reader_client.composeapp.generated.resources.ic_floating_panel_more
 import slax_reader_client.composeapp.generated.resources.ic_sm_back
 
 @Composable
-fun NavigatorBar() {
+fun NavigatorBar(onClearSelection: () -> Unit = {}) {
     println("[watch][UI] recomposition NavigatorBar")
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val visible by LocalToolbarVisible.current
@@ -63,6 +63,7 @@ fun NavigatorBar() {
                     interactionSource = interactionSource,
                     indication = null
                 ) {
+                    onClearSelection()
                     viewModel.requestNavigateBack()
                 },
             contentAlignment = Alignment.Center
@@ -88,6 +89,7 @@ fun NavigatorBar() {
                     interactionSource = moreInteractionSource,
                     indication = null
                 ) {
+                    onClearSelection()
                     viewModel.overlayDelegate.showOverlay(BookmarkOverlay.Toolbar)
                     bookmarkEvent.action("use_toolbar_menu").send()
                 },

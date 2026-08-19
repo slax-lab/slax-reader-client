@@ -49,14 +49,16 @@ fun ImageViewer(
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val imageDownloadManager: ImageDownloadManager = koinInject()
 
-    val bookmarkId by viewModel.bookmarkId.collectAsState()
+    // 用 cacheKey 而不是裸 bookmarkId：合集图片缓存在 bookmark/collection-<owner>-<id>/images 下，
+    // 用裸 id 会找不到预缓存、重新走网络，并在另一个无人回收的目录里留副本
+    val cacheKey by viewModel.cacheKey.collectAsState()
 
     val initialPage = remember(imageUrls, initialImageUrl) {
         imageUrls.indexOf(initialImageUrl).coerceAtLeast(0)
     }
 
-    val fetcherFactory = remember(imageDownloadManager, bookmarkId) {
-        SlaxStaticFetcher.Factory(imageDownloadManager, bookmarkId!!)
+    val fetcherFactory = remember(imageDownloadManager, cacheKey) {
+        SlaxStaticFetcher.Factory(imageDownloadManager, cacheKey)
     }
 
     val (visible, dismiss) = rememberDismissableVisibility(

@@ -6,16 +6,22 @@ import app.slax.reader.SlaxConfig
 import com.powersync.PowerSyncDatabase
 import com.slax.reader.data.database.dao.BookmarkCommentDao
 import com.slax.reader.data.database.dao.BookmarkDao
+import com.slax.reader.data.database.dao.CollectionDao
 import com.slax.reader.data.database.dao.LocalBookmarkDao
 import com.slax.reader.data.database.dao.SubscriptionDao
 import com.slax.reader.data.database.dao.UserDao
+import com.slax.reader.data.database.model.CollectionMarkPolicy
+import com.slax.reader.data.database.model.canCreateMark
 import com.slax.reader.data.database.model.checkIsSubscribed
+import com.slax.reader.data.database.model.collectionMarkPolicy
 import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.data.preferences.ContinueReadingBookmark
 import com.slax.reader.domain.image.ShareImageSelector
 import com.slax.reader.domain.sync.BackgroundDomain
+import com.slax.reader.domain.sync.CollectionBackgroundDomain
 import com.slax.reader.ui.bookmark.states.BookmarkDelegate
+import com.slax.reader.ui.bookmark.states.BookmarkDetailBinding
 import com.slax.reader.ui.bookmark.states.BookmarkOverlay
 import com.slax.reader.ui.bookmark.states.CommentDelegate
 import com.slax.reader.ui.bookmark.states.OutlineDelegate
@@ -28,10 +34,13 @@ import com.slax.reader.data.network.dto.StrokeCreateData
 import com.slax.reader.utils.AppWebViewState
 import com.slax.reader.utils.BridgeMarkItemInfo
 import com.slax.reader.utils.BridgeMarkStrokeInfo
+import com.slax.reader.utils.collapseWhitespace
 import com.slax.reader.utils.isIOS
 import com.slax.reader.utils.shareContent
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import slax_reader_client.composeapp.generated.resources.Res
 
@@ -54,24 +63,37 @@ sealed interface BookmarkDetailEffect {
 
     /** 通知 UI 层调用 JS drawMarks，传入序列化后的 MarkDetail JSON */
     data class DrawMarks(val markDetailJson: String) : BookmarkDetailEffect
+
+    /** 通知 UI 层让 WebView 内的 YouTube 播放器跳转到指定秒数并播放 */
+    data class SeekYoutube(val seconds: Int) : BookmarkDetailEffect
+
+    /** 请求 UI 层向 WebView 查询当前播放秒数（结果回填到 youtubeCurrentTime） */
+    data object QueryYoutubeTime : BookmarkDetailEffect
 }
+
+@Serializable
+data class YoutubeCue(val t: Int, val text: String)
 
 data class BookmarkContentState(
     val htmlContent: String? = null,
     val isLoading: Boolean = false,
+    val cacheKey: String = "",
 )
 
 class BookmarkDetailViewModel(
     private val bookmarkDao: BookmarkDao,
+    private val collectionDao: CollectionDao,
     private val subscriptionDao: SubscriptionDao,
     private val localBookmarkDao: LocalBookmarkDao,
     private val commentDao: BookmarkCommentDao,
     private val userDao: UserDao,
     private val backgroundDomain: BackgroundDomain,
+    private val collectionBackgroundDomain: CollectionBackgroundDomain,
     private val apiService: ApiService,
     private val appPreferences: AppPreferences,
     private val database: PowerSyncDatabase,
     private val shareImageSelector: ShareImageSelector,
+    private val applicationScope: CoroutineScope,
 ) : ViewModel() {
 
     companion object {
@@ -79,10 +101,43 @@ class BookmarkDetailViewModel(
 
         /** 用于向 JS Bridge 序列化划线数据，必须保留所有默认值字段 */
         private val markDetailJson = Json { encodeDefaults = true }
+
+        /** 解析 YouTube 字幕用 */
+        private val cuesJson = Json { ignoreUnknownKeys = true }
+
+        private val CUES_RE = Regex("""<youtube-player[^>]*\bdata-cues="([^"]*)"""", RegexOption.IGNORE_CASE)
+
+        private fun unescapeHtmlAttr(s: String): String = s
+            .replace("&quot;", "\"")
+            .replace("&#39;", "'")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .replace("&amp;", "&") // 必须最后，避免二次解码
+
+        private fun parseYoutubeCues(html: String?): List<YoutubeCue> {
+            if (html.isNullOrEmpty()) return emptyList()
+            val raw = CUES_RE.find(html)?.groupValues?.getOrNull(1) ?: return emptyList()
+            return try {
+                cuesJson.decodeFromString<List<YoutubeCue>>(unescapeHtmlAttr(raw))
+            } catch (e: Exception) {
+                emptyList()
+            }
+        }
     }
 
     private val _bookmarkId = MutableStateFlow<String?>(null)
     val bookmarkId = _bookmarkId.asStateFlow()
+    private val _bookmarkBinding = MutableStateFlow<BookmarkDetailBinding?>(null)
+    val isCollectionBookmark: StateFlow<Boolean> = _bookmarkBinding
+        .map { it?.isCollection == true }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    private fun currentCacheKey(): String =
+        _bookmarkBinding.value?.resolveCacheKey().orEmpty()
+
+    val cacheKey: StateFlow<String> = _bookmarkBinding
+        .map { binding -> binding?.resolveCacheKey().orEmpty() }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "")
 
     private val _effects = MutableSharedFlow<BookmarkDetailEffect>(extraBufferCapacity = 8)
     val effects: SharedFlow<BookmarkDetailEffect> = _effects.asSharedFlow()
@@ -96,27 +151,81 @@ class BookmarkDetailViewModel(
     // 文章图片地址（由 processContent 解析得到，仅供分享挑图用，不参与 UI 渲染）
     private val articleImageUrls = MutableStateFlow<List<String>>(emptyList())
 
+    // YouTube 字幕：从正文 <youtube-player data-cues> 解析（content 变化时重算）
+    val youtubeCues: StateFlow<List<YoutubeCue>> = _contentState
+        .map { parseYoutubeCues(it.htmlContent) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    // 是否 YouTube 书签（决定工具栏是否展示「字幕」入口）
+    val isYoutube: StateFlow<Boolean> = _contentState
+        .map { it.htmlContent?.contains("<youtube-player") == true }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    // 字幕弹窗可见性
+    private val _transcriptVisible = MutableStateFlow(false)
+    val transcriptVisible: StateFlow<Boolean> = _transcriptVisible.asStateFlow()
+
+    // 字幕面板打开时查询到的当前播放秒数（用于定位当前行）；-1 表示未知
+    private val _youtubeCurrentTime = MutableStateFlow(-1)
+    val youtubeCurrentTime: StateFlow<Int> = _youtubeCurrentTime.asStateFlow()
+
     // 阅读位置：一次性消费，PageLoaded 时读取并清空
     private var initialReadPosition: Float? = null
 
     private var currentPosition: Float = -1f
     private var savePositionJob: Job? = null
+    private val readPositionSaves = Channel<ReadPositionSnapshot>(Channel.UNLIMITED)
 
     private var contentJob: Job? = null
     private var markObserveJob: Job? = null
+    private var markPolicyJob: Job? = null
+
+    private val _markPolicy = MutableStateFlow(CollectionMarkPolicy.Personal)
+    val allowLineActions = _markPolicy
+        .map { it.canCreateMark(MarkType.LINE) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val allowCommentActions = _markPolicy
+        .map { it.canCreateMark(MarkType.COMMENT) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
     val userInfo = userDao.watchUserInfo()
     val subscriptionInfo = subscriptionDao.watchSubscriptionInfo()
+
+    init {
+        applicationScope.launch {
+            var lastSavedReadPosition: ReadPositionSnapshot? = null
+            for (snapshot in readPositionSaves) {
+                if (snapshot == lastSavedReadPosition) continue
+                try {
+                    localBookmarkDao.updateLocalBookmarkReadPosition(snapshot.bookmarkId, snapshot.position)
+                    lastSavedReadPosition = snapshot
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    println("Failed to save read position for ${snapshot.bookmarkId}: ${error.message}")
+                }
+            }
+        }
+    }
 
     val overlayDelegate = OverlayDelegate()
     val commentDelegate = CommentDelegate(database, commentDao, localBookmarkDao, userDao, apiService, viewModelScope)
     val outlineDelegate = OutlineDelegate(localBookmarkDao, apiService, viewModelScope)
     val overviewDelegate = OverviewDelegate(localBookmarkDao, apiService, viewModelScope)
-    val bookmarkDelegate = BookmarkDelegate(bookmarkDao, _bookmarkId, viewModelScope)
+    val bookmarkDelegate = BookmarkDelegate(
+        bookmarkDao,
+        collectionDao,
+        _bookmarkBinding,
+        viewModelScope,
+    )
 
-    fun bind(bookmarkId: String) {
-        if (_bookmarkId.value == bookmarkId) return
+    fun bind(bookmarkId: String, collectionOwnerId: String? = null, collectionId: String? = null) {
+        val binding = BookmarkDetailBinding(bookmarkId, collectionOwnerId, collectionId)
+        if (_bookmarkBinding.value == binding) return
 
+        flushReadPosition()
+
+        _bookmarkBinding.value = binding
         _bookmarkId.value = bookmarkId
         _contentState.value = BookmarkContentState(isLoading = true)
 
@@ -125,16 +234,39 @@ class BookmarkDetailViewModel(
         currentPosition = -1f
         savePositionJob?.cancel()
         markObserveJob?.cancel()
+        markPolicyJob?.cancel()
 
         overlayDelegate.reset()
         outlineDelegate.reset()
         overviewDelegate.reset()
         commentDelegate.reset()
 
-        // 异步加载保存的阅读位置，不阻塞主流程
-        viewModelScope.launch(Dispatchers.IO) {
+        val initialPolicy = if (!binding.isCollection) {
+            CollectionMarkPolicy.Personal
+        } else {
+            CollectionMarkPolicy.CollectionPending
+        }
+        _markPolicy.value = initialPolicy
+
+        markPolicyJob = viewModelScope.launch(Dispatchers.IO) {
             loadSavedPosition(bookmarkId)
-            commentDelegate.bind(bookmarkId)
+            commentDelegate.bind(bookmarkId, initialPolicy, binding.validCollectionOwnerId)
+            if (binding.isCollection && binding.validCollectionOwnerId != null) {
+                combine(
+                    bookmarkDelegate.currentBookmark,
+                    collectionDao.watchCollectionMarkSettings(binding.validCollectionOwnerId!!),
+                ) { bookmark, collectionSettings ->
+                    bookmark to collectionSettings
+                }.collect { (bookmark, collectionSettings) ->
+                    if (_bookmarkBinding.value != binding) return@collect
+                    val policy = runCatching {
+                        collectionMarkPolicy(bookmark.metadataObj?.share, collectionSettings)
+                    }
+                        .getOrDefault(CollectionMarkPolicy.CollectionPending)
+                    _markPolicy.value = policy
+                    commentDelegate.bind(bookmarkId, policy, binding.validCollectionOwnerId)
+                }
+            }
         }
 
         loadOutline()
@@ -152,17 +284,47 @@ class BookmarkDetailViewModel(
 
     fun refreshContent() {
         val id = _bookmarkId.value ?: return
+        val binding = _bookmarkBinding.value ?: return
+        val collectionOwnerId = binding.validCollectionOwnerId
+        if (binding.isCollection && collectionOwnerId == null) {
+            contentJob?.cancel()
+            _contentState.value = BookmarkContentState(isLoading = false)
+            articleImageUrls.value = emptyList()
+            return
+        }
+        // 与 ImageViewer / shareBookmark 共用同一个 key，避免三处各算一遍算出不一样的结果
+        val resolvedCacheKey = currentCacheKey().ifEmpty { id }
 
         contentJob?.cancel()
-        _contentState.value = _contentState.value.copy(isLoading = true)
+        _contentState.value = _contentState.value.copy(isLoading = true, cacheKey = resolvedCacheKey)
         articleImageUrls.value = emptyList()
 
         contentJob = viewModelScope.launch {
-            runCatching {
-                withContext(Dispatchers.IO) { backgroundDomain.getBookmarkContent(id) }
-            }.onSuccess { content ->
-                _contentState.value = BookmarkContentState(htmlContent = content.html, isLoading = false)
+            try {
+                val content = withContext(Dispatchers.IO) {
+                    if (binding.isCollection && collectionOwnerId != null) {
+                        collectionBackgroundDomain.getBookmarkContent(id, collectionOwnerId)
+                    } else {
+                        backgroundDomain.getBookmarkContent(id)
+                    }
+                }
+                if (_bookmarkBinding.value != binding) return@launch
+                _contentState.value = BookmarkContentState(
+                    htmlContent = content.html,
+                    isLoading = false,
+                    cacheKey = resolvedCacheKey,
+                )
                 articleImageUrls.value = content.imageUrls
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                println("Failed to load bookmark content $id: ${error.message}")
+                if (_bookmarkBinding.value != binding) return@launch
+                _contentState.value = BookmarkContentState(
+                    htmlContent = null,
+                    isLoading = false,
+                    cacheKey = resolvedCacheKey,
+                )
             }
         }
     }
@@ -172,6 +334,30 @@ class BookmarkDetailViewModel(
             _effects.emit(BookmarkDetailEffect.ScrollToAnchor(anchor))
         }
         outlineDelegate.collapseDialog()
+    }
+
+    fun hideTranscript() {
+        _transcriptVisible.value = false
+    }
+
+    /** 字幕面板打开时调用，向 WebView 查询当前播放进度 */
+    fun requestYoutubeCurrentTime() {
+        _youtubeCurrentTime.value = -1
+        viewModelScope.launch {
+            _effects.emit(BookmarkDetailEffect.QueryYoutubeTime)
+        }
+    }
+
+    /** UI 层把 WebView 查询到的当前秒数回填进来 */
+    fun setYoutubeCurrentTime(seconds: Int) {
+        _youtubeCurrentTime.value = seconds
+    }
+
+    /** 字幕面板点击某句：让 WebView 内的播放器跳转到该秒数 */
+    fun requestSeekYoutube(seconds: Int) {
+        viewModelScope.launch {
+            _effects.emit(BookmarkDetailEffect.SeekYoutube(seconds))
+        }
     }
 
     fun requestNavigateBack() {
@@ -201,6 +387,7 @@ class BookmarkDetailViewModel(
     }
 
     fun requestDeleteBookmark() {
+        if (isCollectionBookmark.value) return
         _deleteConfirmVisible.value = true
     }
 
@@ -225,6 +412,7 @@ class BookmarkDetailViewModel(
     }
 
     fun onToolbarIconClick(pageId: String) {
+        if (isCollectionBookmark.value && pageId in setOf("star", "archive", "edit_title")) return
         val current = bookmarkDelegate.bookmarkDetailState.value
 
         when (pageId) {
@@ -246,6 +434,7 @@ class BookmarkDetailViewModel(
             }
             "feedback" -> overlayDelegate.showOverlay(BookmarkOverlay.FeedbackRequired)
             "share" -> shareBookmark()
+            "transcript" -> _transcriptVisible.value = true
         }
 
         overlayDelegate.dismissOverlay(BookmarkOverlay.Toolbar)
@@ -262,7 +451,8 @@ class BookmarkDetailViewModel(
             }
 
             val articleImage = runCatching {
-                shareImageSelector.pick(articleImageUrls.value, id)
+                // 挑图要落到与预缓存一致的目录，否则会在 bookmark/<裸id>/images 下留一份无人回收的副本
+                shareImageSelector.pick(articleImageUrls.value, currentCacheKey().ifEmpty { id })
             }.getOrNull()
             val imageBytes = articleImage
                 ?: runCatching { Res.readBytes("files/share_logo.png") }.getOrNull()
@@ -285,11 +475,14 @@ class BookmarkDetailViewModel(
     private suspend fun recordContinueBookmark() = withContext(Dispatchers.IO) {
         _bookmarkId.value?.let { id ->
             val state = bookmarkDelegate.bookmarkDetailState.value
-            if (state.displayTitle.isEmpty()) return@withContext
+            val title = state.displayTitle.collapseWhitespace()
+            if (title.isBlank()) return@withContext
             appPreferences.setContinueReadingBookmark(
                 ContinueReadingBookmark(
                     bookmarkId = id,
-                    title = state.displayTitle
+                    title = title,
+                    collectionOwnerId = _bookmarkBinding.value?.collectionOwnerId,
+                    collectionId = _bookmarkBinding.value?.collectionId,
                 )
             )
         }
@@ -320,6 +513,10 @@ class BookmarkDetailViewModel(
     }
 
     fun strokeHighlight(webViewState: AppWebViewState, onComplete: (() -> Unit)? = null) {
+        if (!_markPolicy.value.canCreateMark(MarkType.LINE)) {
+            onComplete?.invoke()
+            return
+        }
         webViewState.evaluateJsWithCallback(
             "window.SlaxWebViewBridge.captureCurrentSelection()"
         ) { resultJson ->
@@ -346,6 +543,7 @@ class BookmarkDetailViewModel(
         webViewState: AppWebViewState,
         onCaptured: (text: String, markInfo: BridgeMarkItemInfo) -> Unit,
     ) {
+        if (!_markPolicy.value.canCreateMark(MarkType.COMMENT)) return
         webViewState.evaluateJsWithCallback(
             "window.SlaxWebViewBridge.captureCurrentSelection()"
         ) { resultJson ->
@@ -370,6 +568,10 @@ class BookmarkDetailViewModel(
         markItemInfo: BridgeMarkItemInfo,
         onComplete: () -> Unit,
     ) {
+        if (!_markPolicy.value.canCreateMark(MarkType.LINE)) {
+            onComplete()
+            return
+        }
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
                 val localId = commentDelegate.addMark(
@@ -415,6 +617,10 @@ class BookmarkDetailViewModel(
         replyMarkId: Long? = null,
         onComplete: (() -> Unit)? = null,
     ) {
+        if (!_markPolicy.value.canCreateMark(MarkType.COMMENT)) {
+            onComplete?.invoke()
+            return
+        }
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
                 if (replyMarkId != null) {
@@ -462,6 +668,11 @@ class BookmarkDetailViewModel(
         }
     }
 
+    fun canDeleteComment(markId: Long): Boolean {
+        val recordId = commentDelegate.findCommentId { po -> po.id.toStableId() == markId } ?: return false
+        return commentDelegate.canDeleteComment(recordId)
+    }
+
     // 加载书签的保存阅读位置
     private suspend fun loadSavedPosition(bookmarkId: String) {
         if (_bookmarkId.value != bookmarkId) return
@@ -481,19 +692,22 @@ class BookmarkDetailViewModel(
         savePositionJob = viewModelScope.launch {
             delay(SAVE_DEBOUNCE_MS)
             val id = _bookmarkId.value ?: return@launch
-            withContext(Dispatchers.IO) {
-                localBookmarkDao.updateLocalBookmarkReadPosition(id, scrollY)
-            }
+            enqueueReadPositionSave(ReadPositionSnapshot(id, currentPosition))
         }
     }
 
     fun flushReadPosition() {
         savePositionJob?.cancel()
+        savePositionJob = null
         val id = _bookmarkId.value ?: return
         val position = currentPosition
         if (position < 0f) return
-        viewModelScope.launch(Dispatchers.IO) {
-            localBookmarkDao.updateLocalBookmarkReadPosition(id, position)
+        enqueueReadPositionSave(ReadPositionSnapshot(id, position))
+    }
+
+    private fun enqueueReadPositionSave(snapshot: ReadPositionSnapshot) {
+        if (!readPositionSaves.trySend(snapshot).isSuccess) {
+            println("Failed to enqueue read position for ${snapshot.bookmarkId}")
         }
     }
 
@@ -505,6 +719,7 @@ class BookmarkDetailViewModel(
         super.onCleared()
 
         flushReadPosition()
+        readPositionSaves.close()
 
         contentJob?.cancel()
         contentJob = null
@@ -516,3 +731,8 @@ class BookmarkDetailViewModel(
         overlayDelegate.reset()
     }
 }
+
+private data class ReadPositionSnapshot(
+    val bookmarkId: String,
+    val position: Float,
+)

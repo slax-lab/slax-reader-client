@@ -1,6 +1,7 @@
 package com.slax.reader.ui.inbox.compenents
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -23,9 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.data.preferences.ContinueReadingBookmark
+import com.slax.reader.utils.collapseWhitespace
 import com.slax.reader.utils.i18n
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
@@ -34,37 +34,33 @@ import slax_reader_client.composeapp.generated.resources.ic_continue_reading_ico
 
 @Composable
 fun ContinueReading(
-    onClick: ((bookmarkId: String) -> Unit)? = null,
+    onClick: ((bookmark: ContinueReadingBookmark) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val appPreferences: AppPreferences = koinInject()
-    val coroutineScope = rememberCoroutineScope()
     var showContinueData by remember { mutableStateOf<ContinueReadingBookmark?>(null) }
-    var visible by remember { mutableStateOf(false) }
+    var dismissed by remember { mutableStateOf(false) }
+    val visibilityState = remember { MutableTransitionState(false) }
 
     LaunchedEffect(Unit) {
-        coroutineScope.launch {
-            val bookmark = appPreferences.getContinueReadingBookmark() ?: return@launch
-
-            showContinueData = bookmark
-            appPreferences.clearContinueReadingBookmark()
-
-            delay(300)
-            visible = true
-        }
+        val bookmark = appPreferences.getContinueReadingBookmark() ?: return@LaunchedEffect
+        appPreferences.clearContinueReadingBookmark()
+        val normalizedTitle = bookmark.title.collapseWhitespace()
+        if (normalizedTitle.isBlank()) return@LaunchedEffect
+        showContinueData = bookmark.copy(title = normalizedTitle)
+        dismissed = false
+        visibilityState.targetState = true
     }
 
-    if (!visible) return
-
-    LaunchedEffect(visible) {
-        if (!visible) {
-            delay(300)
+    LaunchedEffect(dismissed, visibilityState.isIdle, visibilityState.currentState) {
+        if (dismissed && visibilityState.isIdle && !visibilityState.currentState) {
             showContinueData = null
         }
     }
 
+    val continueData = showContinueData ?: return
     AnimatedVisibility(
-        visible = visible,
+        visibleState = visibilityState,
         enter = fadeIn(animationSpec = tween(300)) +
                 slideInVertically(
                     initialOffsetY = { it / 2 },
@@ -149,7 +145,7 @@ fun ContinueReading(
                         indication = null,
                         enabled = onClick != null
                     ) {
-                        showContinueData?.let { onClick?.invoke(it.bookmarkId) }
+                        onClick?.invoke(continueData)
                     }
                     .padding(16.dp)
             ) {
@@ -168,7 +164,7 @@ fun ContinueReading(
                     Spacer(modifier = Modifier.width(6.dp))
 
                     Text(
-                        text = showContinueData!!.title,
+                        text = continueData.title,
                         style = TextStyle(
                             fontSize = 15.sp,
                             color = Color(0xFF4d4d4d),
@@ -199,7 +195,8 @@ fun ContinueReading(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
                             ) {
-                                visible = false
+                                dismissed = true
+                                visibilityState.targetState = false
                             },
                         contentScale = ContentScale.Fit
                     )

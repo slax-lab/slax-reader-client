@@ -86,7 +86,11 @@ class ApiService(
     }
 
     suspend fun uploadChanges(changes: List<ChangesItem>): HttpData<UploadChangesResult> = withContext(Dispatchers.IO) {
-        return@withContext post("/v1/sync/changes", body = changes)
+        val result = post<UploadChangesResult>("/v1/sync/changes", body = changes)
+        if (result.code != 200) {
+            throw AppError.ApiException.HttpError(code = result.code, message = result.message)
+        }
+        return@withContext result
     }
 
     suspend fun login(params: AuthParams): HttpData<AuthResult> {

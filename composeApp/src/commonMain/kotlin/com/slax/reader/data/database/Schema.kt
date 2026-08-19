@@ -95,6 +95,68 @@ val srUserSubscriptionTable = Table(
     )
 )
 
+val srUserCollectionSubscriberTable = Table(
+    name = "sr_user_collection_subscriber",
+    trackPreviousValues = TrackPreviousValuesOptions(onlyWhenChanged = true, columnFilter = null),
+    columns = listOf(
+        Column.text("collection_id"),
+        Column.text("owner_id"),
+        Column.text("subscription_end_time"),
+        Column.text("next_invoice_time"),
+        Column.integer("auto_renew"),
+        Column.text("last_read_at"),
+        Column.text("created_at"),
+        Column.text("updated_at"),
+        Column.integer("is_cancelled"),
+    )
+)
+
+val srUserCollectionTable = Table(
+    name = "sr_user_collection",
+    columns = listOf(
+        Column.text("owner_id"),
+        Column.text("display_name"),
+        Column.text("avatar"),
+        Column.text("description"),
+        Column.text("collection_code"),
+        Column.integer("type"),
+        Column.integer("status"),
+        Column.text("updated_at"),
+    )
+)
+
+val srSharerSettingTable = Table(
+    name = "sr_sharer_setting",
+    columns = listOf(
+        Column.integer("allow_highlight"),
+        Column.integer("show_highlight"),
+        Column.integer("allow_access"),
+    )
+)
+
+val srCollectionBookmarkTable = Table(
+    name = "sr_collection_bookmark",
+    columns = listOf(
+        Column.text("owner_id"),
+        Column.text("alias_title"),
+        Column.text("metadata"),
+        Column.text("starred_at"),
+        Column.text("created_at"),
+        Column.text("updated_at"),
+    )
+)
+
+val srUserBookmarkStatsTable = Table(
+    name = "sr_user_bookmark_stats",
+    columns = listOf(
+        Column.text("bookmark_uuid"),
+        Column.integer("comment_count"),
+        Column.text("first_comment"),
+        Column.text("owner_id"),
+        Column.text("created_at"),
+    )
+)
+
 val srBookmarkComment = Table(
     name = "sr_bookmark_comment",
     columns = listOf(
@@ -128,6 +190,11 @@ val AppSchema = Schema(
         srUserNotificationTable,
         srUserBookmarkTable,
         srUserSubscriptionTable,
+        srUserCollectionSubscriberTable,
+        srUserCollectionTable,
+        srSharerSettingTable,
+        srCollectionBookmarkTable,
+        srUserBookmarkStatsTable,
         srBookmarkComment,
 
         // local only, not sync to server

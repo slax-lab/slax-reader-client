@@ -35,11 +35,13 @@ import slax_reader_client.composeapp.generated.resources.*
 @Composable
 fun FloatingActionBar(
     modifier: Modifier = Modifier,
+    onClearSelection: () -> Unit = {},
 ) {
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val visible by LocalToolbarVisible.current
 
     val detailState by viewModel.bookmarkDelegate.bookmarkDetailState.collectAsState()
+    val isCollectionBookmark by viewModel.isCollectionBookmark.collectAsState()
     val isStarred by remember { derivedStateOf { detailState.isStarred } }
     val isArchived by remember { derivedStateOf { detailState.isArchived } }
 
@@ -80,8 +82,9 @@ fun FloatingActionBar(
             horizontalArrangement = Arrangement.spacedBy(0.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier
+            if (!isCollectionBookmark) {
+                Row(
+                    modifier = Modifier
                     .dropShadow(
                         shape = RoundedCornerShape(25.dp),
                         shadow = Shadow(
@@ -98,22 +101,30 @@ fun FloatingActionBar(
                         shape = RoundedCornerShape(25.dp)
                     )
                     .background(Color(0xFFFFFFFF))
-            ) {
-                StarButton(
-                    isStarred = isStarred,
-                    onClick = { viewModel.bookmarkDelegate.onToggleStar(!isStarred) }
-                )
+                ) {
+                    StarButton(
+                        isStarred = isStarred,
+                        onClick = {
+                            onClearSelection()
+                            viewModel.bookmarkDelegate.onToggleStar(!isStarred)
+                        }
+                    )
 
-                ArchiveButton(
-                    isArchived = isArchived,
-                    onClick = { viewModel.bookmarkDelegate.onToggleArchive(!isArchived) }
-                )
+                    ArchiveButton(
+                        isArchived = isArchived,
+                        onClick = {
+                            onClearSelection()
+                            viewModel.bookmarkDelegate.onToggleArchive(!isArchived)
+                        }
+                    )
 
+                }
+
+                Box(modifier = Modifier.width(12.dp))
             }
 
-            Box(modifier = Modifier.width(12.dp))
-
             MoreButton(onClick = {
+                onClearSelection()
                 viewModel.overlayDelegate.showOverlay(BookmarkOverlay.Toolbar)
                 bookmarkEvent.action("use_toolbar_menu").send()
             })

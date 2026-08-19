@@ -32,5 +32,8 @@ sealed class AppError : Exception() {
         data object EmptyComment : CommentException() {
             override val message: String = "Comment content is required"
         }
+        data object MarkNotAllowed : CommentException() {
+            override val message: String = "This Collection does not allow highlights or comments"
+        }
     }
 }

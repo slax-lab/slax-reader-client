@@ -21,6 +21,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.powersync.sync.SyncStatusData
 import com.slax.reader.data.database.dao.PowerSyncDao
 import com.slax.reader.data.preferences.AppPreferences
+import com.slax.reader.domain.cache.CacheCategory
+import com.slax.reader.domain.cache.CacheManager
+import com.slax.reader.domain.cache.CacheUsage
 import com.slax.reader.utils.AppEnv
 import com.slax.reader.utils.AppEnvironment
 import com.slax.reader.utils.ShakeDetector
@@ -30,11 +33,15 @@ import io.ktor.client.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -58,9 +65,18 @@ sealed class TestStatus {
     object Failed : TestStatus()
 }
 
+sealed interface CacheMaintenanceState {
+    data object Idle : CacheMaintenanceState
+    data object Refreshing : CacheMaintenanceState
+    data object Clearing : CacheMaintenanceState
+    data class Done(val freedBytes: Long) : CacheMaintenanceState
+    data class Error(val message: String) : CacheMaintenanceState
+}
+
 class DebugViewModel(
     private val httpClient: HttpClient,
-    private val powerSyncDao: PowerSyncDao
+    private val powerSyncDao: PowerSyncDao,
+    private val cacheManager: CacheManager,
 ) : ViewModel() {
 
     private val _testResults = mutableStateListOf<NetworkTestResult>()
@@ -69,6 +85,13 @@ class DebugViewModel(
     private val _isTestingAll = mutableStateOf(false)
     val isTestingAll: State<Boolean> = _isTestingAll
 
+    private val _cacheUsage = MutableStateFlow(CacheUsage())
+    val cacheUsage: StateFlow<CacheUsage> = _cacheUsage.asStateFlow()
+
+    private val _cacheMaintenanceState = MutableStateFlow<CacheMaintenanceState>(CacheMaintenanceState.Idle)
+    val cacheMaintenanceState: StateFlow<CacheMaintenanceState> = _cacheMaintenanceState.asStateFlow()
+    private var cacheJob: Job? = null
+
     val powerSyncStatus: StateFlow<SyncStatusData?> = powerSyncDao.watchPowerSyncStatus()
 
     val systemInfo = getSystemInfo()
@@ -76,6 +99,50 @@ class DebugViewModel(
     init {
         initializeTests()
         runAllTests()
+        refreshCacheUsage()
+    }
+
+    fun refreshCacheUsage() {
+        if (_cacheMaintenanceState.value is CacheMaintenanceState.Clearing) return
+        cacheJob?.cancel()
+        _cacheMaintenanceState.value = CacheMaintenanceState.Refreshing
+        cacheJob = viewModelScope.launch {
+            try {
+                _cacheUsage.value = cacheManager.clearableCacheUsage()
+                _cacheMaintenanceState.value = CacheMaintenanceState.Idle
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                _cacheMaintenanceState.value = CacheMaintenanceState.Error(
+                    error.message ?: "Unable to read cache usage"
+                )
+            }
+        }
+    }
+
+    fun clearCache(categories: Set<CacheCategory>) {
+        if (categories.isEmpty() || _cacheMaintenanceState.value is CacheMaintenanceState.Clearing) return
+        cacheJob?.cancel()
+        _cacheMaintenanceState.value = CacheMaintenanceState.Clearing
+        cacheJob = viewModelScope.launch {
+            try {
+                val freedBytes = cacheManager.clearCache(categories)
+                _cacheUsage.value = cacheManager.clearableCacheUsage()
+                _cacheMaintenanceState.value = CacheMaintenanceState.Done(freedBytes)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                _cacheMaintenanceState.value = CacheMaintenanceState.Error(
+                    error.message ?: "Unable to clear cache"
+                )
+            }
+        }
+    }
+
+    fun acknowledgeCacheResult() {
+        if (_cacheMaintenanceState.value !is CacheMaintenanceState.Clearing) {
+            _cacheMaintenanceState.value = CacheMaintenanceState.Idle
+        }
     }
 
     private fun initializeTests() {
@@ -305,19 +372,41 @@ fun DebugScreen(
 ) {
     val httpClient: HttpClient = koinInject()
     val powerSyncDao: PowerSyncDao = koinInject()
+    val cacheManager: CacheManager = koinInject()
 
     val viewModel: DebugViewModel = viewModel {
-        DebugViewModel(httpClient, powerSyncDao)
+        DebugViewModel(httpClient, powerSyncDao, cacheManager)
     }
 
     val powerSyncStatus by viewModel.powerSyncStatus.collectAsState()
     val isTestingAll by viewModel.isTestingAll
+    val cacheUsage by viewModel.cacheUsage.collectAsState()
+    val cacheMaintenanceState by viewModel.cacheMaintenanceState.collectAsState()
 
     val appPreferences: AppPreferences = koinInject()
     val scope = rememberCoroutineScope()
     val vibrate = rememberVibrate()
     var showEnvDialog by remember { mutableStateOf(false) }
     var showRestartHint by remember { mutableStateOf(false) }
+    var showClearCacheSheet by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(cacheMaintenanceState) {
+        when (val state = cacheMaintenanceState) {
+            is CacheMaintenanceState.Done -> {
+                showClearCacheSheet = false
+                viewModel.acknowledgeCacheResult()
+                snackbarHostState.showSnackbar(
+                    "setting_clear_cache_done_desc".i18n(formatCacheSize(state.freedBytes))
+                )
+            }
+            is CacheMaintenanceState.Error -> {
+                viewModel.acknowledgeCacheResult()
+                snackbarHostState.showSnackbar(state.message)
+            }
+            else -> Unit
+        }
+    }
 
     ShakeDetector {
         vibrate()
@@ -368,6 +457,7 @@ fun DebugScreen(
                 )
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = Color(0xFFF5F5F3)
     ) { paddingValues ->
         LazyColumn(
@@ -415,6 +505,17 @@ fun DebugScreen(
                 }
             }
 
+            item {
+                CacheMaintenanceSection(
+                    cacheUsage = cacheUsage,
+                    state = cacheMaintenanceState,
+                    onClick = {
+                        viewModel.refreshCacheUsage()
+                        showClearCacheSheet = true
+                    },
+                )
+            }
+
             // Network Tests Section
             item {
                 SectionCard(title = "Network Tests") {
@@ -439,6 +540,15 @@ fun DebugScreen(
 
             item { Spacer(modifier = Modifier.height(16.dp)) }
         }
+    }
+
+    if (showClearCacheSheet) {
+        CacheCleanupSheet(
+            cacheUsage = cacheUsage,
+            state = cacheMaintenanceState,
+            onDismiss = { showClearCacheSheet = false },
+            onClear = viewModel::clearCache,
+        )
     }
 }
 

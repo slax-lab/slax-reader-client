@@ -31,7 +31,9 @@ data class PowerSyncAuthInfo(
 @Serializable
 data class ContinueReadingBookmark(
     val bookmarkId: String,
-    val title: String
+    val title: String,
+    val collectionOwnerId: String? = null,
+    val collectionId: String? = null,
 )
 
 class AppPreferences(private val dataStore: DataStore<Preferences>) {
@@ -77,6 +79,9 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
     suspend fun setAuthInfo(token: String, userId: String?) {
         withContext(Dispatchers.IO) {
             dataStore.edit { preferences ->
+                preferences.remove(POWER_SYNC_TOKEN_KEY)
+                preferences.remove(POWER_SYNC_REFRESH_TIME)
+                preferences.remove(POWER_SYNC_CONNECT_URL)
                 preferences[AUTH_TOKEN_KEY] = token
                 preferences[LAST_REFRESH_TIME] = timeUnix().toString()
                 if (userId != null) preferences[USER_ID_KEY] = userId
@@ -88,6 +93,20 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
         dataStore.edit { preferences ->
             preferences.remove(AUTH_TOKEN_KEY)
             preferences.remove(USER_ID_KEY)
+            preferences.remove(POWER_SYNC_TOKEN_KEY)
+            preferences.remove(POWER_SYNC_REFRESH_TIME)
+            preferences.remove(POWER_SYNC_CONNECT_URL)
+        }
+    }
+
+    suspend fun clearAuthTokenIfMatches(expectedToken: String) {
+        dataStore.edit { preferences ->
+            if (preferences[AUTH_TOKEN_KEY] != expectedToken) return@edit
+            preferences.remove(AUTH_TOKEN_KEY)
+            preferences.remove(USER_ID_KEY)
+            preferences.remove(POWER_SYNC_TOKEN_KEY)
+            preferences.remove(POWER_SYNC_REFRESH_TIME)
+            preferences.remove(POWER_SYNC_CONNECT_URL)
         }
     }
 
@@ -107,6 +126,7 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
         return@withContext dataStore.edit { preferences ->
             preferences[POWER_SYNC_TOKEN_KEY] = token.token
             preferences[POWER_SYNC_REFRESH_TIME] = token.refreshTime
+            preferences[POWER_SYNC_CONNECT_URL] = token.connectUrl
         }
     }
 

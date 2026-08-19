@@ -22,7 +22,12 @@ sealed interface DetailScreenEvent {
 }
 
 @Composable
-fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
+fun DetailScreen(
+    bookmarkId: String,
+    collectionOwnerId: String? = null,
+    collectionId: String? = null,
+    onEvent: (DetailScreenEvent) -> Unit,
+) {
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val coroutineScope = rememberCoroutineScope()
 
@@ -32,8 +37,8 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
 
     val webViewState = rememberAppWebViewState(coroutineScope)
 
-    LaunchedEffect(bookmarkId) {
-        viewModel.bind(bookmarkId)
+    LaunchedEffect(bookmarkId, collectionOwnerId, collectionId) {
+        viewModel.bind(bookmarkId, collectionOwnerId, collectionId)
 
         viewModel.effects.collect { effect ->
             when (effect) {
@@ -49,6 +54,17 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
                     webViewState.evaluateJs(
                         "window.SlaxWebViewBridge.drawMarks(`${escapeJsTemplateString(effect.markDetailJson)}`)"
                     )
+                }
+                is BookmarkDetailEffect.SeekYoutube -> {
+                    webViewState.evaluateJs("window.__slaxSeekYoutube && window.__slaxSeekYoutube(${effect.seconds})")
+                }
+                BookmarkDetailEffect.QueryYoutubeTime -> {
+                    // 查询当前播放秒数，回填给字幕面板用于定位当前行
+                    webViewState.evaluateJsWithCallback("window.__slaxGetYoutubeTime ? window.__slaxGetYoutubeTime() : -1") { result ->
+                        // 不同平台可能返回 "12" / "12.0" / "\"12\""，做容错解析
+                        val seconds = result.trim().trim('"').substringBefore('.').toIntOrNull() ?: -1
+                        viewModel.setYoutubeCurrentTime(seconds)
+                    }
                 }
             }
         }
@@ -143,7 +159,7 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
         LocalMarkInteraction provides markInteraction,
     ) {
         DetailScreen(
-            bookmarkId = bookmarkId,
+            bookmarkId = contentState.cacheKey,
             htmlContent = contentState.htmlContent!!,
             webViewState = webViewState,
             onScrollInfoChanged = { scrollInfo.value = it }
