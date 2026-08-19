@@ -133,6 +133,13 @@ actual fun DetailScreen(
     }
 
     var containerHeightPx by remember { mutableFloatStateOf(0f) }
+    val markInteraction = LocalMarkInteraction.current
+    val clearSelection = remember(webViewState, markInteraction) {
+        {
+            markInteraction.onTextDeselected()
+            webViewState.evaluateJs("window.SlaxWebViewBridge.clearSelection()")
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -159,16 +166,15 @@ actual fun DetailScreen(
             }
         }
 
-        NavigatorBar()
+        NavigatorBar(onClearSelection = clearSelection)
 
         FloatingActionBar(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
                 .padding(bottom = 24.dp),
+            onClearSelection = clearSelection,
         )
-
-        val markInteraction = LocalMarkInteraction.current
 
         // 当评论面板显示时，禁用状态栏点击触发的 scrollsToTop 行为，
         // 防止点击状态栏区域导致背后的 WebView 滚动到顶部
@@ -176,7 +182,7 @@ actual fun DetailScreen(
             webViewState.webView?.scrollView?.scrollsToTop = !markInteraction.panelVisible
         }
 
-        OutlineDialog()
+        OutlineDialog(onClearSelection = clearSelection)
 
         TranscriptDialog()
 
