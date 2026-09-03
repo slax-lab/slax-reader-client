@@ -1,5 +1,7 @@
 package com.slax.reader.ui.bookmark
 
+import com.slax.reader.utils.AppLog
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.slax.reader.SlaxConfig
@@ -108,6 +110,26 @@ class BookmarkDetailViewModel(
     val userInfo = userDao.watchUserInfo()
     val subscriptionInfo = subscriptionDao.watchSubscriptionInfo()
 
+<<<<<<< Updated upstream
+=======
+    init {
+        applicationScope.launch {
+            var lastSavedReadPosition: ReadPositionSnapshot? = null
+            for (snapshot in readPositionSaves) {
+                if (snapshot == lastSavedReadPosition) continue
+                try {
+                    localBookmarkDao.updateLocalBookmarkReadPosition(snapshot.bookmarkId, snapshot.position)
+                    lastSavedReadPosition = snapshot
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    AppLog.d("Failed to save read position for ${snapshot.bookmarkId}: ${error.message}")
+                }
+            }
+        }
+    }
+
+>>>>>>> Stashed changes
     val overlayDelegate = OverlayDelegate()
     val commentDelegate = CommentDelegate(database, commentDao, localBookmarkDao, userDao, apiService, viewModelScope)
     val outlineDelegate = OutlineDelegate(localBookmarkDao, apiService, viewModelScope)
@@ -163,6 +185,19 @@ class BookmarkDetailViewModel(
             }.onSuccess { content ->
                 _contentState.value = BookmarkContentState(htmlContent = content.html, isLoading = false)
                 articleImageUrls.value = content.imageUrls
+<<<<<<< Updated upstream
+=======
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                AppLog.d("Failed to load bookmark content $id: ${error.message}")
+                if (_bookmarkBinding.value != binding) return@launch
+                _contentState.value = BookmarkContentState(
+                    htmlContent = null,
+                    isLoading = false,
+                    cacheKey = resolvedCacheKey,
+                )
+>>>>>>> Stashed changes
             }
         }
     }
@@ -335,7 +370,7 @@ class BookmarkDetailViewModel(
                     )
                     withContext(Dispatchers.Main) { onComplete?.invoke() }
                 }.onFailure {
-                    println("[划线] 创建失败: ${it.message}")
+                    AppLog.d("[划线] 创建失败: ${it.message}")
                     withContext(Dispatchers.Main) { onComplete?.invoke() }
                 }
             }
@@ -362,7 +397,7 @@ class BookmarkDetailViewModel(
                 if (text.isNotBlank()) {
                     onCaptured(text, markInfo)
                 }
-            }.onFailure { println("[评论] 获取选区数据失败: ${it.message}") }
+            }.onFailure { AppLog.d("[评论] 获取选区数据失败: ${it.message}") }
         }
     }
 
@@ -381,7 +416,7 @@ class BookmarkDetailViewModel(
 
                 withContext(Dispatchers.Main) { onComplete() }
             }.onFailure {
-                println("[划线] 添加到已有 mark 失败: ${it.message}")
+                AppLog.d("[划线] 添加到已有 mark 失败: ${it.message}")
                 withContext(Dispatchers.Main) { onComplete() }
             }
         }
@@ -403,7 +438,7 @@ class BookmarkDetailViewModel(
                 if (recordId != null) commentDelegate.deleteComment(recordId)
                 withContext(Dispatchers.Main) { onComplete() }
             }.onFailure {
-                println("[划线] 删除失败: ${it.message}")
+                AppLog.d("[划线] 删除失败: ${it.message}")
                 withContext(Dispatchers.Main) { onComplete() }
             }
         }
@@ -443,7 +478,7 @@ class BookmarkDetailViewModel(
                 }
                 withContext(Dispatchers.Main) { onComplete?.invoke() }
             }.onFailure {
-                println("[评论] 提交失败: ${it.message}")
+                AppLog.d("[评论] 提交失败: ${it.message}")
                 withContext(Dispatchers.Main) { onComplete?.invoke() }
             }
         }
@@ -457,7 +492,7 @@ class BookmarkDetailViewModel(
                 } ?: return@launch
                 commentDelegate.deleteComment(recordId)
             }.onFailure {
-                println("[评论] 删除失败: ${it.message}")
+                AppLog.d("[评论] 删除失败: ${it.message}")
             }
         }
     }
@@ -492,8 +527,17 @@ class BookmarkDetailViewModel(
         val id = _bookmarkId.value ?: return
         val position = currentPosition
         if (position < 0f) return
+<<<<<<< Updated upstream
         viewModelScope.launch(Dispatchers.IO) {
             localBookmarkDao.updateLocalBookmarkReadPosition(id, position)
+=======
+        enqueueReadPositionSave(ReadPositionSnapshot(id, position))
+    }
+
+    private fun enqueueReadPositionSave(snapshot: ReadPositionSnapshot) {
+        if (!readPositionSaves.trySend(snapshot).isSuccess) {
+            AppLog.d("Failed to enqueue read position for ${snapshot.bookmarkId}")
+>>>>>>> Stashed changes
         }
     }
 

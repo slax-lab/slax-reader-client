@@ -1,5 +1,7 @@
 package com.slax.reader.ui.login
 
+import com.slax.reader.utils.AppLog
+
 import androidx.lifecycle.ViewModel
 import com.slax.reader.const.AppError
 import com.slax.reader.domain.auth.AppleSignInResult
@@ -49,7 +51,7 @@ class LoginViewModel(
                 }
             }
         } catch (e: Exception) {
-            println("Exception during appleSignIn: ${e.message}")
+            AppLog.d("Exception during appleSignIn: ${e.message}")
             withContext(Dispatchers.Main) {
                 onError(e.message ?: "Unknown error occurred")
             }
@@ -98,7 +100,7 @@ class LoginViewModel(
                 }
             }
         } catch (e: Exception) {
-            println("Exception during signIn: ${e.message}")
+            AppLog.d("Exception during signIn: ${e.message}")
             withContext(Dispatchers.Main) {
                 onError(e.message ?: "Unknown error occurred")
             }

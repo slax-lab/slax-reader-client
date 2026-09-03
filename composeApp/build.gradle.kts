@@ -97,6 +97,7 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
             implementation(libs.koin.android)
             implementation(libs.androidx.browser)
+            implementation(libs.androidx.core)
             implementation(libs.sketch.animated.gif.koral)
 
             // firebase
@@ -154,6 +155,9 @@ kotlin {
 
             // IO/File
             implementation(libs.okio)
+
+            // Structured multiplatform logging
+            implementation(libs.kermit)
 
             // AtomicFU - required for Android runtime
             implementation(libs.atomicfu)
@@ -348,4 +352,27 @@ swiftklib {
         packageName("app.slax.reader.storekit")
         minIos = 14
     }
+<<<<<<< Updated upstream
 }
+=======
+}
+
+tasks.withType<CompileSwiftTask>().configureEach {
+    val def = defFile
+    doLast {
+        val content = def.readText()
+        val match = Regex("-I\"([^\"]*)\"").find(content) ?: return@doLast
+        val modulePath = File(match.groupValues[1])
+
+        if (modulePath.resolve("module.modulemap").exists()) return@doLast
+        if (!modulePath.resolve("include/module.modulemap").exists()) return@doLast
+
+        def.writeText(
+            content.replaceRange(
+                match.groups[1]!!.range,
+                modulePath.resolve("include").absolutePath
+            )
+        )
+    }
+}
+>>>>>>> Stashed changes

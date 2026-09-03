@@ -9,6 +9,7 @@ import com.slax.reader.data.preferences.getPreferences
 import com.slax.reader.di.configureKoin
 import com.slax.reader.ui.SlaxNavigation
 import com.slax.reader.utils.AppEnv
+import com.slax.reader.utils.AppLog
 import com.slax.reader.utils.NavigationHelper
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.runBlocking
@@ -20,6 +21,7 @@ import platform.UIKit.UIViewController
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalForeignApi::class, ExperimentalFoundationApi::class)
 fun MainViewController(): UIViewController {
     ComposeFoundationFlags.isNewContextMenuEnabled = true
+    AppLog.initialize()
 
     startKoin {
         configureKoin()

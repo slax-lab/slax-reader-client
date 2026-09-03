@@ -87,7 +87,7 @@ actual fun AppWebView(
                     fun postMessage(message: String) {
                         runCatching { bridgeJson.decodeFromString<WebViewMessage>(message) }
                             .onFailure { e ->
-                                println("[WebView Bridge] 消息解析失败: ${e.message}, 原始消息: $message")
+                                AppLog.d("[WebView Bridge] 消息解析失败: ${e.message}")
                             }
                             .onSuccess { msg ->
                                 when (msg.type) {
@@ -207,7 +207,7 @@ actual fun AppWebView(
                                 CachingInputStream(connection, url, bookmarkId, imageDownloadManager)
                             )
                         } catch (e: Exception) {
-                            println("[SchemeHandler] 代理失败: $url, ${e.message}")
+                            AppLog.d("[SchemeHandler] 代理失败: ${e.message}")
                             null
                         }
                     }
@@ -456,7 +456,7 @@ private class CachingInputStream(
                 try {
                     manager.cacheData(url, bookmarkId, data)
                 } catch (e: Exception) {
-                    println("[SchemeHandler] 缓存写入失败: $url, ${e.message}")
+                    AppLog.d("[SchemeHandler] 缓存写入失败: ${e.message}")
                 }
             }
         }

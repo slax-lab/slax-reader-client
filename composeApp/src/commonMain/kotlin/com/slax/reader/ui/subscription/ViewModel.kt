@@ -1,5 +1,7 @@
 package com.slax.reader.ui.subscription
 
+import com.slax.reader.utils.AppLog
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.slax.reader.SlaxConfig
@@ -89,7 +91,7 @@ class SubscriptionViewModel(
                         return@launch
                     }
                 } catch (e: Exception) {
-                    println("===== checkTransactionStatus error: $e")
+                    AppLog.d("===== checkTransactionStatus error: $e")
                     _paymentState.value = PaymentState.Error(e.message ?: "Transaction verification failed")
                 }
                 _paymentState.value = PaymentState.Error("Transaction verification failed")

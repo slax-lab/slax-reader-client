@@ -1,5 +1,7 @@
 package com.slax.reader.domain.coordinator
 
+import com.slax.reader.utils.AppLog
+
 import com.powersync.PowerSyncDatabase
 import com.slax.reader.data.database.dao.PowerSyncDao
 import com.slax.reader.utils.ConnectOptions
@@ -75,7 +77,12 @@ class CoordinatorDomain(
                                     1f
                                 )
                             } else {
+<<<<<<< Updated upstream
                                 0f
+=======
+                                AppLog.d(syncStatus.anyError.toString())
+                                AppSyncState.Error(syncStatus.anyError.toString())
+>>>>>>> Stashed changes
                             }
                         } ?: 0f
                     )
@@ -106,16 +113,30 @@ class CoordinatorDomain(
     }
 
     private suspend fun connect() {
+<<<<<<< Updated upstream
         if (isConnected) return
         try {
             database.connect(connector, params = ConnectParams, options = ConnectOptions)
             isConnected = true
         } catch (e: Exception) {
             println("PowerSync connect failed: ${e.message}")
+=======
+        connectionMutex.withLock {
+            if (isConnected) return@withLock
+            try {
+                database.connect(connector, params = ConnectParams, options = ConnectOptions)
+                isConnected = true
+            } catch (error: CancellationException) {
+                throw error
+            } catch (e: Exception) {
+                AppLog.d("PowerSync connect failed: ${e.message}")
+            }
+>>>>>>> Stashed changes
         }
     }
 
     private suspend fun disconnect() {
+<<<<<<< Updated upstream
         if (!isConnected) return
         try {
             database.disconnect()
@@ -132,6 +153,40 @@ class CoordinatorDomain(
             connectivity.stop()
             database.disconnectAndClear(clearLocal = clear, soft = true)
             isConnected = false
+=======
+        connectionMutex.withLock {
+            if (!isConnected) return@withLock
+            try {
+                database.disconnect()
+                isConnected = false
+            } catch (error: CancellationException) {
+                throw error
+            } catch (e: Exception) {
+                AppLog.d("PowerSync disconnect failed: ${e.message}")
+            }
+        }
+    }
+
+    suspend fun cleanup(clear: Boolean) = withContext(NonCancellable) {
+        lifecycleMutex.withLock {
+            workerScope?.cancel()
+            workerScope = null
+            runCatching { connectivity.stop() }
+                .onFailure { error -> AppLog.d("Connectivity cleanup failed: ${error.message}") }
+            connectionMutex.withLock {
+                try {
+                    if (clear) {
+                        database.disconnectAndClear(clearLocal = true, soft = true)
+                    } else if (isConnected) {
+                        database.disconnect()
+                    }
+                } catch (e: Exception) {
+                    AppLog.d("PowerSync cleanup failed: ${e.message}")
+                } finally {
+                    isConnected = false
+                }
+            }
+>>>>>>> Stashed changes
         }
     }
 }

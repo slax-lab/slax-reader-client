@@ -26,6 +26,12 @@ object SubscriptionManagerRoutes
 object DebugRoutes
 
 @Serializable
+object LogListRoutes
+
+@Serializable
+data class LogDetailRoutes(val fileName: String)
+
+@Serializable
 data class FeedbackRoutes(
     val title: String? = null,
     val href: String? = null,

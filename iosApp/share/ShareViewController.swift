@@ -169,7 +169,7 @@ final class ShareViewController: UIViewController {
                 showError(message: result)
             }
         } catch {
-            print("Share error: \(error)")
+            try? await ComposeApp.ShareKt.logShareExtensionError(message: error.localizedDescription)
             showError(message: error.localizedDescription)
         }
     }

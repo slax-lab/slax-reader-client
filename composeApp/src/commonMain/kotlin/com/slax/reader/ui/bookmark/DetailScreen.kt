@@ -1,5 +1,7 @@
 package com.slax.reader.ui.bookmark
 
+import com.slax.reader.utils.AppLog
+
 import androidx.compose.runtime.*
 import com.slax.reader.ui.bookmark.components.DetailScreenSkeleton
 import com.slax.reader.ui.bookmark.states.LocalMarkInteraction
@@ -86,7 +88,7 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
                     viewModel.refreshContent()
                 }
                 is WebViewEvent.Feedback -> {
-                    println("feedback")
+                    AppLog.d("feedback")
                 }
                 is WebViewEvent.TextSelected -> {
                     markInteraction.onTextSelected(event.text, event.selectionY, event.markItemInfo)

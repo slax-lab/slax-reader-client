@@ -221,12 +221,15 @@ data class MarkDetail(
 @Serializable
 data class MarkInfo(
     val id: Long = 0,
+    val uuid: String = "",
     val user_id: Long = 0,
     val type: MarkType = MarkType.LINE,
     val source: List<MarkPathItem> = emptyList(),
     val approx_source: MarkPathApprox? = null,
     val parent_id: Long = 0,
+    val parent_uid: String = "",
     val root_id: Long = 0,
+    val root_uid: String = "",
     val comment: String = "",
     val created_at: String = "",
     val is_deleted: Boolean = false,

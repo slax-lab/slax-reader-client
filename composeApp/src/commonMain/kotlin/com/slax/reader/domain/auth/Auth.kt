@@ -1,5 +1,7 @@
 package com.slax.reader.domain.auth
 
+import com.slax.reader.utils.AppLog
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.slax.reader.data.file.FileManager
@@ -96,7 +98,7 @@ class AuthDomain(
             }
             return@withContext
         } catch (e: Exception) {
-            println("Error refreshing token: ${e.message}")
+            AppLog.d("Error refreshing token: ${e.message}")
         }
 
     }

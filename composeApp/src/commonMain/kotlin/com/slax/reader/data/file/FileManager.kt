@@ -1,5 +1,7 @@
 package com.slax.reader.data.file
 
+import com.slax.reader.utils.AppLog
+
 import com.slax.reader.utils.cacheDirectoryPath
 import com.slax.reader.utils.dataDirectoryPath
 import okio.FileMetadata
@@ -31,7 +33,7 @@ class FileManager(val fileSystem: FileSystem) {
             fileSystem.delete(path)
             true
         } catch (e: Exception) {
-            println("删除文件失败: ${e.message}")
+            AppLog.d("删除文件失败: ${e.message}")
             false
         }
     }
@@ -48,7 +50,7 @@ class FileManager(val fileSystem: FileSystem) {
                 readByteArray()
             }
         } catch (e: Exception) {
-            println("读取文件失败: ${e.message}")
+            AppLog.d("读取文件失败: ${e.message}")
             null
         }
     }
@@ -61,7 +63,7 @@ class FileManager(val fileSystem: FileSystem) {
             }
             return fileSystem.metadata(path = path)
         } catch (e: Exception) {
-            println("获取文件信息失败: ${e.message}")
+            AppLog.d("获取文件信息失败: ${e.message}")
             return null
         }
     }
@@ -82,7 +84,7 @@ class FileManager(val fileSystem: FileSystem) {
             deleteRecursively(path)
             true
         } catch (e: Exception) {
-            println("删除目录失败: ${e.message}")
+            AppLog.d("删除目录失败: ${e.message}")
             false
         }
     }
@@ -108,7 +110,7 @@ class FileManager(val fileSystem: FileSystem) {
                     if (isDir) scan(childPath)
                 }
             } catch (e: Exception) {
-                println("扫描失败: ${e.message}")
+                AppLog.d("扫描失败: ${e.message}")
             }
         }
 
@@ -136,7 +138,7 @@ class FileManager(val fileSystem: FileSystem) {
                     }
                 }
             } catch (e: Exception) {
-                println("计算大小失败: ${e.message}")
+                AppLog.d("计算大小失败: ${e.message}")
             }
         }
 
@@ -158,7 +160,7 @@ class FileManager(val fileSystem: FileSystem) {
             }
             true
         } catch (e: Exception) {
-            println("清空缓存失败: ${e.message}")
+            AppLog.d("清空缓存失败: ${e.message}")
             false
         }
     }

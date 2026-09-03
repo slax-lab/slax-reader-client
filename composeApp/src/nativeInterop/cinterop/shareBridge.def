@@ -14,4 +14,6 @@ package = com.slax.reader.share
              urlString:(NSString * _Nonnull)urlString
              imageData:(NSData * _Nullable)imageData;
 
+- (void)shareFileAtPath:(NSString * _Nonnull)path;
+
 @end

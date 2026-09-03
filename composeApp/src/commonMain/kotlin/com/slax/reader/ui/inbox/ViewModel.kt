@@ -1,5 +1,7 @@
 package com.slax.reader.ui.inbox
 
+import com.slax.reader.utils.AppLog
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.slax.reader.data.database.dao.BookmarkDao
@@ -60,6 +62,32 @@ class InboxListViewModel(
     fun setSortType(type: BookmarkSortType) {
         _sortType.value = type
     }
+<<<<<<< Updated upstream
+=======
+
+    fun selectCollection(collectionId: String?) {
+        if (collectionId != null && subscribedCollections.value.none { it.id == collectionId }) return
+        if (_activeCollectionId.value == collectionId) return
+        _activeCollectionId.value = collectionId
+        scrollToTop()
+        if (collectionId == null) return
+
+        val hasNew = subscribedCollections.value
+            .firstOrNull { it.id == collectionId }
+            ?.hasNew == true
+        if (!hasNew) return
+
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                collectionDao.setLastRead(collectionId)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                AppLog.d("Failed to update collection last-read time: ${error.message}")
+            }
+        }
+    }
+>>>>>>> Stashed changes
     val hasSynced = bookmarkDao.hasSynced
 
     private val _scrollToTopEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)

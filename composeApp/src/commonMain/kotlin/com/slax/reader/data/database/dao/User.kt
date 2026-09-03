@@ -1,5 +1,7 @@
 package com.slax.reader.data.database.dao
 
+import com.slax.reader.utils.AppLog
+
 import com.powersync.PowerSyncDatabase
 import com.powersync.db.getString
 import com.powersync.db.getStringOptional
@@ -12,7 +14,7 @@ class UserDao(
     private val database: PowerSyncDatabase
 ) {
     private val _userInfoFlow: StateFlow<UserInfo?> by lazy {
-        println("[watch][database] _userInfoFlow")
+        AppLog.d("[watch][database] _userInfoFlow")
 
         database.watch(
             """SELECT id, email, name, picture, given_name, family_name,
@@ -40,7 +42,7 @@ class UserDao(
             }
         ).map { it.firstOrNull() }
             .catch { e ->
-                println("Error watching user info: ${e.message}")
+                AppLog.d("Error watching user info: ${e.message}")
             }
             .distinctUntilChanged()
             .stateIn(scope, SharingStarted.WhileSubscribed(5000), null)

@@ -301,7 +301,8 @@ expect suspend fun resolveDns(domain: String, dnsServer: String?): String
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DebugScreen(
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onLogsClick: () -> Unit,
 ) {
     val httpClient: HttpClient = koinInject()
     val powerSyncDao: PowerSyncDao = koinInject()
@@ -384,6 +385,18 @@ fun DebugScreen(
                 SectionCard(title = "System Info") {
                     viewModel.systemInfo.forEach { (key, value) ->
                         InfoRow(label = key, value = value)
+                    }
+                }
+            }
+
+            item {
+                SectionCard(title = "Diagnostics") {
+                    Button(
+                        onClick = onLogsClick,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F1419)),
+                    ) {
+                        Text("View Logs")
                     }
                 }
             }

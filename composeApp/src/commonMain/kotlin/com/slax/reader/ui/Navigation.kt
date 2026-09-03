@@ -19,6 +19,8 @@ import com.slax.reader.domain.sync.BackgroundDomain
 import com.slax.reader.ui.about.AboutScreen
 import com.slax.reader.ui.bookmark.DetailScreen
 import com.slax.reader.ui.debug.DebugScreen
+import com.slax.reader.ui.debug.LogDetailScreen
+import com.slax.reader.ui.debug.LogListScreen
 import com.slax.reader.ui.bookmark.DetailScreenEvent
 import com.slax.reader.ui.feedback.FeedbackScreen
 import com.slax.reader.ui.inbox.InboxListScreen
@@ -173,9 +175,23 @@ fun SlaxNavigation(
             LaunchedEffect(Unit) { aboutEvent.view().send() }
         }
         composable<DebugRoutes> {
-            DebugScreen(onBackClick = {
-                navCtrl.popBackStack()
-            })
+            DebugScreen(
+                onBackClick = { navCtrl.popBackStack() },
+                onLogsClick = { navCtrl.navigate(LogListRoutes) },
+            )
+        }
+        composable<LogListRoutes> {
+            LogListScreen(
+                onBackClick = { navCtrl.popBackStack() },
+                onFileClick = { navCtrl.navigate(LogDetailRoutes(it)) },
+            )
+        }
+        composable<LogDetailRoutes> { backStackEntry ->
+            val params = backStackEntry.toRoute<LogDetailRoutes>()
+            LogDetailScreen(
+                fileName = params.fileName,
+                onBackClick = { navCtrl.popBackStack() },
+            )
         }
         composable<DeleteAccountRoutes> {
             DeleteAccountScreen(onBackClick = {

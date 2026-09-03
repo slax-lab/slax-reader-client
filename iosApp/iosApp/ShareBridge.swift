@@ -28,6 +28,18 @@ public class ShareBridge: NSObject {
         topVC.present(activityVC, animated: true, completion: nil)
     }
 
+    @objc public func shareFile(atPath path: String) {
+        let fileURL = URL(fileURLWithPath: path)
+        let activityVC = UIActivityViewController(activityItems: [fileURL], applicationActivities: nil)
+
+        guard let topVC = ShareBridge.topViewController() else { return }
+        if let popover = activityVC.popoverPresentationController {
+            popover.sourceView = topVC.view
+            popover.sourceRect = CGRect(x: topVC.view.bounds.midX, y: topVC.view.bounds.midY, width: 0, height: 0)
+        }
+        topVC.present(activityVC, animated: true)
+    }
+
     private static func topViewController(
         _ base: UIViewController? = UIApplication.shared.windows.first(where: { $0.isKeyWindow })?.rootViewController
     ) -> UIViewController? {

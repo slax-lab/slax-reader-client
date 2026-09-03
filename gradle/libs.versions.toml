@@ -5,6 +5,7 @@ android-minSdk = "26"
 android-targetSdk = "36"
 androidx-activity = "1.13.0"
 androidx-lifecycle = "2.10.0"
+androidx-core = "1.19.0"
 atomicfu = "0.33.0"
 browser = "1.10.0"
 buildkonfigGradlePlugin = "0.21.2"
@@ -37,6 +38,7 @@ markdownRenderer = "0.41.0"
 ttypic = "0.6.4"
 ui = "1.11.1"
 ksoup = "0.2.6"
+kermit = "2.1.0"
 
 [libraries]
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
@@ -62,6 +64,7 @@ kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotl
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
 androidx-lifecycle-viewmodelCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
+androidx-core = { module = "androidx.core:core", version.ref = "androidx-core" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktorClientOkhttp" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktorClientOkhttp" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktorClientOkhttp" }
@@ -82,6 +85,7 @@ sketch-http = { module = "io.github.panpf.sketch4:sketch-http", version.ref = "s
 sketch-svg = { module = "io.github.panpf.sketch4:sketch-svg", version.ref = "sketchHttp" }
 markdown-renderer-m3 = { module = "com.mikepenz:multiplatform-markdown-renderer-m3", version.ref = "markdownRenderer" }
 ksoup = { module = "com.fleeksoft.ksoup:ksoup", version.ref = "ksoup" }
+kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 
 ## plugin
 ttypic-plugin = { module = "io.github.ttypic:plugin", version.ref = "ttypic" }

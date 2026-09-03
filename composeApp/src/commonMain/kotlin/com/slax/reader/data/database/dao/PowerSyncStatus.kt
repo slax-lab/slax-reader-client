@@ -1,5 +1,7 @@
 package com.slax.reader.data.database.dao
 
+import com.slax.reader.utils.AppLog
+
 import com.powersync.PowerSyncDatabase
 import com.powersync.sync.SyncStatusData
 import kotlinx.coroutines.CoroutineScope
@@ -16,7 +18,7 @@ class PowerSyncDao(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _syncStatusFlow: StateFlow<SyncStatusData?> by lazy {
-        println("[watch][database] _syncStatusFlow")
+        AppLog.d("[watch][database] _syncStatusFlow")
 
         database.currentStatus.asFlow()
             .stateIn(scope, SharingStarted.WhileSubscribed(5000), null)

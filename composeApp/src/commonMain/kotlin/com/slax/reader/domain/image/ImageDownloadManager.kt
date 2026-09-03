@@ -1,5 +1,7 @@
 package com.slax.reader.domain.image
 
+import com.slax.reader.utils.AppLog
+
 import com.slax.reader.data.file.FileManager
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
@@ -71,7 +73,7 @@ class ImageDownloadManager(
                 deferred.cancel(e)
                 throw e
             } catch (e: Exception) {
-                println("[ImageDownloadManager] 下载失败: $originalUrl, ${e.message}")
+                AppLog.d("[ImageDownloadManager] 下载失败: ${e.message}")
                 deferred.complete(null)
             } finally {
                 mutex.withLock { inFlightRequests.remove(originalUrl) }

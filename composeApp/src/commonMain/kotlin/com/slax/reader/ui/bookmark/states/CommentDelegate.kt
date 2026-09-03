@@ -1,5 +1,7 @@
 package com.slax.reader.ui.bookmark.states
 
+import com.slax.reader.utils.AppLog
+
 import com.powersync.ExperimentalPowerSyncAPI
 import com.powersync.PowerSyncDatabase
 import com.powersync.sync.SyncStreamSubscription
@@ -176,7 +178,15 @@ class CommentDelegate(
                 val users = apiService.getMarkUsers(bookmarkId).data ?: return@launch
                 localBookmarkDao.updateMarkUsers(bookmarkId, json.encodeToString(users))
                 _markUsers.value = users.associateBy { it.uuid }
+<<<<<<< Updated upstream
             }.onFailure { println("[CommentDelegate] loadMarkUsers failed: ${it.message}") }
+=======
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                AppLog.d("[CommentDelegate] loadMarkUsers failed: ${error.message}")
+            }
+>>>>>>> Stashed changes
         }
     }
 
@@ -202,12 +212,15 @@ class CommentDelegate(
 
             markList += MarkInfo(
                 id = po.id.toStableId(),
+                uuid = po.id,
                 user_id = poUserId.toStableId(),
                 type = MarkType.entries.firstOrNull { it.value == po.type } ?: MarkType.LINE,
                 source = po.source.decodeOrDefault(emptyList()),
                 approx_source = po.approx_source.decodeOrDefault(null),
                 parent_id = po.metadataObj?.parent_id.toStableId(),
+                parent_uid = po.metadataObj?.parent_id.orEmpty(),
                 root_id = po.metadataObj?.root_id.toStableId(),
+                root_uid = po.metadataObj?.root_id.orEmpty(),
                 comment = po.comment,
                 created_at = po.created_at,
                 is_deleted = po.is_deleted != 0

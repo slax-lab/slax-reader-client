@@ -415,7 +415,7 @@ actual fun AppWebView(
                 is WebViewCommand.EvaluateJs -> {
                     webState.webView?.evaluateJavaScript(cmd.script) { result, error ->
                         if (error != null) {
-                            println("[iOS WebView] JS 执行失败: ${error.localizedDescription}")
+                            AppLog.d("[iOS WebView] JS 执行失败: ${error.localizedDescription}")
                         }
                         cmd.callback?.invoke(result?.toString() ?: "")
                     }

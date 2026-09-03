@@ -280,6 +280,74 @@ iframe[src] {
 }
 
 /* ==========================================================================
+   知乎问答卡片 (Zhihu Q&A Card)
+   ========================================================================== */
+
+.zhihu-qa-answer {
+    margin-top: 28px !important;
+    padding: 20px;
+    border: 1px solid rgba(51, 51, 51, 0.12);
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.zhihu-qa-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.zhihu-qa-avatar {
+    display: block;
+    width: 40px !important;
+    min-width: 40px;
+    max-width: 40px !important;
+    height: 40px !important;
+    flex: 0 0 40px;
+    margin: 0 !important;
+    border-radius: 50% !important;
+    clip-path: circle(50%);
+    object-fit: cover;
+}
+
+.zhihu-qa-user-info {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+}
+
+.zhihu-qa-user-name {
+    color: #333;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 22px;
+}
+
+.zhihu-qa-user-headline {
+    margin-top: 2px;
+    overflow: hidden;
+    color: rgba(51, 51, 51, 0.6);
+    font-size: 13px;
+    line-height: 18px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.zhihu-qa-answer-meta {
+    margin-top: 12px !important;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(51, 51, 51, 0.08);
+    color: rgba(51, 51, 51, 0.5);
+    font-size: 13px;
+}
+
+.zhihu-qa-answer-content > :first-child {
+    margin-top: 0 !important;
+}
+
+/* ==========================================================================
    推文展示模块 (Tweet Display Module)
    包含推文正文样式及引用推文卡片样式
    ========================================================================== */

@@ -4,6 +4,7 @@ import android.app.Application
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.di.configureKoin
 import com.slax.reader.utils.AppEnv
+import com.slax.reader.utils.AppLog
 import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -21,6 +22,7 @@ class SlaxReaderApplication : Application() {
                 configureKoin()
             }
         }
+        AppLog.initialize()
         runBlocking {
             AppEnv.init(GlobalContext.get().get<AppPreferences>().getSelectedEnv())
         }

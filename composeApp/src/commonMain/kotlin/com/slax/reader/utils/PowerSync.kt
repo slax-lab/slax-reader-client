@@ -26,6 +26,47 @@ val ConnectParams = mapOf("schema_version" to JsonParam.String("1"))
 @OptIn(ExperimentalPowerSyncAPI::class)
 val ConnectOptions = SyncOptions(newClientImplementation = true)
 
+<<<<<<< Updated upstream
+=======
+private val bookmarkMetadataJson = Json { ignoreUnknownKeys = true }
+
+private const val UPLOAD_CHUNK_SIZE = 20
+
+private const val UPLOAD_CHUNK_DELAY_MS = 200L
+
+internal suspend fun uploadTransactionBatch(
+    batch: List<CrudTransaction>,
+    changesFor: (List<CrudTransaction>) -> List<ChangesItem>,
+    upload: suspend (List<ChangesItem>) -> Unit
+) {
+    val postData = changesFor(batch)
+    try {
+        upload(postData)
+        batch.forEach { it.complete(null) }
+        AppLog.d("Successfully uploaded ${batch.size} transactions with ${postData.size} operations")
+    } catch (error: AppError.ApiException.HttpError) {
+        if (error.code != 400) throw error
+
+        AppLog.d("Sync batch rejected with 400; isolating ${batch.size} transactions")
+        for (transaction in batch) {
+            val transactionChanges = changesFor(listOf(transaction))
+            try {
+                upload(transactionChanges)
+                transaction.complete(null)
+                AppLog.d("Successfully uploaded isolated transaction ${transaction.transactionId}")
+            } catch (isolatedError: AppError.ApiException.HttpError) {
+                if (isolatedError.code != 400) throw isolatedError
+                transaction.complete(null)
+                AppLog.d(
+                    "Discarded transaction ${transaction.transactionId} with " +
+                        "${transaction.crud.size} operations after repeated HTTP 400"
+                )
+            }
+        }
+    }
+}
+
+>>>>>>> Stashed changes
 class Connector(
     private val apiService: ApiService,
     private val preferences: AppPreferences
@@ -89,7 +130,7 @@ class Connector(
                         }
 
                     } catch (e: Exception) {
-                        println("Error comparing metadata JSON: ${e.message}")
+                        AppLog.d("Error comparing metadata JSON: ${e.message}")
                         changes["metadata"] = value
                         preChanges["metadata"] = oldValue
                     }

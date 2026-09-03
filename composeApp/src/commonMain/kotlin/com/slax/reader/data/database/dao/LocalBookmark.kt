@@ -1,5 +1,7 @@
 package com.slax.reader.data.database.dao
 
+import com.slax.reader.utils.AppLog
+
 import com.powersync.PowerSyncDatabase
 import com.powersync.db.getStringOptional
 import com.slax.reader.data.database.model.LocalBookmarkInfo
@@ -13,7 +15,7 @@ class LocalBookmarkDao(
     private val database: PowerSyncDatabase
 ) {
     private val _userLocalBookmarkListFlow: StateFlow<Map<String, LocalBookmarkInfo>> by lazy {
-        println("[watch][database] _userLocalBookmarkListFlow")
+        AppLog.d("[watch][database] _userLocalBookmarkListFlow")
         database.watch(
             """
             SELECT id,
@@ -25,7 +27,7 @@ class LocalBookmarkDao(
                 mapperToLocalBookmarkInfo(it)
             }
         ).catch { e ->
-            println("Error watching user bookmarks: ${e.message}")
+            AppLog.d("Error watching user bookmarks: ${e.message}")
         }
             .distinctUntilChanged()
             .map { bookmarkList ->
@@ -131,7 +133,7 @@ class LocalBookmarkDao(
                         try {
                             Json.decodeFromString<List<String>>(it)
                         } catch (e: Exception) {
-                            println("Failed to deserialize keyTakeaways: ${e.message}")
+                            AppLog.d("Failed to deserialize keyTakeaways: ${e.message}")
                             null
                         }
                     }

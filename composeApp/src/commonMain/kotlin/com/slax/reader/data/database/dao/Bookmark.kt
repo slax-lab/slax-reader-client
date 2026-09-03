@@ -1,5 +1,7 @@
 package com.slax.reader.data.database.dao
 
+import com.slax.reader.utils.AppLog
+
 import com.powersync.PowerSyncDatabase
 import com.powersync.db.getString
 import com.slax.reader.data.database.model.*
@@ -20,7 +22,7 @@ class BookmarkDao(
         .stateIn(scope, SharingStarted.WhileSubscribed(5000), false)
 
     private val _userBookmarkListFlow: StateFlow<List<InboxListBookmarkItem>> by lazy {
-        println("[watch][database] _userBookmarkListFlow")
+        AppLog.d("[watch][database] _userBookmarkListFlow")
         database.watch(
             """
             SELECT
@@ -39,7 +41,7 @@ class BookmarkDao(
         ) { cursor ->
             mapperToInboxListBookmarkItem(cursor)
         }.catch { e ->
-            println("Error watching user bookmarks: ${e.message}")
+            AppLog.d("Error watching user bookmarks: ${e.message}")
         }
             .distinctUntilChanged()
             .stateIn(scope, SharingStarted.Eagerly, emptyList())
@@ -53,7 +55,7 @@ class BookmarkDao(
         sortType: BookmarkSortType = BookmarkSortType.UPDATED
     ): StateFlow<List<InboxListBookmarkItem>?> {
         return _userBookmarkPagedFlows.getOrPut(sortType) {
-            println("[watch][database] _userBookmarkPagedFlow sortType=$sortType")
+            AppLog.d("[watch][database] _userBookmarkPagedFlow sortType=$sortType")
             database.watch(
                 """
                 SELECT
@@ -71,7 +73,7 @@ class BookmarkDao(
             ) { cursor ->
                 mapperToInboxListBookmarkItem(cursor)
             }.catch { e ->
-                println("Error watching user bookmarks paged: ${e.message}")
+                AppLog.d("Error watching user bookmarks paged: ${e.message}")
             }
                 .distinctUntilChanged()
                 .stateIn(scope, SharingStarted.WhileSubscribed(5000), null)
@@ -79,7 +81,7 @@ class BookmarkDao(
     }
 
     fun watchBookmarkDetail(bookmarkId: String): Flow<List<UserBookmark>> {
-        println("[watch][database] watchBookmarkDetail")
+        AppLog.d("[watch][database] watchBookmarkDetail")
         return database.watch(
             """
             SELECT
@@ -100,13 +102,13 @@ class BookmarkDao(
         ) { cursor ->
             mapperToBookmark(cursor)
         }.catch { e ->
-            println("Error watching user bookmarks: ${e.message}")
+            AppLog.d("Error watching user bookmarks: ${e.message}")
         }
             .distinctUntilChanged()
     }
 
     private val _userTagListFlow: StateFlow<List<UserTag>> by lazy {
-        println("[watch][database] _userTagListFlow")
+        AppLog.d("[watch][database] _userTagListFlow")
         database.watch(
             """
             SELECT * FROM sr_user_tag
@@ -120,7 +122,7 @@ class BookmarkDao(
     fun watchUserTag(): Flow<List<UserTag>> = _userTagListFlow
 
     suspend fun getTagsByIds(tagIds: List<String>): List<UserTag> {
-        println("[database] getTagsByIds === ")
+        AppLog.d("[database] getTagsByIds === ")
 
         if (tagIds.isEmpty()) return emptyList()
 

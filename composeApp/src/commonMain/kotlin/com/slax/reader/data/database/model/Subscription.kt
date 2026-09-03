@@ -1,5 +1,7 @@
 package com.slax.reader.data.database.model
 
+import com.slax.reader.utils.AppLog
+
 import androidx.compose.runtime.Immutable
 import com.slax.reader.utils.parseInstant
 import kotlinx.serialization.Serializable
@@ -28,7 +30,7 @@ fun UserSubscriptionInfo.checkIsSubscribed(): Boolean {
         val now = kotlin.time.Clock.System.now()
         endTime > now
     } catch (e: Exception) {
-        println("Error checking subscription: ${e.message}")
+        AppLog.d("Error checking subscription: ${e.message}")
         false
     }
 }

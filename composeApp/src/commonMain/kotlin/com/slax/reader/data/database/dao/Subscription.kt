@@ -1,5 +1,7 @@
 package com.slax.reader.data.database.dao
 
+import com.slax.reader.utils.AppLog
+
 import com.powersync.PowerSyncDatabase
 import com.powersync.db.SqlCursor
 import com.powersync.db.getStringOptional
@@ -28,7 +30,7 @@ class SubscriptionDao (
     }
 
     private val _subscriptionInfoFlow: StateFlow<UserSubscriptionInfo?> by lazy {
-        println("[watch][database] _userSubscribeInfoFlow")
+        AppLog.d("[watch][database] _userSubscribeInfoFlow")
 
         database.watch(
             """
@@ -38,7 +40,7 @@ class SubscriptionDao (
             mapper = subscriptionMapper
         ).map { it.firstOrNull() }
             .catch { e ->
-                println("Error watching user info: ${e.message}")
+                AppLog.d("Error watching user info: ${e.message}")
             }
             .distinctUntilChanged()
             .stateIn(scope, SharingStarted.WhileSubscribed(5000), null)
