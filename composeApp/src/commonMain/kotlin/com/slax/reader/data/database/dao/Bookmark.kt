@@ -2,6 +2,7 @@ package com.slax.reader.data.database.dao
 
 import com.powersync.PowerSyncDatabase
 import com.powersync.db.getString
+import com.powersync.db.getStringOptional
 import com.slax.reader.data.database.model.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.*
@@ -137,6 +138,8 @@ class BookmarkDao(
                     tag_name = cursor.getString("tag_name"),
                     display = cursor.getString("display"),
                     created_at = cursor.getString("created_at"),
+                    source = cursor.getStringOptional("source") ?: "auto",
+                    last_used_at = cursor.getStringOptional("last_used_at"),
                 )
             }
         )
@@ -244,19 +247,21 @@ class BookmarkDao(
         val tagId = Uuid.random().toString()
         val now = Clock.System.now().toString()
 
+        // display used to be written as the tag name by mistake; web writes "1"
         database.writeTransaction { tx ->
             tx.execute(
-                """INSERT INTO sr_user_tag (id, tag_name, display, created_at)
-                   VALUES (?, ?, ?, ?)""",
-                listOf(tagId, tagName, tagName, now)
+                """INSERT INTO sr_user_tag (id, tag_name, display, source, created_at)
+                   VALUES (?, ?, ?, ?, ?)""",
+                listOf(tagId, tagName, "1", "mine", now)
             )
         }
 
         return UserTag(
             id = tagId,
             tag_name = tagName,
-            display = tagName,
-            created_at = now
+            display = "1",
+            created_at = now,
+            source = "mine"
         )
     }
 }

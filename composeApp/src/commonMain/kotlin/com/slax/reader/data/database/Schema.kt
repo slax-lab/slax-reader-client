@@ -30,6 +30,10 @@ val srUserTagTable = Table(
         Column.text("user_id"),
         Column.text("tag_name"),
         Column.text("display"),
+        // "auto" | "mine": vocabulary ownership, see sync_rules sr_user_tag query
+        Column.text("source"),
+        // last time the user attached this tag by hand
+        Column.text("last_used_at"),
         Column.text("created_at"),
     )
 )

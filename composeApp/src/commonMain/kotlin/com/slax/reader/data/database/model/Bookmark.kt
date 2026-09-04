@@ -80,7 +80,10 @@ data class UserTag(
     val id: String,
     val tag_name: String,
     val display: String,
-    val created_at: String
+    val created_at: String,
+    // "auto" | "mine"; rows synced before the column existed read as auto
+    val source: String = "auto",
+    val last_used_at: String? = null
 )
 
 enum class BookmarkSortType(val column: String, val whereClause: String) {
@@ -160,6 +163,8 @@ fun mapperToUserTag(cursor: SqlCursor): UserTag {
         tag_name = cursor.getString("tag_name"),
         display = cursor.getString("display"),
         created_at = cursor.getString("created_at"),
+        source = cursor.getStringOptional("source") ?: "auto",
+        last_used_at = cursor.getStringOptional("last_used_at"),
     )
 }
 
