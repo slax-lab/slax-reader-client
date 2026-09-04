@@ -80,7 +80,7 @@ class OutlineDelegate(
         }
     }
 
-    fun loadOutline(bookmarkId: String) {
+    fun loadOutline(bookmarkId: String, networkAvailable: Boolean) {
         if (_outlineState.value.isLoading) {
             return
         }
@@ -108,6 +108,15 @@ class OutlineDelegate(
                         isLoading = false
                     )
                 }
+                return@launch
+            }
+
+            if (!networkAvailable) {
+                _outlineState.value = OutlineState(
+                    isLoading = false,
+                    isPending = true,
+                    error = "No network connection"
+                )
                 return@launch
             }
 

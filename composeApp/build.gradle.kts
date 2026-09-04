@@ -170,6 +170,7 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation("org.jetbrains.compose.ui:ui-test:${libs.versions.composeMultiplatform.get()}")
         }
         named { it.lowercase().startsWith("ios") }.configureEach {
             languageSettings {
@@ -193,6 +194,7 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = appVersionCode.toInt()
         versionName = appVersionName
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     packaging {
         resources {
@@ -229,6 +231,9 @@ android {
 
 dependencies {
     debugImplementation(compose.uiTooling)
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4-android:1.11.2")
+    androidTestImplementation("junit:junit:4.13.2")
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.11.2")
 }
 
 val embeddedDir = rootProject.file("public/embedded")

@@ -14,6 +14,7 @@ import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.data.preferences.ContinueReadingBookmark
 import com.slax.reader.domain.image.ShareImageSelector
+import com.slax.reader.domain.coordinator.CoordinatorDomain
 import com.slax.reader.domain.sync.BackgroundDomain
 import com.slax.reader.ui.bookmark.states.BookmarkDelegate
 import com.slax.reader.ui.bookmark.states.BookmarkOverlay
@@ -69,6 +70,7 @@ class BookmarkDetailViewModel(
     private val commentDao: BookmarkCommentDao,
     private val userDao: UserDao,
     private val backgroundDomain: BackgroundDomain,
+    private val coordinatorDomain: CoordinatorDomain,
     private val apiService: ApiService,
     private val appPreferences: AppPreferences,
     private val database: PowerSyncDatabase,
@@ -161,7 +163,13 @@ class BookmarkDetailViewModel(
 
         contentJob = viewModelScope.launch {
             runCatching {
-                withContext(Dispatchers.IO) { backgroundDomain.getBookmarkContent(id) }
+                // Read the platform's current status at the point of the
+                // request. syncState is asynchronous and may still be
+                // Connecting while the device is already offline.
+                val networkAvailable = coordinatorDomain.isNetworkAvailable()
+                withContext(Dispatchers.IO) {
+                    backgroundDomain.getBookmarkContent(id, networkAvailable)
+                }
             }.onSuccess { content ->
                 _contentState.value = BookmarkContentState(htmlContent = content.html, isLoading = false)
                 articleImageUrls.value = content.imageUrls
@@ -310,12 +318,18 @@ class BookmarkDetailViewModel(
 
     fun loadOverview() {
         val id = _bookmarkId.value ?: return
-        overviewDelegate.loadOverview(id)
+        viewModelScope.launch {
+            val networkAvailable = coordinatorDomain.isNetworkAvailable()
+            overviewDelegate.loadOverview(id, networkAvailable)
+        }
     }
 
     fun loadOutline() {
         val id = _bookmarkId.value ?: return
-        outlineDelegate.loadOutline(id)
+        viewModelScope.launch {
+            val networkAvailable = coordinatorDomain.isNetworkAvailable()
+            outlineDelegate.loadOutline(id, networkAvailable)
+        }
     }
 
     fun startObservingMarks() {

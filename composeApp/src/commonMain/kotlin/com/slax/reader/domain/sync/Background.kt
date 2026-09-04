@@ -25,12 +25,17 @@ enum class TaskType {
     CLEANUP
 }
 
-enum class DownloadStatus {
-    NONE,
-    DOWNLOADING,
-    COMPLETED,
-    FAILED
+enum class DownloadStatus(val code: Int) {
+    NONE(0),
+    DOWNLOADING(1),
+    COMPLETED(2),
+    FAILED(3)
 }
+
+internal fun shouldFetchBookmarkContent(
+    hasCachedContent: Boolean,
+    networkAvailable: Boolean,
+): Boolean = !hasCachedContent && networkAvailable
 
 class TaskItem(
     val bookmarkId: String,
@@ -99,7 +104,7 @@ class BackgroundDomain(
                     val toCleanupIds = mutableListOf<String>()
                     val activeIds = bookmarkList.asSequence().map { it.id }.toHashSet()
                     for ((id, info) in localMap) {
-                        if (id in activeIds && id !in cacheWindowIds && info.isAutoCached && info.downloadStatus == 2) {
+                        if (id in activeIds && id !in cacheWindowIds && info.isAutoCached && info.downloadStatus == DownloadStatus.COMPLETED.code) {
                             toCleanupIds.add(id)
                         }
                     }
@@ -221,14 +226,8 @@ class BackgroundDomain(
     }
 
     private suspend fun updateBookmarkStatus(id: String, status: DownloadStatus, isAutoCached: Boolean = true) {
-        val statusCode = when (status) {
-            DownloadStatus.NONE -> 0
-            DownloadStatus.DOWNLOADING -> 1
-            DownloadStatus.COMPLETED -> 2
-            DownloadStatus.FAILED -> 3
-        }
         try {
-            localBookmarkDao.updateLocalBookmarkDownloadStatus(id, statusCode, isAutoCached)
+            localBookmarkDao.updateLocalBookmarkDownloadStatus(id, status.code, isAutoCached)
         } catch (e: Exception) {
             println("[BackgroundDomain] 更新下载状态到数据库失败: ${e.message}")
         }
@@ -258,15 +257,17 @@ class BackgroundDomain(
         }
     }
 
-    suspend fun getBookmarkContent(id: String): ProcessedContent {
+    suspend fun getBookmarkContent(id: String, networkAvailable: Boolean): ProcessedContent {
         val bookmarkDir = "bookmark/$id"
         val contentPath = "$bookmarkDir/content.html"
 
-        val existingContent = fileManager.streamDataFile(contentPath)
+        // A zero-byte file can be left behind by an interrupted write and is
+        // not usable article content.
+        val existingContent = fileManager.streamDataFile(contentPath)?.takeIf { it.isNotEmpty() }
 
-        if (existingContent != null) {
-            val htmlContent = existingContent.decodeToString()
-            return processContent(htmlContent)
+        if (!shouldFetchBookmarkContent(existingContent != null, networkAvailable)) {
+            return existingContent?.let { processContent(it.decodeToString()) }
+                ?: offlineContent()
         }
 
         inQueue.getAndUpdate { it + id }
@@ -293,6 +294,9 @@ class BackgroundDomain(
             return content
         } catch (e: Exception) {
             println("API 调用失败 $id: ${e.message}")
+            withContext(Dispatchers.IO) {
+                updateBookmarkStatus(id, DownloadStatus.FAILED, isAutoCached = false)
+            }
             val errInfo = when (e) {
                 is AppError.ApiException.HttpError -> mapOf(
                     "title" to "Error code: ${e.code}",
@@ -317,5 +321,13 @@ class BackgroundDomain(
     companion object {
         private val HTTPS_REGEX = Regex("^https://")
         private val HTTP_REGEX = Regex("^http://")
+    }
+
+    private fun offlineContent(): ProcessedContent {
+        val errorHtml = SlaxConfig.DETAIL_ERROR_TEMPLATE
+            .replace("{{TITLE}}", "<center>Failed to load content</center>")
+            .replace("{{REASON}}", "<center>No network connection</center>")
+            .replace("{{DETAIL}}", "<center>This article is not cached on this device</center>")
+        return ProcessedContent(errorHtml, emptyList())
     }
 }

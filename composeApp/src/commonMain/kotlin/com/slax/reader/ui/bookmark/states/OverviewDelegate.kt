@@ -40,7 +40,7 @@ class OverviewDelegate(
     private val _overviewBounds = MutableStateFlow(OverviewViewBounds())
     val overviewBounds = _overviewBounds.asStateFlow()
 
-    fun loadOverview(bookmarkId: String) {
+    fun loadOverview(bookmarkId: String, networkAvailable: Boolean) {
         if (_overviewState.value.overview.isNotEmpty() || _overviewState.value.isLoading) return
 
         scope.launch {
@@ -48,14 +48,22 @@ class OverviewDelegate(
                 localBookmarkDao.getLocalBookmarkOverview(bookmarkId)
             }
 
-            if (!cachedOverview.isNullOrEmpty() && !cachedKeyTakeaways.isNullOrEmpty()) {
+            if (!cachedOverview.isNullOrEmpty()) {
                 _overviewState.update { state ->
                     state.copy(
                         overview = cachedOverview,
-                        keyTakeaways = cachedKeyTakeaways,
+                        keyTakeaways = cachedKeyTakeaways.orEmpty(),
                         isLoading = false,
                     )
                 }
+                return@launch
+            }
+
+            if (!networkAvailable) {
+                _overviewState.value = OverviewState(
+                    isLoading = false,
+                    error = "No network connection"
+                )
                 return@launch
             }
 
