@@ -4,15 +4,30 @@ on:
   push:
     branches: [main, 'codex/**']
   pull_request:
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: Test suite to run
+        required: true
+        default: full
+        type: choice
+        options: [fast, full]
+  schedule:
+    - cron: '0 18 * * *'
+
+concurrency:
+  group: kmp-tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  common-tests:
-    name: Common and iOS tests
-    runs-on: macos-14
-    timeout-minutes: 45
+  fast-jvm-tests:
+    name: Fast JVM tests
+    if: github.event_name != 'schedule' && (github.event_name != 'workflow_dispatch' || inputs.suite == 'fast')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - name: Check out
         uses: actions/checkout@v4
@@ -62,14 +77,57 @@ jobs:
       - name: Run JVM unit tests
         run: ./gradlew :composeApp:testDebugUnitTest --no-daemon --parallel --stacktrace --console=plain
 
-      - name: Run iOS simulator tests
-        run: ./gradlew :composeApp:iosSimulatorArm64Test --no-daemon --stacktrace --console=plain
-
-      - name: Upload JVM and native test reports
+      - name: Upload JVM test reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: common-test-reports
+          name: fast-jvm-test-reports
+          if-no-files-found: ignore
+          path: |
+            composeApp/build/reports/
+            composeApp/build/test-results/
+
+  ios-simulator-tests:
+    name: iOS simulator tests
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.suite == 'full')
+    runs-on: macos-14
+    timeout-minutes: 45
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Create test build configuration
+        run: |
+          printf 'GOOGLE_AUTH_SERVER_ID=ci-test-client-id.apps.googleusercontent.com\n' > .env
+          cp .env .env.release
+          mkdir -p composeApp
+          cat > composeApp/google-services.json <<'EOF'
+          {
+            "project_info": {"project_number": "000000000000", "project_id": "slax-reader-ci"},
+            "client": [{"client_info": {"mobilesdk_app_id": "1:000000000000:android:0000000000000000", "android_client_info": {"package_name": "com.slax.reader"}}, "api_key": [{"current_key": "ci-test-api-key"}], "services": {}}],
+            "configuration_version": "1"
+          }
+          EOF
+
+      - name: Run iOS simulator tests
+        run: ./gradlew :composeApp:iosSimulatorArm64Test --no-daemon --stacktrace --console=plain
+
+      - name: Upload iOS test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-test-reports
           if-no-files-found: ignore
           path: |
             composeApp/build/reports/
@@ -77,6 +135,7 @@ jobs:
 
   android-ui-tests:
     name: Android Compose UI and database tests
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.suite == 'full')
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
