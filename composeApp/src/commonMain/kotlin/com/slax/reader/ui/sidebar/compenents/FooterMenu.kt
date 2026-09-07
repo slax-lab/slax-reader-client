@@ -49,9 +49,10 @@ class FooterMenuConfig(
 fun FooterMenu(
     navCtrl: NavController,
     onDismiss: () -> Unit,
+    viewModel: SidebarViewModel = koinInject(),
+    onSignOut: (() -> Unit)? = null,
 ) {
-    val authDomain: AuthDomain = koinInject()
-    val viewModel = koinInject<SidebarViewModel>()
+    val signOut = onSignOut ?: koinInject<AuthDomain>().let { auth -> { auth.signOut() } }
 
     val userInfo by viewModel.userInfo.collectAsState()
     val subscriptionInfo by viewModel.subscriptionInfo.collectAsState()
@@ -171,7 +172,7 @@ fun FooterMenu(
                 onDismiss()
                 navCtrl.navigate(
                     FeedbackRoutes(
-                        email = userInfo!!.email,
+                        email = userInfo?.email.orEmpty(),
                         entryPoint = "inbox",
                         version = "${SlaxConfig.APP_VERSION_NAME} (${SlaxConfig.APP_VERSION_CODE})"
                     )
@@ -210,7 +211,7 @@ fun FooterMenu(
                 unselectedContainerColor = Color.Transparent
             ),
             onClick = {
-                authDomain.signOut()
+                signOut()
             }
         )
     ).map {

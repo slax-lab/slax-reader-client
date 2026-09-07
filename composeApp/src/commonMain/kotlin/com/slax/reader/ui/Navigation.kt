@@ -28,7 +28,6 @@ import com.slax.reader.ui.setting.SettingScreen
 import com.slax.reader.ui.subscription.SubscriptionManagerScreen
 import com.slax.reader.utils.FirebaseHelper
 import com.slax.reader.utils.FirstPartyEventReporter
-import com.slax.reader.utils.LifeCycleHelper
 import com.slax.reader.utils.NavHostTransitionHelper
 import com.slax.reader.utils.aboutEvent
 import com.slax.reader.utils.bookmarkEvent
@@ -37,6 +36,7 @@ import com.slax.reader.utils.feedbackEvent
 import com.slax.reader.utils.settingEvent
 import com.slax.reader.utils.subscriptionEvent
 import com.slax.reader.utils.userEvent
+import com.slax.reader.ui.AppLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
@@ -45,19 +45,24 @@ import org.koin.compose.koinInject
 @OptIn(ExperimentalPowerSyncAPI::class)
 @Composable
 fun SlaxNavigation(
-    navCtrl: NavHostController
+    navCtrl: NavHostController,
+    auth: AuthDomain? = null,
+    background: BackgroundDomain? = null,
+    syncCoordinator: CoordinatorDomain? = null,
+    lifecycle: AppLifecycle? = null,
 ) {
-    val authDomain: AuthDomain = koinInject()
-    val backgroundDomain: BackgroundDomain = koinInject()
-    val coordinator: CoordinatorDomain = koinInject()
+    val authDomain: AuthDomain = auth ?: koinInject()
+    val backgroundDomain: BackgroundDomain = background ?: koinInject()
+    val coordinator: CoordinatorDomain = syncCoordinator ?: koinInject()
+    val appLifecycle: AppLifecycle = lifecycle ?: koinInject()
     val firstPartyEvents: FirstPartyEventReporter = koinInject()
     val authState by authDomain.authState.collectAsState()
 
     val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        lifecycleOwner.lifecycle.addObserver(LifeCycleHelper)
+    DisposableEffect(lifecycleOwner, appLifecycle) {
+        appLifecycle.attach(lifecycleOwner)
         onDispose {
-            lifecycleOwner.lifecycle.removeObserver(LifeCycleHelper)
+            appLifecycle.detach(lifecycleOwner)
         }
     }
 

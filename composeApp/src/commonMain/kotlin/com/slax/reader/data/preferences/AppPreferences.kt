@@ -36,7 +36,7 @@ data class ContinueReadingBookmark(
     val title: String
 )
 
-class AppPreferences(private val dataStore: DataStore<Preferences>) {
+class AppPreferences(private val dataStore: DataStore<Preferences>) : SettingsPreferences, AuthTokenPreferences {
     companion object {
         private val AUTH_TOKEN_KEY = stringPreferencesKey("auth_token")
         private val USER_ID_KEY = stringPreferencesKey("user_id")
@@ -74,7 +74,7 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
         }
     }
 
-    suspend fun getAuthInfoSuspend(): String? {
+    override suspend fun getAuthInfoSuspend(): String? {
         return dataStore.data.first()[AUTH_TOKEN_KEY]
     }
 
@@ -164,16 +164,20 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
         }
     }
 
-    fun getCacheCount(): Flow<Int> = dataStore.data.map { it[CACHE_COUNT_KEY] ?: 50 }
+    override fun getCacheCount(): Flow<Int> = dataStore.data.map { it[CACHE_COUNT_KEY] ?: 50 }
 
-    suspend fun setCacheCount(count: Int) = withContext(Dispatchers.IO) {
-        dataStore.edit { it[CACHE_COUNT_KEY] = count }
+    override suspend fun setCacheCount(count: Int) {
+        withContext(Dispatchers.IO) {
+            dataStore.edit { it[CACHE_COUNT_KEY] = count }
+        }
     }
 
-    fun getDownloadImages(): Flow<Boolean> = dataStore.data.map { (it[DOWNLOAD_IMAGES_KEY] ?: 1) == 1 }
+    override fun getDownloadImages(): Flow<Boolean> = dataStore.data.map { (it[DOWNLOAD_IMAGES_KEY] ?: 1) == 1 }
 
-    suspend fun setDownloadImages(enabled: Boolean) = withContext(Dispatchers.IO) {
-        dataStore.edit { it[DOWNLOAD_IMAGES_KEY] = if (enabled) 1 else 0 }
+    override suspend fun setDownloadImages(enabled: Boolean) {
+        withContext(Dispatchers.IO) {
+            dataStore.edit { it[DOWNLOAD_IMAGES_KEY] = if (enabled) 1 else 0 }
+        }
     }
 
     suspend fun getSelectedEnv(): String? = withContext(Dispatchers.IO) {
@@ -186,7 +190,6 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
             preferences[SELECTED_ENV_KEY] = env
         }
     }
-
     /**
      * Returns the stable, installation-scoped identifier used by first-party analytics.
      * DataStore's serialized edit guarantees that concurrent first launches do not overwrite

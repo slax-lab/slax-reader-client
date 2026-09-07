@@ -15,6 +15,8 @@ import androidx.compose.ui.unit.dp
 import com.slax.reader.ui.bookmark.components.*
 import com.slax.reader.ui.bookmark.states.LocalMarkInteraction
 import com.slax.reader.ui.bookmark.states.ScrollInfo
+import com.slax.reader.ui.WebViewHost
+import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.utils.*
 import kotlinx.serialization.Serializable
 import org.koin.compose.viewmodel.koinViewModel
@@ -49,11 +51,13 @@ actual fun DetailScreen(
     bookmarkId: String,
     htmlContent: String,
     webViewState: AppWebViewState,
-    onScrollInfoChanged: (ScrollInfo) -> Unit
+    onScrollInfoChanged: (ScrollInfo) -> Unit,
+    viewModel: BookmarkDetailViewModel?,
+    webViewHost: WebViewHost,
 ) {
     println("[watch][UI] recomposition DetailScreen.ios")
 
-    val viewModel = koinViewModel<BookmarkDetailViewModel>()
+    val viewModel = viewModel ?: koinViewModel<BookmarkDetailViewModel>()
 
     val wrappedHtmlContent = remember(htmlContent) { wrapBookmarkDetailHtml(htmlContent) }
 
@@ -140,7 +144,7 @@ actual fun DetailScreen(
             .onSizeChanged { containerHeightPx = it.height.toFloat() }
     ) {
         key(bookmarkId) {
-            AppWebView(
+            webViewHost.Html(
                 htmlContent = wrappedHtmlContent,
                 modifier = Modifier.fillMaxSize().preferredFrameRate(FrameRateCategory.High),
                 webState = webViewState,

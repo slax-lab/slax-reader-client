@@ -15,17 +15,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.slax.reader.SlaxConfig
-import com.slax.reader.data.network.ApiService
+import com.slax.reader.data.network.FeedbackApi
 import com.slax.reader.data.network.dto.FeedbackParams
 import com.slax.reader.utils.feedbackEvent
 import com.slax.reader.utils.i18n
 import com.slax.reader.utils.platformName
+import com.slax.reader.testing.TestTags
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
@@ -43,9 +45,10 @@ fun FeedbackScreen(
     bookmarkId: String? = null,
     entryPoint: String? = null,
     version: String? = null,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    api: FeedbackApi? = null,
 ) {
-    val apiService: ApiService = koinInject()
+    val apiService: FeedbackApi = api ?: koinInject()
     val scope = rememberCoroutineScope()
 
     var feedbackText by remember { mutableStateOf("") }
@@ -80,6 +83,7 @@ fun FeedbackScreen(
                 },
                 actions = {
                     TextButton(
+                        modifier = Modifier.testTag(TestTags.FeedbackSubmit),
                         onClick = {
                             if (!isSubmitEnabled) return@TextButton
                             isSubmitting = true
@@ -130,6 +134,7 @@ fun FeedbackScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .imePadding()
+                .testTag(TestTags.FeedbackScreen)
                 .pointerInput(Unit) {
                     detectTapGestures { focusManager.clearFocus() }
                 }
@@ -188,7 +193,7 @@ fun FeedbackScreen(
                         lineHeight = 22.5.sp,
                         color = Color(0xFF333333)
                     ),
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().testTag(TestTags.FeedbackInput),
                     decorationBox = { innerTextField ->
                         Box {
                             if (feedbackText.isEmpty()) {

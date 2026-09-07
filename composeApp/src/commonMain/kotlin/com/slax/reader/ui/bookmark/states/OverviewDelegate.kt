@@ -1,10 +1,11 @@
 package com.slax.reader.ui.bookmark.states
 
-import com.slax.reader.data.database.dao.LocalBookmarkDao
-import com.slax.reader.data.network.ApiService
+import com.slax.reader.data.database.dao.LocalBookmarkRepository
+import com.slax.reader.data.network.BookmarkAiApi
 import com.slax.reader.data.network.MetricsType
 import com.slax.reader.data.network.dto.OverviewResponse
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,9 +30,10 @@ data class OverviewViewBounds(
 )
 
 class OverviewDelegate(
-    private val localBookmarkDao: LocalBookmarkDao,
-    private val apiService: ApiService,
-    private val scope: CoroutineScope
+    private val localBookmarkDao: LocalBookmarkRepository,
+    private val apiService: BookmarkAiApi,
+    private val scope: CoroutineScope,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
 
     private val _overviewState = MutableStateFlow(OverviewState())
@@ -44,7 +46,7 @@ class OverviewDelegate(
         if (_overviewState.value.overview.isNotEmpty() || _overviewState.value.isLoading) return
 
         scope.launch {
-            val (cachedOverview, cachedKeyTakeaways) = withContext(Dispatchers.IO) {
+            val (cachedOverview, cachedKeyTakeaways) = withContext(ioDispatcher) {
                 localBookmarkDao.getLocalBookmarkOverview(bookmarkId)
             }
 
@@ -95,7 +97,7 @@ class OverviewDelegate(
                             }
 
                             if (fullOverview.isNotEmpty()) {
-                                withContext(Dispatchers.IO) {
+                                withContext(ioDispatcher) {
                                     val keyTakeawaysJson = if (fullKeyTakeaways.isNotEmpty()) {
                                         Json.encodeToString(fullKeyTakeaways)
                                     } else {

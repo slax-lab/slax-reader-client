@@ -27,7 +27,7 @@ enum class MetricsType(val value: String) {
 
 class ApiService(
     private val httpClient: HttpClient,
-) {
+) : AccountApi, PaymentApi, BookmarkAiApi, FeedbackApi {
 
     private fun buildUrl(pathName: String, query: Map<String, String>? = emptyMap()): String {
         val builder = URLBuilder()
@@ -137,13 +137,13 @@ class ApiService(
         return get("/v1/mark/users", query = mapOf("bookmark_uid" to bookmarkUid))
     }
 
-    suspend fun checkIapResult(param: CheckIapParam) : HttpData<CheckIapResult> {
+    override suspend fun checkIapResult(param: CheckIapParam) : HttpData<CheckIapResult> {
         return post(
             "/v1/subscription/check_inapp_purchase", body = param
         )
     }
 
-    fun getBookmarkOverview(bookmarkId: String): Flow<OverviewResponse> = flow {
+    override fun getBookmarkOverview(bookmarkId: String): Flow<OverviewResponse> = flow {
         val url = buildUrl("/v1/bookmark/overview")
 
         httpClient.preparePost(url) {
@@ -175,7 +175,7 @@ class ApiService(
         }
     }.flowOn(Dispatchers.IO)
 
-    fun getBookmarkOutline(bookmarkId: String): Flow<OutlineResponse> = flow {
+    override fun getBookmarkOutline(bookmarkId: String): Flow<OutlineResponse> = flow {
         val url = buildUrl("/v1/bookmark/outline")
 
         httpClient.preparePost(url) {
@@ -204,26 +204,28 @@ class ApiService(
         }
     }.flowOn(Dispatchers.IO)
 
-    suspend fun getIAPProductIds(): HttpData<ProductIdsResult> = withContext(Dispatchers.IO) {
+    override suspend fun getIAPProductIds(): HttpData<ProductIdsResult> = withContext(Dispatchers.IO) {
         return@withContext get<ProductIdsResult>("/v1/subscription/apple_inapp_products", query = null)
     }
 
-    suspend fun deleteAccount(): HttpData<DeleteAccountData> = withContext(Dispatchers.IO) {
+    override suspend fun deleteAccount(): HttpData<DeleteAccountData> = withContext(Dispatchers.IO) {
         return@withContext post<DeleteAccountData>("/v1/user/delete_my_account")
     }
 
-    suspend fun sendFeedback(param: FeedbackParams): HttpData<String> = withContext(Dispatchers.IO) {
+    override suspend fun sendFeedback(param: FeedbackParams): HttpData<String> = withContext(Dispatchers.IO) {
         return@withContext post("/v1/user/report", body = param)
     }
 
-    suspend fun sendMetrics(type: MetricsType) = withContext(Dispatchers.IO) {
-        val url = buildUrl("/m")
-        runCatching {
-            httpClient.get(url) {
-                headers {
-                    append("X-CLIENT-TYPE", platformType)
-                    append("X-ACTION-TYPE", type.value)
-                    append("X-CLIENT-VERSION", "${SlaxConfig.APP_VERSION_NAME} (${SlaxConfig.APP_VERSION_CODE})")
+    override suspend fun sendMetrics(type: MetricsType) {
+        withContext(Dispatchers.IO) {
+            val url = buildUrl("/m")
+            runCatching {
+                httpClient.get(url) {
+                    headers {
+                        append("X-CLIENT-TYPE", platformType)
+                        append("X-ACTION-TYPE", type.value)
+                        append("X-CLIENT-VERSION", "${SlaxConfig.APP_VERSION_NAME} (${SlaxConfig.APP_VERSION_CODE})")
+                    }
                 }
             }
         }

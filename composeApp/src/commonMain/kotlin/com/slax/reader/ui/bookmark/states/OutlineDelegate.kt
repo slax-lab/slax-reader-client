@@ -1,12 +1,13 @@
 package com.slax.reader.ui.bookmark.states
 
-import com.slax.reader.data.database.dao.LocalBookmarkDao
-import com.slax.reader.data.network.ApiService
+import com.slax.reader.data.database.dao.LocalBookmarkRepository
+import com.slax.reader.data.network.BookmarkAiApi
 import com.slax.reader.data.network.MetricsType
 import com.slax.reader.data.network.dto.OutlineResponse
 import com.slax.reader.utils.MarkdownHelper
 import com.slax.reader.utils.outlineEvent
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.Job
@@ -34,9 +35,10 @@ enum class OutlineDialogStatus {
 }
 
 class OutlineDelegate(
-    private val localBookmarkDao: LocalBookmarkDao,
-    private val apiService: ApiService,
-    private val scope: CoroutineScope
+    private val localBookmarkDao: LocalBookmarkRepository,
+    private val apiService: BookmarkAiApi,
+    private val scope: CoroutineScope,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     companion object {
         private const val SAVE_DEBOUNCE_MS = 2000L
@@ -62,7 +64,7 @@ class OutlineDelegate(
         saveScrollJob = scope.launch {
             delay(SAVE_DEBOUNCE_MS)
             val id = currentBookmarkId ?: return@launch
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 localBookmarkDao.updateLocalBookmarkOutlineScrollPosition(id, position)
             }
         }
@@ -74,7 +76,7 @@ class OutlineDelegate(
         val position = currentScrollPosition
         if (position < 0) return
         scope.launch {
-            withContext(NonCancellable + Dispatchers.IO) {
+        withContext(NonCancellable + ioDispatcher) {
                 localBookmarkDao.updateLocalBookmarkOutlineScrollPosition(id, position)
             }
         }
@@ -88,7 +90,7 @@ class OutlineDelegate(
         currentBookmarkId = bookmarkId
 
         scope.launch {
-            val savedPos = withContext(Dispatchers.IO) {
+            val savedPos = withContext(ioDispatcher) {
                 localBookmarkDao.getLocalBookmarkOutlineScrollPosition(bookmarkId)
             }
 
@@ -96,7 +98,7 @@ class OutlineDelegate(
                 savedScrollPosition = savedPos
             }
 
-            val cacheOutline = withContext(Dispatchers.IO) {
+            val cacheOutline = withContext(ioDispatcher) {
                 localBookmarkDao.getLocalBookmarkOutline(bookmarkId)
             }
 
@@ -145,7 +147,7 @@ class OutlineDelegate(
                             }
 
                             if (finalOutline.isNotEmpty()) {
-                                withContext(Dispatchers.IO) {
+                                withContext(ioDispatcher) {
                                     localBookmarkDao.updateLocalBookmarkOutline(
                                         bookmarkId = bookmarkId,
                                         outline = finalOutline

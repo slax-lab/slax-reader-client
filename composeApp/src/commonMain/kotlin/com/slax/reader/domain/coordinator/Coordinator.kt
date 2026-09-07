@@ -34,21 +34,21 @@ class CoordinatorDomain(
     private val database: PowerSyncDatabase,
     private val connector: Connector,
     private val powerSyncDao: PowerSyncDao
-) {
+) : NetworkCoordinator {
     private var workerScope: CoroutineScope? = null
 
     private var isConnected = false
     private val connectivity = Connectivity()
 
     private val _syncState = MutableStateFlow<AppSyncState>(AppSyncState.Connecting)
-    val syncState: StateFlow<AppSyncState> = _syncState.asStateFlow()
+    override val syncState: StateFlow<AppSyncState> = _syncState.asStateFlow()
 
     /**
      * Query the platform's current network status instead of inferring it from
      * the asynchronous sync state. This is important while the first
      * connectivity event is still being delivered during app startup.
      */
-    suspend fun isNetworkAvailable(): Boolean {
+    override suspend fun isNetworkAvailable(): Boolean {
         return try {
             hasNetworkConnection(connectivity.status())
         } catch (e: CancellationException) {

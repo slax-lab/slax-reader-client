@@ -10,11 +10,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.utils.i18n
+import com.slax.reader.testing.TestTags
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_outline_empty_inboxlist_icon
@@ -31,7 +33,7 @@ fun EmptyView() {
     )
 
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().testTag(TestTags.EmptyInbox),
         contentAlignment = Alignment.Center
     ) {
         Column(

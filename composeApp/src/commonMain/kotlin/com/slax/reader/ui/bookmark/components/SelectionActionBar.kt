@@ -44,6 +44,8 @@ import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_menu_action_comment
 import slax_reader_client.composeapp.generated.resources.ic_menu_action_copy
 import slax_reader_client.composeapp.generated.resources.ic_menu_action_highlight
+import com.slax.reader.testing.TestTags
+import androidx.compose.ui.platform.testTag
 
 /** 文本选中时显示的操作菜单项定义 */
 data class SelectionAction(
@@ -145,6 +147,7 @@ fun SelectionActionBar(
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
+                .testTag(TestTags.SelectionActionBar)
                 .dropShadow(
                     shape = RoundedCornerShape(12.dp),
                     shadow = Shadow(

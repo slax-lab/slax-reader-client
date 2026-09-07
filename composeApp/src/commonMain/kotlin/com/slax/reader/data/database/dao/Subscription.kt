@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.*
 class SubscriptionDao (
     private val scope: CoroutineScope,
     private val database: PowerSyncDatabase
-) {
+) : SubscriptionRepository {
     private val subscriptionMapper = { cursor: SqlCursor ->
         UserSubscriptionInfo(
             stripe_subscription_id = cursor.getStringOptional("stripe_subscription_id") ?: "",
@@ -44,5 +44,5 @@ class SubscriptionDao (
             .stateIn(scope, SharingStarted.WhileSubscribed(5000), null)
     }
 
-    fun watchSubscriptionInfo(): StateFlow<UserSubscriptionInfo?> = _subscriptionInfoFlow
+    override fun watchSubscriptionInfo(): StateFlow<UserSubscriptionInfo?> = _subscriptionInfoFlow
 }

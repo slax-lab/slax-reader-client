@@ -9,6 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.testTag
+import com.slax.reader.testing.TestTags
 
 /**
  * 分页指示器组件
@@ -26,7 +28,7 @@ fun PageIndicator(
     println("[watch][UI] recomposition PageIndicator")
 
     Row(
-        modifier = modifier,
+        modifier = modifier.testTag(TestTags.PageIndicator),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -34,6 +36,7 @@ fun PageIndicator(
             val isActive = index == currentPage
             Box(
                 modifier = Modifier
+                    .testTag("${TestTags.PageIndicatorItemPrefix}$index")
                     .width(if (isActive) 12.dp else 6.dp)
                     .height(6.dp)
                     .clip(RoundedCornerShape(3.dp))

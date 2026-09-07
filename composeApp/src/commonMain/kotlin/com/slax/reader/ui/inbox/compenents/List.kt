@@ -23,6 +23,8 @@ import androidx.navigation.NavController
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.utils.i18n
+import com.slax.reader.testing.TestTags
+import androidx.compose.ui.platform.testTag
 
 @Composable
 fun ArticleList(
@@ -114,7 +116,7 @@ fun ArticleList(
 @Composable
 fun EmptyOrLoadingView(hasSynced: Boolean) {
     println("[watch][UI] recomposition EmptyOrLoadingView, hasSynced=$hasSynced")
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().testTag(TestTags.EmptyOrLoading)) {
         EmptyView()
 
         if (!hasSynced) {
@@ -125,6 +127,7 @@ fun EmptyOrLoadingView(hasSynced: Boolean) {
             ) {
                 CircularProgressIndicator(
                     color = Color(0x336A6E83)
+                    ,modifier = Modifier.testTag(TestTags.LoadingIndicator)
                 )
             }
         }

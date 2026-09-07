@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_xs_tag_close
+import com.slax.reader.testing.TestTags
+import androidx.compose.ui.platform.testTag
 
 @Composable
 fun TagItem(
@@ -39,6 +41,7 @@ fun TagItem(
 
     Box(
         modifier = Modifier
+            .testTag(TestTags.TagItem)
             .height(height) // 动态高度
             .clip(RoundedCornerShape(3.dp))
             .border(

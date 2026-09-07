@@ -16,6 +16,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.domain.coordinator.AppSyncState
 import com.slax.reader.utils.i18n
+import com.slax.reader.testing.TestTags
+import androidx.compose.ui.platform.testTag
 
 @Composable
 fun SyncStatusBar(state: AppSyncState) {
@@ -31,7 +33,7 @@ fun SyncStatusBar(state: AppSyncState) {
     }
 
     Surface(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).testTag(TestTags.SyncStatusBar),
         shape = RoundedCornerShape(8.dp),
         color = Color(0xFFE8EBED),
     ) {
@@ -52,6 +54,7 @@ fun SyncStatusBar(state: AppSyncState) {
 
                 Text(
                     text = syncStateText,
+                    modifier = Modifier.testTag(TestTags.SyncStatusText),
                     style = style
                 )
 
@@ -73,6 +76,7 @@ fun SyncStatusBar(state: AppSyncState) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(5.dp)
+                        .testTag(TestTags.SyncProgress)
                         .clip(RoundedCornerShape(2.5.dp)),
                     color = Color(0xFF16B998),
                     trackColor = Color(0x140F1419)
@@ -84,6 +88,7 @@ fun SyncStatusBar(state: AppSyncState) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(5.dp)
+                        .testTag(TestTags.SyncProgress)
                         .clip(RoundedCornerShape(2.5.dp)),
                     color = Color(0xFF16B998),
                     trackColor = Color(0x140F1419)

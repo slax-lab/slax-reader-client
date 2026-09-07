@@ -1,6 +1,6 @@
 package com.slax.reader.ui.bookmark.states
 
-import com.slax.reader.data.database.dao.BookmarkDao
+import com.slax.reader.data.database.dao.BookmarkRepository
 import com.slax.reader.data.database.model.UserBookmark
 import com.slax.reader.data.database.model.UserTag
 import com.slax.reader.utils.bookmarkEvent
@@ -24,7 +24,7 @@ data class BookmarkDetailState(
 )
 
 class BookmarkDelegate(
-    private val bookmarkDao: BookmarkDao,
+    private val bookmarkDao: BookmarkRepository,
     private val bookmarkIdFlow: StateFlow<String?>,
     private val scope: CoroutineScope
 ) {

@@ -3,11 +3,11 @@ package com.slax.reader.ui.subscription
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.slax.reader.SlaxConfig
-import com.slax.reader.data.network.ApiService
+import com.slax.reader.data.network.PaymentApi
 import com.slax.reader.data.network.dto.CheckIapParam
-import com.slax.reader.data.preferences.AppPreferences
+import com.slax.reader.data.preferences.AuthTokenPreferences
 import com.slax.reader.utils.IAPCallback
-import com.slax.reader.utils.IAPManager
+import com.slax.reader.utils.IapGateway
 import com.slax.reader.utils.IAPProduct
 import com.slax.reader.utils.IAPProductOffer
 import com.slax.reader.utils.PurchaseResult
@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlin.uuid.ExperimentalUuidApi
 
 sealed class PaymentState {
@@ -35,13 +34,12 @@ sealed class PaymentState {
 }
 
 class SubscriptionViewModel(
-    private val apiService: ApiService,
-    private val appPreferences: AppPreferences
+    private val apiService: PaymentApi,
+    private val appPreferences: AuthTokenPreferences,
+    private val paymentManager: IapGateway,
     ) : ViewModel() {
     private val _paymentState = MutableStateFlow<PaymentState>(PaymentState.Loading)
     val paymentState: StateFlow<PaymentState> = _paymentState.asStateFlow()
-    private val paymentManager = IAPManager()
-
     inner class SubscriptionCallback() : IAPCallback {
         override fun onProductsLoaded(products: List<IAPProduct>) {
             _paymentState.value = PaymentState.Idle
@@ -124,14 +122,12 @@ class SubscriptionViewModel(
         _paymentState.value = PaymentState.Idle
     }
 
-    fun getUserWebviewCookie() : List<WebViewCookie> {
-        val token = runBlocking {
-            appPreferences.getAuthInfoSuspend()
-        }
+    suspend fun getUserWebviewCookie() : List<WebViewCookie> {
+        val token = appPreferences.getAuthInfoSuspend()
         return listOf(
             WebViewCookie(
                 name = "token",
-                value = token!!,
+                value = token.orEmpty(),
                 domain = SlaxConfig.WEB_DOMAIN,
                 path = "/",
                 secure = true

@@ -170,6 +170,8 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.turbine)
             implementation("org.jetbrains.compose.ui:ui-test:${libs.versions.composeMultiplatform.get()}")
         }
         named { it.lowercase().startsWith("ios") }.configureEach {

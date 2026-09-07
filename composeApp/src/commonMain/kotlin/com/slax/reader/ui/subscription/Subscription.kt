@@ -41,6 +41,8 @@ import com.slax.reader.utils.WebViewEvent
 import com.slax.reader.utils.i18n
 import com.slax.reader.utils.rememberAppWebViewState
 import com.slax.reader.utils.subscriptionEvent
+import com.slax.reader.ui.PlatformWebViewHost
+import com.slax.reader.ui.WebViewHost
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import slax_reader_client.composeapp.generated.resources.Res
@@ -48,14 +50,21 @@ import slax_reader_client.composeapp.generated.resources.ic_sm_back
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SubscriptionManagerScreen(onBackClick: () -> Unit) {
-    val viewmodel: SubscriptionViewModel = koinInject()
+fun SubscriptionManagerScreen(
+    onBackClick: () -> Unit,
+    viewModel: SubscriptionViewModel? = null,
+    webViewHost: WebViewHost = PlatformWebViewHost,
+) {
+    val viewmodel: SubscriptionViewModel = viewModel ?: koinInject()
     val paymentState by viewmodel.paymentState.collectAsState()
 
     var isLoading by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
 
-    val cookie = remember { viewmodel.getUserWebviewCookie() }
+    var cookie by remember { mutableStateOf<List<com.slax.reader.utils.WebViewCookie>>(emptyList()) }
+    LaunchedEffect(viewmodel) {
+        cookie = viewmodel.getUserWebviewCookie()
+    }
     val webState = rememberAppWebViewState(scope, cookie)
 
     LaunchedEffect(webState) {
@@ -117,7 +126,7 @@ fun SubscriptionManagerScreen(onBackClick: () -> Unit) {
                 .fillMaxSize()
                 .padding(top = paddingValues.calculateTopPadding())
         ) {
-            WebView(
+            webViewHost.Url(
                 url = "${SlaxConfig.WEB_BASE_URL}/subscription/inapp-purchase",
                 modifier = Modifier.fillMaxSize(),
                 webState = webState

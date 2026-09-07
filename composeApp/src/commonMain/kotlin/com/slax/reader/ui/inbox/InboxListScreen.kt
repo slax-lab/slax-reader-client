@@ -44,8 +44,12 @@ import slax_reader_client.composeapp.generated.resources.ic_xs_inbox_add
 import slax_reader_client.composeapp.generated.resources.inbox_more
 
 @Composable
-fun InboxListScreen(navCtrl: NavController) {
-    val inboxViewModel = koinViewModel<InboxListViewModel>()
+fun InboxListScreen(
+    navCtrl: NavController,
+    viewModel: InboxListViewModel? = null,
+    sidebarViewModel: com.slax.reader.ui.sidebar.SidebarViewModel? = null,
+) {
+    val inboxViewModel = viewModel ?: koinViewModel<InboxListViewModel>()
     val firstPartyEvents: FirstPartyEventReporter = koinInject()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -59,6 +63,7 @@ fun InboxListScreen(navCtrl: NavController) {
     Sidebar(
         drawerState = drawerState,
         navCtrl = navCtrl,
+        viewModel = sidebarViewModel,
     ) {
         Box(
             modifier = Modifier

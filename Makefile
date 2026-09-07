@@ -23,3 +23,12 @@ bridge:
 
 adb-proxy:
 	 ~/Library/Android/sdk/platform-tools/adb reverse tcp:8081 tcp:8081
+
+test:
+	./gradlew :composeApp:testDebugUnitTest :composeApp:testReleaseUnitTest :composeApp:allTests
+
+test-ui:
+	./gradlew :composeApp:connectedDebugAndroidTest
+
+test-build:
+	./gradlew :composeApp:assembleDebug :composeApp:assembleDebugAndroidTest

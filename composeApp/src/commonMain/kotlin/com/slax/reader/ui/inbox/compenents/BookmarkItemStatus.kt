@@ -11,11 +11,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.slax.reader.data.database.model.BookmarkSortType
 import com.slax.reader.domain.sync.DownloadStatus
+import com.slax.reader.testing.TestTags
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_cell_archived
@@ -38,7 +40,7 @@ internal fun itemDownloadState(downloadStatus: Int): ItemDownloadState = when (d
     else -> ItemDownloadState.NONE
 }
 
-private val DownloadStateKey = SemanticsPropertyKey<String>("DownloadState")
+internal val DownloadStateKey = SemanticsPropertyKey<String>("DownloadState")
 
 @Composable
 fun ItemStatus(downloadStatus: Int, sortType: BookmarkSortType = BookmarkSortType.UPDATED) {
@@ -72,6 +74,7 @@ fun ItemStatus(downloadStatus: Int, sortType: BookmarkSortType = BookmarkSortTyp
             contentDescription = "Article",
             modifier = Modifier
                 .size(12.dp)
+                .testTag(TestTags.BookmarkItemStatus)
                 .semantics { this[DownloadStateKey] = itemState.name },
             contentScale = ContentScale.Fit
         )

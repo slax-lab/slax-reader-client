@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.*
 class UserDao(
     private val scope: CoroutineScope,
     private val database: PowerSyncDatabase
-) {
+) : UserRepository {
     private val _userInfoFlow: StateFlow<UserInfo?> by lazy {
         println("[watch][database] _userInfoFlow")
 
@@ -46,5 +46,5 @@ class UserDao(
             .stateIn(scope, SharingStarted.WhileSubscribed(5000), null)
     }
 
-    fun watchUserInfo(): StateFlow<UserInfo?> = _userInfoFlow
+    override fun watchUserInfo(): StateFlow<UserInfo?> = _userInfoFlow
 }

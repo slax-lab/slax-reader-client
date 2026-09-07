@@ -11,12 +11,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.slax.reader.const.DeleteAccountRoutes
+import com.slax.reader.testing.TestTags
 import com.slax.reader.utils.LocaleString
 import com.slax.reader.utils.i18n
 import kotlinx.coroutines.launch
@@ -33,13 +35,14 @@ private val CacheCountSteps = listOf(30, 50, 100, 200, UNLIMIT)
 @Composable
 fun SettingScreen(
     onBackClick: () -> Unit,
-    navController: NavHostController
+    navController: NavHostController,
+    viewModel: SettingViewModel? = null,
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val viewModel: SettingViewModel = koinViewModel()
+    val resolvedViewModel: SettingViewModel = viewModel ?: koinViewModel()
     var showLanguageDialog by remember { mutableStateOf(false) }
-    val selectedCacheCount by viewModel.cacheCount.collectAsState()
-    val isDownloadImages by viewModel.downloadImages.collectAsState()
+    val selectedCacheCount by resolvedViewModel.cacheCount.collectAsState()
+    val isDownloadImages by resolvedViewModel.downloadImages.collectAsState()
 
     Scaffold(
         topBar = {
@@ -74,15 +77,16 @@ fun SettingScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 12.dp)
+                .testTag(TestTags.SettingScreen)
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
             // 离线缓存设置卡片
             OfflineCacheCard(
                 selectedCacheCount = selectedCacheCount,
-                onCacheCountChange = { viewModel.updateCacheCount(it) },
+                onCacheCountChange = { resolvedViewModel.updateCacheCount(it) },
                 downloadImages = isDownloadImages,
-                onDownloadImagesChange = { viewModel.updateDownloadImages(it) }
+                onDownloadImagesChange = { resolvedViewModel.updateDownloadImages(it) }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -96,6 +100,7 @@ fun SettingScreen(
                 SettingItem(
                     title = "setting_language".i18n(),
                     rightText = if (LocaleString.currentLocale == "zh") "language_chinese".i18n() else "language_english".i18n(),
+                    modifier = Modifier.testTag(TestTags.SettingLanguage),
                     onClick = {
                         showLanguageDialog = true
                     }
@@ -113,7 +118,8 @@ fun SettingScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(55.dp),
+                    .height(55.dp)
+                    .testTag(TestTags.SettingDeleteAccount),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (isDeleteButtonPressed) Color(0x141A1A1A) else Color.White
@@ -169,7 +175,7 @@ fun SettingScreen(
 }
 
 @Composable
-private fun OfflineCacheCard(
+internal fun OfflineCacheCard(
     selectedCacheCount: Int,
     onCacheCountChange: (Int) -> Unit,
     downloadImages: Boolean,
@@ -296,7 +302,7 @@ private fun OfflineCacheCard(
 }
 
 @Composable
-private fun CacheCountStepper(
+internal fun CacheCountStepper(
     value: Int,
     onValueChange: (Int) -> Unit
 ) {
@@ -330,7 +336,7 @@ private fun CacheCountStepper(
 }
 
 @Composable
-private fun RadioButtonItem(
+internal fun RadioButtonItem(
     text: String,
     selected: Boolean,
     onClick: () -> Unit

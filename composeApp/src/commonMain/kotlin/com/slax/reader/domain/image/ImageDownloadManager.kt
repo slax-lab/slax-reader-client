@@ -82,9 +82,7 @@ class ImageDownloadManager(
     }
 
     fun resolveUrl(customUrl: String): String {
-        return customUrl
-            .replace(HTTPS_SCHEME_REGEX, "https://")
-            .replace(HTTP_SCHEME_REGEX, "http://")
+        return normalizeImageUrl(customUrl)
     }
 
     private fun generateCacheFilePath(bookmarkId: String, url: String): String {
@@ -102,4 +100,10 @@ class ImageDownloadManager(
         private val HTTPS_SCHEME_REGEX = Regex("^slaxstatics://")
         private val HTTP_SCHEME_REGEX = Regex("^slaxstatic://")
     }
+}
+
+internal fun normalizeImageUrl(customUrl: String): String {
+    return customUrl
+        .replace(Regex("^slaxstatics://"), "https://")
+        .replace(Regex("^slaxstatic://"), "http://")
 }
