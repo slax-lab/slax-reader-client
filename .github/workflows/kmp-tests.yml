@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Check out
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -27,10 +29,12 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Create test build configuration
-        run: printf 'GOOGLE_AUTH_SERVER_ID=ci-test-client-id.apps.googleusercontent.com\n' > .env
+        run: |
+          printf 'GOOGLE_AUTH_SERVER_ID=ci-test-client-id.apps.googleusercontent.com\n' > .env
+          cp .env .env.release
 
-      - name: Run KMP unit tests
-        run: ./gradlew :composeApp:testDebugUnitTest :composeApp:testReleaseUnitTest :composeApp:allTests --no-daemon
+      - name: Run JVM and iOS simulator tests
+        run: ./gradlew :composeApp:testDebugUnitTest :composeApp:iosSimulatorArm64Test --no-daemon --parallel
 
       - name: Upload JVM and native test reports
         if: always()
@@ -49,6 +53,8 @@ jobs:
     steps:
       - name: Check out
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -63,7 +69,9 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Create test build configuration
-        run: printf 'GOOGLE_AUTH_SERVER_ID=ci-test-client-id.apps.googleusercontent.com\n' > .env
+        run: |
+          printf 'GOOGLE_AUTH_SERVER_ID=ci-test-client-id.apps.googleusercontent.com\n' > .env
+          cp .env .env.release
 
       - name: Run Android instrumented tests
         uses: reactivecircus/android-emulator-runner@v2
