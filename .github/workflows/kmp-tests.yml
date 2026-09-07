@@ -33,8 +33,11 @@ jobs:
           printf 'GOOGLE_AUTH_SERVER_ID=ci-test-client-id.apps.googleusercontent.com\n' > .env
           cp .env .env.release
 
-      - name: Run JVM and iOS simulator tests
-        run: ./gradlew :composeApp:testDebugUnitTest :composeApp:iosSimulatorArm64Test --no-daemon --parallel
+      - name: Run JVM unit tests
+        run: ./gradlew :composeApp:testDebugUnitTest --no-daemon --parallel --stacktrace --console=plain
+
+      - name: Run iOS simulator tests
+        run: ./gradlew :composeApp:iosSimulatorArm64Test --no-daemon --stacktrace --console=plain
 
       - name: Upload JVM and native test reports
         if: always()
@@ -43,8 +46,8 @@ jobs:
           name: common-test-reports
           if-no-files-found: ignore
           path: |
-            composeApp/build/reports/tests/**
-            composeApp/build/test-results/**
+            composeApp/build/reports/
+            composeApp/build/test-results/
 
   android-ui-tests:
     name: Android Compose UI and database tests
@@ -82,7 +85,7 @@ jobs:
           profile: pixel_2
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
           disable-animations: true
-          script: ./gradlew :composeApp:connectedDebugAndroidTest --no-daemon
+          script: ./gradlew :composeApp:connectedDebugAndroidTest --no-daemon --stacktrace --console=plain
 
       - name: Upload Android test reports
         if: always()
@@ -91,5 +94,5 @@ jobs:
           name: android-instrumented-test-reports
           if-no-files-found: ignore
           path: |
-            composeApp/build/reports/androidTests/**
-            composeApp/build/outputs/androidTest-results/**
+            composeApp/build/reports/
+            composeApp/build/outputs/androidTest-results/
