@@ -333,6 +333,24 @@ tasks.matching { it.name.startsWith("compile") && it.name.contains("Kotlin") }.c
     dependsOn("generateBuildKonfig")
 }
 
+val packageVerification = tasks.register("packageVerification") {
+    group = "verification"
+    description = "Runs the complete multiplatform unit-test suite before packaging."
+    dependsOn("testDebugUnitTest", "testReleaseUnitTest", "allTests")
+}
+
+tasks.matching {
+    it.name in setOf(
+        "assembleDebug",
+        "assembleRelease",
+        "bundleDebug",
+        "bundleRelease",
+        "bundleAndroidReleaseJs"
+    )
+}.configureEach {
+    dependsOn(packageVerification)
+}
+
 val syncXcodeVersionConfig = tasks.register<Exec>("syncXcodeVersionConfig") {
     workingDir(rootProject.projectDir)
     val script = """
