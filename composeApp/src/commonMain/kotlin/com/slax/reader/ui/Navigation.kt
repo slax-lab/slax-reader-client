@@ -27,6 +27,7 @@ import com.slax.reader.ui.setting.DeleteAccountScreen
 import com.slax.reader.ui.setting.SettingScreen
 import com.slax.reader.ui.subscription.SubscriptionManagerScreen
 import com.slax.reader.utils.FirebaseHelper
+import com.slax.reader.utils.FirstPartyEventReporter
 import com.slax.reader.utils.LifeCycleHelper
 import com.slax.reader.utils.NavHostTransitionHelper
 import com.slax.reader.utils.aboutEvent
@@ -49,6 +50,7 @@ fun SlaxNavigation(
     val authDomain: AuthDomain = koinInject()
     val backgroundDomain: BackgroundDomain = koinInject()
     val coordinator: CoordinatorDomain = koinInject()
+    val firstPartyEvents: FirstPartyEventReporter = koinInject()
     val authState by authDomain.authState.collectAsState()
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -102,7 +104,10 @@ fun SlaxNavigation(
             LoginScreen(
                 navController = navCtrl
             )
-            LaunchedEffect(Unit) { userEvent.view("login").send() }
+            LaunchedEffect(Unit) {
+                userEvent.view("login").send()
+                firstPartyEvents.track("screen_viewed", mapOf("screen_name" to "signup"))
+            }
         }
         composable<BookmarkRoutes> { backStackEntry ->
             val params = backStackEntry.toRoute<BookmarkRoutes>()
@@ -141,11 +146,22 @@ fun SlaxNavigation(
                     .bookmarkUUID(params.bookmarkId)
                     .mode("snapshot")
                     .send()
+                firstPartyEvents.track(
+                    "screen_viewed",
+                    mapOf("screen_name" to "detail", "bookmark_id" to params.bookmarkId)
+                )
+                firstPartyEvents.track(
+                    "bookmark_opened",
+                    mapOf("bookmark_id" to params.bookmarkId)
+                )
             }
         }
         composable<InboxRoutes> {
             InboxListScreen(navCtrl)
-            LaunchedEffect(Unit) { bookmarkListEvent.view().send() }
+            LaunchedEffect(Unit) {
+                bookmarkListEvent.view().send()
+                firstPartyEvents.track("screen_viewed", mapOf("screen_name" to "bookmarks"))
+            }
         }
         composable<SettingsRoutes> {
             DisposableEffect(Unit) {
@@ -204,4 +220,3 @@ fun SlaxNavigation(
         }
     }
 }
-

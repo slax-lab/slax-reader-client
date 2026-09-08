@@ -36,6 +36,7 @@ import com.slax.reader.domain.auth.rememberGoogleSignInProvider
 import com.slax.reader.utils.WebView
 import com.slax.reader.utils.i18n
 import com.slax.reader.utils.isIOS
+import com.slax.reader.utils.FirstPartyEventReporter
 import com.slax.reader.utils.rememberAppWebViewState
 import com.slax.reader.utils.userEvent
 import kotlinx.coroutines.launch
@@ -55,6 +56,7 @@ enum class AgreementType {
 @Composable
 fun LoginScreen(navController: NavHostController) {
     val viewModel: LoginViewModel = koinInject()
+    val firstPartyEvents: FirstPartyEventReporter = koinInject()
 
     var isGoogleLoading by remember { mutableStateOf(false) }
     var isAppleLoading by remember { mutableStateOf(false) }
@@ -153,6 +155,7 @@ fun LoginScreen(navController: NavHostController) {
                 onClick = {
                     withAgreementCheck(AgreementType.TERMS) {
                         scope.launch {
+                            firstPartyEvents.track("element_clicked", mapOf("element_id" to "login_google_cta", "screen_name" to "signup"))
                             val result = googleProvider.signIn()
                             userEvent.action("login_start").method("google").send()
                             if (result.isFailure) {
@@ -184,6 +187,7 @@ fun LoginScreen(navController: NavHostController) {
                     onClick = {
                         withAgreementCheck(AgreementType.PRIVACY) {
                             scope.launch {
+                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "login_apple_cta", "screen_name" to "signup"))
                                 val result = appleProvider.signIn()
                                 userEvent.action("login_start").method("apple").send()
                                 if (result.isFailure) {

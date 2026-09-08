@@ -23,6 +23,7 @@ import com.slax.reader.ui.bookmark.states.OverlayDelegate
 import com.slax.reader.ui.bookmark.states.OverviewDelegate
 import com.slax.reader.ui.bookmark.states.toStableId
 import com.slax.reader.utils.bookmarkEvent
+import com.slax.reader.utils.FirstPartyEventReporter
 import com.slax.reader.data.network.dto.MarkType
 import com.slax.reader.data.network.dto.StrokeCreateData
 import com.slax.reader.utils.AppWebViewState
@@ -72,6 +73,7 @@ class BookmarkDetailViewModel(
     private val appPreferences: AppPreferences,
     private val database: PowerSyncDatabase,
     private val shareImageSelector: ShareImageSelector,
+    private val firstPartyEvents: FirstPartyEventReporter,
 ) : ViewModel() {
 
     companion object {
@@ -232,6 +234,7 @@ class BookmarkDetailViewModel(
             "archive" -> bookmarkDelegate.onToggleArchive(!current.isArchived)
             "edit_title" -> overlayDelegate.showOverlay(BookmarkOverlay.EditTitle)
             "summary" -> {
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_open_outline", "screen_name" to "detail"))
                 viewModelScope.launch {
                     val isSubscribed = subscriptionInfo.value?.checkIsSubscribed() == true
                     bookmarkEvent.action("use_outline").isSubscribed(isSubscribed).send()
@@ -244,8 +247,14 @@ class BookmarkDetailViewModel(
                     outlineDelegate.showDialog()
                 }
             }
-            "feedback" -> overlayDelegate.showOverlay(BookmarkOverlay.FeedbackRequired)
-            "share" -> shareBookmark()
+            "feedback" -> {
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_open_feedback", "screen_name" to "detail"))
+                overlayDelegate.showOverlay(BookmarkOverlay.FeedbackRequired)
+            }
+            "share" -> {
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_share", "screen_name" to "detail"))
+                shareBookmark()
+            }
         }
 
         overlayDelegate.dismissOverlay(BookmarkOverlay.Toolbar)

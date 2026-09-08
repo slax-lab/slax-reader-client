@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 data class AuthInfo(
     val token: String,
@@ -54,6 +56,8 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
         private val DOWNLOAD_IMAGES_KEY = intPreferencesKey("download_images")
 
         private val SELECTED_ENV_KEY = stringPreferencesKey("selected_env")
+
+        private val DEVICE_ID_KEY = stringPreferencesKey("analytics_device_id")
     }
 
     suspend fun getLastRefreshTime(): Long? {
@@ -181,5 +185,23 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
         dataStore.edit { preferences ->
             preferences[SELECTED_ENV_KEY] = env
         }
+    }
+
+    /**
+     * Returns the stable, installation-scoped identifier used by first-party analytics.
+     * DataStore's serialized edit guarantees that concurrent first launches do not overwrite
+     * an already-created identifier.
+     */
+    @OptIn(ExperimentalUuidApi::class)
+    suspend fun getOrCreateDeviceId(): String = withContext(Dispatchers.IO) {
+        var deviceId: String? = null
+        dataStore.edit { preferences ->
+            deviceId = preferences[DEVICE_ID_KEY]
+            if (deviceId == null) {
+                deviceId = Uuid.random().toString()
+                preferences[DEVICE_ID_KEY] = deviceId!!
+            }
+        }
+        deviceId!!
     }
 }

@@ -33,6 +33,7 @@ import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.compenents.*
 import com.slax.reader.ui.sidebar.Sidebar
 import com.slax.reader.utils.i18n
+import com.slax.reader.utils.FirstPartyEventReporter
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
@@ -45,6 +46,7 @@ import slax_reader_client.composeapp.generated.resources.inbox_more
 @Composable
 fun InboxListScreen(navCtrl: NavController) {
     val inboxViewModel = koinViewModel<InboxListViewModel>()
+    val firstPartyEvents: FirstPartyEventReporter = koinInject()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -80,6 +82,7 @@ fun InboxListScreen(navCtrl: NavController) {
                                 }
                             },
                             onAddLinkClick = {
+                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_add_cta", "screen_name" to "bookmarks"))
                                 showAddLinkDialog = true
                             },
                             currentSortType = currentSortType,

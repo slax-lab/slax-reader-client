@@ -24,6 +24,7 @@ import com.slax.reader.ui.setting.SettingViewModel
 import com.slax.reader.ui.sidebar.SidebarViewModel
 import com.slax.reader.ui.subscription.SubscriptionViewModel
 import com.slax.reader.utils.Connector
+import com.slax.reader.utils.FirstPartyEventReporter
 import com.slax.reader.utils.getHttpClient
 import com.slax.reader.utils.platformFileSystem
 import kotlinx.coroutines.CoroutineScope
@@ -44,6 +45,7 @@ val networkModule = module {
     single { getHttpClient(get()) }
     single { Connector(get(), get()) }
     single { ApiService(get()) }
+    single { FirstPartyEventReporter(get(), get()) }
 }
 
 val powerSyncModule = module {
