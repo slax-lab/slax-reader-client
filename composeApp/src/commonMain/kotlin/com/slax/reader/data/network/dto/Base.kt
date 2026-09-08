@@ -11,6 +11,8 @@ data class HttpData<T>(
 
 @Serializable
 data class ErrorResponse(
+    /** Error name from the server envelope, e.g. LAB_FEATURE_DISABLED */
+    val data: String? = null,
     val message: String = "",
     val code: Int = 0
 )
