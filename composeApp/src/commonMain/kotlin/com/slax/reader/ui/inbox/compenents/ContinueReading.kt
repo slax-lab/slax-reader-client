@@ -149,7 +149,10 @@ fun ContinueReading(
                         indication = null,
                         enabled = onClick != null
                     ) {
-                        showContinueData?.let { onClick?.invoke(it.bookmarkId) }
+                        showContinueData?.let {
+                            firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_continue_reading", "screen_name" to "inbox"))
+                            onClick?.invoke(it.bookmarkId)
+                        }
                     }
                     .padding(16.dp)
             ) {

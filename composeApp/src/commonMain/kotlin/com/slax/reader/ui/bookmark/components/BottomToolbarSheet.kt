@@ -24,6 +24,7 @@ import com.slax.reader.const.component.rememberDismissableVisibility
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.states.BookmarkOverlay
 import com.slax.reader.utils.i18n
+import com.slax.reader.utils.FirstPartyEventReporter
 import org.jetbrains.compose.resources.DrawableResource
 import org.koin.compose.viewmodel.koinViewModel
 import slax_reader_client.composeapp.generated.resources.*
@@ -42,6 +43,7 @@ data class ToolbarIcon(
 @Composable
 fun BottomToolbarSheet() {
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
+    val firstPartyEvents: FirstPartyEventReporter = org.koin.compose.koinInject()
     val detailState by viewModel.bookmarkDelegate.bookmarkDetailState.collectAsState()
     val showDeleteConfirm by viewModel.deleteConfirmVisible.collectAsState()
 
@@ -124,6 +126,7 @@ fun BottomToolbarSheet() {
                     pages = toolbarPages,
                     onIconClick = { pageId, iconIndex ->
                         if (pageId == "delete") {
+                            firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_delete_cta", "screen_name" to "detail"))
                             viewModel.requestDeleteBookmark()
                         } else {
                             viewModel.onToolbarIconClick(pageId)

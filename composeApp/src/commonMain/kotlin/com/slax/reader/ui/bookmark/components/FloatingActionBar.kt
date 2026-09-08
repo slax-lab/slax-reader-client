@@ -26,6 +26,7 @@ import com.slax.reader.ui.bookmark.LocalToolbarVisible
 import com.slax.reader.ui.bookmark.states.BookmarkOverlay
 import com.slax.reader.ui.bookmark.states.OutlineDialogStatus
 import com.slax.reader.utils.bookmarkEvent
+import com.slax.reader.utils.FirstPartyEventReporter
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import org.jetbrains.compose.resources.painterResource
@@ -37,6 +38,7 @@ fun FloatingActionBar(
     modifier: Modifier = Modifier,
 ) {
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
+    val firstPartyEvents: FirstPartyEventReporter = org.koin.compose.koinInject()
     val visible by LocalToolbarVisible.current
 
     val detailState by viewModel.bookmarkDelegate.bookmarkDetailState.collectAsState()
@@ -101,12 +103,18 @@ fun FloatingActionBar(
             ) {
                 StarButton(
                     isStarred = isStarred,
-                    onClick = { viewModel.bookmarkDelegate.onToggleStar(!isStarred) }
+                    onClick = {
+                        firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_star_cta", "screen_name" to "detail"))
+                        viewModel.bookmarkDelegate.onToggleStar(!isStarred)
+                    }
                 )
 
                 ArchiveButton(
                     isArchived = isArchived,
-                    onClick = { viewModel.bookmarkDelegate.onToggleArchive(!isArchived) }
+                    onClick = {
+                        firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_archive_cta", "screen_name" to "detail"))
+                        viewModel.bookmarkDelegate.onToggleArchive(!isArchived)
+                    }
                 )
 
             }
@@ -114,6 +122,7 @@ fun FloatingActionBar(
             Box(modifier = Modifier.width(12.dp))
 
             MoreButton(onClick = {
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_toolbar_cta", "screen_name" to "detail"))
                 viewModel.overlayDelegate.showOverlay(BookmarkOverlay.Toolbar)
                 bookmarkEvent.action("use_toolbar_menu").send()
             })

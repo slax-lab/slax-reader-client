@@ -153,11 +153,11 @@ fun SlaxNavigation(
                     .send()
                 firstPartyEvents.track(
                     "screen_viewed",
-                    mapOf("screen_name" to "detail", "bookmark_id" to params.bookmarkId)
+                    mapOf("screen_name" to "detail")
                 )
                 firstPartyEvents.track(
                     "bookmark_opened",
-                    mapOf("bookmark_id" to params.bookmarkId)
+                    mapOf("bookmark_id" to params.bookmarkId, "opened_from" to params.openedFrom)
                 )
             }
         }
@@ -165,7 +165,7 @@ fun SlaxNavigation(
             InboxListScreen(navCtrl)
             LaunchedEffect(Unit) {
                 bookmarkListEvent.view().send()
-                firstPartyEvents.track("screen_viewed", mapOf("screen_name" to "bookmarks"))
+                firstPartyEvents.track("screen_viewed", mapOf("screen_name" to "inbox"))
             }
         }
         composable<SettingsRoutes> {
@@ -181,6 +181,7 @@ fun SlaxNavigation(
                 navController = navCtrl
             )
             LaunchedEffect(Unit) { settingEvent.view().send() }
+            LaunchedEffect(Unit) { firstPartyEvents.track("screen_viewed", mapOf("screen_name" to "settings")) }
         }
         composable<AboutRoutes> {
             AboutScreen(
@@ -192,23 +193,27 @@ fun SlaxNavigation(
                 }
             )
             LaunchedEffect(Unit) { aboutEvent.view().send() }
+            LaunchedEffect(Unit) { firstPartyEvents.track("screen_viewed", mapOf("screen_name" to "about")) }
         }
         composable<DebugRoutes> {
             DebugScreen(onBackClick = {
                 navCtrl.popBackStack()
             })
+            LaunchedEffect(Unit) { firstPartyEvents.track("screen_viewed", mapOf("screen_name" to "debug")) }
         }
         composable<DeleteAccountRoutes> {
             DeleteAccountScreen(onBackClick = {
                 navCtrl.popBackStack()
             })
             LaunchedEffect(Unit) { userEvent.view("delete_account").send() }
+            LaunchedEffect(Unit) { firstPartyEvents.track("screen_viewed", mapOf("screen_name" to "settings")) }
         }
         composable<SubscriptionManagerRoutes> {
             SubscriptionManagerScreen(onBackClick = {
                 navCtrl.popBackStack()
             })
             LaunchedEffect(Unit) { subscriptionEvent.view().send() }
+            LaunchedEffect(Unit) { firstPartyEvents.track("screen_viewed", mapOf("screen_name" to "subscription")) }
         }
         composable<FeedbackRoutes> { backStackEntry ->
             val params = backStackEntry.toRoute<FeedbackRoutes>()
@@ -222,6 +227,7 @@ fun SlaxNavigation(
                 onBackClick = { navCtrl.popBackStack() }
             )
             LaunchedEffect(Unit) { feedbackEvent.view().send() }
+            LaunchedEffect(Unit) { firstPartyEvents.track("screen_viewed", mapOf("screen_name" to "feedback")) }
         }
     }
 }

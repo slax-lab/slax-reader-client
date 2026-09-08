@@ -36,6 +36,7 @@ import com.slax.reader.const.component.rememberDismissableVisibility
 import com.slax.reader.testing.TestTags
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.utils.bookmarkEvent
+import com.slax.reader.utils.FirstPartyEventReporter
 import com.slax.reader.utils.getText
 import com.slax.reader.utils.i18n
 import kotlinx.coroutines.delay
@@ -51,6 +52,7 @@ fun AddLinkDialog(
     inboxView: InboxListViewModel,
     onDismissRequest: () -> Unit,
 ) {
+    val firstPartyEvents: FirstPartyEventReporter = org.koin.compose.koinInject()
     AddLinkDialogContent(
         onSubmit = { text ->
             inboxView.viewModelScope.launch {
@@ -59,6 +61,7 @@ fun AddLinkDialog(
                 inboxView.scrollToTop()
             }
             bookmarkEvent.action("add_start").channel("app").method("manual_paste").send()
+            firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_add_confirm_cta", "screen_name" to "inbox"))
         },
         onDismissRequest = onDismissRequest,
     )

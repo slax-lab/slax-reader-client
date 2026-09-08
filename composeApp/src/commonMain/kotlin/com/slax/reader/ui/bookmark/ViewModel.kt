@@ -238,9 +238,18 @@ class BookmarkDetailViewModel(
         val current = bookmarkDelegate.bookmarkDetailState.value
 
         when (pageId) {
-            "star" -> bookmarkDelegate.onToggleStar(!current.isStarred)
-            "archive" -> bookmarkDelegate.onToggleArchive(!current.isArchived)
-            "edit_title" -> overlayDelegate.showOverlay(BookmarkOverlay.EditTitle)
+            "star" -> {
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_star_cta", "screen_name" to "detail"))
+                bookmarkDelegate.onToggleStar(!current.isStarred)
+            }
+            "archive" -> {
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_archive_cta", "screen_name" to "detail"))
+                bookmarkDelegate.onToggleArchive(!current.isArchived)
+            }
+            "edit_title" -> {
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_edit_title_cta", "screen_name" to "detail"))
+                overlayDelegate.showOverlay(BookmarkOverlay.EditTitle)
+            }
             "summary" -> {
                 firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_open_outline", "screen_name" to "detail"))
                 viewModelScope.launch {
@@ -263,6 +272,7 @@ class BookmarkDetailViewModel(
                 firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_share", "screen_name" to "detail"))
                 shareBookmark()
             }
+            "delete" -> firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_delete_cta", "screen_name" to "detail"))
         }
 
         overlayDelegate.dismissOverlay(BookmarkOverlay.Toolbar)

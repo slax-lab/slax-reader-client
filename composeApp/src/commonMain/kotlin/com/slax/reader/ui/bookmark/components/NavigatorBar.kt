@@ -21,6 +21,7 @@ import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.ui.bookmark.LocalToolbarVisible
 import com.slax.reader.ui.bookmark.states.BookmarkOverlay
 import com.slax.reader.utils.bookmarkEvent
+import com.slax.reader.utils.FirstPartyEventReporter
 import com.slax.reader.utils.i18n
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -32,6 +33,7 @@ import slax_reader_client.composeapp.generated.resources.ic_sm_back
 fun NavigatorBar() {
     println("[watch][UI] recomposition NavigatorBar")
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
+    val firstPartyEvents: FirstPartyEventReporter = org.koin.compose.koinInject()
     val visible by LocalToolbarVisible.current
 
     val offsetY by animateDpAsState(
@@ -63,6 +65,7 @@ fun NavigatorBar() {
                     interactionSource = interactionSource,
                     indication = null
                 ) {
+                    firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_back", "screen_name" to "detail"))
                     viewModel.requestNavigateBack()
                 },
             contentAlignment = Alignment.Center
@@ -88,6 +91,7 @@ fun NavigatorBar() {
                     interactionSource = moreInteractionSource,
                     indication = null
                 ) {
+                    firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_toolbar_cta", "screen_name" to "detail"))
                     viewModel.overlayDelegate.showOverlay(BookmarkOverlay.Toolbar)
                     bookmarkEvent.action("use_toolbar_menu").send()
                 },

@@ -82,16 +82,18 @@ fun InboxListScreen(
                     ) {
                         NavigationBar(
                             onAvatarClick = {
+                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "sidebar_open", "screen_name" to "inbox"))
                                 scope.launch {
                                     drawerState.open()
                                 }
                             },
                             onAddLinkClick = {
-                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_add_cta", "screen_name" to "bookmarks"))
+                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_add_cta", "screen_name" to "inbox"))
                                 showAddLinkDialog = true
                             },
                             currentSortType = currentSortType,
                             onSortTypeChanged = { type ->
+                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "inbox_sort", "screen_name" to "inbox"))
                                 inboxViewModel.setSortType(type)
                             }
                         )
@@ -306,7 +308,7 @@ private fun ContentSection(
 
         ContinueReading(
             onClick = { bookmarkId ->
-                navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmarkId))
+                navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmarkId, openedFrom = "bookmarks"))
             },
             modifier = Modifier.align(Alignment.BottomCenter)
         )
