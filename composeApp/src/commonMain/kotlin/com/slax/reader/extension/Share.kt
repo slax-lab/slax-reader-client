@@ -1,5 +1,6 @@
 package com.slax.reader.extension
 
+import com.slax.reader.const.AppError
 import com.slax.reader.data.network.ApiService
 import app.slax.reader.SlaxConfig
 import com.slax.reader.data.preferences.getPreferences
@@ -67,7 +68,9 @@ suspend fun collectionShare(content: String, title: String?, body: String?): Str
         println("collectionShare failed: ${e.message}")
         event.param("status", "failed").send()
         // 不直接暴露底层异常信息，避免显示无关的内部错误
+        // 400 是服务端给用户看的文案（如实验室未开启），原样显示
         val userMessage = when {
+            e is AppError.ApiException.HttpError && e.code == 400 && e.message.isNotBlank() -> e.message
             e.message?.contains("timeout", ignoreCase = true) == true -> "Request timed out, please try again."
             e.message?.contains("Unable to resolve host", ignoreCase = true) == true -> "Network unavailable, please check your connection."
             e.message?.contains("401") == true -> "Auth expired, please reopen the app to login again."
