@@ -66,7 +66,7 @@ fun FooterMenu(
         ) {
                 Button(
                 onClick = {
-                    firstPartyEvents.track("element_clicked", mapOf("element_id" to "sidebar_subscription", "screen_name" to "inbox"))
+                    firstPartyEvents.track("element_clicked", mapOf("element_id" to "sidebar_subscription_menu_item", "screen_name" to "bookmarks"))
                     onDismiss()
                     navCtrl.navigate(SubscriptionManagerRoutes)
                     subscriptionEvent.view().source("screen").send()
@@ -136,7 +136,7 @@ fun FooterMenu(
                 unselectedContainerColor = Color.Transparent
             ),
             onClick = {
-                firstPartyEvents.track("element_clicked", mapOf("element_id" to "sidebar_subscription", "screen_name" to "inbox"))
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "sidebar_subscription_menu_item", "screen_name" to "bookmarks"))
                 onDismiss()
                 navCtrl.navigate(SubscriptionManagerRoutes)
             }
@@ -155,7 +155,7 @@ fun FooterMenu(
                 unselectedContainerColor = Color.Transparent
             ),
             onClick = {
-                firstPartyEvents.track("element_clicked", mapOf("element_id" to "sidebar_settings", "screen_name" to "inbox"))
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "sidebar_settings_menu_item", "screen_name" to "bookmarks"))
                 onDismiss()
                 navCtrl.navigate(SettingsRoutes)
             }
@@ -174,7 +174,7 @@ fun FooterMenu(
                 unselectedContainerColor = Color.Transparent
             ),
             onClick = {
-                firstPartyEvents.track("element_clicked", mapOf("element_id" to "sidebar_feedback", "screen_name" to "inbox"))
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "sidebar_feedback_menu_item", "screen_name" to "bookmarks"))
                 onDismiss()
                 navCtrl.navigate(
                     FeedbackRoutes(
@@ -199,7 +199,7 @@ fun FooterMenu(
                 unselectedContainerColor = Color.Transparent
             ),
             onClick = {
-                firstPartyEvents.track("element_clicked", mapOf("element_id" to "sidebar_about", "screen_name" to "inbox"))
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "sidebar_about_menu_item", "screen_name" to "bookmarks"))
                 onDismiss()
                 navCtrl.navigate(AboutRoutes)
             }
@@ -218,7 +218,7 @@ fun FooterMenu(
                 unselectedContainerColor = Color.Transparent
             ),
             onClick = {
-                firstPartyEvents.track("element_clicked", mapOf("element_id" to "sidebar_logout", "screen_name" to "inbox"))
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "sidebar_logout_menu_item", "screen_name" to "bookmarks"))
                 signOut()
             }
         )

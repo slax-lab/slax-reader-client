@@ -126,7 +126,7 @@ fun BottomToolbarSheet() {
                     pages = toolbarPages,
                     onIconClick = { pageId, iconIndex ->
                         if (pageId == "delete") {
-                            firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_delete_cta", "screen_name" to "detail"))
+                            firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_delete_button", "screen_name" to "detail"))
                             viewModel.requestDeleteBookmark()
                         } else {
                             viewModel.onToolbarIconClick(pageId)

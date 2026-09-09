@@ -239,19 +239,19 @@ class BookmarkDetailViewModel(
 
         when (pageId) {
             "star" -> {
-                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_star_cta", "screen_name" to "detail"))
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_star_button", "screen_name" to "detail"))
                 bookmarkDelegate.onToggleStar(!current.isStarred)
             }
             "archive" -> {
-                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_archive_cta", "screen_name" to "detail"))
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_archive_button", "screen_name" to "detail"))
                 bookmarkDelegate.onToggleArchive(!current.isArchived)
             }
             "edit_title" -> {
-                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_edit_title_cta", "screen_name" to "detail"))
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_edit_title_button", "screen_name" to "detail"))
                 overlayDelegate.showOverlay(BookmarkOverlay.EditTitle)
             }
             "summary" -> {
-                firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_open_outline", "screen_name" to "detail"))
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_outline_button", "screen_name" to "detail"))
                 viewModelScope.launch {
                     val isSubscribed = subscriptionInfo.value?.checkIsSubscribed() == true
                     bookmarkEvent.action("use_outline").isSubscribed(isSubscribed).send()
@@ -265,14 +265,14 @@ class BookmarkDetailViewModel(
                 }
             }
             "feedback" -> {
-                firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_open_feedback", "screen_name" to "detail"))
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_feedback_button", "screen_name" to "detail"))
                 overlayDelegate.showOverlay(BookmarkOverlay.FeedbackRequired)
             }
             "share" -> {
-                firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_share", "screen_name" to "detail"))
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_share_button", "screen_name" to "detail"))
                 shareBookmark()
             }
-            "delete" -> firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_delete_cta", "screen_name" to "detail"))
+            "delete" -> firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_delete_button", "screen_name" to "detail"))
         }
 
         overlayDelegate.dismissOverlay(BookmarkOverlay.Toolbar)

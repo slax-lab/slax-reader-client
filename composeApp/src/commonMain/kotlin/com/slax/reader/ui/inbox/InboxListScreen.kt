@@ -58,6 +58,18 @@ fun InboxListScreen(
     var editingBookmark by remember { mutableStateOf<InboxListBookmarkItem?>(null) }
     val currentSortType by inboxViewModel.sortType.collectAsState()
 
+    LaunchedEffect(currentSortType) {
+        val listMode = when (currentSortType) {
+            BookmarkSortType.UPDATED -> "inbox"
+            BookmarkSortType.STARRED -> "starred"
+            BookmarkSortType.ARCHIVED -> "archive"
+        }
+        firstPartyEvents.track(
+            "screen_viewed",
+            mapOf("screen_name" to "bookmarks", "list_mode" to listMode)
+        )
+    }
+
     println("[watch][UI] recomposition InboxListScreen")
 
     Sidebar(
@@ -82,18 +94,18 @@ fun InboxListScreen(
                     ) {
                         NavigationBar(
                             onAvatarClick = {
-                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "sidebar_open", "screen_name" to "inbox"))
+                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "sidebar_open_button", "screen_name" to "bookmarks"))
                                 scope.launch {
                                     drawerState.open()
                                 }
                             },
                             onAddLinkClick = {
-                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_add_cta", "screen_name" to "inbox"))
+                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_add_button", "screen_name" to "bookmarks"))
                                 showAddLinkDialog = true
                             },
                             currentSortType = currentSortType,
                             onSortTypeChanged = { type ->
-                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "inbox_sort", "screen_name" to "inbox"))
+                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "inbox_sort_control", "screen_name" to "bookmarks"))
                                 inboxViewModel.setSortType(type)
                             }
                         )

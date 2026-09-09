@@ -163,10 +163,7 @@ fun SlaxNavigation(
         }
         composable<InboxRoutes> {
             InboxListScreen(navCtrl)
-            LaunchedEffect(Unit) {
-                bookmarkListEvent.view().send()
-                firstPartyEvents.track("screen_viewed", mapOf("screen_name" to "inbox"))
-            }
+            LaunchedEffect(Unit) { bookmarkListEvent.view().send() }
         }
         composable<SettingsRoutes> {
             DisposableEffect(Unit) {
@@ -199,14 +196,12 @@ fun SlaxNavigation(
             DebugScreen(onBackClick = {
                 navCtrl.popBackStack()
             })
-            LaunchedEffect(Unit) { firstPartyEvents.track("screen_viewed", mapOf("screen_name" to "debug")) }
         }
         composable<DeleteAccountRoutes> {
             DeleteAccountScreen(onBackClick = {
                 navCtrl.popBackStack()
             })
             LaunchedEffect(Unit) { userEvent.view("delete_account").send() }
-            LaunchedEffect(Unit) { firstPartyEvents.track("screen_viewed", mapOf("screen_name" to "settings")) }
         }
         composable<SubscriptionManagerRoutes> {
             SubscriptionManagerScreen(onBackClick = {

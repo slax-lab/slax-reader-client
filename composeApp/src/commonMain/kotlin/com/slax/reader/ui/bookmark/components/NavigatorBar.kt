@@ -65,7 +65,7 @@ fun NavigatorBar() {
                     interactionSource = interactionSource,
                     indication = null
                 ) {
-                    firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_back", "screen_name" to "detail"))
+                    firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_back_button", "screen_name" to "detail"))
                     viewModel.requestNavigateBack()
                 },
             contentAlignment = Alignment.Center
@@ -91,7 +91,7 @@ fun NavigatorBar() {
                     interactionSource = moreInteractionSource,
                     indication = null
                 ) {
-                    firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_toolbar_cta", "screen_name" to "detail"))
+                    firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_toolbar_open", "screen_name" to "detail"))
                     viewModel.overlayDelegate.showOverlay(BookmarkOverlay.Toolbar)
                     bookmarkEvent.action("use_toolbar_menu").send()
                 },

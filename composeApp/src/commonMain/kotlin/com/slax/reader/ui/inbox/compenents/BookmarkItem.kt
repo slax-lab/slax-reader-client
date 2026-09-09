@@ -195,7 +195,7 @@ fun BookmarkItemRow(
                             scope.launch {
                                 offsetXAnimatable.animateTo(0f, animationSpec = tween(200))
                                 viewModel.toggleStar(bookmark.id, bookmark.isStarred != 1)
-                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_star_cta", "screen_name" to "inbox"))
+                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_star_button", "screen_name" to "bookmarks"))
                                 bookmarkListEvent
                                     .action("item_interact")
                                     .param("element", "star")
@@ -230,7 +230,7 @@ fun BookmarkItemRow(
                             scope.launch {
                                 offsetXAnimatable.animateTo(0f, animationSpec = tween(200))
                                 viewModel.toggleArchive(bookmark.id, bookmark.archiveStatus != 1)
-                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_archive_cta", "screen_name" to "inbox"))
+                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_archive_button", "screen_name" to "bookmarks"))
                                 bookmarkListEvent
                                     .action("item_interact")
                                     .param("element", "archive")
@@ -331,7 +331,7 @@ fun BookmarkItemRow(
                                 }
                             } else {
                                 if (bookmark.metadataStatus == "success") {
-                                    firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_opened_row", "screen_name" to "inbox"))
+                                    firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_list_row", "screen_name" to "bookmarks"))
                                     navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmark.id, openedFrom = "bookmarks"))
                                 } else {
                                     bookmark.metadataUrl?.let {
@@ -425,7 +425,7 @@ fun BookmarkItemRow(
                             menuTriggerSource = MenuTriggerSource.NONE
                             isLongPressed = false
                             viewModel.toggleStar(bookmark.id, bookmark.isStarred != 1)
-                            firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_star_cta", "screen_name" to "inbox"))
+                            firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_star_button", "screen_name" to "bookmarks"))
                         }
                     }
                 )
@@ -439,7 +439,7 @@ fun BookmarkItemRow(
                             menuTriggerSource = MenuTriggerSource.NONE
                             isLongPressed = false
                             viewModel.toggleArchive(bookmark.id, bookmark.archiveStatus != 1)
-                            firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_archive_cta", "screen_name" to "inbox"))
+                            firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_archive_button", "screen_name" to "bookmarks"))
                         }
                     }
                 )
@@ -452,7 +452,7 @@ fun BookmarkItemRow(
                         menuTriggerSource = MenuTriggerSource.NONE
                         isLongPressed = false
                         onEditTitle(bookmark)
-                        firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_edit_title_cta", "screen_name" to "inbox"))
+                        firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_edit_title_button", "screen_name" to "bookmarks"))
                     }
                 )
 
@@ -466,7 +466,7 @@ fun BookmarkItemRow(
                             menuTriggerSource = MenuTriggerSource.NONE
                             isLongPressed = false
                             viewModel.deleteBookmark(bookmark.id)
-                            firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_delete_cta", "screen_name" to "inbox"))
+                            firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_delete_button", "screen_name" to "bookmarks"))
                         }
                     }
                 )

@@ -104,7 +104,7 @@ fun FloatingActionBar(
                 StarButton(
                     isStarred = isStarred,
                     onClick = {
-                        firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_star_cta", "screen_name" to "detail"))
+                        firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_star_button", "screen_name" to "detail"))
                         viewModel.bookmarkDelegate.onToggleStar(!isStarred)
                     }
                 )
@@ -112,7 +112,7 @@ fun FloatingActionBar(
                 ArchiveButton(
                     isArchived = isArchived,
                     onClick = {
-                        firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_archive_cta", "screen_name" to "detail"))
+                        firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_archive_button", "screen_name" to "detail"))
                         viewModel.bookmarkDelegate.onToggleArchive(!isArchived)
                     }
                 )
@@ -122,7 +122,7 @@ fun FloatingActionBar(
             Box(modifier = Modifier.width(12.dp))
 
             MoreButton(onClick = {
-                firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_toolbar_cta", "screen_name" to "detail"))
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_toolbar_open", "screen_name" to "detail"))
                 viewModel.overlayDelegate.showOverlay(BookmarkOverlay.Toolbar)
                 bookmarkEvent.action("use_toolbar_menu").send()
             })

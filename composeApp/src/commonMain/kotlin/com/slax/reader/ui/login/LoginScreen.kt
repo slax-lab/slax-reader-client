@@ -170,7 +170,7 @@ fun LoginScreen(
                 onClick = {
                     withAgreementCheck(AgreementType.TERMS) {
                         scope.launch {
-                            firstPartyEvents.track("element_clicked", mapOf("element_id" to "login_google_cta", "screen_name" to "signup"))
+                            firstPartyEvents.track("element_clicked", mapOf("element_id" to "login_google_button", "screen_name" to "signup"))
                             val result = runGoogleSignIn()
                             userEvent.action("login_start").method("google").send()
                             if (result.isFailure) {
@@ -204,7 +204,7 @@ fun LoginScreen(
                     onClick = {
                         withAgreementCheck(AgreementType.PRIVACY) {
                             scope.launch {
-                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "login_apple_cta", "screen_name" to "signup"))
+                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "login_apple_button", "screen_name" to "signup"))
                                 val result = runAppleSignIn()
                                 userEvent.action("login_start").method("apple").send()
                                 if (result.isFailure) {
