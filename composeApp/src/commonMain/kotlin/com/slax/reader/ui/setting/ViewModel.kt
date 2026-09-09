@@ -2,9 +2,9 @@ package com.slax.reader.ui.setting
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.slax.reader.data.network.ApiService
+import com.slax.reader.data.network.AccountApi
 import com.slax.reader.data.network.dto.DeleteAccountReason
-import com.slax.reader.data.preferences.AppPreferences
+import com.slax.reader.data.preferences.SettingsPreferences
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -23,8 +23,8 @@ sealed class DeleteAccountState {
 }
 
 class SettingViewModel(
-    private val apiService: ApiService,
-    private val appPreferences: AppPreferences
+    private val apiService: AccountApi,
+    private val appPreferences: SettingsPreferences
 ) : ViewModel() {
     private val _deleteAccountState = MutableStateFlow<DeleteAccountState>(DeleteAccountState.Idle)
     val deleteAccountState: StateFlow<DeleteAccountState> = _deleteAccountState.asStateFlow()
@@ -55,7 +55,10 @@ class SettingViewModel(
 
         try {
             val result = apiService.deleteAccount()
-            val deleteData = result.data!!
+            val deleteData = result.data ?: run {
+                _deleteAccountState.value = DeleteAccountState.Error("删除账号时返回数据为空")
+                return
+            }
 
             // 检查是否可以删除
             if (deleteData.canDelete) {

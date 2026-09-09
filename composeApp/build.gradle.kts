@@ -170,6 +170,9 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.turbine)
+            implementation("org.jetbrains.compose.ui:ui-test:${libs.versions.composeMultiplatform.get()}")
         }
         named { it.lowercase().startsWith("ios") }.configureEach {
             languageSettings {
@@ -193,6 +196,7 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = appVersionCode.toInt()
         versionName = appVersionName
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     packaging {
         resources {
@@ -229,6 +233,9 @@ android {
 
 dependencies {
     debugImplementation(compose.uiTooling)
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4-android:1.11.2")
+    androidTestImplementation("junit:junit:4.13.2")
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.11.2")
 }
 
 val embeddedDir = rootProject.file("public/embedded")
@@ -324,6 +331,24 @@ tasks.matching { it.name.startsWith("generateBuildKonfig") }.configureEach {
 
 tasks.matching { it.name.startsWith("compile") && it.name.contains("Kotlin") }.configureEach {
     dependsOn("generateBuildKonfig")
+}
+
+val packageVerification = tasks.register("packageVerification") {
+    group = "verification"
+    description = "Runs the complete multiplatform unit-test suite before packaging."
+    dependsOn("testDebugUnitTest", "testReleaseUnitTest", "allTests")
+}
+
+tasks.matching {
+    it.name in setOf(
+        "assembleDebug",
+        "assembleRelease",
+        "bundleDebug",
+        "bundleRelease",
+        "bundleAndroidReleaseJs"
+    )
+}.configureEach {
+    dependsOn(packageVerification)
 }
 
 val syncXcodeVersionConfig = tasks.register<Exec>("syncXcodeVersionConfig") {

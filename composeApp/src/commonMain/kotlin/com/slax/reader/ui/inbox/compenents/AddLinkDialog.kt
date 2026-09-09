@@ -26,12 +26,14 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewModelScope
 import com.slax.reader.const.component.rememberDismissableVisibility
+import com.slax.reader.testing.TestTags
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.utils.bookmarkEvent
 import com.slax.reader.utils.getText
@@ -47,6 +49,24 @@ data class ShowErrorMessage(val message: String, val color: Color)
 @Composable
 fun AddLinkDialog(
     inboxView: InboxListViewModel,
+    onDismissRequest: () -> Unit,
+) {
+    AddLinkDialogContent(
+        onSubmit = { text ->
+            inboxView.viewModelScope.launch {
+                inboxView.addLinkBookmark(text)
+                delay(100)
+                inboxView.scrollToTop()
+            }
+            bookmarkEvent.action("add_start").channel("app").method("manual_paste").send()
+        },
+        onDismissRequest = onDismissRequest,
+    )
+}
+
+@Composable
+internal fun AddLinkDialogContent(
+    onSubmit: (String) -> Unit,
     onDismissRequest: () -> Unit,
 ) {
     println("[watch][UI] recomposition AddLinkDialog")
@@ -98,13 +118,7 @@ fun AddLinkDialog(
             errorMessage = ShowErrorMessage("add_link_error_invalid_url".i18n(), Color(0xFFE53935))
             return
         }
-        inboxView.viewModelScope.launch {
-            inboxView.addLinkBookmark(text)
-            delay(100)
-            inboxView.scrollToTop()
-        }
-
-        bookmarkEvent.action("add_start").channel("app").method("manual_paste").send()
+        onSubmit(text)
         dismiss()
     }
 
@@ -136,6 +150,7 @@ fun AddLinkDialog(
 
             Surface(
                 modifier = Modifier
+                    .testTag(TestTags.AddLinkDialog)
                     .align(Alignment.Center)
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
@@ -170,6 +185,7 @@ fun AddLinkDialog(
                             modifier = Modifier
                                 .align(Alignment.CenterEnd)
                                 .size(24.dp)
+                                .testTag(TestTags.AddLinkClose)
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
@@ -211,6 +227,7 @@ fun AddLinkDialog(
                             state = inputState,
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .testTag(TestTags.AddLinkInput)
                                 .focusRequester(focusRequester),
                             textStyle = TextStyle(
                                 fontSize = 16.sp,
@@ -238,6 +255,7 @@ fun AddLinkDialog(
                                 color = errorMessage!!.color
                             ),
                             modifier = Modifier.fillMaxWidth()
+                                .testTag(TestTags.AddLinkError)
                         )
                     }
 
@@ -250,6 +268,7 @@ fun AddLinkDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp)
+                            .testTag(TestTags.AddLinkConfirm)
                             .background(
                                 color = if (isPressed) Color(0xFF14A68F) else Color(0xFF16b998),
                                 shape = RoundedCornerShape(12.dp)

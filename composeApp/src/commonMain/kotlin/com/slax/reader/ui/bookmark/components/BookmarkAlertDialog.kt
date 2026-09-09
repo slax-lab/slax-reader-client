@@ -10,6 +10,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.slax.reader.utils.i18n
+import com.slax.reader.testing.TestTags
+import androidx.compose.ui.platform.testTag
 
 @Composable
 fun BookmarkAlertDialog(
@@ -17,6 +19,7 @@ fun BookmarkAlertDialog(
     backClickHandle: (() -> Unit)
 ) {
     AlertDialog(
+        modifier = Modifier.testTag(TestTags.BookmarkAlertDialog),
         onDismissRequest = { backClickHandle() },
         title = { },
         text = {

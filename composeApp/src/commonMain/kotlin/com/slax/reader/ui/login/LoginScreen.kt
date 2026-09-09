@@ -32,12 +32,19 @@ import androidx.navigation.NavHostController
 import app.slax.reader.SlaxConfig
 import com.slax.reader.const.InboxRoutes
 import com.slax.reader.domain.auth.AppleSignInProvider
+import com.slax.reader.domain.auth.AppleSignInResult
+import com.slax.reader.domain.auth.GoogleSignInResult
 import com.slax.reader.domain.auth.rememberGoogleSignInProvider
 import com.slax.reader.utils.WebView
 import com.slax.reader.utils.i18n
 import com.slax.reader.utils.isIOS
+import com.slax.reader.utils.FirstPartyEventReporter
 import com.slax.reader.utils.rememberAppWebViewState
 import com.slax.reader.utils.userEvent
+import com.slax.reader.testing.TestTags
+import com.slax.reader.ui.PlatformWebViewHost
+import com.slax.reader.ui.WebViewHost
+import androidx.compose.ui.platform.testTag
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -53,8 +60,16 @@ enum class AgreementType {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(navController: NavHostController) {
-    val viewModel: LoginViewModel = koinInject()
+fun LoginScreen(
+    navController: NavHostController,
+    viewModel: LoginViewModel? = null,
+    webViewHost: WebViewHost = PlatformWebViewHost,
+    googleSignIn: (suspend () -> Result<GoogleSignInResult>)? = null,
+    appleSignIn: (suspend () -> Result<AppleSignInResult>)? = null,
+    showAppleSignIn: Boolean = isIOS(),
+) {
+    val resolvedViewModel: LoginViewModel = viewModel ?: koinInject()
+    val firstPartyEvents: FirstPartyEventReporter = koinInject()
 
     var isGoogleLoading by remember { mutableStateOf(false) }
     var isAppleLoading by remember { mutableStateOf(false) }
@@ -72,7 +87,9 @@ fun LoginScreen(navController: NavHostController) {
         }
     }
 
-    val googleProvider = rememberGoogleSignInProvider()
+    val runGoogleSignIn = googleSignIn ?: rememberGoogleSignInProvider().let { provider ->
+        suspend { provider.signIn() }
+    }
 
     val withAgreementCheck: (AgreementType, () -> Unit) -> Unit = { type, action ->
         if (!isAgreed) {
@@ -153,7 +170,8 @@ fun LoginScreen(navController: NavHostController) {
                 onClick = {
                     withAgreementCheck(AgreementType.TERMS) {
                         scope.launch {
-                            val result = googleProvider.signIn()
+                            firstPartyEvents.track("element_clicked", mapOf("element_id" to "login_google_button", "screen_name" to "signup"))
+                            val result = runGoogleSignIn()
                             userEvent.action("login_start").method("google").send()
                             if (result.isFailure) {
                                 val error = result.exceptionOrNull()
@@ -162,7 +180,7 @@ fun LoginScreen(navController: NavHostController) {
                                 }
                                 return@launch
                             }
-                            viewModel.googleSignIn(
+                            resolvedViewModel.googleSignIn(
                                 result = result,
                                 onSuccess = successHandle,
                                 onLoading = { isGoogleLoading = it },
@@ -173,8 +191,10 @@ fun LoginScreen(navController: NavHostController) {
                 }
             )
 
-            if (isIOS()) {
-                val appleProvider = remember { AppleSignInProvider() }
+            if (showAppleSignIn) {
+                val runAppleSignIn = appleSignIn ?: remember { AppleSignInProvider() }.let { provider ->
+                    suspend { provider.signIn() }
+                }
 
                 LoginButton(
                     modifier = Modifier.padding(top = 10.dp),
@@ -184,7 +204,8 @@ fun LoginScreen(navController: NavHostController) {
                     onClick = {
                         withAgreementCheck(AgreementType.PRIVACY) {
                             scope.launch {
-                                val result = appleProvider.signIn()
+                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "login_apple_button", "screen_name" to "signup"))
+                                val result = runAppleSignIn()
                                 userEvent.action("login_start").method("apple").send()
                                 if (result.isFailure) {
                                     val error = result.exceptionOrNull()
@@ -193,7 +214,7 @@ fun LoginScreen(navController: NavHostController) {
                                     }
                                     return@launch
                                 }
-                                viewModel.appleSignIn(
+                                resolvedViewModel.appleSignIn(
                                     result = result,
                                     onSuccess = successHandle,
                                     onLoading = { isAppleLoading = it },
@@ -237,7 +258,8 @@ fun LoginScreen(navController: NavHostController) {
             agreementType = null
             isAgreed = false
             pendingLoginAction = null
-        }
+        },
+        webViewHost = webViewHost,
     )
 }
 
@@ -246,7 +268,7 @@ fun LoginScreen(navController: NavHostController) {
 // ================================================================================================
 
 @Composable
-private fun LoginButton(
+internal fun LoginButton(
     text: String,
     isLoading: Boolean = false,
     onClick: () -> Unit,
@@ -262,10 +284,10 @@ private fun LoginButton(
             .height(50.dp)
             .widthIn(max = maxWidth)
     ) {
-        OutlinedButton(
+            OutlinedButton(
             onClick = onClick,
             enabled = !isLoading,
-            modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().testTag(TestTags.LoginButton),
             shape = RoundedCornerShape(25.dp),
             border = BorderStroke(0.5.dp, Color(0x336A6E83)),
             contentPadding = PaddingValues(),
@@ -280,7 +302,7 @@ private fun LoginButton(
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
+                        modifier = Modifier.size(20.dp).testTag(TestTags.LoginLoadingIndicator),
                         color = Color(0x336A6E83)
                     )
 
@@ -416,7 +438,8 @@ private fun AgreementBottomSheet(
     initialType: AgreementType?,
     onDismiss: () -> Unit,
     onAgree: () -> Unit,
-    onDisagree: () -> Unit
+    onDisagree: () -> Unit,
+    webViewHost: WebViewHost = PlatformWebViewHost,
 ) {
     // 0 = 用户协议，1 = 隐私政策
     var selectedTabIndex by remember { mutableStateOf(0) }
@@ -509,7 +532,7 @@ private fun AgreementBottomSheet(
                     .background(Color(0x14333333))
             )
 
-            WebView(
+            webViewHost.Url(
                 url = currentUrl,
                 modifier = Modifier
                     .fillMaxWidth()

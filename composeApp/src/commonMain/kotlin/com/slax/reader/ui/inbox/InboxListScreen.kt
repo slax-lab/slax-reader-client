@@ -33,6 +33,7 @@ import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.compenents.*
 import com.slax.reader.ui.sidebar.Sidebar
 import com.slax.reader.utils.i18n
+import com.slax.reader.utils.FirstPartyEventReporter
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
@@ -43,8 +44,13 @@ import slax_reader_client.composeapp.generated.resources.ic_xs_inbox_add
 import slax_reader_client.composeapp.generated.resources.inbox_more
 
 @Composable
-fun InboxListScreen(navCtrl: NavController) {
-    val inboxViewModel = koinViewModel<InboxListViewModel>()
+fun InboxListScreen(
+    navCtrl: NavController,
+    viewModel: InboxListViewModel? = null,
+    sidebarViewModel: com.slax.reader.ui.sidebar.SidebarViewModel? = null,
+) {
+    val inboxViewModel = viewModel ?: koinViewModel<InboxListViewModel>()
+    val firstPartyEvents: FirstPartyEventReporter = koinInject()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -52,11 +58,24 @@ fun InboxListScreen(navCtrl: NavController) {
     var editingBookmark by remember { mutableStateOf<InboxListBookmarkItem?>(null) }
     val currentSortType by inboxViewModel.sortType.collectAsState()
 
+    LaunchedEffect(currentSortType) {
+        val listMode = when (currentSortType) {
+            BookmarkSortType.UPDATED -> "inbox"
+            BookmarkSortType.STARRED -> "starred"
+            BookmarkSortType.ARCHIVED -> "archive"
+        }
+        firstPartyEvents.track(
+            "screen_viewed",
+            mapOf("screen_name" to "bookmarks", "list_mode" to listMode)
+        )
+    }
+
     println("[watch][UI] recomposition InboxListScreen")
 
     Sidebar(
         drawerState = drawerState,
         navCtrl = navCtrl,
+        viewModel = sidebarViewModel,
     ) {
         Box(
             modifier = Modifier
@@ -75,15 +94,18 @@ fun InboxListScreen(navCtrl: NavController) {
                     ) {
                         NavigationBar(
                             onAvatarClick = {
+                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "sidebar_open_button", "screen_name" to "bookmarks"))
                                 scope.launch {
                                     drawerState.open()
                                 }
                             },
                             onAddLinkClick = {
+                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_add_button", "screen_name" to "bookmarks"))
                                 showAddLinkDialog = true
                             },
                             currentSortType = currentSortType,
                             onSortTypeChanged = { type ->
+                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "inbox_sort_control", "screen_name" to "bookmarks"))
                                 inboxViewModel.setSortType(type)
                             }
                         )
@@ -298,7 +320,7 @@ private fun ContentSection(
 
         ContinueReading(
             onClick = { bookmarkId ->
-                navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmarkId))
+                navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmarkId, openedFrom = "bookmarks"))
             },
             modifier = Modifier.align(Alignment.BottomCenter)
         )

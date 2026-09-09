@@ -11,7 +11,7 @@ import kotlinx.serialization.json.Json
 class LocalBookmarkDao(
     private val scope: CoroutineScope,
     private val database: PowerSyncDatabase
-) {
+) : LocalBookmarkRepository {
     private val _userLocalBookmarkListFlow: StateFlow<Map<String, LocalBookmarkInfo>> by lazy {
         println("[watch][database] _userLocalBookmarkListFlow")
         database.watch(
@@ -34,7 +34,7 @@ class LocalBookmarkDao(
             .stateIn(scope, SharingStarted.Eagerly, emptyMap())
     }
 
-    fun watchUserLocalBookmarkMap(): StateFlow<Map<String, LocalBookmarkInfo>> = _userLocalBookmarkListFlow
+    override fun watchUserLocalBookmarkMap(): StateFlow<Map<String, LocalBookmarkInfo>> = _userLocalBookmarkListFlow
 
     private suspend fun upsertFields(
         bookmarkId: String,
@@ -105,13 +105,13 @@ class LocalBookmarkDao(
         }
     }
 
-    suspend fun updateLocalBookmarkOverview(
+    override suspend fun updateLocalBookmarkOverview(
         bookmarkId: String,
         overview: String,
         keyTakeaways: String?
     ) = upsertFields(bookmarkId, mapOf("overview" to overview, "key_takeaways" to keyTakeaways))
 
-    suspend fun getLocalBookmarkOverview(bookmarkId: String): Pair<String?, List<String>?> {
+    override suspend fun getLocalBookmarkOverview(bookmarkId: String): Pair<String?, List<String>?> {
         val d = "$"
         val result = database.getOptional(
             """
@@ -150,20 +150,20 @@ class LocalBookmarkDao(
     suspend fun getLocalBookmarkReadPosition(bookmarkId: String): Float? =
         getField(bookmarkId, "read_position")?.toFloatOrNull()
 
-    suspend fun updateLocalBookmarkOutline(
+    override suspend fun updateLocalBookmarkOutline(
         bookmarkId: String,
         outline: String,
     ) = upsertFields(bookmarkId, mapOf("outline" to outline))
 
-    suspend fun getLocalBookmarkOutline(bookmarkId: String): String? =
+    override suspend fun getLocalBookmarkOutline(bookmarkId: String): String? =
         getField(bookmarkId, "outline")
 
-    suspend fun updateLocalBookmarkOutlineScrollPosition(
+    override suspend fun updateLocalBookmarkOutlineScrollPosition(
         bookmarkId: String,
         scrollPosition: Int
     ) = upsertFields(bookmarkId, mapOf("outline_read_position" to scrollPosition.toString()))
 
-    suspend fun getLocalBookmarkOutlineScrollPosition(bookmarkId: String): Int? =
+    override suspend fun getLocalBookmarkOutlineScrollPosition(bookmarkId: String): Int? =
         getField(bookmarkId, "outline_read_position")?.toIntOrNull()
 
     suspend fun updateMarkUsers(bookmarkId: String, markUsersJson: String) =

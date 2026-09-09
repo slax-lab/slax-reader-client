@@ -2,12 +2,12 @@ package com.slax.reader.ui.inbox
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.slax.reader.data.database.dao.BookmarkDao
-import com.slax.reader.data.database.dao.LocalBookmarkDao
-import com.slax.reader.data.database.dao.UserDao
+import com.slax.reader.data.database.dao.BookmarkRepository
+import com.slax.reader.data.database.dao.LocalBookmarkRepository
+import com.slax.reader.data.database.dao.UserRepository
 import com.slax.reader.data.database.model.BookmarkSortType
 import com.slax.reader.data.database.model.InboxListBookmarkItem
-import com.slax.reader.domain.coordinator.CoordinatorDomain
+import com.slax.reader.domain.coordinator.NetworkCoordinator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -24,10 +24,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
 
 class InboxListViewModel(
-    private val userDao: UserDao,
-    private val bookmarkDao: BookmarkDao,
-    private val localBookmarkDao: LocalBookmarkDao,
-    private val coordinatorDomain: CoordinatorDomain
+    private val userDao: UserRepository,
+    private val bookmarkDao: BookmarkRepository,
+    private val localBookmarkDao: LocalBookmarkRepository,
+    private val coordinatorDomain: NetworkCoordinator
 ) : ViewModel() {
     val userInfo = userDao.watchUserInfo()
     val syncState = coordinatorDomain.syncState

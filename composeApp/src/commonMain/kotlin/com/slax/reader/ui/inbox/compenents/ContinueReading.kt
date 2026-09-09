@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.data.preferences.ContinueReadingBookmark
 import com.slax.reader.utils.i18n
+import com.slax.reader.utils.FirstPartyEventReporter
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -38,6 +39,7 @@ fun ContinueReading(
     modifier: Modifier = Modifier
 ) {
     val appPreferences: AppPreferences = koinInject()
+    val firstPartyEvents: FirstPartyEventReporter = koinInject()
     val coroutineScope = rememberCoroutineScope()
     var showContinueData by remember { mutableStateOf<ContinueReadingBookmark?>(null) }
     var visible by remember { mutableStateOf(false) }
@@ -149,7 +151,10 @@ fun ContinueReading(
                         indication = null,
                         enabled = onClick != null
                     ) {
-                        showContinueData?.let { onClick?.invoke(it.bookmarkId) }
+                        showContinueData?.let {
+                            firstPartyEvents.track("element_clicked", mapOf("element_id" to "continue_reading_button", "screen_name" to "bookmarks"))
+                            onClick?.invoke(it.bookmarkId)
+                        }
                     }
                     .padding(16.dp)
             ) {

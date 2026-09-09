@@ -11,8 +11,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsPropertyKey
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.slax.reader.data.database.model.BookmarkSortType
+import com.slax.reader.domain.sync.DownloadStatus
+import com.slax.reader.testing.TestTags
 import org.jetbrains.compose.resources.painterResource
 import slax_reader_client.composeapp.generated.resources.Res
 import slax_reader_client.composeapp.generated.resources.ic_cell_archived
@@ -21,16 +26,33 @@ import slax_reader_client.composeapp.generated.resources.ic_cell_internet_downlo
 import slax_reader_client.composeapp.generated.resources.ic_cell_internet_uncached
 import slax_reader_client.composeapp.generated.resources.ic_cell_starred
 
+internal enum class ItemDownloadState {
+    NONE,
+    DOWNLOADING,
+    COMPLETED,
+    FAILED,
+}
+
+internal fun itemDownloadState(downloadStatus: Int): ItemDownloadState = when (downloadStatus) {
+    DownloadStatus.DOWNLOADING.code -> ItemDownloadState.DOWNLOADING
+    DownloadStatus.COMPLETED.code -> ItemDownloadState.COMPLETED
+    DownloadStatus.FAILED.code -> ItemDownloadState.FAILED
+    else -> ItemDownloadState.NONE
+}
+
+internal val DownloadStateKey = SemanticsPropertyKey<String>("DownloadState")
+
 @Composable
 fun ItemStatus(downloadStatus: Int, sortType: BookmarkSortType = BookmarkSortType.UPDATED) {
+    val itemState = itemDownloadState(downloadStatus)
     val iconPainter = painterResource(
         when (sortType) {
             BookmarkSortType.STARRED -> Res.drawable.ic_cell_starred
             BookmarkSortType.ARCHIVED -> Res.drawable.ic_cell_archived
-            else -> when (downloadStatus) {
-                0 -> Res.drawable.ic_cell_internet_uncached
-                1 -> Res.drawable.ic_cell_internet_downloading
-                else -> Res.drawable.ic_cell_internet
+            else -> when (itemState) {
+                ItemDownloadState.DOWNLOADING -> Res.drawable.ic_cell_internet_downloading
+                ItemDownloadState.COMPLETED -> Res.drawable.ic_cell_internet
+                ItemDownloadState.NONE, ItemDownloadState.FAILED -> Res.drawable.ic_cell_internet_uncached
             }
         }
     )
@@ -50,7 +72,10 @@ fun ItemStatus(downloadStatus: Int, sortType: BookmarkSortType = BookmarkSortTyp
         Image(
             painter = iconPainter,
             contentDescription = "Article",
-            modifier = Modifier.size(12.dp),
+            modifier = Modifier
+                .size(12.dp)
+                .testTag(TestTags.BookmarkItemStatus)
+                .semantics { this[DownloadStateKey] = itemState.name },
             contentScale = ContentScale.Fit
         )
     }

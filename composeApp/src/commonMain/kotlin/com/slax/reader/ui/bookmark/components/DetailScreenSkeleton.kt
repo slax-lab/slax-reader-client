@@ -17,12 +17,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.testTag
+import com.slax.reader.testing.TestTags
 
 @Composable
 fun DetailScreenSkeleton() {
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .testTag(TestTags.DetailSkeleton)
             .background(Color(0xFFFCFCFC))
     ) {
         Column(

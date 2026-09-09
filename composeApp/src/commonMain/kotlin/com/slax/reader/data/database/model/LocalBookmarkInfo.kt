@@ -3,6 +3,7 @@ package com.slax.reader.data.database.model
 import androidx.compose.runtime.Immutable
 import com.powersync.db.SqlCursor
 import com.powersync.db.getString
+import com.slax.reader.domain.sync.DownloadStatus
 
 @Immutable
 data class LocalBookmarkInfo(
@@ -14,7 +15,7 @@ data class LocalBookmarkInfo(
 )
 
 fun LocalBookmarkInfo.isDownloaded() : Boolean {
-    return downloadStatus == 2
+    return downloadStatus == DownloadStatus.COMPLETED.code
 }
 
 fun mapperToLocalBookmarkInfo(cursor: SqlCursor): LocalBookmarkInfo {

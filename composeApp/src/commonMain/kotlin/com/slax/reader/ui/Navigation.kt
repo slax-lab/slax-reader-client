@@ -27,7 +27,7 @@ import com.slax.reader.ui.setting.DeleteAccountScreen
 import com.slax.reader.ui.setting.SettingScreen
 import com.slax.reader.ui.subscription.SubscriptionManagerScreen
 import com.slax.reader.utils.FirebaseHelper
-import com.slax.reader.utils.LifeCycleHelper
+import com.slax.reader.utils.FirstPartyEventReporter
 import com.slax.reader.utils.NavHostTransitionHelper
 import com.slax.reader.utils.aboutEvent
 import com.slax.reader.utils.bookmarkEvent
@@ -36,6 +36,7 @@ import com.slax.reader.utils.feedbackEvent
 import com.slax.reader.utils.settingEvent
 import com.slax.reader.utils.subscriptionEvent
 import com.slax.reader.utils.userEvent
+import com.slax.reader.ui.AppLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
@@ -44,18 +45,24 @@ import org.koin.compose.koinInject
 @OptIn(ExperimentalPowerSyncAPI::class)
 @Composable
 fun SlaxNavigation(
-    navCtrl: NavHostController
+    navCtrl: NavHostController,
+    auth: AuthDomain? = null,
+    background: BackgroundDomain? = null,
+    syncCoordinator: CoordinatorDomain? = null,
+    lifecycle: AppLifecycle? = null,
 ) {
-    val authDomain: AuthDomain = koinInject()
-    val backgroundDomain: BackgroundDomain = koinInject()
-    val coordinator: CoordinatorDomain = koinInject()
+    val authDomain: AuthDomain = auth ?: koinInject()
+    val backgroundDomain: BackgroundDomain = background ?: koinInject()
+    val coordinator: CoordinatorDomain = syncCoordinator ?: koinInject()
+    val appLifecycle: AppLifecycle = lifecycle ?: koinInject()
+    val firstPartyEvents: FirstPartyEventReporter = koinInject()
     val authState by authDomain.authState.collectAsState()
 
     val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        lifecycleOwner.lifecycle.addObserver(LifeCycleHelper)
+    DisposableEffect(lifecycleOwner, appLifecycle) {
+        appLifecycle.attach(lifecycleOwner)
         onDispose {
-            lifecycleOwner.lifecycle.removeObserver(LifeCycleHelper)
+            appLifecycle.detach(lifecycleOwner)
         }
     }
 
@@ -102,7 +109,10 @@ fun SlaxNavigation(
             LoginScreen(
                 navController = navCtrl
             )
-            LaunchedEffect(Unit) { userEvent.view("login").send() }
+            LaunchedEffect(Unit) {
+                userEvent.view("login").send()
+                firstPartyEvents.track("screen_viewed", mapOf("screen_name" to "signup"))
+            }
         }
         composable<BookmarkRoutes> { backStackEntry ->
             val params = backStackEntry.toRoute<BookmarkRoutes>()
@@ -141,6 +151,14 @@ fun SlaxNavigation(
                     .bookmarkUUID(params.bookmarkId)
                     .mode("snapshot")
                     .send()
+                firstPartyEvents.track(
+                    "screen_viewed",
+                    mapOf("screen_name" to "detail")
+                )
+                firstPartyEvents.track(
+                    "bookmark_opened",
+                    mapOf("bookmark_id" to params.bookmarkId, "opened_from" to params.openedFrom)
+                )
             }
         }
         composable<InboxRoutes> {
@@ -160,6 +178,7 @@ fun SlaxNavigation(
                 navController = navCtrl
             )
             LaunchedEffect(Unit) { settingEvent.view().send() }
+            LaunchedEffect(Unit) { firstPartyEvents.track("screen_viewed", mapOf("screen_name" to "settings")) }
         }
         composable<AboutRoutes> {
             AboutScreen(
@@ -171,6 +190,7 @@ fun SlaxNavigation(
                 }
             )
             LaunchedEffect(Unit) { aboutEvent.view().send() }
+            LaunchedEffect(Unit) { firstPartyEvents.track("screen_viewed", mapOf("screen_name" to "about")) }
         }
         composable<DebugRoutes> {
             DebugScreen(onBackClick = {
@@ -188,6 +208,7 @@ fun SlaxNavigation(
                 navCtrl.popBackStack()
             })
             LaunchedEffect(Unit) { subscriptionEvent.view().send() }
+            LaunchedEffect(Unit) { firstPartyEvents.track("screen_viewed", mapOf("screen_name" to "subscription")) }
         }
         composable<FeedbackRoutes> { backStackEntry ->
             val params = backStackEntry.toRoute<FeedbackRoutes>()
@@ -201,7 +222,7 @@ fun SlaxNavigation(
                 onBackClick = { navCtrl.popBackStack() }
             )
             LaunchedEffect(Unit) { feedbackEvent.view().send() }
+            LaunchedEffect(Unit) { firstPartyEvents.track("screen_viewed", mapOf("screen_name" to "feedback")) }
         }
     }
 }
-

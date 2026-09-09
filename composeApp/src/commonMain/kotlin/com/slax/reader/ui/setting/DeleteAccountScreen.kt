@@ -11,10 +11,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.slax.reader.SlaxConfig
 import com.slax.reader.domain.auth.AuthDomain
-import com.slax.reader.utils.WebView
 import com.slax.reader.utils.WebViewEvent
 import com.slax.reader.utils.i18n
 import com.slax.reader.utils.rememberAppWebViewState
+import com.slax.reader.ui.PlatformWebViewHost
+import com.slax.reader.ui.WebViewHost
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
@@ -23,10 +24,15 @@ import slax_reader_client.composeapp.generated.resources.ic_sm_back
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DeleteAccountScreen(onBackClick: () -> Unit) {
-    val viewModel: SettingViewModel = koinInject()
-    val authDomain: AuthDomain = koinInject()
-    val deleteAccountState by viewModel.deleteAccountState.collectAsState()
+fun DeleteAccountScreen(
+    onBackClick: () -> Unit,
+    viewModel: SettingViewModel? = null,
+    authDomain: AuthDomain? = null,
+    webViewHost: WebViewHost = PlatformWebViewHost,
+) {
+    val resolvedViewModel: SettingViewModel = viewModel ?: koinInject()
+    val resolvedAuthDomain: AuthDomain = authDomain ?: koinInject()
+    val deleteAccountState by resolvedViewModel.deleteAccountState.collectAsState()
 
     val scope = rememberCoroutineScope()
     val webState = rememberAppWebViewState(scope)
@@ -129,7 +135,7 @@ fun DeleteAccountScreen(onBackClick: () -> Unit) {
             }
         }
     ) { paddingValues ->
-        WebView(
+        webViewHost.Url(
             url = "${SlaxConfig.WEB_BASE_URL}/delete-account-notice",
             modifier = Modifier
                 .fillMaxSize()
@@ -162,7 +168,7 @@ fun DeleteAccountScreen(onBackClick: () -> Unit) {
                     onClick = {
                         showConfirmDialog = false
                         scope.launch {
-                            viewModel.deleteAccount()
+                            resolvedViewModel.deleteAccount()
                         }
                     },
                     enabled = !isDeleting
@@ -224,7 +230,7 @@ fun DeleteAccountScreen(onBackClick: () -> Unit) {
                 confirmButton = {
                     TextButton(
                         onClick = {
-                            viewModel.resetState()
+                            resolvedViewModel.resetState()
                         }
                     ) {
                         Text(
@@ -238,7 +244,7 @@ fun DeleteAccountScreen(onBackClick: () -> Unit) {
         }
         is DeleteAccountState.Success -> {
             isDeleting = false
-            authDomain.signOut()
+            resolvedAuthDomain.signOut()
         }
         else -> {}
     }

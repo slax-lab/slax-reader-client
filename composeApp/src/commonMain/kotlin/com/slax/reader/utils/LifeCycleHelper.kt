@@ -14,10 +14,15 @@ enum class AppLifecycleState {
     ON_DESTROY
 }
 
-object LifeCycleHelper : DefaultLifecycleObserver {
+object LifeCycleHelper : DefaultLifecycleObserver, com.slax.reader.ui.AppLifecycle {
 
     private val _lifecycleState = MutableStateFlow(AppLifecycleState.ON_CREATE)
     val lifecycleState: StateFlow<AppLifecycleState> = _lifecycleState.asStateFlow()
+    override val state: StateFlow<AppLifecycleState> = lifecycleState
+
+    override fun attach(owner: LifecycleOwner) = owner.lifecycle.addObserver(this)
+
+    override fun detach(owner: LifecycleOwner) = owner.lifecycle.removeObserver(this)
 
     override fun onStart(owner: LifecycleOwner) {
         updateState(AppLifecycleState.ON_CREATE)

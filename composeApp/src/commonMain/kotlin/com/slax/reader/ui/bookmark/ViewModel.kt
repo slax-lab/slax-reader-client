@@ -14,6 +14,7 @@ import com.slax.reader.data.network.ApiService
 import com.slax.reader.data.preferences.AppPreferences
 import com.slax.reader.data.preferences.ContinueReadingBookmark
 import com.slax.reader.domain.image.ShareImageSelector
+import com.slax.reader.domain.coordinator.CoordinatorDomain
 import com.slax.reader.domain.sync.BackgroundDomain
 import com.slax.reader.ui.bookmark.states.BookmarkDelegate
 import com.slax.reader.ui.bookmark.states.BookmarkOverlay
@@ -23,6 +24,7 @@ import com.slax.reader.ui.bookmark.states.OverlayDelegate
 import com.slax.reader.ui.bookmark.states.OverviewDelegate
 import com.slax.reader.ui.bookmark.states.toStableId
 import com.slax.reader.utils.bookmarkEvent
+import com.slax.reader.utils.FirstPartyEventReporter
 import com.slax.reader.data.network.dto.MarkType
 import com.slax.reader.data.network.dto.StrokeCreateData
 import com.slax.reader.utils.AppWebViewState
@@ -68,10 +70,12 @@ class BookmarkDetailViewModel(
     private val commentDao: BookmarkCommentDao,
     private val userDao: UserDao,
     private val backgroundDomain: BackgroundDomain,
+    private val coordinatorDomain: CoordinatorDomain,
     private val apiService: ApiService,
     private val appPreferences: AppPreferences,
     private val database: PowerSyncDatabase,
     private val shareImageSelector: ShareImageSelector,
+    private val firstPartyEvents: FirstPartyEventReporter,
 ) : ViewModel() {
 
     companion object {
@@ -159,7 +163,13 @@ class BookmarkDetailViewModel(
 
         contentJob = viewModelScope.launch {
             runCatching {
-                withContext(Dispatchers.IO) { backgroundDomain.getBookmarkContent(id) }
+                // Read the platform's current status at the point of the
+                // request. syncState is asynchronous and may still be
+                // Connecting while the device is already offline.
+                val networkAvailable = coordinatorDomain.isNetworkAvailable()
+                withContext(Dispatchers.IO) {
+                    backgroundDomain.getBookmarkContent(id, networkAvailable)
+                }
             }.onSuccess { content ->
                 _contentState.value = BookmarkContentState(htmlContent = content.html, isLoading = false)
                 articleImageUrls.value = content.imageUrls
@@ -228,10 +238,20 @@ class BookmarkDetailViewModel(
         val current = bookmarkDelegate.bookmarkDetailState.value
 
         when (pageId) {
-            "star" -> bookmarkDelegate.onToggleStar(!current.isStarred)
-            "archive" -> bookmarkDelegate.onToggleArchive(!current.isArchived)
-            "edit_title" -> overlayDelegate.showOverlay(BookmarkOverlay.EditTitle)
+            "star" -> {
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_star_button", "screen_name" to "detail"))
+                bookmarkDelegate.onToggleStar(!current.isStarred)
+            }
+            "archive" -> {
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_archive_button", "screen_name" to "detail"))
+                bookmarkDelegate.onToggleArchive(!current.isArchived)
+            }
+            "edit_title" -> {
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_edit_title_button", "screen_name" to "detail"))
+                overlayDelegate.showOverlay(BookmarkOverlay.EditTitle)
+            }
             "summary" -> {
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_outline_button", "screen_name" to "detail"))
                 viewModelScope.launch {
                     val isSubscribed = subscriptionInfo.value?.checkIsSubscribed() == true
                     bookmarkEvent.action("use_outline").isSubscribed(isSubscribed).send()
@@ -244,8 +264,15 @@ class BookmarkDetailViewModel(
                     outlineDelegate.showDialog()
                 }
             }
-            "feedback" -> overlayDelegate.showOverlay(BookmarkOverlay.FeedbackRequired)
-            "share" -> shareBookmark()
+            "feedback" -> {
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_feedback_button", "screen_name" to "detail"))
+                overlayDelegate.showOverlay(BookmarkOverlay.FeedbackRequired)
+            }
+            "share" -> {
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_share_button", "screen_name" to "detail"))
+                shareBookmark()
+            }
+            "delete" -> firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_delete_button", "screen_name" to "detail"))
         }
 
         overlayDelegate.dismissOverlay(BookmarkOverlay.Toolbar)
@@ -301,12 +328,18 @@ class BookmarkDetailViewModel(
 
     fun loadOverview() {
         val id = _bookmarkId.value ?: return
-        overviewDelegate.loadOverview(id)
+        viewModelScope.launch {
+            val networkAvailable = coordinatorDomain.isNetworkAvailable()
+            overviewDelegate.loadOverview(id, networkAvailable)
+        }
     }
 
     fun loadOutline() {
         val id = _bookmarkId.value ?: return
-        outlineDelegate.loadOutline(id)
+        viewModelScope.launch {
+            val networkAvailable = coordinatorDomain.isNetworkAvailable()
+            outlineDelegate.loadOutline(id, networkAvailable)
+        }
     }
 
     fun startObservingMarks() {

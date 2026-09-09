@@ -40,6 +40,8 @@ import slax_reader_client.composeapp.generated.resources.ic_xs_sidebar_close
 fun Sidebar(
     navCtrl: NavController,
     drawerState: DrawerState,
+    viewModel: SidebarViewModel? = null,
+    onSignOut: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -55,6 +57,8 @@ fun Sidebar(
             ) {
                 DrawerContent(
                     navCtrl = navCtrl,
+                    viewModel = viewModel,
+                    onSignOut = onSignOut,
                     onDismiss = {
                         scope.launch {
                             drawerState.close()
@@ -70,12 +74,14 @@ fun Sidebar(
 @Composable
 private fun DrawerContent(
     navCtrl: NavController,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    viewModel: SidebarViewModel? = null,
+    onSignOut: (() -> Unit)? = null,
 ) {
-    val viewModel = koinInject<SidebarViewModel>()
+    val resolvedViewModel = viewModel ?: koinInject<SidebarViewModel>()
 
-    val userInfo by viewModel.userInfo.collectAsState()
-    val syncStatus by viewModel.syncStatus.collectAsState()
+    val userInfo by resolvedViewModel.userInfo.collectAsState()
+    val syncStatus by resolvedViewModel.syncStatus.collectAsState()
 
     val avatarPainter = rememberAsyncImagePainter(
         request = ComposableImageRequest(userInfo?.picture) {
@@ -158,7 +164,9 @@ private fun DrawerContent(
         ) {
             FooterMenu(
                 navCtrl = navCtrl,
-                onDismiss = onDismiss
+                onDismiss = onDismiss,
+                viewModel = resolvedViewModel,
+                onSignOut = onSignOut,
             )
         }
     }

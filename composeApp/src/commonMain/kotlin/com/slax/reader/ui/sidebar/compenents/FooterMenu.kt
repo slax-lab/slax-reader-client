@@ -24,6 +24,7 @@ import com.slax.reader.data.database.model.checkIsSubscribed
 import com.slax.reader.domain.auth.AuthDomain
 import com.slax.reader.ui.sidebar.SidebarViewModel
 import com.slax.reader.utils.feedbackEvent
+import com.slax.reader.utils.FirstPartyEventReporter
 import com.slax.reader.utils.i18n
 import com.slax.reader.utils.isAndroid
 import com.slax.reader.utils.subscriptionEvent
@@ -49,9 +50,11 @@ class FooterMenuConfig(
 fun FooterMenu(
     navCtrl: NavController,
     onDismiss: () -> Unit,
+    viewModel: SidebarViewModel = koinInject(),
+    onSignOut: (() -> Unit)? = null,
 ) {
-    val authDomain: AuthDomain = koinInject()
-    val viewModel = koinInject<SidebarViewModel>()
+    val signOut = onSignOut ?: koinInject<AuthDomain>().let { auth -> { auth.signOut() } }
+    val firstPartyEvents: FirstPartyEventReporter = koinInject()
 
     val userInfo by viewModel.userInfo.collectAsState()
     val subscriptionInfo by viewModel.subscriptionInfo.collectAsState()
@@ -61,8 +64,9 @@ fun FooterMenu(
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp)
         ) {
-            Button(
+                Button(
                 onClick = {
+                    firstPartyEvents.track("element_clicked", mapOf("element_id" to "sidebar_subscription_menu_item", "screen_name" to "bookmarks"))
                     onDismiss()
                     navCtrl.navigate(SubscriptionManagerRoutes)
                     subscriptionEvent.view().source("screen").send()
@@ -132,6 +136,7 @@ fun FooterMenu(
                 unselectedContainerColor = Color.Transparent
             ),
             onClick = {
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "sidebar_subscription_menu_item", "screen_name" to "bookmarks"))
                 onDismiss()
                 navCtrl.navigate(SubscriptionManagerRoutes)
             }
@@ -150,6 +155,7 @@ fun FooterMenu(
                 unselectedContainerColor = Color.Transparent
             ),
             onClick = {
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "sidebar_settings_menu_item", "screen_name" to "bookmarks"))
                 onDismiss()
                 navCtrl.navigate(SettingsRoutes)
             }
@@ -168,10 +174,11 @@ fun FooterMenu(
                 unselectedContainerColor = Color.Transparent
             ),
             onClick = {
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "sidebar_feedback_menu_item", "screen_name" to "bookmarks"))
                 onDismiss()
                 navCtrl.navigate(
                     FeedbackRoutes(
-                        email = userInfo!!.email,
+                        email = userInfo?.email.orEmpty(),
                         entryPoint = "inbox",
                         version = "${SlaxConfig.APP_VERSION_NAME} (${SlaxConfig.APP_VERSION_CODE})"
                     )
@@ -192,6 +199,7 @@ fun FooterMenu(
                 unselectedContainerColor = Color.Transparent
             ),
             onClick = {
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "sidebar_about_menu_item", "screen_name" to "bookmarks"))
                 onDismiss()
                 navCtrl.navigate(AboutRoutes)
             }
@@ -210,7 +218,8 @@ fun FooterMenu(
                 unselectedContainerColor = Color.Transparent
             ),
             onClick = {
-                authDomain.signOut()
+                firstPartyEvents.track("element_clicked", mapOf("element_id" to "sidebar_logout_menu_item", "screen_name" to "bookmarks"))
+                signOut()
             }
         )
     ).map {

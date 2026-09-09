@@ -4,13 +4,16 @@ import androidx.lifecycle.ViewModel
 import com.slax.reader.const.AppError
 import com.slax.reader.domain.auth.AppleSignInResult
 import com.slax.reader.domain.auth.GoogleSignInResult
-import com.slax.reader.domain.auth.AuthDomain
+import com.slax.reader.domain.auth.AuthGateway
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.CoroutineContext
 
 class LoginViewModel(
-    private val authDomain: AuthDomain,
+    private val authDomain: AuthGateway,
+    private val mainContext: CoroutineContext = Dispatchers.Main,
+    private val ioContext: CoroutineContext = Dispatchers.IO,
 ) : ViewModel() {
 
     suspend fun appleSignIn(
@@ -19,14 +22,14 @@ class LoginViewModel(
         onSuccess: () -> Unit,
         onError: (err: String) -> Unit
     ) {
-        withContext(Dispatchers.Main) { onLoading(true) }
+        withContext(mainContext) { onLoading(true) }
         try {
             result.onSuccess { appleResult ->
-                val authResult = withContext(Dispatchers.IO) {
+                val authResult = withContext(ioContext) {
                     authDomain.signIn(code = appleResult.code, type = "apple", idToken = appleResult.idToken)
                 }
                 authResult.onSuccess {
-                    withContext(Dispatchers.Main) { onSuccess() }
+                    withContext(mainContext) { onSuccess() }
                 }.onFailure {
                     val message = when (it) {
                         is AppError.ApiException.HttpError -> {
@@ -41,20 +44,20 @@ class LoginViewModel(
                             it.message ?: "Unknown error occurred"
                         }
                     }
-                    withContext(Dispatchers.Main) { onError(message) }
+                    withContext(mainContext) { onError(message) }
                 }
             }.onFailure {
-                withContext(Dispatchers.Main) {
+                withContext(mainContext) {
                     onError(it.message ?: "Apple Sign In failed")
                 }
             }
         } catch (e: Exception) {
             println("Exception during appleSignIn: ${e.message}")
-            withContext(Dispatchers.Main) {
+            withContext(mainContext) {
                 onError(e.message ?: "Unknown error occurred")
             }
         } finally {
-            withContext(Dispatchers.Main) { onLoading(false) }
+            withContext(mainContext) { onLoading(false) }
         }
     }
 
@@ -64,18 +67,18 @@ class LoginViewModel(
         onSuccess: () -> Unit,
         onError: (err: String) -> Unit
     ) {
-        withContext(Dispatchers.Main) { onLoading(true) }
+        withContext(mainContext) { onLoading(true) }
         try {
             result.onSuccess { googleResult ->
                 if (googleResult.idToken.isEmpty()) {
-                    withContext(Dispatchers.Main) { onError("Failed to get Google ID token") }
+                    withContext(mainContext) { onError("Failed to get Google ID token") }
                     return
                 }
-                val authResult = withContext(Dispatchers.IO) {
+                val authResult = withContext(ioContext) {
                     authDomain.signIn(googleResult.idToken, type = "google")
                 }
                 authResult.onSuccess {
-                    withContext(Dispatchers.Main) { onSuccess() }
+                    withContext(mainContext) { onSuccess() }
                 }.onFailure {
                     val message = when (it) {
                         is AppError.ApiException.HttpError -> {
@@ -90,20 +93,20 @@ class LoginViewModel(
                             it.message ?: "Unknown error occurred"
                         }
                     }
-                    withContext(Dispatchers.Main) { onError(message) }
+                    withContext(mainContext) { onError(message) }
                 }
             }.onFailure {
-                withContext(Dispatchers.Main) {
+                withContext(mainContext) {
                     onError(it.message ?: "Google Sign In failed")
                 }
             }
         } catch (e: Exception) {
             println("Exception during signIn: ${e.message}")
-            withContext(Dispatchers.Main) {
+            withContext(mainContext) {
                 onError(e.message ?: "Unknown error occurred")
             }
         } finally {
-            withContext(Dispatchers.Main) { onLoading(false) }
+            withContext(mainContext) { onLoading(false) }
         }
     }
 }

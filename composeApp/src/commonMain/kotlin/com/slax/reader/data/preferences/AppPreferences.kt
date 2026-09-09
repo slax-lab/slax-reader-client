@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 data class AuthInfo(
     val token: String,
@@ -34,7 +36,7 @@ data class ContinueReadingBookmark(
     val title: String
 )
 
-class AppPreferences(private val dataStore: DataStore<Preferences>) {
+class AppPreferences(private val dataStore: DataStore<Preferences>) : SettingsPreferences, AuthTokenPreferences {
     companion object {
         private val AUTH_TOKEN_KEY = stringPreferencesKey("auth_token")
         private val USER_ID_KEY = stringPreferencesKey("user_id")
@@ -54,6 +56,8 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
         private val DOWNLOAD_IMAGES_KEY = intPreferencesKey("download_images")
 
         private val SELECTED_ENV_KEY = stringPreferencesKey("selected_env")
+
+        private val DEVICE_ID_KEY = stringPreferencesKey("analytics_device_id")
     }
 
     suspend fun getLastRefreshTime(): Long? {
@@ -70,7 +74,7 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
         }
     }
 
-    suspend fun getAuthInfoSuspend(): String? {
+    override suspend fun getAuthInfoSuspend(): String? {
         return dataStore.data.first()[AUTH_TOKEN_KEY]
     }
 
@@ -160,16 +164,20 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
         }
     }
 
-    fun getCacheCount(): Flow<Int> = dataStore.data.map { it[CACHE_COUNT_KEY] ?: 50 }
+    override fun getCacheCount(): Flow<Int> = dataStore.data.map { it[CACHE_COUNT_KEY] ?: 50 }
 
-    suspend fun setCacheCount(count: Int) = withContext(Dispatchers.IO) {
-        dataStore.edit { it[CACHE_COUNT_KEY] = count }
+    override suspend fun setCacheCount(count: Int) {
+        withContext(Dispatchers.IO) {
+            dataStore.edit { it[CACHE_COUNT_KEY] = count }
+        }
     }
 
-    fun getDownloadImages(): Flow<Boolean> = dataStore.data.map { (it[DOWNLOAD_IMAGES_KEY] ?: 1) == 1 }
+    override fun getDownloadImages(): Flow<Boolean> = dataStore.data.map { (it[DOWNLOAD_IMAGES_KEY] ?: 1) == 1 }
 
-    suspend fun setDownloadImages(enabled: Boolean) = withContext(Dispatchers.IO) {
-        dataStore.edit { it[DOWNLOAD_IMAGES_KEY] = if (enabled) 1 else 0 }
+    override suspend fun setDownloadImages(enabled: Boolean) {
+        withContext(Dispatchers.IO) {
+            dataStore.edit { it[DOWNLOAD_IMAGES_KEY] = if (enabled) 1 else 0 }
+        }
     }
 
     suspend fun getSelectedEnv(): String? = withContext(Dispatchers.IO) {
@@ -181,5 +189,22 @@ class AppPreferences(private val dataStore: DataStore<Preferences>) {
         dataStore.edit { preferences ->
             preferences[SELECTED_ENV_KEY] = env
         }
+    }
+    /**
+     * Returns the stable, installation-scoped identifier used by first-party analytics.
+     * DataStore's serialized edit guarantees that concurrent first launches do not overwrite
+     * an already-created identifier.
+     */
+    @OptIn(ExperimentalUuidApi::class)
+    suspend fun getOrCreateDeviceId(): String = withContext(Dispatchers.IO) {
+        var deviceId: String? = null
+        dataStore.edit { preferences ->
+            deviceId = preferences[DEVICE_ID_KEY]
+            if (deviceId == null) {
+                deviceId = Uuid.random().toString()
+                preferences[DEVICE_ID_KEY] = deviceId!!
+            }
+        }
+        deviceId!!
     }
 }

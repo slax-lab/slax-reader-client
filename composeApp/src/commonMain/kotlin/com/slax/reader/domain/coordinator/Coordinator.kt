@@ -8,6 +8,7 @@ import com.slax.reader.utils.Connector
 import com.slax.reader.utils.isNetworkException
 import dev.jordond.connectivity.Connectivity
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -26,18 +27,38 @@ sealed class AppSyncState {
     data class Error(val message: String) : AppSyncState()
 }
 
+internal fun hasNetworkConnection(status: Connectivity.Status): Boolean =
+    status is Connectivity.Status.Connected
+
 class CoordinatorDomain(
     private val database: PowerSyncDatabase,
     private val connector: Connector,
     private val powerSyncDao: PowerSyncDao
-) {
+) : NetworkCoordinator {
     private var workerScope: CoroutineScope? = null
 
     private var isConnected = false
     private val connectivity = Connectivity()
 
     private val _syncState = MutableStateFlow<AppSyncState>(AppSyncState.Connecting)
-    val syncState: StateFlow<AppSyncState> = _syncState.asStateFlow()
+    override val syncState: StateFlow<AppSyncState> = _syncState.asStateFlow()
+
+    /**
+     * Query the platform's current network status instead of inferring it from
+     * the asynchronous sync state. This is important while the first
+     * connectivity event is still being delivered during app startup.
+     */
+    override suspend fun isNetworkAvailable(): Boolean {
+        return try {
+            hasNetworkConnection(connectivity.status())
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Network checks are a gate for API requests; fail closed if the
+            // platform provider cannot produce a status.
+            false
+        }
+    }
 
     fun startup() {
         workerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -62,9 +83,10 @@ class CoordinatorDomain(
                 powerSyncDao.watchPowerSyncStatus(),
                 connectivity.statusUpdates
             ) { syncStatus, networkStatus ->
-                val hasNetwork = networkStatus is Connectivity.Status.Connected
+                val hasNetwork = hasNetworkConnection(networkStatus)
 
                 when {
+                    !hasNetwork -> AppSyncState.NoNetwork
                     syncStatus == null -> AppSyncState.Connecting
                     syncStatus.connected -> AppSyncState.Connected
                     syncStatus.downloading -> AppSyncState.Downloading(
@@ -91,7 +113,6 @@ class CoordinatorDomain(
                         }
                     }
 
-                    !hasNetwork -> AppSyncState.NoNetwork
                     else -> AppSyncState.Connecting
                 }
             }.collect { state ->

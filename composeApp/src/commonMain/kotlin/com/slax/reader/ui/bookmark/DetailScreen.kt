@@ -6,6 +6,7 @@ import com.slax.reader.ui.bookmark.states.LocalMarkInteraction
 import com.slax.reader.ui.bookmark.states.MarkInteractionState
 import com.slax.reader.ui.bookmark.states.ScrollInfo
 import com.slax.reader.utils.*
+import com.slax.reader.ui.AppLifecycle
 import kotlinx.coroutines.delay
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -22,8 +23,14 @@ sealed interface DetailScreenEvent {
 }
 
 @Composable
-fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
-    val viewModel = koinViewModel<BookmarkDetailViewModel>()
+fun DetailScreen(
+    bookmarkId: String,
+    onEvent: (DetailScreenEvent) -> Unit,
+    viewModel: BookmarkDetailViewModel? = null,
+    lifecycle: AppLifecycle = LifeCycleHelper,
+    webViewHost: com.slax.reader.ui.WebViewHost = com.slax.reader.ui.PlatformWebViewHost,
+) {
+    val resolvedViewModel = viewModel ?: koinViewModel<BookmarkDetailViewModel>()
     val coroutineScope = rememberCoroutineScope()
 
     val toolbarVisible = remember { mutableStateOf(true) }
@@ -33,9 +40,9 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
     val webViewState = rememberAppWebViewState(coroutineScope)
 
     LaunchedEffect(bookmarkId) {
-        viewModel.bind(bookmarkId)
+        resolvedViewModel.bind(bookmarkId)
 
-        viewModel.effects.collect { effect ->
+        resolvedViewModel.effects.collect { effect ->
             when (effect) {
                 BookmarkDetailEffect.NavigateBack -> onEvent(DetailScreenEvent.BackClick)
                 BookmarkDetailEffect.NavigateToSubscription -> onEvent(DetailScreenEvent.NavigateToSubscription)
@@ -55,15 +62,15 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
     }
 
     LaunchedEffect(Unit) {
-        LifeCycleHelper.lifecycleState.collect { state ->
+        lifecycle.state.collect { state ->
             when (state) {
                 AppLifecycleState.ON_STOP -> {
-                    viewModel.flushReadPosition()
-                    viewModel.flushOutlineScrollPosition()
-                    viewModel.onStopRecordContinue()
+                    resolvedViewModel.flushReadPosition()
+                    resolvedViewModel.flushOutlineScrollPosition()
+                    resolvedViewModel.onStopRecordContinue()
                 }
                 AppLifecycleState.ON_RESUME -> {
-                    viewModel.onResumeClearContinue()
+                    resolvedViewModel.onResumeClearContinue()
                 }
                 else -> {}
             }
@@ -74,7 +81,7 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
         webViewState.events.collect { event ->
             when (event) {
                 is WebViewEvent.ImageClick -> {
-                    viewModel.overlayDelegate.onWebViewImageClick(event.src, event.allImages)
+                    resolvedViewModel.overlayDelegate.onWebViewImageClick(event.src, event.allImages)
                 }
                 is WebViewEvent.Tap -> {
                     val info = scrollInfo.value
@@ -83,7 +90,7 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
                     }
                 }
                 is WebViewEvent.RefreshContent -> {
-                    viewModel.refreshContent()
+                    resolvedViewModel.refreshContent()
                 }
                 is WebViewEvent.Feedback -> {
                     println("feedback")
@@ -95,14 +102,14 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
                     markInteraction.onTextDeselected()
                 }
                 is WebViewEvent.PageLoaded -> {
-                    val userIdLong = viewModel.commentDelegate.currentUserIdLong
+                    val userIdLong = resolvedViewModel.commentDelegate.currentUserIdLong
                     webViewState.evaluateJs("window.SlaxWebViewBridge.startSelectionMonitoring('body', $userIdLong)")
-                    viewModel.startObservingMarks()
+                    resolvedViewModel.startObservingMarks()
                 }
                 is WebViewEvent.MarkClicked -> {
                     val info = event.markItemInfo ?: return@collect
                     markInteraction.onMarkClicked(event.text, info)
-                    viewModel.commentDelegate.setSelectedMark(info.source)
+                    resolvedViewModel.commentDelegate.setSelectedMark(info.source)
                 }
                 is WebViewEvent.MarkItemInfosChanged -> {
                     markInteraction.onMarkItemInfosChanged(event.markItemInfos)
@@ -120,11 +127,11 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
                     info.scrollY <= 10f -> true
                     else -> false
                 }
-                viewModel.saveReadPosition(info.scrollY)
+                resolvedViewModel.saveReadPosition(info.scrollY)
             }
     }
 
-    val contentState by viewModel.contentState.collectAsState()
+    val contentState by resolvedViewModel.contentState.collectAsState()
 
     var transitionSettled by remember { mutableStateOf(false) }
     LaunchedEffect(bookmarkId) {
@@ -146,7 +153,9 @@ fun DetailScreen(bookmarkId: String, onEvent: (DetailScreenEvent) -> Unit) {
             bookmarkId = bookmarkId,
             htmlContent = contentState.htmlContent!!,
             webViewState = webViewState,
-            onScrollInfoChanged = { scrollInfo.value = it }
+            onScrollInfoChanged = { scrollInfo.value = it },
+            viewModel = resolvedViewModel,
+            webViewHost = webViewHost,
         )
     }
 }
@@ -156,5 +165,7 @@ expect fun DetailScreen(
     bookmarkId: String,
     htmlContent: String,
     webViewState: AppWebViewState,
-    onScrollInfoChanged: (ScrollInfo) -> Unit
+    onScrollInfoChanged: (ScrollInfo) -> Unit,
+    viewModel: BookmarkDetailViewModel? = null,
+    webViewHost: com.slax.reader.ui.WebViewHost = com.slax.reader.ui.PlatformWebViewHost,
 )

@@ -14,8 +14,8 @@ import kotlin.uuid.Uuid
 class BookmarkDao(
     private val scope: CoroutineScope,
     private val database: PowerSyncDatabase
-) {
-    val hasSynced: StateFlow<Boolean> = database.currentStatus.asFlow()
+) : BookmarkRepository {
+    override val hasSynced: StateFlow<Boolean> = database.currentStatus.asFlow()
         .map { status -> status.hasSynced ?: false }
         .stateIn(scope, SharingStarted.WhileSubscribed(5000), false)
 
@@ -49,8 +49,8 @@ class BookmarkDao(
 
     private val _userBookmarkPagedFlows = mutableMapOf<BookmarkSortType, StateFlow<List<InboxListBookmarkItem>?>>()
 
-    fun watchUserBookmarkPaged(
-        sortType: BookmarkSortType = BookmarkSortType.UPDATED
+    override fun watchUserBookmarkPaged(
+        sortType: BookmarkSortType
     ): StateFlow<List<InboxListBookmarkItem>?> {
         return _userBookmarkPagedFlows.getOrPut(sortType) {
             println("[watch][database] _userBookmarkPagedFlow sortType=$sortType")
@@ -78,7 +78,7 @@ class BookmarkDao(
         }
     }
 
-    fun watchBookmarkDetail(bookmarkId: String): Flow<List<UserBookmark>> {
+    override fun watchBookmarkDetail(bookmarkId: String): Flow<List<UserBookmark>> {
         println("[watch][database] watchBookmarkDetail")
         return database.watch(
             """
@@ -117,9 +117,9 @@ class BookmarkDao(
             .distinctUntilChanged().stateIn(scope, SharingStarted.Eagerly, emptyList())
     }
 
-    fun watchUserTag(): Flow<List<UserTag>> = _userTagListFlow
+    override fun watchUserTag(): Flow<List<UserTag>> = _userTagListFlow
 
-    suspend fun getTagsByIds(tagIds: List<String>): List<UserTag> {
+    override suspend fun getTagsByIds(tagIds: List<String>): List<UserTag> {
         println("[database] getTagsByIds === ")
 
         if (tagIds.isEmpty()) return emptyList()
@@ -142,7 +142,7 @@ class BookmarkDao(
         )
     }
 
-    suspend fun updateMetadataField(
+    override suspend fun updateMetadataField(
         bookmarkId: String,
         fieldPath: String,
         jsonValue: String
@@ -156,7 +156,7 @@ class BookmarkDao(
     }
 
     @OptIn(ExperimentalTime::class)
-    suspend fun deleteBookmark(bookmarkId: String) {
+    override suspend fun deleteBookmark(bookmarkId: String) {
         val now = Clock.System.now().toString()
         database.writeTransaction { tx ->
             tx.execute(
@@ -166,7 +166,7 @@ class BookmarkDao(
         }
     }
 
-    suspend fun updateBookmarkArchive(bookmarkId: String, state: Int) {
+    override suspend fun updateBookmarkArchive(bookmarkId: String, state: Int) {
         database.writeTransaction { tx ->
             tx.execute(
                 "UPDATE sr_user_bookmark SET archive_status = ? WHERE id = ?",
@@ -175,7 +175,7 @@ class BookmarkDao(
         }
     }
 
-    suspend fun updateBookmarkStar(bookmarkId: String, state: Int) {
+    override suspend fun updateBookmarkStar(bookmarkId: String, state: Int) {
         database.writeTransaction { tx ->
             tx.execute(
                 "UPDATE sr_user_bookmark SET is_starred = ? WHERE id = ?",
@@ -184,7 +184,7 @@ class BookmarkDao(
         }
     }
 
-    suspend fun updateBookmarkAliasTitle(bookmarkId: String, title: String) {
+    override suspend fun updateBookmarkAliasTitle(bookmarkId: String, title: String) {
         database.writeTransaction { tx ->
             tx.execute(
                 "UPDATE sr_user_bookmark SET alias_title = ? WHERE id = ?",
@@ -194,7 +194,7 @@ class BookmarkDao(
     }
 
     @OptIn(ExperimentalUuidApi::class, ExperimentalTime::class)
-    suspend fun createBookmark(url: String) {
+    override suspend fun createBookmark(url: String) {
         val bookmarkId = Uuid.random().toString()
         val now = Clock.System.now().toString()
 
@@ -240,7 +240,7 @@ class BookmarkDao(
     }
 
     @OptIn(ExperimentalUuidApi::class, ExperimentalTime::class)
-    suspend fun createTag(tagName: String): UserTag {
+    override suspend fun createTag(tagName: String): UserTag {
         val tagId = Uuid.random().toString()
         val now = Clock.System.now().toString()
 

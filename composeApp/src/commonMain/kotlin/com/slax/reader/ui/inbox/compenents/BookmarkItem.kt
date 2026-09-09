@@ -36,6 +36,7 @@ import com.slax.reader.data.database.model.BookmarkSortType
 import com.slax.reader.data.database.model.InboxListBookmarkItem
 import com.slax.reader.ui.inbox.InboxListViewModel
 import com.slax.reader.utils.bookmarkListEvent
+import com.slax.reader.utils.FirstPartyEventReporter
 import com.slax.reader.utils.i18n
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -86,6 +87,7 @@ fun BookmarkItemRow(
     swipeConfig: SwipeActionsConfig,
     onEditTitle: (InboxListBookmarkItem) -> Unit,
 ) {
+    val firstPartyEvents: FirstPartyEventReporter = org.koin.compose.koinInject()
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
@@ -193,6 +195,7 @@ fun BookmarkItemRow(
                             scope.launch {
                                 offsetXAnimatable.animateTo(0f, animationSpec = tween(200))
                                 viewModel.toggleStar(bookmark.id, bookmark.isStarred != 1)
+                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_star_button", "screen_name" to "bookmarks"))
                                 bookmarkListEvent
                                     .action("item_interact")
                                     .param("element", "star")
@@ -227,6 +230,7 @@ fun BookmarkItemRow(
                             scope.launch {
                                 offsetXAnimatable.animateTo(0f, animationSpec = tween(200))
                                 viewModel.toggleArchive(bookmark.id, bookmark.archiveStatus != 1)
+                                firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_archive_button", "screen_name" to "bookmarks"))
                                 bookmarkListEvent
                                     .action("item_interact")
                                     .param("element", "archive")
@@ -327,7 +331,8 @@ fun BookmarkItemRow(
                                 }
                             } else {
                                 if (bookmark.metadataStatus == "success") {
-                                    navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmark.id))
+                                    firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_list_row", "screen_name" to "bookmarks"))
+                                    navCtrl.navigate(BookmarkRoutes(bookmarkId = bookmark.id, openedFrom = "bookmarks"))
                                 } else {
                                     bookmark.metadataUrl?.let {
                                         viewModel.emitProcessingUrl(it)
@@ -420,6 +425,7 @@ fun BookmarkItemRow(
                             menuTriggerSource = MenuTriggerSource.NONE
                             isLongPressed = false
                             viewModel.toggleStar(bookmark.id, bookmark.isStarred != 1)
+                            firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_star_button", "screen_name" to "bookmarks"))
                         }
                     }
                 )
@@ -433,6 +439,7 @@ fun BookmarkItemRow(
                             menuTriggerSource = MenuTriggerSource.NONE
                             isLongPressed = false
                             viewModel.toggleArchive(bookmark.id, bookmark.archiveStatus != 1)
+                            firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_archive_button", "screen_name" to "bookmarks"))
                         }
                     }
                 )
@@ -445,6 +452,7 @@ fun BookmarkItemRow(
                         menuTriggerSource = MenuTriggerSource.NONE
                         isLongPressed = false
                         onEditTitle(bookmark)
+                        firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_edit_title_button", "screen_name" to "bookmarks"))
                     }
                 )
 
@@ -458,6 +466,7 @@ fun BookmarkItemRow(
                             menuTriggerSource = MenuTriggerSource.NONE
                             isLongPressed = false
                             viewModel.deleteBookmark(bookmark.id)
+                            firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_delete_button", "screen_name" to "bookmarks"))
                         }
                     }
                 )
@@ -465,4 +474,3 @@ fun BookmarkItemRow(
         }
     }
 }
-

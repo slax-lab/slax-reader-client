@@ -29,7 +29,7 @@ class AuthDomain(
     private val appPreferences: AppPreferences,
     private val apiService: ApiService,
     private val fileManager: FileManager,
-) : ViewModel() {
+) : ViewModel(), AuthGateway {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
@@ -57,7 +57,7 @@ class AuthDomain(
         }
     }
 
-    suspend fun signIn(code: String, type: String, redirectUrl: String = "", idToken: String = ""): Result<Unit> {
+    override suspend fun signIn(code: String, type: String, redirectUrl: String, idToken: String): Result<Unit> {
         return try {
             val result = apiService.login(
                 AuthParams(
