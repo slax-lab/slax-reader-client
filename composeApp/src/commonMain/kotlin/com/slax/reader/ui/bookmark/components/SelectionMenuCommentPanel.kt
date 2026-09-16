@@ -26,6 +26,8 @@ fun BoxScope.SelectionMenuCommentPanel(
     onSubmitCommentComplete: () -> Unit,
 ) {
     var showCopyToast by remember { mutableStateOf(false) }
+    val allowLine by viewModel.allowLineActions.collectAsState()
+    val allowComment by viewModel.allowCommentActions.collectAsState()
     val onCopyToastCallback = remember { { showCopyToast = true } }
 
     SelectionPopup(
@@ -37,6 +39,8 @@ fun BoxScope.SelectionMenuCommentPanel(
         minTopPx = minTopPx,
         onCopyToast = onCopyToastCallback,
         onHighlightAction = onHighlightAction,
+        allowLine = allowLine,
+        allowComment = allowComment,
     )
 
     CopySuccessToast(
@@ -52,6 +56,8 @@ fun BoxScope.SelectionMenuCommentPanel(
         onCopyText = onCopyText,
         onCopyToast = onCopyToastCallback,
         onSubmitCommentComplete = onSubmitCommentComplete,
+        allowLine = allowLine,
+        allowComment = allowComment,
     )
 }
 
@@ -65,6 +71,8 @@ private fun SelectionPopup(
     minTopPx: Int,
     onCopyToast: () -> Unit,
     onHighlightAction: () -> Unit,
+    allowLine: Boolean,
+    allowComment: Boolean,
 ) {
     val density = LocalDensity.current
     val menuGapPx = with(density) { 32.dp.roundToPx() }
@@ -89,7 +97,11 @@ private fun SelectionPopup(
             val selectionHasStroke = markInteraction.capturedSelectionMark?.stroke?.isNotEmpty() == true
             SelectionActionBar(
                 visible = true,
-                actions = rememberSelectionActions(hasStroke = selectionHasStroke),
+                actions = rememberSelectionActions(
+                    hasStroke = selectionHasStroke,
+                    allowLine = allowLine,
+                    allowComment = allowComment,
+                ),
                 onActionClick = { actionId ->
                     handleSelectionAction(
                         actionId = actionId,
@@ -135,6 +147,8 @@ private fun CommentPanelContent(
     onCopyText: (String) -> Unit,
     onCopyToast: () -> Unit,
     onSubmitCommentComplete: () -> Unit,
+    allowLine: Boolean,
+    allowComment: Boolean,
 ) {
     val selectedText = markInteraction.selectedText
     val selectedMarkItemInfo = markInteraction.selectedMark
@@ -149,6 +163,9 @@ private fun CommentPanelContent(
         autoFocusInput = markInteraction.shouldAutoFocus,
         userAvatarUrl = viewModel.userInfo.value?.picture,
         visible = markInteraction.panelVisible,
+        allowLine = allowLine,
+        allowComment = allowComment,
+        canDeleteComment = viewModel::canDeleteComment,
         onDismiss = {
             markInteraction.dismissPanelAnimated(coroutineScope) { viewModel.commentDelegate.setSelectedMark(null) }
         },

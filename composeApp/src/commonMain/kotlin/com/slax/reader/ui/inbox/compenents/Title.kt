@@ -31,7 +31,6 @@ fun InboxTitleRow() {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
-    println("[watch][UI] recomposition InboxTitleRow")
     Row(
         modifier = Modifier
             .padding(start = 24.dp),

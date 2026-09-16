@@ -8,7 +8,12 @@ object InboxRoutes
 @Serializable
 object LoginRoutes
 @Serializable
-data class BookmarkRoutes(val bookmarkId: String, val openedFrom: String = "direct")
+data class BookmarkRoutes(
+    val bookmarkId: String,
+    val openedFrom: String = "direct",
+    val collectionOwnerId: String? = null,
+    val collectionId: String? = null,
+)
 
 @Serializable
 object SettingsRoutes

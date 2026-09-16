@@ -54,7 +54,8 @@ class DatabaseBackedInboxUiTest {
         bookmarks = BookmarkDao(daoScope, database)
         local = LocalBookmarkDao(daoScope, database)
         rule.runOnIdle {
-            viewModel = InboxListViewModel(UserDao(daoScope, database), bookmarks, local,
+            viewModel = InboxListViewModel(UserDao(daoScope, database), bookmarks,
+                com.slax.reader.data.database.dao.CollectionDao(daoScope, database), local,
                 object : NetworkCoordinator {
                     override val syncState = MutableStateFlow<AppSyncState>(AppSyncState.NoNetwork)
                     override suspend fun isNetworkAvailable() = false

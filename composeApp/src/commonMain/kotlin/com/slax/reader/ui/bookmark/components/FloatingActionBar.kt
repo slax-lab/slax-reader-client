@@ -36,12 +36,14 @@ import slax_reader_client.composeapp.generated.resources.*
 @Composable
 fun FloatingActionBar(
     modifier: Modifier = Modifier,
+    onClearSelection: () -> Unit = {},
 ) {
     val viewModel = koinViewModel<BookmarkDetailViewModel>()
     val firstPartyEvents: FirstPartyEventReporter = org.koin.compose.koinInject()
     val visible by LocalToolbarVisible.current
 
     val detailState by viewModel.bookmarkDelegate.bookmarkDetailState.collectAsState()
+    val isCollectionBookmark by viewModel.isCollectionBookmark.collectAsState()
     val isStarred by remember { derivedStateOf { detailState.isStarred } }
     val isArchived by remember { derivedStateOf { detailState.isArchived } }
 
@@ -82,8 +84,9 @@ fun FloatingActionBar(
             horizontalArrangement = Arrangement.spacedBy(0.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier
+            if (!isCollectionBookmark) {
+                Row(
+                    modifier = Modifier
                     .dropShadow(
                         shape = RoundedCornerShape(25.dp),
                         shadow = Shadow(
@@ -100,28 +103,32 @@ fun FloatingActionBar(
                         shape = RoundedCornerShape(25.dp)
                     )
                     .background(Color(0xFFFFFFFF))
-            ) {
-                StarButton(
-                    isStarred = isStarred,
-                    onClick = {
-                        firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_star_button", "screen_name" to "detail"))
-                        viewModel.bookmarkDelegate.onToggleStar(!isStarred)
-                    }
-                )
+                ) {
+                    StarButton(
+                        isStarred = isStarred,
+                        onClick = {
+                            onClearSelection()
+                            firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_star_button", "screen_name" to "detail"))
+                            viewModel.bookmarkDelegate.onToggleStar(!isStarred)
+                        }
+                    )
 
-                ArchiveButton(
-                    isArchived = isArchived,
-                    onClick = {
-                        firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_archive_button", "screen_name" to "detail"))
-                        viewModel.bookmarkDelegate.onToggleArchive(!isArchived)
-                    }
-                )
+                    ArchiveButton(
+                        isArchived = isArchived,
+                        onClick = {
+                            onClearSelection()
+                            firstPartyEvents.track("element_clicked", mapOf("element_id" to "bookmark_archive_button", "screen_name" to "detail"))
+                            viewModel.bookmarkDelegate.onToggleArchive(!isArchived)
+                        }
+                    )
 
+                }
+
+                Box(modifier = Modifier.width(12.dp))
             }
 
-            Box(modifier = Modifier.width(12.dp))
-
             MoreButton(onClick = {
+                onClearSelection()
                 firstPartyEvents.track("element_clicked", mapOf("element_id" to "detail_toolbar_open", "screen_name" to "detail"))
                 viewModel.overlayDelegate.showOverlay(BookmarkOverlay.Toolbar)
                 bookmarkEvent.action("use_toolbar_menu").send()

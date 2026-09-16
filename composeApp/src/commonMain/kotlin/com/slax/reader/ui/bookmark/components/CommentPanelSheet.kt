@@ -180,6 +180,9 @@ fun CommentPanelSheet(
     panelComments: List<BridgeMarkCommentInfo> = emptyList(),
     highlightLoading: Boolean = false,
     autoFocusInput: Boolean = false,
+    allowLine: Boolean = true,
+    allowComment: Boolean = true,
+    canDeleteComment: (markId: Long) -> Boolean,
     userAvatarUrl: String? = null,
     onDismiss: () -> Unit,
     onActionClick: (actionId: String) -> Unit,
@@ -258,6 +261,7 @@ fun CommentPanelSheet(
                         underlineStyle = underlineStyle,
                         isStroked = isStroked,
                         highlightLoading = highlightLoading,
+                        allowLine = allowLine,
                         onActionClick = onActionClick
                     )
 
@@ -265,6 +269,8 @@ fun CommentPanelSheet(
                     CommentListArea(
                         lazyListState = state.lazyListState,
                         comments = panelComments,
+                        allowReplies = allowComment,
+                        canDeleteComment = canDeleteComment,
                         onReplyClick = { comment ->
                             state.replyTarget = ReplyTarget(
                                 markId = comment.markId,
@@ -276,18 +282,20 @@ fun CommentPanelSheet(
                     )
 
                     // 区域4：发表评论区域
-                    PostCommentArea(
-                        userAvatarUrl = userAvatarUrl,
-                        replyTarget = state.replyTarget,
-                        autoFocusInput = autoFocusInput,
-                        onClearReplyTarget = { state.replyTarget = null },
-                        onHasContentChanged = { state.hasContent = it },
-                        onSubmit = { comment ->
-                            val target = state.replyTarget
-                            state.onPostSubmitted(target?.markId)
-                            onSubmitComment(comment, target)
-                        }
-                    )
+                    if (allowComment) {
+                        PostCommentArea(
+                            userAvatarUrl = userAvatarUrl,
+                            replyTarget = state.replyTarget,
+                            autoFocusInput = autoFocusInput,
+                            onClearReplyTarget = { state.replyTarget = null },
+                            onHasContentChanged = { state.hasContent = it },
+                            onSubmit = { comment ->
+                                val target = state.replyTarget
+                                state.onPostSubmitted(target?.markId)
+                                onSubmitComment(comment, target)
+                            }
+                        )
+                    }
                 }
                 }
             }
@@ -366,6 +374,7 @@ private fun HighlightedContentArea(
     underlineStyle: HighlightUnderlineStyle = HighlightUnderlineStyle.NONE,
     isStroked: Boolean = false,
     highlightLoading: Boolean = false,
+    allowLine: Boolean = true,
     onActionClick: (actionId: String) -> Unit
 ) {
     Box(modifier = Modifier.fillMaxWidth().background(Color(0xFFFCFCFC))) {
@@ -386,6 +395,7 @@ private fun HighlightedContentArea(
             HighlightedActionBar(
                 isStroked = isStroked,
                 highlightLoading = highlightLoading,
+                allowLine = allowLine,
                 onActionClick = onActionClick
             )
 
@@ -467,6 +477,7 @@ private fun HighlightedText(
 private fun HighlightedActionBar(
     isStroked: Boolean,
     highlightLoading: Boolean = false,
+    allowLine: Boolean = true,
     onActionClick: (actionId: String) -> Unit,
 ) {
     Row(
@@ -481,7 +492,9 @@ private fun HighlightedActionBar(
             onClick = { onActionClick(CommentPanelActionId.COPY) }
         )
 
-        Spacer(modifier = Modifier.width(40.dp))
+        if (isStroked || allowLine) {
+            Spacer(modifier = Modifier.width(40.dp))
+        }
 
         if (highlightLoading) {
             // 加载中：显示转圈指示器，尺寸与按钮图标一致
@@ -511,7 +524,7 @@ private fun HighlightedActionBar(
                 contentDescription = "comment_panel_remove_highlight_desc".i18n(),
                 onClick = { onActionClick(CommentPanelActionId.REMOVE_HIGHLIGHT) }
             )
-        } else {
+        } else if (allowLine) {
             HighlightedActionButton(
                 iconRes = Res.drawable.ic_comment_panel_highlight,
                 label = "comment_panel_highlight".i18n(),
@@ -603,6 +616,8 @@ private val commentBodyTextStyle = TextStyle(
 private fun CommentListArea(
     lazyListState: LazyListState,
     comments: List<BridgeMarkCommentInfo>,
+    allowReplies: Boolean,
+    canDeleteComment: (markId: Long) -> Boolean,
     onReplyClick: (BridgeMarkCommentInfo) -> Unit,
     onDeleteComment: (Long) -> Unit,
     modifier: Modifier = Modifier
@@ -640,6 +655,8 @@ private fun CommentListArea(
             ) { comment ->
                 CommentCell(
                     comment = comment,
+                    allowReplies = allowReplies,
+                    canDeleteComment = canDeleteComment,
                     onReplyClick = onReplyClick,
                     onDeleteComment = onDeleteComment,
                     onMenuVisibilityChanged = { isAnyMenuShowing = it },
@@ -661,6 +678,8 @@ private fun CommentListArea(
 @Composable
 private fun CommentCell(
     comment: BridgeMarkCommentInfo,
+    allowReplies: Boolean,
+    canDeleteComment: (markId: Long) -> Boolean,
     onReplyClick: (BridgeMarkCommentInfo) -> Unit,
     onDeleteComment: (Long) -> Unit = {},
     onMenuVisibilityChanged: (Boolean) -> Unit,
@@ -681,13 +700,13 @@ private fun CommentCell(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(if (isPressed || isLongPressed) Color(0xFFF5F5F3) else Color.Transparent)
-                .pointerInput(comment.isDeleted) {
+                .pointerInput(comment.isDeleted, allowReplies) {
                     detectTapGestures(
                         onPress = {
                             isPressed = true
                             try { awaitRelease() } finally { isPressed = false }
                         },
-                        onTap = { if (!comment.isDeleted) onReplyClick(comment) },
+                        onTap = { if (allowReplies && !comment.isDeleted) onReplyClick(comment) },
                         onLongPress = { offset ->
                             if (!comment.isDeleted) {
                                 longPressOffset = offset
@@ -710,6 +729,8 @@ private fun CommentCell(
                     comment.children.forEach { child ->
                         ChildCommentCell(
                             comment = child,
+                            allowReplies = allowReplies,
+                            canDeleteComment = canDeleteComment,
                             onReplyClick = onReplyClick,
                             onDeleteComment = onDeleteComment,
                             onMenuVisibilityChanged = onMenuVisibilityChanged,
@@ -722,6 +743,7 @@ private fun CommentCell(
         if (showMenu) {
             CommentContextMenu(
                 pressOffset = longPressOffset,
+                showDelete = canDeleteComment(comment.markId),
                 onCopyClick = {
                     showMenu = false
                     isLongPressed = false
@@ -762,6 +784,8 @@ private fun CommentCell(
 @Composable
 private fun ChildCommentCell(
     comment: BridgeMarkCommentInfo,
+    allowReplies: Boolean,
+    canDeleteComment: (markId: Long) -> Boolean,
     onReplyClick: (BridgeMarkCommentInfo) -> Unit,
     onDeleteComment: (Long) -> Unit = {},
     onMenuVisibilityChanged: (Boolean) -> Unit,
@@ -779,13 +803,13 @@ private fun ChildCommentCell(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(if (isPressed || isLongPressed) Color(0xFFF5F5F3) else Color.Transparent)
-                .pointerInput(comment.isDeleted) {
+                .pointerInput(comment.isDeleted, allowReplies) {
                     detectTapGestures(
                         onPress = {
                             isPressed = true
                             try { awaitRelease() } finally { isPressed = false }
                         },
-                        onTap = { if (!comment.isDeleted) onReplyClick(comment) },
+                        onTap = { if (allowReplies && !comment.isDeleted) onReplyClick(comment) },
                         onLongPress = { offset ->
                             if (!comment.isDeleted) {
                                 longPressOffset = offset
@@ -806,6 +830,7 @@ private fun ChildCommentCell(
         if (showMenu) {
             CommentContextMenu(
                 pressOffset = longPressOffset,
+                showDelete = canDeleteComment(comment.markId),
                 onCopyClick = {
                     showMenu = false
                     isLongPressed = false
@@ -916,6 +941,7 @@ private fun CommentItemBody(comment: BridgeMarkCommentInfo) {
 @Composable
 private fun CommentContextMenu(
     pressOffset: Offset,
+    showDelete: Boolean,
     onCopyClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onDismiss: () -> Unit,
@@ -977,18 +1003,20 @@ private fun CommentContextMenu(
                     onClick = onCopyClick
                 )
             }
-            ContextMenuItem(
-                iconRes = Res.drawable.ic_comment_panel_delete,
-                label = if (confirmingDelete) "comment_panel_confirm_delete".i18n() else "comment_panel_delete".i18n(),
-                onClick = {
-                    if (confirmingDelete) {
-                        onDeleteClick()
-                    } else {
-                        confirmingDelete = true
-                    }
-                },
-                applyTint = false
-            )
+            if (showDelete) {
+                ContextMenuItem(
+                    iconRes = Res.drawable.ic_comment_panel_delete,
+                    label = if (confirmingDelete) "comment_panel_confirm_delete".i18n() else "comment_panel_delete".i18n(),
+                    onClick = {
+                        if (confirmingDelete) {
+                            onDeleteClick()
+                        } else {
+                            confirmingDelete = true
+                        }
+                    },
+                    applyTint = false
+                )
+            }
         }
     }
 }

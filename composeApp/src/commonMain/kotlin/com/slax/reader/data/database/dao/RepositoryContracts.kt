@@ -28,6 +28,13 @@ interface LocalBookmarkRepository {
     suspend fun updateLocalBookmarkOverview(bookmarkId: String, overview: String, keyTakeaways: String?): Long
 }
 
+interface CollectionRepository {
+    fun watchSubscribedCollections(): StateFlow<List<com.slax.reader.data.database.model.SubscribedCollection>>
+    fun watchCollectionBookmarks(ownerId: String): Flow<List<com.slax.reader.data.database.model.CollectionBookmarkItem>>
+    fun watchCollectionBookmarkDetail(bookmarkId: String, ownerId: String): Flow<List<UserBookmark>>
+    suspend fun setLastRead(collectionId: String)
+}
+
 interface BookmarkRepository {
     val hasSynced: StateFlow<Boolean>
     fun watchUserBookmarkPaged(sortType: BookmarkSortType): StateFlow<List<InboxListBookmarkItem>?>

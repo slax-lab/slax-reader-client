@@ -50,7 +50,8 @@ fun SettingScreen(
                 title = {
                     Text(
                         text = "setting_title".i18n(),
-                        fontSize = 20.sp,
+                        fontSize = 17.sp,
+                        lineHeight = 24.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color(0xFF0F1419)
                     )
@@ -81,17 +82,15 @@ fun SettingScreen(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            // 离线缓存设置卡片
             OfflineCacheCard(
                 selectedCacheCount = selectedCacheCount,
-                onCacheCountChange = { resolvedViewModel.updateCacheCount(it) },
+                onCacheCountChange = resolvedViewModel::updateCacheCount,
                 downloadImages = isDownloadImages,
-                onDownloadImagesChange = { resolvedViewModel.updateDownloadImages(it) }
+                onDownloadImagesChange = resolvedViewModel::updateDownloadImages,
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 语言设置卡片
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -101,21 +100,16 @@ fun SettingScreen(
                     title = "setting_language".i18n(),
                     rightText = if (LocaleString.currentLocale == "zh") "language_chinese".i18n() else "language_english".i18n(),
                     modifier = Modifier.testTag(TestTags.SettingLanguage),
-                    onClick = {
-                        showLanguageDialog = true
-                    }
+                    onClick = { showLanguageDialog = true }
                 )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 注销账号按钮
             val deleteButtonInteractionSource = remember { MutableInteractionSource() }
             val isDeleteButtonPressed by deleteButtonInteractionSource.collectIsPressedAsState()
             Button(
-                onClick = {
-                    navController.navigate(DeleteAccountRoutes)
-                },
+                onClick = { navController.navigate(DeleteAccountRoutes) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(55.dp)
@@ -138,7 +132,6 @@ fun SettingScreen(
         }
     }
 
-    // 语言选择对话框
     if (showLanguageDialog) {
         AlertDialog(
             onDismissRequest = { showLanguageDialog = false },
@@ -150,9 +143,7 @@ fun SettingScreen(
                         text = "language_chinese".i18n(),
                         selected = LocaleString.currentLocale == "zh",
                         onClick = {
-                            coroutineScope.launch {
-                                LocaleString.changeLocale("zh")
-                            }
+                            coroutineScope.launch { LocaleString.changeLocale("zh") }
                             showLanguageDialog = false
                         }
                     )
@@ -161,9 +152,7 @@ fun SettingScreen(
                         text = "language_english".i18n(),
                         selected = LocaleString.currentLocale == "en",
                         onClick = {
-                            coroutineScope.launch {
-                                LocaleString.changeLocale("en")
-                            }
+                            coroutineScope.launch { LocaleString.changeLocale("en") }
                             showLanguageDialog = false
                         }
                     )
@@ -179,7 +168,7 @@ internal fun OfflineCacheCard(
     selectedCacheCount: Int,
     onCacheCountChange: (Int) -> Unit,
     downloadImages: Boolean,
-    onDownloadImagesChange: (Boolean) -> Unit
+    onDownloadImagesChange: (Boolean) -> Unit,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -191,7 +180,6 @@ internal fun OfflineCacheCard(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // 标题
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -208,12 +196,10 @@ internal fun OfflineCacheCard(
                 Text(
                     text = "${if (selectedCacheCount == UNLIMIT) '∞' else selectedCacheCount}",
                     fontSize = 14.sp,
-                    fontWeight = FontWeight.Normal,
                     color = Color(0xFF999999),
                     lineHeight = 20.sp
                 )
             }
-
 
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -241,26 +227,21 @@ internal fun OfflineCacheCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 图片下载开关
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
-                    ) {
-                        onDownloadImagesChange(!downloadImages)
-                    }
+                    ) { onDownloadImagesChange(!downloadImages) }
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
                             .size(12.dp)
                             .border(
                                 width = 0.5.dp,
-                                color = Color(0x291a1a1a),
+                                color = Color(0x291A1A1A),
                                 shape = RoundedCornerShape(2.dp)
                             )
                             .background(
@@ -282,7 +263,6 @@ internal fun OfflineCacheCard(
                     Text(
                         text = "setting_download_images".i18n(),
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.Normal,
                         color = Color(0xFF0F1419),
                         lineHeight = 20.sp
                     )
@@ -354,9 +334,7 @@ internal fun RadioButtonItem(
         RadioButton(
             selected = selected,
             onClick = onClick,
-            colors = RadioButtonDefaults.colors(
-                selectedColor = Color(0xFF16b998)
-            )
+            colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF16B998))
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
@@ -381,9 +359,7 @@ private fun SettingItem(
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(color = Color.Gray)
-            ) {
-                onClick()
-            }
+            ) { onClick() }
             .padding(horizontal = 16.dp, vertical = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -400,7 +376,6 @@ private fun SettingItem(
             Text(
                 text = rightText,
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Normal,
                 color = Color(0xFF999999),
                 lineHeight = 20.sp
             )

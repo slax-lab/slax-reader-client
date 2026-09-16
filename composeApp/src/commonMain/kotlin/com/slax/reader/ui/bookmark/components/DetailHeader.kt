@@ -10,11 +10,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.slax.reader.ui.bookmark.BookmarkDetailViewModel
 import com.slax.reader.utils.OpenInBrowser
 import com.slax.reader.utils.bookmarkEvent
+import com.slax.reader.utils.collapseWhitespace
 import com.slax.reader.utils.i18n
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -42,12 +44,15 @@ fun HeaderContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
-                .padding(bottom = 16.dp)
+                .padding(bottom = 24.dp)
         ) {
             Spacer(modifier = Modifier.height(44.dp))
 
+            // 对齐 dweb：折叠换行、最多 3 行
             Text(
-                text = detailState.displayTitle,
+                text = detailState.displayTitle.collapseWhitespace(),
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
                 style = TextStyle(
                     fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,
